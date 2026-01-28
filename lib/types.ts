@@ -1,14 +1,14 @@
 export type AssetCategory =
 	| "BONDS"
-	| "EQUITY_DEV"
-	| "EQUITY_EM"
+	| "DEVELOPED"
+	| "EMERGING"
 	| "GOLD"
 	| "BOOSTER";
 
 export const MODEL_ALLOCATION = [
 	{ name: "Bonds", weight: 55, color: "bg-portfolio-bonds" },
-	{ name: "Developed", weight: 15, color: "bg-portfolio-equity_dev" },
-	{ name: "Emerging", weight: 15, color: "bg-portfolio-equity_em" },
+	{ name: "Developed", weight: 15, color: "bg-portfolio-DEVELOPED" },
+	{ name: "Emerging", weight: 15, color: "bg-portfolio-EMERGING" },
 	{ name: "Gold", weight: 10, color: "bg-portfolio-gold" },
 	{ name: "Booster", weight: 5, color: "bg-portfolio-booster" },
 ];

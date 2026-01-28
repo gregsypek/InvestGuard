@@ -24,21 +24,27 @@ export default function CategoryHealthTable({ assets }: Props) {
 				<tbody className="divide-y divide-slate-200 bg-white">
 					{MODEL_ALLOCATION.map((modelItem) => {
 						// 1. Filter all assets belonging to this specific category
-						// We map "Developed" from model to "EQUITY_DEV" from assets
+						// We map "Developed" from model to "DEVELOPED" from assets
+						// const categoryAssets = assets.filter((a) => {
+						// 	if (modelItem.name === "Bonds") return a.category === "BONDS";
+						// 	if (modelItem.name === "Developed")
+						// 		return a.category === "DEVELOPED";
+						// 	if (modelItem.name === "Emerging")
+						// 		return a.category === "EMERGING";
+						// 	if (modelItem.name === "Gold") return a.category === "GOLD";
+						// 	if (modelItem.name === "Booster") return a.category === "BOOSTER";
+						// 	return false;
+						// });
 						const categoryAssets = assets.filter((a) => {
-							if (modelItem.name === "Bonds") return a.category === "BONDS";
-							if (modelItem.name === "Developed")
-								return a.category === "EQUITY_DEV";
-							if (modelItem.name === "Emerging")
-								return a.category === "EQUITY_EM";
-							if (modelItem.name === "Gold") return a.category === "GOLD";
-							if (modelItem.name === "Booster") return a.category === "BOOSTER";
+							if (modelItem.name.toUpperCase() === a.category)
+								return a.category;
 							return false;
 						});
 						console.log(
 							"🚀 ~ CategoryHealthTable ~ categoryAssets:",
 							categoryAssets,
 						);
+						console.log("🚀 ~ CategoryHealthTable ~ assets:", assets);
 
 						// 2. Sum the values for the whole category (e.g., 2050 + 480)
 						const categoryAmount = categoryAssets.reduce(

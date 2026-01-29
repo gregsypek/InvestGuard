@@ -1,6 +1,12 @@
 // Przykład layoutu z "czystym" Tailwindem
-import { getStockPrice } from "@/lib/getQuote";
-import { obliczProcentoweOdchylenie } from "./actions";
+// import { getStockPrice } from "@/lib/getQuote";
+
+import AssetsTable from "./portfel/components/AssetsTable";
+import { mockAssets } from "@/lib/constants";
+import PortfolioTable from "./portfel/components/PortfolioTable";
+import ComparisonBars from "./portfel/components/ComparisonBars";
+import CategoryHealthTable from "./portfel/components/CategoryHealthTable";
+import PortfolioTableBeauty from "./portfel/components/PortfolioTableBeauty";
 
 export default async function DashboardLayout() {
 	// const getData = await getStockPrice("EUNL.DE");
@@ -19,11 +25,9 @@ export default async function DashboardLayout() {
 	//     '10. change percent': '0.6771%'
 	//   }
 	// }
-	const howmuch = await obliczProcentoweOdchylenie(4680, 6000);
-	console.log("🚀 ~ DashboardLayout ~ howmuch:", howmuch);
 	return (
 		<div className="min-h-screen bg-slate-50 flex">
-			{/* Sidebar - Twoje nawigacje */}
+			{/* Sidebar */}
 			<aside className="w-64 bg-slate-900 text-white p-6 shadow-xl">
 				<h2 className="text-xl font-bold mb-8 text-blue-400">
 					InvestNext v1.0
@@ -47,7 +51,6 @@ export default async function DashboardLayout() {
 						</span>
 					</div>
 				</header>
-
 				{/* Tutaj wskoczyłyby Twoje karty z wykresami */}
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					<div className="h-64 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
@@ -56,6 +59,23 @@ export default async function DashboardLayout() {
 					<div className="h-64 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
 						{/* Tu byłyby kursy Chevron/Meta */}
 					</div>
+				</div>
+				<div className="mt-5 text-slate-700">
+					<p>herer</p>
+					<AssetsTable assets={mockAssets} />
+				</div>
+				<div className="mt-5 text-slate-700">
+					{/* <CategoryHealthTable assets={mockAssets} /> */}
+				</div>
+				<div className="mt-5 text-slate-700">
+					{/* <PortfolioTable assets={mockAssets} /> */}
+					<PortfolioTableBeauty assets={mockAssets} />
+				</div>
+				{/* <div className="mt-5">
+					<AllocationSummary />
+				</div> */}
+				<div className="mt-5">
+					<ComparisonBars assets={mockAssets} />
 				</div>
 			</main>
 		</div>

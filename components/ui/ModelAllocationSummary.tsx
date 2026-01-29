@@ -16,7 +16,7 @@ export default function ModelAllocationSummary() {
 						key={item.name}
 						// Inline style is used for dynamic widths as Tailwind doesn't generate arbitrary percentage widths by default
 						style={{ width: `${item.weight}%` }}
-						className={`${item.color} h-full transition-all hover:opacity-80`}
+						className={`${item.color.toLowerCase()} h-full transition-all hover:opacity-80`}
 						title={`${item.name}: ${item.weight}%`}
 					/>
 				))}
@@ -26,7 +26,9 @@ export default function ModelAllocationSummary() {
 			<div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-4">
 				{MODEL_ALLOCATION.map((item) => (
 					<div key={item.name} className="flex items-center gap-2">
-						<span className={`w-3 h-3 rounded-full ${item.color}`} />
+						<span
+							className={`w-3 h-3 rounded-full ${item.color.toLowerCase()}`}
+						/>
 						<span className="text-xs font-medium text-slate-600">
 							{item.name} ({item.weight}%)
 						</span>

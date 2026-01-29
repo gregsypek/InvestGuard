@@ -1,12 +1,27 @@
 "use server";
 
-export async function addTransaction(formData: FormData) {
-	const amount = formData.get("amount");
-	const asset = formData.get("asset");
+import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
+import { Category } from "@prisma/client";
 
-	// Logic to save to database (e.g., Prisma, Supabase)
-	console.log(`Zapisano: ${amount} w ${asset}`);
+// Action to save a new asset to Postgres
+export async function addAssetAction(formData: FormData) {
+	// Extracting data from form fields
+	const name = formData.get("name") as string;
+	const ticker = formData.get("ticker") as string;
+	const value = parseFloat(formData.get("value") as string);
+	const category = formData.get("category") as Category;
 
-	// Refresh cache
-	// revalidatePath('/portfel');
+	await db.asset.create({
+		data: {
+			name,
+			ticker,
+			value,
+			category,
+			targetPercentage: 0, // We'll calculate this automatically later
+		},
+	});
+
+	// Refresh the dashboard page to show new data
+	revalidatePath("/dashboard");
 }

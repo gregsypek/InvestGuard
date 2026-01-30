@@ -23,11 +23,11 @@ export default async function DashboardLayout() {
 	//   }
 	// }
 	return (
-		<div className="min-h-screen bg-slate-50 flex">
+		<div className="min-h-screen bg-background flex">
 			{/* Main Content */}
 			<main className="flex-1 p-8">
 				<header className="flex justify-between items-center mb-10">
-					<h1 className="text-3xl font-extrabold text-slate-800">
+					<h1 className="text-3xl font-extrabold text-foreground">
 						Przegląd Aktywów
 					</h1>
 					<div className="flex gap-4">
@@ -38,19 +38,18 @@ export default async function DashboardLayout() {
 				</header>
 				{/* Tutaj wskoczyłyby Twoje karty z wykresami */}
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					<div className="h-64 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+					<div className="h-64 bg-background rounded-xl shadow-sm border border-border p-4">
 						{/* Tu byłby wykres kołowy alokacji */}
 					</div>
-					<div className="h-64 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+					<div className="h-64 bg-background rounded-xl shadow-sm border border-border p-4">
 						{/* Tu byłyby kursy Chevron/Meta */}
 					</div>
 				</div>
-				<div className="mt-5 text-slate-700">
-					<p>herer</p>
+				<div className="mt-5 text-foreground">
 					<AssetsTable assets={mockAssets} />
 				</div>
-				<div className="mt-5 text-slate-700"></div>
-				<div className="mt-5 text-slate-700">
+				<div className="mt-5 text-foreground"></div>
+				<div className="mt-5 text-foreground">
 					<PortfolioTableBeauty assets={mockAssets} />
 				</div>
 

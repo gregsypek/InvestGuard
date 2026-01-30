@@ -4,6 +4,8 @@ import AssetsTable from "../portfel/components/AssetsTable";
 import { mockAssets } from "@/lib/constants";
 import ComparisonBars from "../portfel/components/ComparisonBars";
 import PortfolioTableBeauty from "../portfel/components/PortfolioTableBeauty";
+import { calculateGapAnalysis } from "@/lib/calculations";
+import { db } from "@/lib/db";
 
 export default async function DashboardLayout() {
 	// const getData = await getStockPrice("EUNL.DE");
@@ -22,6 +24,9 @@ export default async function DashboardLayout() {
 	//     '10. change percent': '0.6771%'
 	//   }
 	// }
+	// Fetch real data from your Vercel Postgres
+	const assets = await db.asset.findMany();
+	const portfolioStatus = calculateGapAnalysis(assets);
 	return (
 		<div className="min-h-screen bg-background flex">
 			{/* Main Content */}
@@ -50,7 +55,7 @@ export default async function DashboardLayout() {
 				</div>
 				<div className="mt-5 text-foreground"></div>
 				<div className="mt-5 text-foreground">
-					<PortfolioTableBeauty assets={mockAssets} />
+					<PortfolioTableBeauty data={portfolioStatus} />
 				</div>
 
 				<div className="mt-5">

@@ -1,3 +1,5 @@
+import { Category } from "@prisma/client";
+
 export type AssetCategory =
 	| "BONDS"
 	| "DEVELOPED"
@@ -18,7 +20,7 @@ export interface Asset {
 	name: string; // np. "iShares Physical Gold"
 	ticker?: string; // np. "IGLN.L"
 	category: AssetCategory;
-	value: number; // aktualna wartość w walucie
+	value: number; 
 	targetPercentage: number; // np. 10 (for gold)
 }
 
@@ -50,4 +52,19 @@ export interface RebalanceResult {
 	currentPercentage: number;
 	deviation: number; // o ile % odbiega od celu
 	action: "BUY" | "SELL" | "HOLD";
+}
+
+// Configuration for each portfolio category
+export interface CategoryConfig {
+	name: string;
+	category: Category; // ENUM from Prisma: BONDS, EMERGING, etc.
+	weight: number; // Target percentage (e.g., 55)
+	color: string; // Tailwind class for charts
+}
+// Result of our gap analysis for a single category
+export interface CategoryStatus extends CategoryConfig {
+	actualAmount: number;
+	actualPercentage: number;
+	differencePLN: number;
+	differenceWeight: number;
 }

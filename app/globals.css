@@ -5,79 +5,93 @@
 @custom-variant dark (&:is(.dark *));
 
 @layer utilities {
-  .wrapper {
-    @apply max-w-7xl lg:mx-auto p-5 md:px-10 w-full;
-  }
+	.wrapper {
+		@apply max-w-7xl lg:mx-auto p-5 md:px-10 w-full;
+	}
 
-  .flex-start {
-    @apply flex justify-start items-center;
-  }
-  .flex-center {
-    @apply flex justify-center items-center;
-  }
-  .flex-end {
-    @apply flex justify-end items-center;
-  }
+	.flex-start {
+		@apply flex justify-start items-center;
+	}
+	.flex-center {
+		@apply flex justify-center items-center;
+	}
+	.flex-end {
+		@apply flex justify-end items-center;
+	}
 
-  .flex-between {
-    @apply flex justify-between items-center;
-  }
+	.flex-between {
+		@apply flex justify-between items-center;
+	}
 
-  .h1-bold {
-    @apply font-bold text-3xl lg:text-4xl;
-  }
+	.h1-bold {
+		@apply font-bold text-3xl lg:text-4xl;
+	}
 
-  .h2-bold {
-    @apply font-bold text-2xl lg:text-3xl;
-  }
+	.h2-bold {
+		@apply font-bold text-2xl lg:text-3xl;
+	}
 
-  .h3-bold {
-    @apply font-bold text-xl lg:text-2xl;
-  }
+	.h3-bold {
+		@apply font-bold text-xl lg:text-2xl;
+	}
 }
 
 @theme {
-  /* Dynamic portfolio colors with softer tones */
-  --color-portfolio-gold: oklch(0.85 0.1 85);
-  --color-portfolio-bonds: oklch(0.75 0.05 220);
-  --color-portfolio-developed: oklch(0.8 0.05 160);
-  --color-portfolio-emerging: oklch(0.75 0.08 130);
-  --color-portfolio-booster: oklch(0.8 0.06 10);
+	/* Binding CSS variables to Tailwind classes */
+	--color-portfolio-gold: var(--portfolio-gold);
+	--color-portfolio-bonds: var(--portfolio-bonds);
+	--color-portfolio-developed: var(--portfolio-developed);
+	--color-portfolio-emerging: var(--portfolio-emerging);
+	--color-portfolio-booster: var(--portfolio-booster);
 }
 
 @theme inline {
-  /* Mapping CSS variables to Tailwind utility classes */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-border: var(--border);
-  --color-card: var(--card);
+	/* Mapping CSS variables to Tailwind utility classes */
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-border: var(--border);
+	--color-card: var(--card);
 }
 
 :root {
-  /* Light mode settings ☀️ */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.12 0.03 245);
-  
-  /* Sidebar uses your base navy color in light mode */
-  --sidebar: oklch(0.22 0.04 250); 
-  --sidebar-foreground: oklch(0.98 0 0);
-  
-  --border: oklch(0.92 0 0);
-  --card: oklch(1 0 0);
+	/* Light mode settings ☀️ */
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.12 0.03 245);
+
+	/* Sidebar uses your base navy color in light mode */
+	--sidebar: oklch(0.22 0.04 250);
+	--sidebar-foreground: oklch(0.98 0 0);
+
+	--border: oklch(0.92 0 0);
+	--card: oklch(1 0 0);
+
+	/* Softer, professional colors for light mode (lower Chroma) */
+	--portfolio-gold: oklch(0.6 0.1 85);
+	--portfolio-bonds: oklch(0.6 0.1 230);
+	--portfolio-developed: oklch(0.6 0.2 160);
+	--portfolio-emerging: oklch(0.7 0.1 140);
+	--portfolio-booster: oklch(0.7 0.1 20);
 }
 
 .dark {
-  /* Dark mode settings 🌙 */
-  /* Page background takes the navy color of the original Aside */
-  --background: oklch(0.22 0.04 250); 
-  --foreground: oklch(0.98 0 0);
-  
-  /* Sidebar becomes even darker for contrast */
-  --sidebar: oklch(0.12 0.03 245); 
-  --sidebar-foreground: oklch(0.9 0 0);
-  
-  --border: oklch(0.3 0.03 245);
-  --card: oklch(0.26 0.04 250);
+	/* Dark mode settings 🌙 */
+	/* Page background takes the navy color of the original Aside */
+	--background: oklch(0.22 0.04 250);
+	--foreground: oklch(0.98 0 0);
+
+	/* Sidebar becomes even darker for contrast */
+	--sidebar: oklch(0.12 0.03 245);
+	--sidebar-foreground: oklch(0.9 0 0);
+
+	--border: oklch(0.3 0.03 245);
+	--card: oklch(0.26 0.04 250);
+
+	/* Vibrant, glowing colors for dark mode */
+	--portfolio-gold: oklch(0.85 0.12 85);
+	--portfolio-bonds: oklch(0.75 0.08 230);
+	--portfolio-developed: oklch(0.8 0.08 160);
+	--portfolio-emerging: oklch(0.75 0.1 140);
+	--portfolio-booster: oklch(0.8 0.1 20);
 }

@@ -18,13 +18,24 @@ enum Category {
   BOOSTER
 }
 
+enum TimeHorizon {
+  SHORT
+  MEDIUM
+  LONG
+}
+
 model Asset {
   id               String   @id @default(cuid())
   name             String
-  ticker           String
+  ticker           String? // Pytajnik oznacza, że pole jest opcjonalne (Twoja prośba!)
   category         Category
   value            Float
-  targetPercentage Float
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  targetPercentage Float    @default(0)
+
+  // Nowe pola dla sekcji Booster
+  rationale   String? // Opcjonalne, bo EDO ich nie potrzebują
+  timeHorizon TimeHorizon? // Korzystamy z Enuma powyżej
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

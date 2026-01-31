@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { calculateGapAnalysis } from "@/lib/calculations";
 import AddAssetForm from "@/components/ui/assets/AddAssetForm";
 import PortfolioTableBeauty from "@/app/portfel/components/PortfolioTableBeauty";
+import PortfolioCharts from "@/components/PortfolioCharts";
 
 export default async function DashboardPage() {
 	// Fetch real data from your Vercel Postgres
@@ -10,6 +11,7 @@ export default async function DashboardPage() {
 	console.log("🚀 ~ DashboardPage ~ assets:", assets);
 
 	const portfolioStatus = calculateGapAnalysis(assets);
+	console.log("🚀 ~ DashboardPage ~ portfolioStatus:", portfolioStatus);
 	const totalValue = assets.reduce((sum, a) => sum + a.value, 0);
 
 	return (
@@ -29,8 +31,15 @@ export default async function DashboardPage() {
 
 			<section className="grid gap-6">
 				<h2 className="h2-bold">Rebalancing Guide</h2>
-				{/*  Pass the calculated status to your components */}
+				{/* Detailed rebalancing table */}
 				<PortfolioTableBeauty data={portfolioStatus} />
+			</section>
+
+			<section className="grid gap-6">
+				<h2 className="h2-bold">Investment Strategy</h2>
+
+				{/* Visual comparison of charts */}
+				<PortfolioCharts data={portfolioStatus} />
 			</section>
 		</div>
 	);

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
 	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-	{ name: "Portfolio", href: "/portfel", icon: Wallet },
+	{ name: "Portfolios", href: "/portfolios", icon: Wallet },
 	{ name: "Booster 5%", href: "/booster", icon: Rocket },
 	{ name: "Raporty EDO", href: "/raporty", icon: FileText },
 ];
@@ -31,7 +31,7 @@ const Aside = () => {
 						<Rocket className="text-white w-6 h-6" />
 					</div>
 					<span className="font-bold text-xl text-white tracking-tight">
-						MyWallet<span className="text-blue-500">.</span>
+						MyWallets<span className="text-blue-500">.</span>
 					</span>
 				</Link>
 			</div>

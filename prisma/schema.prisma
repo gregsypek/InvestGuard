@@ -36,6 +36,21 @@ model Asset {
   rationale   String? // Opcjonalne, bo EDO ich nie potrzebują
   timeHorizon TimeHorizon? // Korzystamy z Enuma powyżej
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  portfolioId String // 1. Pole techniczne (Klucz obcy)
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade) // 2. Definicja relacji dla Pragmy
+}
+
+// Portfolio model - represents a distinct investment strategy or bucket
+model Portfolio {
+  id          String   @id @default(cuid())
+  name        String // e.g., "Emerytalny", "Ryzykowny"
+  description String? // Optional strategy details
+  goal        Float? // Financial target for this specific portfolio 🎯
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relation: One portfolio can house many assets
+  assets Asset[]
 }

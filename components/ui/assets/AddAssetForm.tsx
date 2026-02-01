@@ -47,16 +47,11 @@ export default function AddAssetForm() {
 									{category}
 								</option>
 							))}
-							{/* <option value="DEVELOPED">Developed Markets</option>
-							<option value="EMERGING">Emerging Markets</option>
-							<option value="GOLD">Gold</option>
-							<option value="BONDS">Bonds</option>
-							<option value="BOOSTER">Booster (5%)</option> */}
 						</select>
 					</div>
 					<Button
 						type="submit"
-						className="w-full bg-blue-600 hover:bg-blue-700"
+						className="w-full bg-portfolio-bonds hover:bg-portfolio-gold text-sidebar"
 					>
 						Save Asset
 					</Button>

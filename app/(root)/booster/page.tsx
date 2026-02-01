@@ -10,12 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import BoosterForm from "./BoosterForm";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+
+import { DeleteAssetButton } from "@/components/DeleteAssetButton";
 
 /* Configuration for Time Horizons with colors and English descriptions */
 const HORIZON_MAP = {
@@ -42,6 +38,7 @@ export default async function BoosterPage() {
 		where: { category: "BOOSTER" },
 		orderBy: { createdAt: "desc" },
 	});
+	console.log("🚀 ~ BoosterPage ~ boosterAssets:", boosterAssets);
 
 	return (
 		<div className="space-y-8">
@@ -61,62 +58,65 @@ export default async function BoosterPage() {
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<TooltipProvider>
-						<Table>
-							<TableHeader className="bg-muted/50">
-								<TableRow>
-									<TableHead className="font-bold">Ticker</TableHead>
-									<TableHead className="font-bold">Name</TableHead>
-									<TableHead className="font-bold">Time Horizon</TableHead>
-									<TableHead className="hidden md:table-cell font-bold">
-										Rationale
-									</TableHead>
-									<TableHead className="text-right font-bold">Value</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{boosterAssets.map((asset) => {
-									const horizon =
-										HORIZON_MAP[
-											asset.timeHorizon as keyof typeof HORIZON_MAP
-										] || HORIZON_MAP.MEDIUM;
+					<Table>
+						<TableHeader className="bg-muted/50">
+							<TableRow>
+								<TableHead className="font-bold">Ticker</TableHead>
+								<TableHead className="font-bold">Name</TableHead>
+								<TableHead className="font-bold">Time Horizon</TableHead>
+								<TableHead className="hidden md:table-cell font-bold">
+									Rationale
+								</TableHead>
+								<TableHead className="text-right font-bold">Value</TableHead>
+								<TableHead className="text-right font-bold">
+									{/* For delete button */}
+								</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{boosterAssets.map((asset) => {
+								const horizon =
+									HORIZON_MAP[asset.timeHorizon as keyof typeof HORIZON_MAP] ||
+									HORIZON_MAP.MEDIUM;
 
-									return (
-										<TableRow
-											key={asset.id}
-											className="hover:bg-muted/30 transition-colors"
-										>
-											<TableCell className="font-bold uppercase">
-												{asset.ticker || "—"}
-											</TableCell>
-											<TableCell>{asset.name}</TableCell>
-											<TableCell>
-												<Badge
-													variant="outline"
-													style={{
-														borderColor: horizon.color,
-														color: horizon.color,
-													}}
-													className="font-medium bg-transparent"
-												>
-													{horizon.label}
-												</Badge>
-											</TableCell>
-											<TableCell className="py-4">
-												{/* Text wrapping enabled by removing 'truncate' and setting leading-relaxed */}
-												<p className="text-sm text-muted-foreground leading-relaxed wrap-break-words whitespace-normal min-w-50">
-													{asset.rationale}
-												</p>
-											</TableCell>
-											<TableCell className="text-right font-mono font-semibold text-primary">
-												{asset.value.toLocaleString()} PLN
-											</TableCell>
-										</TableRow>
-									);
-								})}
-							</TableBody>
-						</Table>
-					</TooltipProvider>
+								return (
+									<TableRow
+										key={asset.id}
+										className="hover:bg-muted/30 transition-colors"
+									>
+										<TableCell className="font-bold uppercase">
+											{asset.ticker || "—"}
+										</TableCell>
+										<TableCell>{asset.name}</TableCell>
+										<TableCell>
+											<Badge
+												variant="outline"
+												style={{
+													borderColor: horizon.color,
+													color: horizon.color,
+												}}
+												className="font-medium bg-transparent"
+											>
+												{horizon.label}
+											</Badge>
+										</TableCell>
+										<TableCell className="py-4">
+											{/* Text wrapping enabled by removing 'truncate' and setting leading-relaxed */}
+											<p className="text-sm text-muted-foreground leading-relaxed wrap-break-words whitespace-normal min-w-50">
+												{asset.rationale}
+											</p>
+										</TableCell>
+										<TableCell className="text-right font-mono font-semibold text-primary">
+											{asset.value.toLocaleString()} PLN
+										</TableCell>
+										<TableCell className="py-4 text-right">
+											<DeleteAssetButton id={asset.id} />
+										</TableCell>
+									</TableRow>
+								);
+							})}
+						</TableBody>
+					</Table>
 
 					{/* Legend Section */}
 					<div className="mt-8 pt-6">

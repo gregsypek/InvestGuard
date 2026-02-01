@@ -39,3 +39,25 @@ export async function createBoosterAsset(
 		return { error: "Wystąpił błąd podczas zapisu w bazie" };
 	}
 }
+
+/**
+ * Deletes a booster asset from the database by its ID.
+ * @param id - The unique identifier of the asset.
+ */
+export async function deleteBoosterAsset(id: string) {
+	try {
+		await db.asset.delete({
+			where: { id },
+		});
+
+		// Refresh the specific route to show updated data
+		revalidatePath("/booster");
+		return { success: true };
+	} catch (error) {
+		console.error("Delete Error:", error);
+		return {
+			success: false,
+			error: "Failed to delete the asset from database.",
+		};
+	}
+}

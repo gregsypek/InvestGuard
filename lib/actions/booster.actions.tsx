@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { BoosterSchema } from "@/lib/validations";
+import { BoosterSchema } from "@/lib/validations/booster";
 import { revalidatePath } from "next/cache";
 import z from "zod";
 

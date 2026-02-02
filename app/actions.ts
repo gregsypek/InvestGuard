@@ -1,27 +1,36 @@
 "use server";
 
+// app/actions.ts
 import { db } from "@/lib/db";
-import { revalidatePath } from "next/cache";
 import { Category } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 
-// Action to save a new asset to Postgres
 export async function addAssetAction(formData: FormData) {
-	// Extracting data from form fields
+	// Extracting data from the form
 	const name = formData.get("name") as string;
 	const ticker = formData.get("ticker") as string;
 	const value = parseFloat(formData.get("value") as string);
 	const category = formData.get("category") as Category;
+	// Extracting the selected portfolio ID to establish a relationship
+	const portfolioId = formData.get("portfolioId") as string;
 
-	await db.asset.create({
-		data: {
-			name,
-			ticker,
-			value,
-			category,
-			targetPercentage: 0, // We'll calculate this automatically later
-		},
-	});
+	try {
+		// Creating the asset in the database with a link to the chosen portfolio
+		await db.asset.create({
+			data: {
+				name,
+				ticker,
+				value,
+				category,
+				portfolioId, // Foreign key linking to the Portfolio model
+				targetPercentage: 0, // Placeholder for future dynamic calculations
+			},
+		});
 
-	// Refresh the dashboard page to show new data
-	revalidatePath("/dashboard");
+		// Refreshing the dashboard to show the newly added asset
+		revalidatePath("/dashboard");
+	} catch (error) {
+		// Logging any errors that occur during the database operation
+		console.error("Database error while adding asset:", error);
+	}
 }

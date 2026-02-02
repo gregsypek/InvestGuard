@@ -38,6 +38,7 @@ model Asset {
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  // Relacja z Portfelem 🔗
   portfolioId String // 1. Pole techniczne (Klucz obcy)
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade) // 2. Definicja relacji dla Pragmy
 }
@@ -51,6 +52,24 @@ model Portfolio {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relation: One portfolio can house many assets
-  assets Asset[]
+  // STRATEGIA (Target Allocation) - suma powinna dawać 100%
+  targetDeveloped Int @default(0)
+  targetEmerging  Int @default(0)
+  targetBonds     Int @default(0)
+  targetGold      Int @default(0)
+  targetBooster   Int @default(0)
+  targetCash      Int @default(0) // ✅ Traktujemy jak każde inne aktywo
+
+  assets Asset[] // Relation: One portfolio can house many assets
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id         String      @id @default(cuid())
+  name       String?
+  email      String      @unique
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  portfolios Portfolio[] // Relacja: Użytkownik ma wiele portfeli
 }

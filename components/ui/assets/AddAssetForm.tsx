@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORY_ASSETS } from "@/lib/constants";
 
-export default function AddAssetForm() {
+interface PortfolioOption {
+	id: string;
+	name: string;
+}
+interface AddAssetFormProps {
+	portfolios: PortfolioOption[];
+}
+export default function AddAssetForm({ portfolios }: AddAssetFormProps) {
 	return (
 		<Card className="w-full">
 			<CardHeader>
@@ -18,6 +25,21 @@ export default function AddAssetForm() {
 					action={addAssetAction}
 					className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end"
 				>
+					<div className="space-y-2">
+						<label className="text-sm font-medium">Portfolio</label>
+						<select
+							name="portfolioId"
+							required
+							className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+						>
+							<option value="">Select a portfolio</option>
+							{portfolios.map((p) => (
+								<option key={p.id} value={p.id}>
+									{p.name}
+								</option>
+							))}
+						</select>
+					</div>
 					<div className="space-y-2">
 						<label className="text-sm font-medium">Name</label>
 						<Input name="name" placeholder="e.g. iShares MSCI EM" required />

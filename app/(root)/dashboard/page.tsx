@@ -4,14 +4,27 @@ import { calculateGapAnalysis } from "@/lib/calculations";
 import AddAssetForm from "@/components/ui/assets/AddAssetForm";
 import PortfolioTableBeauty from "@/app/portfel/components/PortfolioTableBeauty";
 import PortfolioCharts from "@/components/PortfolioCharts";
+// import ModelAllocationSummary from "@/components/ui/ModelAllocationSummary";
 
 export default async function DashboardPage() {
-	// Fetch real data from your Vercel Postgres
-	const assets = await db.asset.findMany();
-	console.log("🚀 ~ DashboardPage ~ assets:", assets);
+	// Fetch portfolios to populate the selection dropdown in the form
+	const portfolios = await db.portfolio.findMany({
+		where: { userId: "1" },
+		select: { id: true, name: true },
+	});
+	// Fetch only assets that belong to portfolios owned by user "1"
+	const assets = await db.asset.findMany({
+		where: {
+			portfolio: {
+				userId: "1", // Filtering via the relation with Portfolio
+			},
+		},
+		include: {
+			portfolio: true, // Including portfolio data to access its goals later
+		},
+	});
 
 	const portfolioStatus = calculateGapAnalysis(assets);
-	console.log("🚀 ~ DashboardPage ~ portfolioStatus:", portfolioStatus);
 	const totalValue = assets.reduce((sum, a) => sum + a.value, 0);
 
 	return (
@@ -27,7 +40,7 @@ export default async function DashboardPage() {
 			</header>
 
 			{/* Form to add new EDO, ETF or Gold */}
-			<AddAssetForm />
+			<AddAssetForm portfolios={portfolios} />
 
 			<section className="grid gap-6">
 				<h2 className="h2-bold">Rebalancing Guide</h2>

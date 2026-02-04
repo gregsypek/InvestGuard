@@ -16,7 +16,7 @@ export function SubmitButton({ label }: { label: string }) {
 		<Button
 			type="submit"
 			disabled={pending}
-			className="w-full md:w-auto font-semibold transition-all duration-200 active:scale-95 cursor-pointer hover:scale-95"
+			className="w-full md:w-auto font-semibold transition-all border duration-200 active:scale-95 cursor-pointer hover:border-border2 bg-blue-400"
 		>
 			{pending ? (
 				<>
@@ -25,7 +25,7 @@ export function SubmitButton({ label }: { label: string }) {
 				</>
 			) : (
 				<>
-					<Plus className="mr-2 h-4 w-4 " />
+					{/* <Plus className="mr-2 h-4 w-4 " /> */}
 					{label}
 				</>
 			)}

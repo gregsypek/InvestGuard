@@ -5,15 +5,33 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORY_ASSETS } from "@/lib/constants";
+import { useSearchParams } from "next/navigation";
+import Cookies from "js-cookie";
+import { SubmitButton } from "../SubmitButton";
+import { toast } from "sonner";
+import { useRef, useState } from "react";
 
-interface PortfolioOption {
-	id: string;
-	name: string;
-}
-interface AddAssetFormProps {
-	portfolios: PortfolioOption[];
-}
-export default function AddAssetForm({ portfolios }: AddAssetFormProps) {
+export default function AddAssetForm() {
+	const formRef = useRef<HTMLFormElement>(null);
+
+	const [isPending, setIsPending] = useState(false);
+
+	async function clientAction(formData: FormData) {
+		setIsPending(true); // Zaczynamy wysyłkę ⏳
+		const result = await addAssetAction(formData);
+		setIsPending(false); // Kończymy wysyłkę ✅
+
+		if (result?.success) {
+			toast.success(result.message);
+			formRef.current?.reset();
+		} else {
+			toast.error(result.message || "Something went wrong");
+		}
+	}
+	const searchParams = useSearchParams();
+	// Pobieramy ID z URL, a jeśli go nie ma - z ciasteczka (podobnie jak w Headerze)
+	const portfolioId =
+		searchParams.get("portfolioId") || Cookies.get("selectedPortfolioId");
 	return (
 		<Card className="w-full">
 			<CardHeader>
@@ -22,31 +40,24 @@ export default function AddAssetForm({ portfolios }: AddAssetFormProps) {
 			<CardContent>
 				{/* Using the action directly in the form */}
 				<form
-					action={addAssetAction}
+					ref={formRef}
+					action={clientAction}
 					className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end"
 				>
-					<div className="space-y-2">
-						<label className="text-sm font-medium">Portfolio</label>
-						<select
-							name="portfolioId"
-							required
-							className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-						>
-							<option value="">Select a portfolio</option>
-							{portfolios.map((p) => (
-								<option key={p.id} value={p.id}>
-									{p.name}
-								</option>
-							))}
-						</select>
-					</div>
+					{/* Hidden field that will be sent with the formData */}
+					<input type="hidden" name="portfolioId" value={portfolioId || ""} />
 					<div className="space-y-2">
 						<label className="text-sm font-medium">Name</label>
-						<Input name="name" placeholder="e.g. iShares MSCI EM" required />
+						<Input
+							name="name"
+							placeholder="e.g. iShares MSCI EM"
+							required
+							disabled={isPending}
+						/>
 					</div>
 					<div className="space-y-2">
 						<label className="text-sm font-medium">Ticker</label>
-						<Input name="ticker" placeholder="EIMI.L" />
+						<Input name="ticker" placeholder="EIMI.L" disabled={isPending} />
 					</div>
 					<div className="space-y-2">
 						<label className="text-sm font-medium">Value (PLN)</label>
@@ -56,6 +67,7 @@ export default function AddAssetForm({ portfolios }: AddAssetFormProps) {
 							step="0.01"
 							placeholder="5000"
 							required
+							disabled={isPending}
 						/>
 					</div>
 					<div className="space-y-2">
@@ -71,12 +83,13 @@ export default function AddAssetForm({ portfolios }: AddAssetFormProps) {
 							))}
 						</select>
 					</div>
-					<Button
+					{/* <Button
 						type="submit"
 						className="w-full bg-portfolio-bonds hover:bg-portfolio-gold text-sidebar"
 					>
 						Save Asset
-					</Button>
+					</Button> */}
+					<SubmitButton label="Save Asset" />
 				</form>
 			</CardContent>
 		</Card>

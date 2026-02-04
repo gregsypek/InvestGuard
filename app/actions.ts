@@ -29,8 +29,11 @@ export async function addAssetAction(formData: FormData) {
 
 		// Refreshing the dashboard to show the newly added asset
 		revalidatePath("/dashboard");
+		// Returning a success message for the client
+		return { success: true, message: "Asset added successfully! 🚀" };
 	} catch (error) {
-		// Logging any errors that occur during the database operation
 		console.error("Database error while adding asset:", error);
+		// Returning an error message for the client
+		return { success: false, message: "Failed to add asset. ❌" };
 	}
 }

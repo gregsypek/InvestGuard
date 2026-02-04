@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
 	LayoutDashboard,
 	Rocket,
@@ -21,6 +21,8 @@ const NAV_ITEMS = [
 
 const Aside = () => {
 	const pathname = usePathname();
+	const searchParams = useSearchParams();
+	const portfolioId = searchParams.get("portfolioId");
 
 	return (
 		<aside className="w-64 flex flex-col bg-sidebar text-sidebar-foreground border-r border-border">
@@ -39,11 +41,17 @@ const Aside = () => {
 			{/* Navigation */}
 			<nav className="flex-1 px-4 py-4 space-y-1">
 				{NAV_ITEMS.map((item) => {
-					const isActive = pathname === item.href;
+					const isActive = pathname.startsWith(item.href);
+
+					// 2. Tworzymy nowy adres URL z zachowaniem portfolioId
+					// Jeśli portfolioId istnieje, dodajemy go jako parametr ?portfolioId=...
+					const hrefWithQuery = portfolioId
+						? `${item.href}?portfolioId=${portfolioId}`
+						: item.href;
 					return (
 						<Link
 							key={item.href}
-							href={item.href}
+							href={hrefWithQuery}
 							className={cn(
 								"flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
 								isActive

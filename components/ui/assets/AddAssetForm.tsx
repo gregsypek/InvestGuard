@@ -2,7 +2,6 @@
 
 import { addAssetAction } from "@/app/actions";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORY_ASSETS } from "@/lib/constants";
 import { useSearchParams } from "next/navigation";
@@ -83,12 +82,7 @@ export default function AddAssetForm() {
 							))}
 						</select>
 					</div>
-					{/* <Button
-						type="submit"
-						className="w-full bg-portfolio-bonds hover:bg-portfolio-gold text-sidebar"
-					>
-						Save Asset
-					</Button> */}
+
 					<SubmitButton label="Save Asset" />
 				</form>
 			</CardContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import Cookies from "js-cookie";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -13,39 +14,65 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation"; // Dodaj useSearchParams
 import { SubmitButton } from "./ui/SubmitButton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-
 import { createPortfolio } from "@/lib/actions/portfolio.actions";
 import {
 	PortfolioFormValues,
 	PortfolioSchema,
 } from "@/lib/validations/portfolio";
-/* Validation schema using the logic we discussed:
-  Empty string for goal is transformed to undefined (null in DB)
-*/
+import { useEffect } from "react";
 
-export default function PortfolioForm() {
+interface PortfolioFormProps {
+	initialData?: any;
+	portfolioId?: string;
+}
+
+export default function PortfolioForm({
+	initialData,
+	portfolioId: initialPortfolioId, // Zmieniamy nazwę, bo ID może przyjść z propa LUB z cookie
+}: PortfolioFormProps) {
 	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
 
-	// Explicitly tell useForm to use PortfolioFormValues
+	// 1. Logika priorytetów: Prop (URL) -> Ciasteczko -> Pusto
+	const effectivePortfolioId =
+		initialPortfolioId || Cookies.get("selectedPortfolioId");
+
 	const form = useForm({
 		resolver: zodResolver(PortfolioSchema),
 		defaultValues: {
 			name: "",
 			description: "",
-			goal: "", // Start with undefined for the preprocess to work
+			goal: "",
 		},
 	});
 
+	// 2. Synchronizacja URL z effectivePortfolioId
+	useEffect(() => {
+		// Jeśli mamy ID (np. z ciasteczka), ale nie ma go w URL, to je tam wkładamy
+		if (effectivePortfolioId && !searchParams.get("portfolioId")) {
+			const params = new URLSearchParams(searchParams.toString());
+			params.set("portfolioId", effectivePortfolioId);
+
+			// Używamy router.replace zamiast window.history,
+			// dzięki temu Header (który słucha useSearchParams) od razu "wyłapie" zmianę!
+			router.replace(`${pathname}?${params.toString()}`);
+		}
+	}, [effectivePortfolioId, pathname, router, searchParams]);
+
 	async function onSubmit(values: PortfolioFormValues) {
 		const result = await createPortfolio(values);
-		if (result.success) {
-			toast.success("Portfolio created successfully!");
-			router.push("/portfolios"); // Go back to the list
+
+		if (result.success && result.id) {
+			toast.success("Portfolio created successfully! 🚀");
+			// Aktualizujemy też ciasteczko na nowe ID przy okazji przekierowania
+			Cookies.set("selectedPortfolioId", result.id);
+			router.push(`/portfolios?portfolioId=${result.id}`);
 		} else {
-			toast.error(result.error || "Something went wrong");
+			toast.error(result.error || "Something went wrong ❌");
 		}
 	}
 
@@ -59,6 +86,8 @@ export default function PortfolioForm() {
 			<CardContent className="px-6">
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+						{/* <div className="hidden">{console.log("Form Context ID:", effectivePortfolioId)}</div> */}
+
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
 							<FormField
 								control={form.control}
@@ -76,7 +105,6 @@ export default function PortfolioForm() {
 									</FormItem>
 								)}
 							/>
-
 							<FormField
 								control={form.control}
 								name="goal"
@@ -115,8 +143,12 @@ export default function PortfolioForm() {
 								</FormItem>
 							)}
 						/>
+
 						<div className="flex-end">
-							<SubmitButton label="Create Portfolio" />
+							<SubmitButton
+								label="Create Portfolio"
+								isLoading={form.formState.isSubmitting}
+							/>
 						</div>
 					</form>
 				</Form>

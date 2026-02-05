@@ -59,58 +59,65 @@ export default async function PortfoliosPage() {
 					const progress = p.goal ? (totalValue / p.goal) * 100 : 0;
 
 					return (
-						<Card
-							key={p.id}
-							className="hover:bg-foreground/10 transition-colors cursor-pointer border-border2"
-						>
-							<CardHeader>
-								<CardTitle className="flex justify-between items-start">
-									<span className="truncate">{p.name}</span>
-									<span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-1 rounded">
-										{p.assets.length} Assets
-									</span>
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4 flex flex-col flex-1">
-								<div>
-									<p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">
-										Total Value
-									</p>
-									<p className="text-2xl font-bold text-primary">
-										{totalValue.toLocaleString()} PLN
-									</p>
-								</div>
-
-								{p.goal ? (
-									<div className="space-y-2">
-										<div className="flex justify-between text-xs">
-											<span className="text-muted-foreground">
-												Progress to goal ({p.goal.toLocaleString()} PLN)
-											</span>
-											<span className="font-bold">{progress.toFixed(1)}%</span>
-										</div>
-										<Progress value={Math.min(progress, 100)} className="h-2" />
-										{progress > 100 && (
-											<p className="text-[10px] text-green-500 font-bold uppercase">
-												Goal Exceeded! 🚀
-											</p>
-										)}
-									</div>
-								) : (
-									<div className="text-xs flex grow ">
-										<span className="text-muted-foreground ">
-											No progress goal set.
+						<Link key={p.id} href={`/dashboard?portfolioId=${p.id}`}>
+							<Card
+								key={p.id}
+								className="hover:bg-foreground/10 transition-colors cursor-pointer border-border2"
+							>
+								<CardHeader>
+									<CardTitle className="flex justify-between items-start">
+										<span className="truncate">{p.name}</span>
+										<span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-1 rounded">
+											{p.assets.length} Assets
 										</span>
+									</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-4 flex flex-col flex-1">
+									<div>
+										<p className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">
+											Total Value
+										</p>
+										<p className="text-2xl font-bold text-primary">
+											{totalValue.toLocaleString()} PLN
+										</p>
 									</div>
-								)}
 
-								{p.description && (
-									<p className="text-sm text-muted-foreground italic line-clamp-2 pt-2 border-t border-border2">
-										{p.description}
-									</p>
-								)}
-							</CardContent>
-						</Card>
+									{p.goal ? (
+										<div className="space-y-2">
+											<div className="flex justify-between text-xs">
+												<span className="text-muted-foreground">
+													Progress to goal ({p.goal.toLocaleString()} PLN)
+												</span>
+												<span className="font-bold">
+													{progress.toFixed(1)}%
+												</span>
+											</div>
+											<Progress
+												value={Math.min(progress, 100)}
+												className="h-2"
+											/>
+											{progress > 100 && (
+												<p className="text-[10px] text-green-500 font-bold uppercase">
+													Goal Exceeded! 🚀
+												</p>
+											)}
+										</div>
+									) : (
+										<div className="text-xs flex grow ">
+											<span className="text-muted-foreground ">
+												No progress goal set.
+											</span>
+										</div>
+									)}
+
+									{p.description && (
+										<p className="text-sm text-muted-foreground italic line-clamp-2 pt-2 border-t border-border2">
+											{p.description}
+										</p>
+									)}
+								</CardContent>
+							</Card>
+						</Link>
 					);
 				})}
 			</div>

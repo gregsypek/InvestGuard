@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { PortfolioFormValues, PortfolioSchema } from "../validations/portfolio";
 
 export async function createPortfolio(values: PortfolioFormValues) {
-	// Validate data on the server side using the same schema
 	const validatedFields = PortfolioSchema.safeParse(values);
 
 	if (!validatedFields.success) {
@@ -15,17 +14,30 @@ export async function createPortfolio(values: PortfolioFormValues) {
 	const { name, description, goal } = validatedFields.data;
 
 	try {
-		await db.portfolio.create({
+		// 1. Capture the created portfolio object
+		const newPortfolio = await db.portfolio.create({
 			data: {
 				name,
 				description: description || null,
-				goal: goal ?? null, // Save as null if goal is undefined
+				goal: goal ?? null,
+				// We must link the portfolio to a user
+				user: {
+					connect: {
+						id: "1", //TODO: You need to get this from your auth session
+					},
+				},
 			},
 		});
 
 		revalidatePath("/portfolios");
-		return { success: true };
-	} catch {
+
+		// 2. Return the new ID to the client
+		return {
+			success: true,
+			id: newPortfolio.id, // Pass the ID for redirection
+		};
+	} catch (error) {
+		console.error("Prisma Error:", error);
 		return { error: "There was an error during saving in database" };
 	}
 }

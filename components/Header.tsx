@@ -17,11 +17,8 @@ export default function Header({
 }: HeaderProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const currentId = searchParams.get("portfolioId");
 
-	// const handlePortfolioChange = (id: string) => {
-	// 	// Navigate to the same page but with a new query parameter
-	// 	router.push(`/dashboard?portfolioId=${id}`);
-	// };
 	const handlePortfolioChange = (id: string) => {
 		// 1. Zapisujemy w ciasteczku, żeby serwer wiedział o tym przy następnym wejściu
 		Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
@@ -37,7 +34,7 @@ export default function Header({
 
 	// Wyliczamy wartość, którą select ma wyświetlić "tu i teraz"
 	const displayValue =
-		searchParams.get("portfolioId") || selectedPortfolioId || "";
+		searchParams.get("portfolioId") || currentId || selectedPortfolioId || "";
 	return (
 		<header className="flex justify-between items-center p-2  border-border  bg-background text-foreground border-b">
 			{/* <h1 className="text-xl font-bold">My Wallets</h1> */}

@@ -5,7 +5,8 @@ export type AssetCategory =
 	| "DEVELOPED"
 	| "EMERGING"
 	| "GOLD"
-	| "BOOSTER";
+	| "BOOSTER"
+	| "CASH";
 
 export const MODEL_ALLOCATION = [
 	{ name: "Bonds", weight: 55, color: "bg-portfolio-bonds" },
@@ -13,6 +14,8 @@ export const MODEL_ALLOCATION = [
 	{ name: "Emerging", weight: 15, color: "bg-portfolio-emerging" },
 	{ name: "Gold", weight: 10, color: "bg-portfolio-gold" },
 	{ name: "Booster", weight: 5, color: "bg-portfolio-booster" },
+	{ name: "Gold", weight: 10, color: "bg-portfolio-gold" },
+	{ name: "Cash", weight: 0, color: "bg-portfolio-cash" },
 ];
 
 export interface Asset {
@@ -20,7 +23,7 @@ export interface Asset {
 	name: string; // np. "iShares Physical Gold"
 	ticker?: string; // np. "IGLN.L"
 	category: AssetCategory;
-	value: number; 
+	value: number;
 	targetPercentage: number; // np. 10 (for gold)
 }
 
@@ -68,3 +71,15 @@ export interface CategoryStatus extends CategoryConfig {
 	differencePLN: number;
 	differenceWeight: number;
 }
+
+export interface Portfolio {
+	id: string;
+	name: string;
+	description?: string | null;
+	goal?: number | null;
+	assets: Asset[];
+}
+export type ActionResponse = {
+	success?: boolean;
+	error?: string;
+};

@@ -41,3 +41,49 @@ export async function createPortfolio(values: PortfolioFormValues) {
 		return { error: "There was an error during saving in database" };
 	}
 }
+
+export async function updatePortfolio(id: string, values: PortfolioFormValues) {
+	// 1. Walidacja danych po stronie serwera
+	const validatedFields = PortfolioSchema.safeParse(values);
+
+	if (!validatedFields.success) {
+		return { error: "Niepoprawne dane" };
+	}
+
+	const { name, description, goal } = validatedFields.data;
+
+	try {
+		// 2. Aktualizacja rekordu w bazie danych 🗄️
+		await db.portfolio.update({
+			where: { id },
+			data: {
+				name,
+				description: description || null,
+				goal: goal ?? null,
+			},
+		});
+
+		// 3. Odświeżenie cache'u, aby zmiany były widoczne 🔄
+		revalidatePath("/portfolios");
+		revalidatePath("/dashboard");
+
+		return { success: true };
+	} catch (error) {
+		console.error("Prisma Error:", error);
+		return { error: "Błąd podczas aktualizacji bazy danych" };
+	}
+}
+
+export async function deletePortfolio(id: string) {
+	try {
+		await db.portfolio.delete({
+			where: { id },
+		});
+
+		revalidatePath("/portfolios");
+		return { success: true };
+	} catch (error) {
+		console.error("Delete error:", error);
+		return { error: "Nie udało się usunąć portfela." };
+	}
+}

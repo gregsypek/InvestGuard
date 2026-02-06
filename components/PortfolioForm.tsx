@@ -17,17 +17,26 @@ import { toast } from "sonner";
 import { usePathname, useRouter, useSearchParams } from "next/navigation"; // Dodaj useSearchParams
 import { SubmitButton } from "./ui/SubmitButton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { createPortfolio } from "@/lib/actions/portfolio.actions";
+import {
+	createPortfolio,
+	updatePortfolio,
+} from "@/lib/actions/portfolio.actions";
 import {
 	PortfolioFormValues,
 	PortfolioSchema,
 } from "@/lib/validations/portfolio";
 import { useEffect } from "react";
+import { Portfolio } from "@/lib/types";
 
 interface PortfolioFormProps {
-	initialData?: any;
 	portfolioId?: string;
+	initialData?: Portfolio;
 }
+export type PortfolioActionResponse = {
+	success: boolean;
+	id?: string; // id jest opcjonalne, bo update może go nie zwracać
+	error?: string;
+};
 
 export default function PortfolioForm({
 	initialData,
@@ -36,6 +45,7 @@ export default function PortfolioForm({
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
+	const isEditMode = !!initialData?.id;
 
 	// 1. Logika priorytetów: Prop (URL) -> Ciasteczko -> Pusto
 	const effectivePortfolioId =
@@ -44,9 +54,9 @@ export default function PortfolioForm({
 	const form = useForm({
 		resolver: zodResolver(PortfolioSchema),
 		defaultValues: {
-			name: "",
-			description: "",
-			goal: "",
+			name: initialData?.name ?? "",
+			description: initialData?.description ?? "",
+			goal: initialData?.goal ?? "",
 		},
 	});
 
@@ -64,18 +74,33 @@ export default function PortfolioForm({
 	}, [effectivePortfolioId, pathname, router, searchParams]);
 
 	async function onSubmit(values: PortfolioFormValues) {
-		const result = await createPortfolio(values);
+		// 1. Wybieramy odpowiednią akcję
+		const result = initialData?.id
+			? await updatePortfolio(initialData.id, values)
+			: await createPortfolio(values);
 
-		if (result.success && result.id) {
-			toast.success("Portfolio created successfully! 🚀");
-			// Aktualizujemy też ciasteczko na nowe ID przy okazji przekierowania
-			Cookies.set("selectedPortfolioId", result.id);
-			router.push(`/portfolios?portfolioId=${result.id}`);
+		if (result.success) {
+			toast.success(
+				initialData?.id ? "Portfolio updated! ✏️" : "Portfolio created! 🚀",
+			);
+
+			// 2. Ustalamy ID do przekierowania
+			// Jeśli to był nowy portfel, bierzemy ID z wyniku. Jeśli edycja - mamy je w initialData.
+			const targetId =
+				(result as PortfolioActionResponse).id || initialData?.id;
+
+			if (targetId) {
+				// Jeśli mamy ID, odświeżamy dane i kierujemy na dashboard
+				router.push(`/portfolios?portfolioId=${targetId}`);
+				router.refresh(); // Wymusza odświeżenie komponentów serwerowych jak Header
+			} else {
+				// Failsafe: jeśli coś poszło nie tak z ID, wracamy do listy
+				router.push("/portfolios");
+			}
 		} else {
 			toast.error(result.error || "Something went wrong ❌");
 		}
 	}
-
 	return (
 		<Card className="bg-card border-border2 shadow-sm rounded-xl py-6 mb-8">
 			<CardHeader className="px-6 py-0 mb-2">
@@ -146,7 +171,7 @@ export default function PortfolioForm({
 
 						<div className="flex-end">
 							<SubmitButton
-								label="Create Portfolio"
+								label={`${isEditMode ? "Update Portfolio" : "Create Portfolio"}`}
 								isLoading={form.formState.isSubmitting}
 							/>
 						</div>

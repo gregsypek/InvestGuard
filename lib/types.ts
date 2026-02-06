@@ -32,7 +32,7 @@ export interface Portfolio {
 	name: string; // np. "Moje IKE", "Long term portfolio"
 	userId: string;
 	assets: Asset[];
-	currency: "PLN" | "USD" | "EUR";
+	currency?: "PLN" | "USD" | "EUR";
 }
 
 export interface StockPrice {

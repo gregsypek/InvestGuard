@@ -23,28 +23,9 @@ export default function CategoryHealthTable({ assets }: Props) {
 				</thead>
 				<tbody className="divide-y divide-slate-200 bg-white">
 					{MODEL_ALLOCATION.map((modelItem) => {
-						// 1. Filter all assets belonging to this specific category
-						// We map "Developed" from model to "DEVELOPED" from assets
-						// const categoryAssets = assets.filter((a) => {
-						// 	if (modelItem.name === "Bonds") return a.category === "BONDS";
-						// 	if (modelItem.name === "Developed")
-						// 		return a.category === "DEVELOPED";
-						// 	if (modelItem.name === "Emerging")
-						// 		return a.category === "EMERGING";
-						// 	if (modelItem.name === "Gold") return a.category === "GOLD";
-						// 	if (modelItem.name === "Booster") return a.category === "BOOSTER";
-						// 	return false;
-						// });
-						const categoryAssets = assets.filter((a) => {
-							if (modelItem.name.toUpperCase() === a.category)
-								return a.category;
-							return false;
-						});
-						console.log(
-							"🚀 ~ CategoryHealthTable ~ categoryAssets:",
-							categoryAssets,
+						const categoryAssets = assets.filter(
+							(a) => a.category === modelItem.name.toUpperCase(),
 						);
-						console.log("🚀 ~ CategoryHealthTable ~ assets:", assets);
 
 						// 2. Sum the values for the whole category (e.g., 2050 + 480)
 						const categoryAmount = categoryAssets.reduce(
@@ -68,7 +49,9 @@ export default function CategoryHealthTable({ assets }: Props) {
 								className="hover:bg-slate-50 transition-colors"
 							>
 								<td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-3">
-									<span className={`w-2 h-2 rounded-full ${modelItem.color}`} />
+									<span
+										className={`w-3 h-3 rounded-full ${modelItem.color.toLowerCase()}`}
+									/>
 									<span className="font-semibold text-slate-900">
 										{modelItem.name}
 									</span>
@@ -77,7 +60,7 @@ export default function CategoryHealthTable({ assets }: Props) {
 									{modelItem.weight}%
 								</td>
 								<td className="px-6 py-4 text-right font-mono text-slate-700">
-									{currentPercentage.toFixed(2)}%
+									{currentPercentage.toFixed(2)}
 								</td>
 								<td
 									className={`px-6 py-4 text-right font-bold ${deviation > 0 ? "text-green-600" : "text-rose-600"}`}

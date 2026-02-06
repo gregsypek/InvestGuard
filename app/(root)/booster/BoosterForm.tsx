@@ -7,7 +7,6 @@ import { BoosterSchema, TIME_HORIZONS } from "@/lib/validations/booster";
 import { createBoosterAsset } from "@/lib/actions/booster.actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
@@ -54,7 +53,7 @@ export default function BoosterForm() {
 
 	return (
 		<Card className="bg-card border-border2 shadow-sm rounded-xl py-6 mb-8">
-			<CardHeader className="px-6 py-0 mb-4">
+			<CardHeader className="px-6 py-0 mb-2">
 				<CardTitle className="leading-none font-semibold">
 					Dodaj nową okazję (Booster)
 				</CardTitle>

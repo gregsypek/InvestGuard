@@ -11,7 +11,8 @@ import BoosterForm from "./BoosterForm";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { DeleteAssetButton } from "@/components/DeleteAssetButton";
+import { DeleteButton } from "@/components/DeleteButton";
+import { deleteBoosterAsset } from "@/lib/actions/booster.actions";
 
 /* Configuration for Time Horizons with colors and English descriptions */
 const HORIZON_MAP = {
@@ -110,7 +111,11 @@ export default async function BoosterPage() {
 											{asset.value.toLocaleString()} PLN
 										</TableCell>
 										<TableCell className="py-4 text-right">
-											<DeleteAssetButton id={asset.id} />
+											<DeleteButton
+												id={asset.id}
+												confirmMsg="Are you sure you want to remove this opportunity?"
+												onDelete={deleteBoosterAsset}
+											/>
 										</TableCell>
 									</TableRow>
 								);

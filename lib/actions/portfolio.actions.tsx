@@ -87,3 +87,16 @@ export async function deletePortfolio(id: string) {
 		return { error: "Nie udało się usunąć portfela." };
 	}
 }
+export async function deleteAsset(assetId: string) {
+	try {
+		await db.asset.delete({
+			where: { id: assetId },
+		});
+
+		revalidatePath("/dashboard");
+
+		return { success: true };
+	} catch {
+		return { success: false, error: "Failed to delete asset" };
+	}
+}

@@ -23,7 +23,7 @@ export function DeleteButton({ id, onDelete, confirmMsg }: DeleteButtonProps) {
 				const result = await onDelete(id);
 				// Sprawdzamy, czy success jest dokładnie równe true
 				if (result && result.success === true) {
-					toast.success("Success!");
+					toast.success("Deleted successfully");
 				} else {
 					toast.error(result.error || "An error occurred");
 				}

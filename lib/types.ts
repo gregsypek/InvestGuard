@@ -1,4 +1,4 @@
-import { Category } from "@prisma/client";
+import { Category, Prisma } from "@prisma/client";
 
 export type AssetCategory =
 	| "BONDS"
@@ -83,3 +83,8 @@ export type ActionResponse = {
 	success?: boolean;
 	error?: string;
 };
+
+// To stworzy typ dokładnie taki, jaki zwraca zapytanie z "include: { assets: true }"
+export type PortfolioWithAssets = Prisma.PortfolioGetPayload<{
+	include: { assets: true };
+}>;

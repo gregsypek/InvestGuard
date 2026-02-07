@@ -39,12 +39,12 @@ const PortfolioCard = ({ portfolio: p }: PortfolioCardProps) => {
 						<Button
 							variant="ghost"
 							size="icon"
-							className="h-8 w-8 text-muted-foreground hover:text-primary"
+							className="h-8 w-8 text-muted-foreground hover:text-blue-600 group"
 							asChild
 							onClick={(e) => e.stopPropagation()} // Zapobiega przejściu do dashboardu
 						>
 							<Link href={`/portfolios/edit/${id}`}>
-								<Pencil className="h-4 w-4" />
+								<Pencil className="h-4 w-4 group-hover:scale-110" />
 							</Link>
 						</Button>
 						<DeleteButton

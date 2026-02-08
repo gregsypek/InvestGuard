@@ -4,16 +4,14 @@ import { addAssetAction } from "@/app/actions";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORY_ASSETS } from "@/lib/constants";
-import { useSearchParams } from "next/navigation";
-import Cookies from "js-cookie";
 import { SubmitButton } from "../SubmitButton";
 import { toast } from "sonner";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function AddAssetForm() {
+export default function AddAssetForm({ portfolioId }: { portfolioId: string }) {
+	const router = useRouter();
 	const formRef = useRef<HTMLFormElement>(null);
-
 	const [isPending, setIsPending] = useState(false);
 
 	async function clientAction(formData: FormData) {
@@ -24,16 +22,24 @@ export default function AddAssetForm() {
 		if (result?.success) {
 			toast.success(result.message);
 			formRef.current?.reset();
+			// Dajemy użytkownikowi pół sekundy na przeczytanie toasta
+			// setTimeout(() => {
+			router.push(
+				`/dashboard?portfolioId=${result.portfolioId}&newAssetId=${result.newAssetId}`,
+			);
+			// }, 800);
 		} else {
-			toast.error(result.message || "Something went wrong");
+			setIsPending(false);
+			toast.error(result?.message || "Something went wrong");
 		}
 	}
-	const searchParams = useSearchParams();
-	// Pobieramy ID z URL, a jeśli go nie ma - z ciasteczka (podobnie jak w Headerze)
-	const portfolioId =
-		searchParams.get("portfolioId") || Cookies.get("selectedPortfolioId");
+	// const searchParams = useSearchParams();
+	// // Pobieramy ID z URL, a jeśli go nie ma - z ciasteczka (podobnie jak w Headerze)
+	// const portfolioId =
+	// 	searchParams.get("portfolioId") || Cookies.get("selectedPortfolioId");
+
 	return (
-		<Card className="w-full">
+		<Card className="w-full shadow-lg border-border2">
 			<CardHeader>
 				<CardTitle>Add New Investment</CardTitle>
 			</CardHeader>
@@ -45,7 +51,7 @@ export default function AddAssetForm() {
 					className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end"
 				>
 					{/* Hidden field that will be sent with the formData */}
-					<input type="hidden" name="portfolioId" value={portfolioId || ""} />
+					<input type="hidden" name="portfolioId" value={portfolioId} />
 					<div className="space-y-2">
 						<label className="text-sm font-medium">Name</label>
 						<Input

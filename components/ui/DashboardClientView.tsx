@@ -5,13 +5,21 @@ import { CategoryStatus, PortfolioWithAssets } from "@/lib/types";
 import PortfolioCharts from "../PortfolioCharts";
 import { DeleteButton } from "../DeleteButton";
 import { deleteAsset } from "@/lib/actions/portfolio.actions";
-import { ArrowRightCircle, Plus, Target, Wallet2 } from "lucide-react";
+import {
+	ArrowRightCircle,
+	Circle,
+	Plus,
+	Star,
+	Target,
+	Wallet2,
+} from "lucide-react";
 import { Button } from "./button";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import AddAssetForm from "./assets/AddAssetForm";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { COLORS } from "@/lib/constants";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
@@ -22,6 +30,8 @@ export default function DashboardClientView({
 	portfolio,
 	portfolioStatus,
 }: Props) {
+	const searchParams = useSearchParams();
+	const highlightedId = searchParams.get("newAssetId");
 	// Obliczamy dane do nagłówka
 	const { goal, assets, name } = portfolio;
 	const totalValue = portfolio.assets.reduce((sum, a) => sum + a.value, 0);
@@ -42,7 +52,7 @@ export default function DashboardClientView({
 			<header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 				<div>
 					<nav className="text-sm text-muted-foreground mb-1">
-						Portfolios / {name}
+						Dashboard / {name}
 					</nav>
 					<h1 className="h1-bold text-3xl">{name.toUpperCase()} Dashboard</h1>
 				</div>
@@ -122,41 +132,65 @@ export default function DashboardClientView({
 					<div className="flex justify-between items-center">
 						<h2 className="text-xl font-bold">Your Assets</h2>
 						<Button size="sm" variant="outline" className="h-8 gap-1" asChild>
-							<Link href={`/portfolios/${portfolio.id}/add-asset`}>
+							<Link href={`/dashboard/${portfolio.id}/add-asset`}>
 								<Plus className="h-4 w-4" /> Add
 							</Link>
 						</Button>
 					</div>
 
-					<div className="space-y-3">
-						{assets.map((asset) => (
-							<div
-								key={asset.id}
-								className="bg-card border border-border2 p-3 rounded-lg flex justify-between items-center group"
-							>
-								<div>
-									<p className="font-bold text-sm">{asset.name}</p>
-									<p className="text-xs text-muted-foreground">
-										{asset.category}
-									</p>
+					<div className="space-y-3 ">
+						{assets.map((asset) => {
+							console.log("🚀 ~ DashboardClientView ~ asset:", asset);
+							const isHighlighted = asset.id === highlightedId;
+							return (
+								<div
+									key={asset.id}
+									className={cn(
+										"bg-card border p-3 rounded-lg flex justify-between items-center transition-all duration-500 relative",
+										isHighlighted
+											? "border-blue-500 bg-blue-500/5 shadow-[0_0_15px_rgba(37,99,235,0.15)]"
+											: "border-border2",
+									)}
+								>
+									{/* LEWA STRONA: Gwiazdka + Nazwa/Kategoria */}
+									<div className="flex items-center gap-3">
+										{isHighlighted && (
+											<Star className="h-4 w-4 fill-blue-500 text-blue-500 animate-pulse absolute left-0 top-0 -translate-y-1/2 -translate-x-1/2" />
+										)}
+										<div>
+											<p
+												className={`font-bold text-sm flex items-center gap-2 text-portfolio-${asset.name}`}
+											>
+												{asset.name}
+											</p>
+											<div className="flex items-center gap-2 ">
+												<Circle
+													className="w-3 h-3 "
+													fill={COLORS[asset.category as keyof typeof COLORS]}
+												/>
+												<p className="text-xs text-muted-foreground">
+													{asset.category}
+												</p>
+											</div>
+										</div>
+									</div>
+									{/* PRAWA STRONA: Kwota + Przycisk usuwania */}
+									<div className="flex items-center gap-3">
+										<p className="font-semibold text-sm">
+											{asset.value.toLocaleString()} PLN
+										</p>
+										<DeleteButton
+											id={asset.id}
+											onDelete={deleteAsset}
+											confirmMsg={`Delete ${asset.name}?`}
+										/>
+									</div>
 								</div>
-								<div className="flex items-center gap-3">
-									<p className="font-semibold text-sm">
-										{asset.value.toLocaleString()} PLN
-									</p>
-									<DeleteButton
-										id={asset.id}
-										onDelete={deleteAsset}
-										confirmMsg={`Delete ${asset.name}?`}
-									/>
-								</div>
-							</div>
-						))}
+							);
+						})}
 					</div>
 				</aside>
 			</div>
-			{/* Form to add new EDO, ETF or Gold */}
-			<AddAssetForm />
 		</div>
 	);
 }

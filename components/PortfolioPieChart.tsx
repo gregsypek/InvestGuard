@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryStatus } from "@/lib/types";
+import { COLORS } from "@/lib/constants";
 function PortfolioPieChart({
 	title,
 	dataKey,
@@ -22,14 +23,7 @@ function PortfolioPieChart({
 	// const assets = await db.asset.findMany();
 	// console.log("🚀 ~ DashboardPage ~ assets:", assets);
 	// Mapping our OKLCH variables from globals.css to hex/css values for Recharts
-	// In Tailwind v4, we can use CSS variables directly
-	const COLORS = {
-		BONDS: "var(--color-portfolio-bonds)",
-		DEVELOPED: "var(--color-portfolio-developed)",
-		EMERGING: "var(--color-portfolio-emerging)",
-		GOLD: "var(--color-portfolio-gold)",
-		BOOSTER: "var(--color-portfolio-booster)",
-	};
+
 	// const data = calculateGapAnalysis(assets);
 	return (
 		<Card key={title} className="bg-card border-border2 shadow-sm">

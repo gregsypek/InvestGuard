@@ -30,7 +30,7 @@ import { Portfolio } from "@/lib/types";
 
 interface PortfolioFormProps {
 	portfolioId?: string;
-	initialData?: Portfolio;
+	initialData?: Omit<Portfolio, "assets">;
 }
 export type PortfolioActionResponse = {
 	success: boolean;

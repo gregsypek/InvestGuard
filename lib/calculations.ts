@@ -1,7 +1,7 @@
 // lib/calculations.ts
 import { Asset } from "@prisma/client";
 import { MODEL_ALLOCATION } from "./constants";
-import { CategoryStatus } from "./types";
+import { CategoryStatus, PortfolioWithAssets } from "./types";
 
 /**
  * Calculates the gap between the current portfolio and the target model.
@@ -31,4 +31,26 @@ export function calculateGapAnalysis(assets: Asset[]): CategoryStatus[] {
 			differencePLN,
 		};
 	});
+}
+
+export function getPortfolioStats(portfolio: PortfolioWithAssets) {
+	const { goal, name, assets } = portfolio;
+
+	// 1. Sumujemy wartość wszystkich aktywów 💰
+	const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+
+	// 2. Obliczamy postęp (wartość 0-100+) 📈
+	// Używamy Math.max, aby uniknąć problemów, gdyby cel był ujemny
+	const progress = goal && goal > 0 ? (totalValue * 100) / goal : 0;
+
+	// 3. Obliczamy ile brakuje do celu 🎯
+	const remaining = goal ? Math.max(0, goal - totalValue) : 0;
+
+	return {
+		name,
+		totalValue,
+		goal: goal || 0,
+		progress,
+		remaining,
+	};
 }

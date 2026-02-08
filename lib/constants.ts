@@ -14,6 +14,7 @@ export const CATEGORY_ASSETS: AssetCategory[] = [
 	"EMERGING",
 	"GOLD",
 	"BOOSTER",
+	"CASH",
 ];
 
 export const mockAssets: Asset[] = [
@@ -109,3 +110,12 @@ export const MODEL_ALLOCATION: CategoryConfig[] = [
 		color: "bg-portfolio-booster",
 	},
 ];
+
+export const COLORS = {
+	BONDS: "var(--color-portfolio-bonds)",
+	DEVELOPED: "var(--color-portfolio-developed)",
+	EMERGING: "var(--color-portfolio-emerging)",
+	GOLD: "var(--color-portfolio-gold)",
+	BOOSTER: "var(--color-portfolio-booster)",
+	CASH: "var(--color-portfolio-cash)",
+};

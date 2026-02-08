@@ -16,6 +16,7 @@ enum Category {
   EMERGING
   GOLD
   BOOSTER
+  CASH
 }
 
 enum TimeHorizon {

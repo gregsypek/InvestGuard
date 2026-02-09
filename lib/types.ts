@@ -21,7 +21,7 @@ export const MODEL_ALLOCATION = [
 export interface Asset {
 	id: string;
 	name: string; // np. "iShares Physical Gold"
-	ticker?: string; // np. "IGLN.L"
+	ticker?: string | null; // np. "IGLN.L"
 	category: AssetCategory;
 	value: number;
 	targetPercentage: number; // np. 10 (for gold)

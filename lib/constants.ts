@@ -111,7 +111,7 @@ export const MODEL_ALLOCATION: CategoryConfig[] = [
 	},
 ];
 
-export const COLORS = {
+export const COLORS: Record<string, string> = {
 	BONDS: "var(--color-portfolio-bonds)",
 	DEVELOPED: "var(--color-portfolio-developed)",
 	EMERGING: "var(--color-portfolio-emerging)",

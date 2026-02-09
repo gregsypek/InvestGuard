@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import DashboardAnalitics from "./DashboardAnalitics";
 import { DashboardHeader } from "../DashboardHeader";
 import DashboardGoal from "../DashboardGoal";
+import { getPortfolioStats } from "@/lib/calculations";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
@@ -15,12 +16,8 @@ export default function DashboardClientView({
 	portfolio,
 	portfolioStatus,
 }: Props) {
-	// Obliczamy dane do nagłówka
-	const { goal, name } = portfolio;
-	const totalValue = portfolio.assets.reduce((sum, a) => sum + a.value, 0);
-
-	const progress = goal ? (goal > 0 ? (totalValue * 100) / goal : 0) : 0;
-	const remaining = goal ? goal - totalValue : 0;
+	const { name, totalValue, progress, remaining, goal } =
+		getPortfolioStats(portfolio);
 	const [hasMounted, setHasMounted] = useState(false);
 
 	useEffect(() => {

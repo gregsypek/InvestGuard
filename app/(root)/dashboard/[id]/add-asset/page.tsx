@@ -1,5 +1,5 @@
 import AddAssetForm from "@/components/ui/assets/AddAssetForm";
-import { Library, LibrarySquareIcon } from "lucide-react";
+import { LibrarySquareIcon } from "lucide-react";
 
 interface Props {
 	params: Promise<{ id: string }>;

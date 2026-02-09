@@ -43,10 +43,16 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 			{/* 4. ASSET LIST (Boczna lista z zarządzaniem) */}
 			<aside className="space-y-6">
 				<div className="flex justify-between items-center">
-					<h2 className="text-xl font-bold">Your Assets</h2>
-					<Button size="sm" variant="outline" className="h-8 gap-1" asChild>
+					<h2 className="text-xl font-bold ">Your Assets</h2>
+					<Button
+						size="sm"
+						variant="outline"
+						className="h-8 gap-1 font-medium hover:text-blue-600 cursor-pointer"
+						asChild
+					>
 						<Link href={`/dashboard/${portfolio.id}/add-asset`}>
-							<Plus className="h-4 w-4" /> Add
+							<Plus className="h-4 w-4 " />
+							Add
 						</Link>
 					</Button>
 				</div>

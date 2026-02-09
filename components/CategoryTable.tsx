@@ -1,4 +1,3 @@
-// components/CategoryTable.tsx
 import {
 	Table,
 	TableBody,
@@ -51,9 +50,6 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 								<TableRow key={category} className="border-border2">
 									<TableCell className="font-medium">
 										<div className="flex items-center gap-2">
-											{/* Visual indicator for category */}
-											{/* <div className={`h-2 w-2 rounded-full ${colorClass}`} />
-											 */}
 											<Circle fill={colorClass} className="h-3 w-3" />
 											<span className="capitalize">
 												{category.toLowerCase()}

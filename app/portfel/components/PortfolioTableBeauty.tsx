@@ -10,6 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Circle } from "lucide-react";
 
 interface Props {
 	data: CategoryStatus[];
@@ -42,7 +43,9 @@ export default function PortfolioTableBeauty({ data }: Props) {
 								<TableCell className="font-medium">
 									<div className="flex items-center gap-2">
 										{/* Small color indicator for the category */}
-										<div className={cn("w-3 h-3 rounded-full", item.color)} />
+										<Circle
+											className={cn("w-3 h-3 rounded-full", item.color)}
+										/>
 										{item.name}
 									</div>
 								</TableCell>

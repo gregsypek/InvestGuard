@@ -105,7 +105,9 @@ export default function PortfolioForm({
 		<Card className="bg-card border-border2 shadow-sm rounded-xl py-6 mb-8">
 			<CardHeader className="px-6 py-0 mb-2">
 				<CardTitle className="leading-none font-bold">
-					Add new Portfolio
+					{isEditMode
+						? `Edit ${initialData?.name} Portfolio`
+						: "Add new Portfolio"}
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="px-6">

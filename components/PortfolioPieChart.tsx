@@ -48,7 +48,10 @@ function PortfolioPieChart({
 							{data.map((entry) => (
 								<Cell
 									key={entry.category}
-									fill={COLORS[entry.category as keyof typeof COLORS]}
+									fill={COLORS[entry.category]}
+									style={{
+										border: "1px solid black",
+									}}
 								/>
 							))}
 						</Pie>
@@ -63,7 +66,9 @@ function PortfolioPieChart({
 								borderColor: "var(--border2)",
 								borderRadius: "12px",
 							}}
-							itemStyle={{ color: "var(--foreground)" }}
+							itemStyle={{
+								color: "var(--foreground)",
+							}}
 						/>
 						<Legend iconType="circle" />
 					</PieChart>

@@ -20,7 +20,7 @@ export const DashboardHeader = ({
 						Dashboard / {name}
 					</nav>
 				)}
-				<h1 className="h1-bold text-3xl">{name.toUpperCase()} Dashboard</h1>
+				<h1 className="h1-bold text-3xl">{name}</h1>
 			</div>
 
 			<div className="flex gap-3 ">

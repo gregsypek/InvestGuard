@@ -8,16 +8,16 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { DeleteButton } from "./DeleteButton";
 import { deletePortfolio } from "@/lib/actions/portfolio.actions";
-import { Asset, Portfolio } from "@/lib/types";
+import { Asset, PortfolioWithAssets } from "@/lib/types";
 // Definiujemy typy dla danych portfela
 
 interface PortfolioCardProps {
-	portfolio: Portfolio;
+	portfolio: PortfolioWithAssets;
 }
 const PortfolioCard = ({ portfolio: p }: PortfolioCardProps) => {
-	const { id, name, goal } = p;
+	const { id, name, goal, assets } = p;
 
-	const totalValue = p.assets.reduce(
+	const totalValue = assets.reduce(
 		(sum: number, asset: Asset) => sum + asset.value,
 		0,
 	);

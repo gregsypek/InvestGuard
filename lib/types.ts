@@ -6,7 +6,9 @@ export type AssetCategory =
 	| "EMERGING"
 	| "GOLD"
 	| "BOOSTER"
-	| "CASH";
+	| "CASH"
+	| "CRYPTO"
+	| "COMMODITIES";
 
 export const MODEL_ALLOCATION = [
 	{ name: "Bonds", weight: 55, color: "bg-portfolio-bonds" },
@@ -16,6 +18,8 @@ export const MODEL_ALLOCATION = [
 	{ name: "Booster", weight: 5, color: "bg-portfolio-booster" },
 	{ name: "Gold", weight: 10, color: "bg-portfolio-gold" },
 	{ name: "Cash", weight: 0, color: "bg-portfolio-cash" },
+	{ name: "Crypto", weight: 0, color: "bg-portfolio-crypto" },
+	{ name: "Commodities", weight: 0, color: "bg-portfolio-commodities" },
 ];
 
 export interface Asset {

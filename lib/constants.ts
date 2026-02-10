@@ -15,6 +15,8 @@ export const CATEGORY_ASSETS: AssetCategory[] = [
 	"GOLD",
 	"BOOSTER",
 	"CASH",
+	"CRYPTO",
+	"COMMODITIES",
 ];
 
 export const mockAssets: Asset[] = [
@@ -118,4 +120,20 @@ export const COLORS: Record<string, string> = {
 	GOLD: "var(--color-portfolio-gold)",
 	BOOSTER: "var(--color-portfolio-booster)",
 	CASH: "var(--color-portfolio-cash)",
+	CRYPTO: "var(--color-portfolio-cash)",
+	COMMODITIES: "var(--color-portfolio-cash)",
+};
+
+export const CATEGORY_DETAILS: Record<
+	AssetCategory,
+	{ label: string; color: string; icon: string }
+> = {
+	BONDS: { label: "Obligacje", color: "bg-blue-500", icon: "🛡️" },
+	DEVELOPED: { label: "Rynki Rozwinięte", color: "bg-green-600", icon: "🏙️" },
+	EMERGING: { label: "Rynki Wschodzące", color: "bg-orange-500", icon: "🌍" },
+	GOLD: { label: "Złoto i Kruszce", color: "bg-yellow-500", icon: "💰" },
+	BOOSTER: { label: "Okazje / Inne", color: "bg-purple-500", icon: "🚀" },
+	CASH: { label: "Gotówka", color: "bg-slate-400", icon: "💵" },
+	CRYPTO: { label: "Kryptowaluty", color: "bg-blue-600", icon: "🪙" },
+	COMMODITIES: { label: "Surowce", color: "bg-brown-600", icon: "🛢️" },
 };

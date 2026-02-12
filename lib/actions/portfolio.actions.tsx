@@ -5,25 +5,24 @@ import { revalidatePath } from "next/cache";
 import { PortfolioFormValues, PortfolioSchema } from "../validations/portfolio";
 
 export async function createPortfolio(values: PortfolioFormValues) {
+	// Server-side validation
 	const validatedFields = PortfolioSchema.safeParse(values);
 
 	if (!validatedFields.success) {
-		return { error: "Unproperly formatted data" };
+		return { error: "Invalid data format" };
 	}
 
-	const { name, description, goal } = validatedFields.data;
-
 	try {
-		// 1. Capture the created portfolio object
+		// Create new portfolio using spread operator for targets
 		const newPortfolio = await db.portfolio.create({
 			data: {
-				name,
-				description: description || null,
-				goal: goal ?? null,
-				// We must link the portfolio to a user
+				...validatedFields.data,
+				description: validatedFields.data.description || null,
+				goal: validatedFields.data.goal ?? null,
+				// Linking to a temporary user ID
 				user: {
 					connect: {
-						id: "1", //TODO: You need to get this from your auth session
+						id: "1", // TODO: Replace with dynamic ID from auth session later
 					},
 				},
 			},
@@ -31,46 +30,43 @@ export async function createPortfolio(values: PortfolioFormValues) {
 
 		revalidatePath("/portfolios");
 
-		// 2. Return the new ID to the client
 		return {
 			success: true,
-			id: newPortfolio.id, // Pass the ID for redirection
+			id: newPortfolio.id,
 		};
 	} catch (error) {
-		console.error("Prisma Error:", error);
-		return { error: "There was an error during saving in database" };
+		console.error("Prisma Create Error:", error);
+		return { error: "Database connection error during creation" };
 	}
 }
 
 export async function updatePortfolio(id: string, values: PortfolioFormValues) {
-	// 1. Walidacja danych po stronie serwera
+	// Server-side validation
 	const validatedFields = PortfolioSchema.safeParse(values);
 
 	if (!validatedFields.success) {
-		return { error: "Niepoprawne dane" };
+		return { error: "Invalid data format" };
 	}
 
-	const { name, description, goal } = validatedFields.data;
-
 	try {
-		// 2. Aktualizacja rekordu w bazie danych 🗄️
+		// Update record using validated data
 		await db.portfolio.update({
 			where: { id },
 			data: {
-				name,
-				description: description || null,
-				goal: goal ?? null,
+				...validatedFields.data,
+				description: validatedFields.data.description || null,
+				goal: validatedFields.data.goal ?? null,
 			},
 		});
 
-		// 3. Odświeżenie cache'u, aby zmiany były widoczne 🔄
+		// Refresh cache to reflect changes in UI
 		revalidatePath("/portfolios");
 		revalidatePath("/dashboard");
 
 		return { success: true };
 	} catch (error) {
-		console.error("Prisma Error:", error);
-		return { error: "Błąd podczas aktualizacji bazy danych" };
+		console.error("Prisma Update Error:", error);
+		return { error: "Database connection error during update" };
 	}
 }
 
@@ -84,9 +80,10 @@ export async function deletePortfolio(id: string) {
 		return { success: true };
 	} catch (error) {
 		console.error("Delete error:", error);
-		return { error: "Nie udało się usunąć portfela." };
+		return { error: "Failed to remove the portfolio." };
 	}
 }
+
 export async function deleteAsset(assetId: string) {
 	try {
 		await db.asset.delete({
@@ -94,9 +91,9 @@ export async function deleteAsset(assetId: string) {
 		});
 
 		revalidatePath("/dashboard");
-
 		return { success: true };
-	} catch {
+	} catch (error) {
+		console.error("Asset Delete Error:", error);
 		return { success: false, error: "Failed to delete asset" };
 	}
 }

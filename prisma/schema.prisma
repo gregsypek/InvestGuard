@@ -54,17 +54,20 @@ model Portfolio {
   updatedAt   DateTime @updatedAt
 
   // STRATEGIA (Target Allocation) - suma powinna dawać 100%
-  targetDeveloped Int @default(0)
-  targetEmerging  Int @default(0)
-  targetBonds     Int @default(0)
-  targetGold      Int @default(0)
-  targetBooster   Int @default(0)
-  targetCash      Int @default(0) // ✅ Traktujemy jak każde inne aktywo
+  targetDeveloped   Int @default(0)
+  targetEmerging    Int @default(0)
+  targetBonds       Int @default(0)
+  targetGold        Int @default(0)
+  targetBooster     Int @default(0)
+  targetCash        Int @default(0) // ✅ Traktujemy jak każde inne aktywo
+  targetCrypto      Int @default(0)
+  targetCommodities Int @default(0)
 
-  assets          Asset[] // Relation: One portfolio can house many assets
-  userId          String
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  investmentPlans InvestmentPlan[]
+  assets               Asset[] // Relation: One portfolio can house many assets
+  userId               String
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  investmentPlans      InvestmentPlan[]
+  transactionHistories TransactionHistory[]
 }
 
 model User {
@@ -96,4 +99,18 @@ model InvestmentPlan {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   isRecurring Boolean  @default(false)
+}
+
+model TransactionHistory {
+  id            String   @id @default(cuid())
+  assetName     String // e.g., "ETF MSCI World"
+  ticker        String? // e.g., "EUNL.DE"
+  executedValue Float // The actual amount spent
+  category      Category // e.g., BONDS, GOLD
+  executedAt    DateTime @default(now())
+  rationale     String? // Why did you buy this? (Copied from plan)
+
+  // Reference to the portfolio
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 }

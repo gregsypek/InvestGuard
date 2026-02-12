@@ -29,6 +29,15 @@ export const PortfolioSchema = z.object({
 		.optional()
 		.transform((val) => (val === "" || val == null ? undefined : Number(val)))
 		.pipe(z.number().positive("Purpose must be a positive number").optional()),
+	// Nowe pola strategii
+	targetDeveloped: z.coerce.number().min(0).max(100).default(0),
+	targetEmerging: z.coerce.number().min(0).max(100).default(0),
+	targetBonds: z.coerce.number().min(0).max(100).default(0),
+	targetGold: z.coerce.number().min(0).max(100).default(0),
+	targetBooster: z.coerce.number().min(0).max(100).default(0),
+	targetCash: z.coerce.number().min(0).max(100).default(0),
+	targetCrypto: z.coerce.number().min(0).max(100).default(0),
+	targetCommodities: z.coerce.number().min(0).max(100).default(0),
 });
 
 // THIS IS KEY: Export the type inferred from the schema

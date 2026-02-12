@@ -31,14 +31,6 @@ export interface Asset {
 	targetPercentage: number; // np. 10 (for gold)
 }
 
-export interface Portfolio {
-	id: string;
-	name: string; // np. "Moje IKE", "Long term portfolio"
-	userId: string;
-	assets: Asset[];
-	currency?: "PLN" | "USD" | "EUR";
-}
-
 export interface StockPrice {
 	price: string;
 	change: string;
@@ -76,17 +68,29 @@ export interface CategoryStatus extends CategoryConfig {
 	differenceWeight: number;
 }
 
+export type ActionResponse = {
+	success?: boolean;
+	id?: string;
+	error?: string;
+};
+
 export interface Portfolio {
 	id: string;
 	name: string;
 	description?: string | null;
+	userId: string;
 	goal?: number | null;
+	currency?: "PLN" | "USD" | "EUR";
 	assets: Asset[];
+	targetDeveloped: number;
+	targetEmerging: number;
+	targetBonds: number;
+	targetGold: number;
+	targetBooster: number;
+	targetCash: number;
+	targetCrypto: number;
+	targetCommodities: number;
 }
-export type ActionResponse = {
-	success?: boolean;
-	error?: string;
-};
 
 // To stworzy typ dokładnie taki, jaki zwraca zapytanie z "include: { assets: true }"
 export type PortfolioWithAssets = Prisma.PortfolioGetPayload<{

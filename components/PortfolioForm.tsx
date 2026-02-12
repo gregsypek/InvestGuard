@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Cookies from "js-cookie";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Form,
@@ -14,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { usePathname, useRouter, useSearchParams } from "next/navigation"; // Dodaj useSearchParams
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SubmitButton } from "./ui/SubmitButton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import {
@@ -25,108 +26,147 @@ import {
 	PortfolioFormValues,
 	PortfolioSchema,
 } from "@/lib/validations/portfolio";
-import { useEffect } from "react";
-import { Portfolio } from "@/lib/types";
+import { ActionResponse, Portfolio } from "@/lib/types";
+import z from "zod";
 
 interface PortfolioFormProps {
 	portfolioId?: string;
 	initialData?: Omit<Portfolio, "assets">;
 }
-export type PortfolioActionResponse = {
-	success: boolean;
-	id?: string; // id jest opcjonalne, bo update może go nie zwracać
-	error?: string;
-};
 
 export default function PortfolioForm({
 	initialData,
-	portfolioId: initialPortfolioId, // Zmieniamy nazwę, bo ID może przyjść z propa LUB z cookie
+	portfolioId: initialPortfolioId,
 }: PortfolioFormProps) {
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const isEditMode = !!initialData?.id;
 
-	// 1. Logika priorytetów: Prop (URL) -> Ciasteczko -> Pusto
+	console.log("Dane wejściowe:", initialData);
+
 	const effectivePortfolioId =
 		initialPortfolioId || Cookies.get("selectedPortfolioId");
 
-	const form = useForm({
+	// 1. Initialize form with explicit type for validation values
+	const form = useForm<z.input<typeof PortfolioSchema>>({
 		resolver: zodResolver(PortfolioSchema),
 		defaultValues: {
 			name: initialData?.name ?? "",
 			description: initialData?.description ?? "",
-			goal: initialData?.goal ?? "",
+			goal: initialData?.goal ?? 0,
+			targetDeveloped: initialData?.targetDeveloped ?? 0,
+			targetEmerging: initialData?.targetEmerging ?? 0,
+			targetBonds: initialData?.targetBonds ?? 0,
+			targetGold: initialData?.targetGold ?? 0,
+			targetBooster: initialData?.targetBooster ?? 0,
+			targetCash: initialData?.targetCash ?? 0,
+			targetCrypto: initialData?.targetCrypto ?? 0,
+			targetCommodities: initialData?.targetCommodities ?? 0,
 		},
 	});
 
-	// 2. Synchronizacja URL z effectivePortfolioId
+	// 2. Watch all target fields for live calculation
+	const targets = useWatch({
+		control: form.control,
+		name: [
+			"targetDeveloped",
+			"targetEmerging",
+			"targetBonds",
+			"targetGold",
+			"targetBooster",
+			"targetCash",
+			"targetCrypto",
+			"targetCommodities",
+		],
+	});
+
+	// 3. Calculate total % (casting to number avoids the 'unknown' error)
+	const totalAllocation = (targets as number[]).reduce(
+		(acc: number, val) => acc + (Number(val) || 0),
+		0,
+	);
+
 	useEffect(() => {
-		// Jeśli mamy ID (np. z ciasteczka), ale nie ma go w URL, to je tam wkładamy
 		if (effectivePortfolioId && !searchParams.get("portfolioId")) {
 			const params = new URLSearchParams(searchParams.toString());
 			params.set("portfolioId", effectivePortfolioId);
-
-			// Używamy router.replace zamiast window.history,
-			// dzięki temu Header (który słucha useSearchParams) od razu "wyłapie" zmianę!
 			router.replace(`${pathname}?${params.toString()}`);
 		}
 	}, [effectivePortfolioId, pathname, router, searchParams]);
 
-	async function onSubmit(values: PortfolioFormValues) {
-		// 1. Wybieramy odpowiednią akcję
-		const result = initialData?.id
-			? await updatePortfolio(initialData.id, values)
-			: await createPortfolio(values);
+	// ✅ W onSubmit musimy sparsować dane, aby zamienić je na typy wynikowe (infer)
+	async function onSubmit(data: z.input<typeof PortfolioSchema>) {
+		// Przekształcamy surowe dane z formularza na czyste dane dla bazy
+		const validatedValues = PortfolioSchema.parse(data);
+
+		const result = (
+			initialData?.id
+				? await updatePortfolio(initialData.id, validatedValues)
+				: await createPortfolio(validatedValues)
+		) as ActionResponse;
 
 		if (result.success) {
-			toast.success(
-				initialData?.id ? "Portfolio updated! ✏️" : "Portfolio created! 🚀",
-			);
-
-			// 2. Ustalamy ID do przekierowania
-			// Jeśli to był nowy portfel, bierzemy ID z wyniku. Jeśli edycja - mamy je w initialData.
-			const targetId =
-				(result as PortfolioActionResponse).id || initialData?.id;
+			toast.success(isEditMode ? "Updated! ✏️" : "Created! 🚀");
+			// Kluczowe: Pobieramy ID (z wyniku lub z initialData)
+			const targetId = result?.id || initialData?.id;
 
 			if (targetId) {
-				// Jeśli mamy ID, odświeżamy dane i kierujemy na dashboard
+				// 1. Przekierowanie na listę z parametrem aktywnego portfela
 				router.push(`/portfolios?portfolioId=${targetId}`);
-				router.refresh(); // Wymusza odświeżenie komponentów serwerowych jak Header
-			} else {
-				// Failsafe: jeśli coś poszło nie tak z ID, wracamy do listy
-				router.push("/portfolios");
+
+				// 2. Wymuszenie odświeżenia komponentów klienta, by "zaciągnęły" nowe dane
+				router.refresh();
 			}
 		} else {
-			toast.error(result.error || "Something went wrong ❌");
+			toast.error(result.error || "Błąd zapisu ❌");
 		}
 	}
+
+	// 4. Helper to avoid code repetition and fix type errors in Inputs
+	const renderTargetField = (
+		name: keyof PortfolioFormValues,
+		label: string,
+	) => (
+		<FormField
+			control={form.control}
+			name={name}
+			render={({ field }) => (
+				<FormItem>
+					<FormLabel className="text-xs">{label}</FormLabel>
+					<FormControl>
+						<Input
+							type="number"
+							{...field}
+							// Casting field.value fixes the 'unknown' TypeScript error
+							value={(field.value as number) ?? 0}
+						/>
+					</FormControl>
+					<FormMessage />
+				</FormItem>
+			)}
+		/>
+	);
+
 	return (
 		<Card className="bg-card border-border2 shadow-sm rounded-xl py-6 mb-8">
 			<CardHeader className="px-6 py-0 mb-2">
-				<CardTitle className="leading-none font-bold">
-					{isEditMode
-						? `Edit ${initialData?.name} Portfolio`
-						: "Add new Portfolio"}
+				<CardTitle className="leading-none font-bold text-xl">
+					{isEditMode ? `Edytuj ${initialData?.name}` : "Dodaj nowy Portfel"}
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="px-6">
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-						{/* <div className="hidden">{console.log("Form Context ID:", effectivePortfolioId)}</div> */}
-
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
 							<FormField
 								control={form.control}
 								name="name"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Portfolio Name</FormLabel>
+										<FormLabel>Nazwa Portfela</FormLabel>
 										<FormControl>
-											<Input
-												placeholder="e.g. Retirement / Aggressive"
-												{...field}
-											/>
+											<Input placeholder="np. Emerytalny" {...field} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -137,14 +177,12 @@ export default function PortfolioForm({
 								name="goal"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Financial Goal (PLN)</FormLabel>
+										<FormLabel>Cel finansowy (PLN)</FormLabel>
 										<FormControl>
 											<Input
 												type="number"
-												placeholder="Optional target amount"
 												{...field}
-												value={field.value?.toString() ?? ""}
-												onChange={(e) => field.onChange(e.target.value)}
+												value={(field.value as number) ?? 0}
 											/>
 										</FormControl>
 										<FormMessage />
@@ -152,18 +190,19 @@ export default function PortfolioForm({
 								)}
 							/>
 						</div>
+
 						<FormField
 							control={form.control}
 							name="description"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Strategy Description (Optional)</FormLabel>
+									<FormLabel>Opis strategii</FormLabel>
 									<FormControl>
 										<Textarea
-											placeholder="Describe your investment thesis..."
+											placeholder="Twoje założenia inwestycyjne..."
 											{...field}
-											value={field.value?.toString() ?? ""}
-											onChange={(e) => field.onChange(e.target.value)}
+											// Override the value to ensure it's never null
+											value={field.value ?? ""}
 										/>
 									</FormControl>
 									<FormMessage />
@@ -171,9 +210,46 @@ export default function PortfolioForm({
 							)}
 						/>
 
-						<div className="flex-end">
+						{/* Strategy Section */}
+						<div className="mt-8 space-y-4 border-t pt-6">
+							<div className="flex justify-between items-center">
+								<div>
+									<h3 className="text-lg font-semibold">
+										Alokacja Celowa (Target Allocation)
+									</h3>
+									<p className="text-sm text-muted-foreground">
+										Zdefiniuj strategię w %
+									</p>
+								</div>
+								<div
+									className={`px-3 py-1 rounded-full text-sm font-bold ${totalAllocation === 100 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+								>
+									Suma: {totalAllocation}% / 100%
+								</div>
+							</div>
+
+							<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+								{renderTargetField("targetDeveloped", "Developed %")}
+								{renderTargetField("targetEmerging", "Emerging %")}
+								{renderTargetField("targetBonds", "Bonds %")}
+								{renderTargetField("targetGold", "Gold %")}
+								{renderTargetField("targetBooster", "Booster %")}
+								{renderTargetField("targetCash", "Cash %")}
+								{renderTargetField("targetCrypto", "Crypto %")}
+								{renderTargetField("targetCommodities", "Commodities %")}
+							</div>
+
+							{totalAllocation !== 100 && (
+								<p className="text-xs text-amber-600 font-medium italic">
+									⚠️ Uwaga: Suma alokacji nie wynosi 100%. Sprawdź swoje
+									założenia.
+								</p>
+							)}
+						</div>
+
+						<div className="flex justify-end pt-4">
 							<SubmitButton
-								label={`${isEditMode ? "Update Portfolio" : "Create Portfolio"}`}
+								label={isEditMode ? "Aktualizuj Portfel" : "Stwórz Portfel"}
 								isLoading={form.formState.isSubmitting}
 							/>
 						</div>

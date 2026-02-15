@@ -9,16 +9,57 @@ import {
 	FileText,
 	Wallet,
 	Settings,
+	Notebook,
+	History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// const NAV_ITEMS = [
+// 	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+// 	{ name: "Portfolios", href: "/portfolios", icon: Wallet },
+// 	{ name: "Planning", href: "/planner", icon: Notebook },
+// 	{
+// 		name: "Activity Log",
+// 		href: "/activity",
+// 		icon: History,
+// 	},
+// 	{ name: "Booster 5%", href: "/booster", icon: Rocket },
+// 	{ name: "Raporty EDO", href: "/raporty", icon: FileText },
+// ];
+// Navigation items for the main sidebar
+// Each item contains a Polish label and its corresponding English translation for future i18n
 const NAV_ITEMS = [
-	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-	{ name: "Portfolios", href: "/portfolios", icon: Wallet },
-	{ name: "Booster 5%", href: "/booster", icon: Rocket },
-	{ name: "Raporty EDO", href: "/raporty", icon: FileText },
+	{
+		name: "Panel Główny", // UI: Panel Główny | EN: Dashboard
+		href: "/dashboard",
+		icon: LayoutDashboard,
+	},
+	{
+		name: "Twoje Portfele", // UI: Twoje Portfele | EN: Portfolios
+		href: "/portfolios",
+		icon: Wallet,
+	},
+	{
+		name: "Planowanie", // UI: Planowanie | EN: Planning
+		href: "/planner",
+		icon: Notebook,
+	},
+	{
+		name: "Historia Aktywności", // UI: Historia Aktywności | EN: Activity Log
+		href: "/activity",
+		icon: History,
+	},
+	{
+		name: "Strategia Aktywna", // UI: Portfel Aktywny | EN: Active Portfolio
+		href: "/alpha-selection",
+		icon: Rocket,
+	},
+	{
+		name: "Analiza Obligacji", // UI: Analiza Obligacji | EN: Bond Analysis
+		href: "/bond-reports",
+		icon: FileText,
+	},
 ];
-
 const Aside = () => {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();

@@ -113,6 +113,45 @@ export const MODEL_ALLOCATION: CategoryConfig[] = [
 	},
 ];
 
+export const CATEGORY_CONFIG = [
+	{
+		id: "BONDS",
+		targetKey: "targetBonds",
+		name: "Obligacje",
+		color: "bg-blue-500",
+	},
+	{
+		id: "DEVELOPED",
+		targetKey: "targetDeveloped",
+		name: "Rynki Rozwinięte",
+		color: "bg-green-500",
+	},
+	{
+		id: "EMERGING",
+		targetKey: "targetEmerging",
+		name: "Rynki Wschodzące",
+		color: "bg-orange-500",
+	},
+	{
+		id: "GOLD",
+		targetKey: "targetGold",
+		name: "Złoto",
+		color: "bg-yellow-500",
+	},
+	{
+		id: "CASH",
+		targetKey: "targetCash",
+		name: "Gotówka",
+		color: "bg-cyan-500",
+	},
+	{
+		id: "CRYPTO",
+		targetKey: "targetCrypto",
+		name: "Kryptowaluty",
+		color: "bg-gray-500",
+	},
+] as const; // Dodanie tego sprawi, że TypeScript będzie widział konkretne wartości zamiast stringów;
+
 export const COLORS: Record<string, string> = {
 	BONDS: "var(--color-portfolio-bonds)",
 	DEVELOPED: "var(--color-portfolio-developed)",

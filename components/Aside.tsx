@@ -14,18 +14,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// const NAV_ITEMS = [
-// 	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-// 	{ name: "Portfolios", href: "/portfolios", icon: Wallet },
-// 	{ name: "Planning", href: "/planner", icon: Notebook },
-// 	{
-// 		name: "Activity Log",
-// 		href: "/activity",
-// 		icon: History,
-// 	},
-// 	{ name: "Booster 5%", href: "/booster", icon: Rocket },
-// 	{ name: "Raporty EDO", href: "/raporty", icon: FileText },
-// ];
 // Navigation items for the main sidebar
 // Each item contains a Polish label and its corresponding English translation for future i18n
 const NAV_ITEMS = [
@@ -66,14 +54,14 @@ const Aside = () => {
 	const portfolioId = searchParams.get("portfolioId");
 
 	return (
-		<aside className="w-64 flex flex-col bg-sidebar text-sidebar-foreground border-r border-border">
+		<aside className="min-w-auto md:w-64 flex flex-col bg-sidebar text-sidebar-foreground border-r border-border">
 			{/* Logo Area */}
 			<div className="p-6">
 				<Link href="/" className="flex items-center gap-3 group">
 					<div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform shadow-lg shadow-blue-500/20">
 						<Rocket className="text-white w-6 h-6" />
 					</div>
-					<span className="font-bold text-xl text-white tracking-tight">
+					<span className="font-bold text-xl text-white tracking-tight hidden md:inline-block">
 						MyWallets<span className="text-blue-500">.</span>
 					</span>
 				</Link>
@@ -106,7 +94,7 @@ const Aside = () => {
 									isActive ? "text-blue-400" : "text-slate-500",
 								)}
 							/>
-							{item.name}
+							<span className="hidden md:inline-block">{item.name}</span>
 						</Link>
 					);
 				})}
@@ -119,7 +107,7 @@ const Aside = () => {
 					className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors"
 				>
 					<Settings className="w-5 h-5 text-slate-500" />
-					Settings
+					<span className="hidden md:inline-block">Settings</span>
 				</Link>
 			</div>
 		</aside>

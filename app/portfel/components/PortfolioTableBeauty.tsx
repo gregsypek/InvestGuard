@@ -11,12 +11,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Circle } from "lucide-react";
-
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 interface Props {
 	data: CategoryStatus[];
 }
 
 export default function PortfolioTableBeauty({ data }: Props) {
+	console.log("🚀 ~ PortfolioTableBeauty ~ data:", data);
+
+	const filteredData = data.filter((x) => x.weight > 0);
 	return (
 		<Card className="border-border2 bg-card">
 			<CardHeader>
@@ -38,7 +42,7 @@ export default function PortfolioTableBeauty({ data }: Props) {
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{data.map((item) => (
+						{filteredData.map((item) => (
 							<TableRow key={item.category} className="border-border">
 								<TableCell className="font-medium">
 									<div className="flex items-center gap-2">
@@ -65,16 +69,42 @@ export default function PortfolioTableBeauty({ data }: Props) {
 									{item.differenceWeight > 0 ? "+" : ""}
 									{item.differenceWeight.toFixed(1)} pp
 								</TableCell>
-								<TableCell className="text-right font-mono">
-									{/* Positive value means we need to buy more */}
-									{item.differencePLN > 0 ? (
-										<span className="text-blue-500">
-											Buy {item.differencePLN.toLocaleString()} PLN
-										</span>
+
+								<TableCell className="text-right py-4">
+									{item.differencePLN === 0 ? (
+										// SYTUACJA: STAN IDEALNY / BRAK RUCHU
+										<div className="flex flex-col items-end gap-1">
+											<span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+												Zbalansowano
+											</span>
+											<span className="text-[10px] uppercase tracking-wider text-muted-foreground italic">
+												Brak akcji
+											</span>
+										</div>
+									) : item.differencePLN > 0 ? (
+										// SYTUACJA: KUPNO (Niedoważenie)
+										<Button
+											size="sm"
+											className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
+											// onClick={() => openPlanner(item)}
+										>
+											<ArrowUpRight className="h-4 w-4" />
+											Kup {item.differencePLN.toLocaleString()} PLN
+										</Button>
 									) : (
-										<span className="text-orange-500">
-											Sell {Math.abs(item.differencePLN).toLocaleString()} PLN
-										</span>
+										// SYTUACJA: SPRZEDAŻ (Przeważenie)
+										<Button
+											size="sm"
+											variant="outline"
+											className="border-red-200 text-red-600 bg-red-50/50 hover:bg-red-50 cursor-not-allowed opacity-70 gap-2"
+											disabled
+										>
+											<ArrowDownRight className="h-4 w-4" />
+											Sprzedaj {Math.abs(
+												item.differencePLN,
+											).toLocaleString()}{" "}
+											PLN
+										</Button>
 									)}
 								</TableCell>
 							</TableRow>

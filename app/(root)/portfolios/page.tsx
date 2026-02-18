@@ -1,69 +1,147 @@
 // app/(root)/portfolios/page.tsx
 import { db } from "@/lib/db";
-import { Plus } from "lucide-react";
+import { Plus, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import PortfolioCard from "@/components/PortfolioCard";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { getGlobalStats } from "@/lib/calculations";
 import { CategoryTable } from "@/components/CategoryTable";
+import AddButton from "@/components/ui/AddButton";
+import { cookies } from "next/headers";
+import { cn } from "@/lib/utils";
 
-export default async function PortfoliosPage() {
-	// 1. Fetch all data with assets included
+interface Props {
+	searchParams: Promise<{ portfolioId?: string }>;
+}
+
+export default async function PortfoliosPage({ searchParams }: Props) {
+	// EN: Fetch all portfolios with their assets for global aggregation
 	const portfolios = await db.portfolio.findMany({
 		include: { assets: true },
 		orderBy: { createdAt: "desc" },
 	});
 
-	// 2. Calculate global statistics for the header and table
+	// EN: Resolve portfolioId from URL or fallback to cookies for "Add Asset" context
+	const { portfolioId: urlPortfolioId } = await searchParams;
+	const cookieStore = await cookies();
+	const cookiePortfolioId = cookieStore.get("selectedPortfolioId")?.value;
+	const portfolioId = urlPortfolioId || cookiePortfolioId;
+
+	// EN: SCENARIO: No portfolios exist in the database
+	if (portfolios.length === 0) {
+		return (
+			<div className="flex flex-col items-center justify-center h-[70vh] text-center space-y-6 max-w-md mx-auto px-6">
+				<div className="p-4 bg-blue-500/10 rounded-full">
+					<LayoutGrid className="h-12 w-12 text-blue-500" />
+				</div>
+				<div className="space-y-2">
+					<h2 className="text-3xl font-bold tracking-tight">
+						Twoja lista jest pusta
+					</h2>
+					<p className="text-muted-foreground">
+						Nie stworzyłeś jeszcze żadnego portfela inwestycyjnego. Dodaj go
+						teraz, aby zacząć grupować swoje aktywa.
+					</p>
+				</div>
+				<Button
+					variant="outline"
+					asChild
+					className="gap-2 shadow-lg cursor-pointer hover:bg-primary/40"
+				>
+					<Link href="/portfolios/new">
+						<Plus className="h-5 w-5" />
+						Stwórz pierwszy portfel
+					</Link>
+				</Button>
+			</div>
+		);
+	}
+
 	const { totalValue, portfoliosCount, assetsCount, categoryTotals } =
 		getGlobalStats(portfolios);
-
-	if (portfolios.length === 0) {
-		// ... empty state remains the same
-	}
 
 	return (
 		<div className="space-y-10 pb-20">
 			<PortfoliosHeader
-				title="My Portfolios"
+				title="Moje Portfele"
 				totalValue={totalValue}
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
 				customBreadcrumbs={
 					<nav className="text-sm text-muted-foreground mb-2">
-						Portfolios / <span className="text-primary font-medium">All</span>
+						Portfele /{" "}
+						<span className="text-primary font-medium">Wszystkie</span>
 					</nav>
 				}
 			/>
 
-			{/* HORIZONTAL SCROLL CONTAINER FOR CARDS
-          - overflow-x-auto: enables horizontal scroll
-          - snap-x snap-mandatory: cards "stick" to position when scrolling
-          - md:grid: reverts to standard grid layout on larger screens
-      */}
-			<div className="flex overflow-x-auto pb-6 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 snap-x snap-mandatory no-scrollbar">
-				{portfolios.map((p) => (
-					<div key={p.id} className="min-w-65 md:min-w-0 snap-center">
-						<PortfolioCard portfolio={p} />
+			{/* EN: Portfolios Section with Sticky "Dock" for AddButton on Desktop */}
+			<div className="flex flex-col lg:flex-row gap-6 items-start relative">
+				{/* EN: Main container for portfolio cards with horizontal scroll on mobile */}
+				{/* UI: Główny kontener na karty portfeli */}
+				<div className="flex-1 w-full min-w-0">
+					<div className="flex overflow-x-auto pb-6 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 snap-x snap-mandatory no-scrollbar">
+						{portfolios.map((p) => (
+							<div
+								key={p.id}
+								className="min-w-65 md:min-w-0 snap-center flex h-58"
+							>
+								<PortfolioCard portfolio={p} />
+							</div>
+						))}
 					</div>
-				))}
+				</div>
+
+				{/* EN: The "Dock" - Sticky action button that stays visible during scroll */}
+				{/* UI: "Dock" - Przyklejony przycisk dodawania, widoczny przy skrolowaniu */}
+				<div className="w-full lg:w-auto xl:sticky  self-start ">
+					<Link href="/portfolios/new" className="group ">
+						<div
+							className={cn(
+								"flex lg:flex-col items-center justify-center gap-2 m-0 p-2 lg:h-58",
+								"border border-dashed border-border2 rounded-xl bg-card/50",
+								"hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-300",
+								"cursor-pointer shadow-sm lg:w-40 bg-blue-500/10 ",
+							)}
+						>
+							<div className="p-3 group-hover:scale-110 transition-transform">
+								<Plus className="h-6 w-6 text-blue-500" />
+							</div>
+							<div className="flex gap-3 lg:block lg:text-center items-center">
+								<p className="font-bold text-sm lg:text-xs uppercase tracking-widest text-foreground">
+									Dodaj
+								</p>
+								<p className=" text-xs text-muted-foreground uppercase">
+									Nowy Portfel
+								</p>
+							</div>
+						</div>
+					</Link>
+				</div>
 			</div>
 
-			{/* Global Asset Allocation Table */}
+			{/* EN: Global Asset Allocation Table (Aggregated View) */}
 			<div className="pt-10 border-t border-border2">
 				<div className="flex justify-between items-end mb-6">
 					<div>
-						<h2 className="text-2xl font-bold">Asset Allocation</h2>
+						<h2 className="text-2xl font-bold ">Alokacja Globalna</h2>
 						<p className="text-muted-foreground text-sm">
-							Global distribution by category (Combined from all portfolios)
+							Rozkład aktywów ze wszystkich Twoich portfeli (łącznie)
 						</p>
 					</div>
-					<Button asChild variant="outline" size="sm">
-						<Link href="/portfolios/new" className="gap-2">
-							<Plus className="h-4 w-4" /> Add New
-						</Link>
-					</Button>
+
+					{/* EN: Only show add asset button if we have a portfolio context */}
+					{portfolioId && (
+						<AddButton className="h-10 px-4 py-0">
+							<Link
+								href={`/dashboard/${portfolioId}/add-asset`}
+								className="gap-2 flex items-center"
+							>
+								<Plus className="h-4 w-4" /> Dodaj Aktywo
+							</Link>
+						</AddButton>
+					)}
 				</div>
 
 				<CategoryTable data={categoryTotals} totalValue={totalValue} />

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { CategoryStatus, PortfolioWithAssets } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
 import { deleteAsset } from "@/lib/actions/portfolio.actions";
+import AddButton from "./AddButton";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
@@ -44,23 +45,12 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 			<aside className="space-y-6">
 				<div className="flex justify-between items-center">
 					<h2 className="text-xl font-bold">Twoje aktywa</h2>
-					<Button
-						size="sm"
-						variant="outline"
-						className={cn(
-							"h-8 gap-1.5 px-3 font-semibold text-xs uppercase tracking-wide",
-							"transition-all duration-200",
-							"border-blue-200 dark:border-blue-900/50 text-blue-600 dark:text-blue-400",
-							"hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-800",
-							"shadow-sm active:scale-95",
-						)}
-						asChild
-					>
+					<AddButton>
 						<Link href={`/dashboard/${portfolio.id}/add-asset`}>
 							<Plus className="h-3.5 w-3.5 stroke-[3px]" />
 							Dodaj
 						</Link>
-					</Button>
+					</AddButton>
 				</div>
 
 				<div className="space-y-3">

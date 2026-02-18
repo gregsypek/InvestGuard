@@ -19,6 +19,19 @@ export const CATEGORY_ASSETS: AssetCategory[] = [
 	"COMMODITIES",
 ];
 
+// EN: Mapping technical keys to Polish labels
+// UI: Mapowanie kluczy technicznych na polskie etykiety
+export const CATEGORY_LABELS: Record<string, string> = {
+	BONDS: "Obligacje",
+	DEVELOPED: "Rynki Rozwinięte",
+	EMERGING: "Rynki Wschodzące",
+	GOLD: "Złoto",
+	BOOSTER: "Booster (Alpha)",
+	CASH: "Gotówka",
+	CRYPTO: "Kryptowaluty",
+	COMMODITIES: "Surowce",
+};
+
 export const mockAssets: Asset[] = [
 	// 10% GOLD
 	{
@@ -118,37 +131,51 @@ export const CATEGORY_CONFIG = [
 		id: "BONDS",
 		targetKey: "targetBonds",
 		name: "Obligacje",
-		color: "bg-blue-500",
+		// EN: Using custom theme variables defined in globals.css
+		// UI: Użycie zmiennych zdefiniowanych w @theme
+		color: "bg-portfolio-bonds",
 	},
 	{
 		id: "DEVELOPED",
 		targetKey: "targetDeveloped",
 		name: "Rynki Rozwinięte",
-		color: "bg-green-500",
+		color: "bg-portfolio-developed",
 	},
 	{
 		id: "EMERGING",
 		targetKey: "targetEmerging",
 		name: "Rynki Wschodzące",
-		color: "bg-orange-500",
+		color: "bg-portfolio-emerging",
 	},
 	{
 		id: "GOLD",
 		targetKey: "targetGold",
 		name: "Złoto",
-		color: "bg-yellow-500",
+		color: "bg-portfolio-gold",
 	},
 	{
 		id: "CASH",
 		targetKey: "targetCash",
 		name: "Gotówka",
-		color: "bg-cyan-500",
+		color: "bg-portfolio-cash",
 	},
 	{
 		id: "CRYPTO",
 		targetKey: "targetCrypto",
 		name: "Kryptowaluty",
-		color: "bg-gray-500",
+		color: "bg-portfolio-crypto",
+	},
+	{
+		id: "BOOSTER", // EN: Added Booster to match your CSS variables
+		targetKey: "targetBooster",
+		name: "Booster",
+		color: "bg-portfolio-booster",
+	},
+	{
+		id: "COMMODITIES",
+		targetKey: "targetCommodities",
+		name: "Surowce",
+		color: "bg-portfolio-commodities",
 	},
 ] as const; // Dodanie tego sprawi, że TypeScript będzie widział konkretne wartości zamiast stringów;
 
@@ -159,8 +186,8 @@ export const COLORS: Record<string, string> = {
 	GOLD: "var(--color-portfolio-gold)",
 	BOOSTER: "var(--color-portfolio-booster)",
 	CASH: "var(--color-portfolio-cash)",
-	CRYPTO: "var(--color-portfolio-cash)",
-	COMMODITIES: "var(--color-portfolio-cash)",
+	CRYPTO: "var(--color-portfolio-crypto)",
+	COMMODITIES: "var(--color-portfolio-commodities)",
 };
 
 export const CATEGORY_DETAILS: Record<

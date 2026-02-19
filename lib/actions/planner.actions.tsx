@@ -67,7 +67,11 @@ function getNextMonth(dateStr: string): string {
 	return `${nextYear}-${nextMonth}`;
 }
 
-export async function executePlan(planId: string, finalValue: number) {
+export async function executePlan(
+	planId: string,
+	finalValue: number,
+	executionNote?: string,
+) {
 	try {
 		return await db.$transaction(async (tx) => {
 			// 1. Get the plan details
@@ -89,13 +93,18 @@ export async function executePlan(planId: string, finalValue: number) {
 			});
 
 			// 3. Record in history 📜
+			// 2. Tworzymy historię, łącząc notatki
 			await tx.transactionHistory.create({
 				data: {
 					assetName: plan.name,
 					ticker: plan.ticker,
 					executedValue: finalValue,
 					category: plan.targetCategory,
-					rationale: plan.rationale,
+					// Łączymy: jeśli jest notatka z realizacji, dodajemy ją po separatorze |
+					rationale: executionNote
+						? `PLAN: ${plan.rationale || "Brak"} | REALIZACJA: ${executionNote}`
+						: plan.rationale,
+					executedAt: new Date(),
 					portfolioId: plan.portfolioId,
 				},
 			});

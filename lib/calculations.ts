@@ -1,30 +1,43 @@
 // lib/calculations.ts
 import { Asset } from "@prisma/client";
-import { MODEL_ALLOCATION } from "./constants";
-import { CategoryStatus, PortfolioWithAssets } from "./types";
+import { CATEGORY_CONFIG } from "./constants";
+import { CategoryStatus, Portfolio, PortfolioWithAssets } from "./types";
+import { cookies } from "next/headers";
 
 /**
  * Calculates the gap between the current portfolio and the target model.
  * Includes deviation in both currency (PLN) and percentage points.
  */
-export function calculateGapAnalysis(assets: Asset[]): CategoryStatus[] {
+export function calculateGapAnalysis(
+	portfolio: Portfolio & { assets: Asset[] },
+): CategoryStatus[] {
+	const { assets } = portfolio;
 	const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
 
-	return MODEL_ALLOCATION.map((model) => {
+	// Używamy naszej mapy konfiguracji, którą przygotowaliśmy wcześniej
+	return CATEGORY_CONFIG.map((config) => {
+		// 1. Sumujemy aktywa dla danej kategorii (np. 'GOLD')
 		const actualAmount = assets
-			.filter((a) => a.category === model.category)
+			.filter((a) => a.category === config.id)
 			.reduce((sum, a) => sum + a.value, 0);
 
+		// 2. Pobieramy docelową wagę z portfela (dynamicznie przez targetKey)
+		const targetWeight =
+			(portfolio[config.targetKey as keyof Portfolio] as number) || 0;
+
+		// 3. Obliczamy procenty i różnice
 		const actualPercentage =
 			totalValue > 0 ? (actualAmount / totalValue) * 100 : 0;
-		const targetAmount = (model.weight / 100) * totalValue;
+		const targetAmount = (targetWeight / 100) * totalValue;
 
-		// Calculating the deviation in percentage points
-		const differenceWeight = actualPercentage - model.weight;
+		const differenceWeight = actualPercentage - targetWeight;
 		const differencePLN = targetAmount - actualAmount;
 
 		return {
-			...model,
+			category: config.id,
+			name: config.name,
+			color: config.color,
+			weight: targetWeight,
 			actualAmount,
 			actualPercentage,
 			differenceWeight,

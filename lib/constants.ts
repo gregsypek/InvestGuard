@@ -7,6 +7,7 @@ export const SERVER_URL =
 import { AssetCategory, CategoryConfig } from "./types";
 
 import { Asset } from "./types";
+import { cn } from "./utils";
 
 export const CATEGORY_ASSETS: AssetCategory[] = [
 	"BONDS",
@@ -203,3 +204,12 @@ export const CATEGORY_DETAILS: Record<
 	CRYPTO: { label: "Kryptowaluty", color: "bg-blue-600", icon: "🪙" },
 	COMMODITIES: { label: "Surowce", color: "bg-brown-600", icon: "🛢️" },
 };
+
+// EN: Shared focus styles to remove thick ring and use subtle border instead
+// UI: Wspólne style dla focusa, aby usunąć gruby ring i użyć subtelnego borderu
+export const inputStyles = cn(
+	"h-10 w-full bg-background/50 border-border2 transition-all shadow-none",
+	"focus:bg-background focus:border-blue-500 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none",
+);
+
+

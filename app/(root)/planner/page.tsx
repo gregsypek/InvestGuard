@@ -49,12 +49,11 @@ export default async function PlannerPage({ searchParams }: Props) {
 				{/* LEWA KOLUMNA: Formularz (4 z 7) */}
 				<div className="lg:col-span-4 space-y-8">
 					{/* EN: Unified section header style */}
-					<div className="flex items-center gap-2 px-1">
-						<PlusSquare className="h-5 w-5 text-blue-500" />
-						<h2 className="h2-bold flex items-center gap-2 row-span-3">
-							Nowy plan inwestycyjny
-						</h2>
-					</div>
+
+					<h2 className="h2-bold flex items-center gap-2">
+						<PlusSquare className="h-5 w-5 text-primary" /> Nowy plan
+						inwestycyjny
+					</h2>
 
 					<Card className="bg-card border-border2 shadow-lg rounded-2xl overflow-hidden col-span-2">
 						<CardHeader className="bg-muted/30 pb-6">

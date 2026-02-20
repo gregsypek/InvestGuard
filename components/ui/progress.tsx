@@ -1,36 +1,36 @@
+"use client";
+
+import * as React from "react";
+import * as ProgressPrimitive from "@radix-ui/react-progress";
+
 import { cn } from "@/lib/utils";
 
-interface SimpleProgressProps {
-	value?: number;
-	className?: string;
-	indicatorColor?: string; // ⬅️ Dodajemy nowy opcjonalny prop
-}
+// EN: Extend props to include optional indicatorColor
+const Progress = React.forwardRef<
+	React.ElementRef<typeof ProgressPrimitive.Root>,
+	React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
+		indicatorColor?: string; // UI: Dodajemy nowy prop
+	}
+>(({ className, value, indicatorColor, ...props }, ref) => (
+	<ProgressPrimitive.Root
+		ref={ref}
+		className={cn(
+			"relative h-4 w-full overflow-hidden rounded-full bg-secondary",
+			className,
+		)}
+		{...props}
+	>
+		<ProgressPrimitive.Indicator
+			className="h-full w-full flex-1 bg-primary transition-all rounded-xl"
+			style={{
+				transform: `translateX(-${100 - (value || 0)}%)`,
+				// EN: Apply custom color if provided, otherwise fallback to class style
+				// UI: Nadpisujemy kolor tła, jeśli podano indicatorColor
+				backgroundColor: indicatorColor,
+			}}
+		/>
+	</ProgressPrimitive.Root>
+));
+Progress.displayName = ProgressPrimitive.Root.displayName;
 
-function Progress({
-	value = 0,
-	className,
-	indicatorColor,
-}: SimpleProgressProps) {
-	const safeValue = Math.min(100, Math.max(0, value));
-
-	return (
-		<div
-			className={cn(
-				"w-full h-3 bg-zinc-200 rounded-full overflow-hidden shadow-inner",
-				className,
-			)}
-		>
-			<div
-				className={cn(
-					"h-full transition-all duration-500 ease-in-out rounded-xl",
-					// 💡 Jeśli indicatorColor nie zostanie podany, użyjemy domyślnego gradientu
-					indicatorColor
-						? indicatorColor
-						: "bg-linear-to-r from-blue-600 to-cyan-600",
-				)}
-				style={{ width: `${safeValue}%` }}
-			/>
-		</div>
-	);
-}
 export { Progress };

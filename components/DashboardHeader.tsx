@@ -16,11 +16,18 @@ export const DashboardHeader = ({
 				{customBreadcrumbs ? (
 					customBreadcrumbs
 				) : (
-					<nav className="text-sm text-muted-foreground mb-1">
-						Dashboard / {name}
+					<nav className="text-sm text-muted-foreground mb-2 italic">
+						Dashboard / <span className="text-primary font-medium">{name}</span>
 					</nav>
 				)}
-				<h1 className="h1-bold text-3xl">{name}</h1>
+				<div>
+					<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
+						{name}
+					</h1>
+					<p className="text-muted-foreground font-medium mt-1">
+						Zarządzaj wybranym portfelem i kontroluj jego strategie
+					</p>
+				</div>
 			</div>
 
 			<div className="flex gap-3 ">

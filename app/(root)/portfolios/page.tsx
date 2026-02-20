@@ -71,21 +71,27 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 				customBreadcrumbs={
 					<nav className="text-sm text-muted-foreground mb-2">
 						Portfele /{" "}
-						<span className="text-primary font-medium">Wszystkie</span>
+						<span className="text-primary font-medium ">Wszystkie</span>
 					</nav>
 				}
 			/>
 
 			{/* EN: Portfolios Section with Sticky "Dock" for AddButton on Desktop */}
-			<div className="flex flex-col lg:flex-row gap-6 items-start relative">
+			<div className="flex flex-col lg:flex-row gap-6 items-start relative ">
 				{/* EN: Main container for portfolio cards with horizontal scroll on mobile */}
 				{/* UI: Główny kontener na karty portfeli */}
 				<div className="flex-1 w-full min-w-0">
-					<div className="flex overflow-x-auto pb-6 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 snap-x snap-mandatory no-scrollbar">
+					<div
+						className={cn(
+							"flex overflow-x-auto pb-6 justify-start gap-2",
+							"snap-x snap-mandatory no-scrollbar",
+							"-mx-4 px-4 md:mx-0 md:px-0", // EN: Negative margin offset by padding / UI: Przesunięcie marginesem i wyrównanie paddingiem
+						)}
+					>
 						{portfolios.map((p) => (
 							<div
 								key={p.id}
-								className="min-w-65 md:min-w-0 snap-center flex h-58"
+								className="min-w-70 md:min-w-[320px] flex snap-start shrink-0"
 							>
 								<PortfolioCard portfolio={p} />
 							</div>
@@ -95,29 +101,12 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 
 				{/* EN: The "Dock" - Sticky action button that stays visible during scroll */}
 				{/* UI: "Dock" - Przyklejony przycisk dodawania, widoczny przy skrolowaniu */}
-				<div className="w-full lg:w-auto xl:sticky  self-start ">
-					<Link href="/portfolios/new" className="group ">
-						<div
-							className={cn(
-								"flex lg:flex-col items-center justify-center gap-2 m-0 p-2 lg:h-58",
-								"border border-dashed border-border2 rounded-xl bg-card/50",
-								"hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-300",
-								"cursor-pointer shadow-sm lg:w-40 bg-blue-500/10 ",
-							)}
-						>
-							<div className="p-3 group-hover:scale-110 transition-transform">
-								<Plus className="h-6 w-6 text-blue-500" />
-							</div>
-							<div className="flex gap-3 lg:block lg:text-center items-center">
-								<p className="font-bold text-sm lg:text-xs uppercase tracking-widest text-foreground">
-									Dodaj
-								</p>
-								<p className=" text-xs text-muted-foreground uppercase">
-									Nowy Portfel
-								</p>
-							</div>
-						</div>
-					</Link>
+				<div className="w-full lg:w-auto xl:sticky justify-end flex self-end  ">
+					<AddButton className="h-10 px-4 py-0">
+						<Link href="/portfolios/new" className="gap-2 flex items-center">
+							<Plus className="h-4 w-4" /> Dodaj Nowy Portfel
+						</Link>
+					</AddButton>
 				</div>
 			</div>
 
@@ -125,7 +114,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 			<div className="pt-10 border-t border-border2">
 				<div className="flex justify-between items-end mb-6">
 					<div>
-						<h2 className="text-2xl font-bold ">Alokacja Globalna</h2>
+						<h2 className="text-2xl font-bold italic">Alokacja Globalna</h2>
 						<p className="text-muted-foreground text-sm">
 							Rozkład aktywów ze wszystkich Twoich portfeli (łącznie)
 						</p>

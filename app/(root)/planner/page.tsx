@@ -9,24 +9,23 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { getActivePortfolioId } from "@/lib/session"; // EN: Using our helper!
+import { getActivePortfolioId } from "@/lib/session";
 import { PlannerHeader } from "@/components/PlanerHeader";
+import { PlusSquare } from "lucide-react";
 
 interface Props {
 	searchParams: Promise<{ portfolioId?: string }>;
 }
 
 export default async function PlannerPage({ searchParams }: Props) {
-	// EN: Fetch data for the planner
 	const portfolios = await db.portfolio.findMany();
 	const investmentPlans = await db.investmentPlan.findMany({
-		where: { isExecuted: false }, // EN: Only show pending plans in stats
+		where: { isExecuted: false },
+		include: { portfolio: true }, // EN: Crucial for the PlanCard to show names
 	});
 
-	// EN: Resolve active portfolio context
 	const portfolioId = await getActivePortfolioId(searchParams);
 
-	// EN: Calculate stats for the header
 	const totalPlannedValue = investmentPlans.reduce(
 		(sum, plan) => sum + plan.value,
 		0,
@@ -35,6 +34,8 @@ export default async function PlannerPage({ searchParams }: Props) {
 
 	return (
 		<div className="space-y-10 pb-20">
+			{" "}
+			{/* EN: Consistent vertical spacing with PortfoliosPage */}
 			<PlannerHeader
 				totalPlannedValue={totalPlannedValue}
 				plannedCount={plannedCount}
@@ -44,18 +45,25 @@ export default async function PlannerPage({ searchParams }: Props) {
 					</nav>
 				}
 			/>
+			<div className="grid gap-8 xl:grid-cols-7 items-start">
+				{/* LEWA KOLUMNA: Formularz (4 z 7) */}
+				<div className="lg:col-span-4 space-y-8">
+					{/* EN: Unified section header style */}
+					<div className="flex items-center gap-2 px-1">
+						<PlusSquare className="h-5 w-5 text-blue-500" />
+						<h2 className="h2-bold flex items-center gap-2 row-span-3">
+							Nowy plan inwestycyjny
+						</h2>
+					</div>
 
-			{/* EN: Main layout grid: Form (4 cols) and List (3 cols) */}
-			<div className="grid gap-8 lg:grid-cols-7 items-start">
-				{/* LEWA KOLUMNA: Formularz */}
-				<div className="lg:col-span-4">
-					<Card className="bg-card border-border2 shadow-lg rounded-2xl overflow-hidden">
-						<CardHeader className="bg-muted/30 pb-8">
-							<CardTitle className="text-2xl font-black tracking-tight">
-								Nowy Plan
+					<Card className="bg-card border-border2 shadow-lg rounded-2xl overflow-hidden col-span-2">
+						<CardHeader className="bg-muted/30 pb-6">
+							<CardTitle className="text-xl font-black tracking-tight">
+								Parametry zakupu
 							</CardTitle>
 							<CardDescription className="text-sm font-medium">
-								Zdefiniuj aktywo, które zamierzasz dodać do portfela.
+								Zdefiniuj aktywo, które zamierzasz dodać do portfela w
+								najbliższym czasie.
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="pt-8">
@@ -67,13 +75,21 @@ export default async function PlannerPage({ searchParams }: Props) {
 					</Card>
 				</div>
 
-				{/* PRAWA KOLUMNA: Lista */}
-				<div className="lg:col-span-3 space-y-6">
-					<div className="flex items-center justify-between px-1">
-						<h2 className="text-xl font-bold">Oczekujące Realizacje</h2>
+				{/* PRAWA KOLUMNA: Lista (3 z 7) - STICKY */}
+				{/* EN: Making the list sticky so it stays visible while filling long forms */}
+				<div className="lg:col-span-3 space-y-8  lg:top-32">
+					<div className="flex items-center justify-between gap-2 px-1">
+						<div className="flex items-center gap-2">
+							<h2 className="text-xl font-bold mb-2">Oczekujące Realizacje</h2>
+						</div>
+						<span className="bg-blue-500/10 text-blue-500 text-[10px] font-bold px-2 py-0.5 rounded-full">
+							{plannedCount}
+						</span>
 					</div>
 
-					<PlannerList />
+					<div className="max-h-[70vh] overflow-y-auto no-scrollbar pr-1 -mr-1">
+						<PlannerList />
+					</div>
 				</div>
 			</div>
 		</div>

@@ -3,9 +3,9 @@
 import { CategoryStatus, PortfolioWithAssets } from "@/lib/types";
 import { useEffect, useState } from "react";
 import DashboardAnalitics from "./DashboardAnalitics";
-import { DashboardHeader } from "../DashboardHeader";
 import DashboardGoal from "../DashboardGoal";
 import { getPortfolioStats } from "@/lib/calculations";
+import { DashboardHeader } from "../DashboardHeader";
 
 interface Props {
 	portfolio: PortfolioWithAssets;

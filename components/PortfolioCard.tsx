@@ -24,7 +24,10 @@ const PortfolioCard = ({ portfolio: p }: PortfolioCardProps) => {
 	const progress = p.goal ? (totalValue / p.goal) * 100 : 0;
 
 	return (
-		<Card key={id} className=" transition-colors cursor-pointer border-border2">
+		<Card
+			key={id}
+			className=" transition-colors  cursor-pointer border-border2 "
+		>
 			<CardHeader>
 				<CardTitle className="flex justify-between items-center ">
 					<Link
@@ -96,7 +99,7 @@ const PortfolioCard = ({ portfolio: p }: PortfolioCardProps) => {
 				)}
 
 				{p.description && (
-					<p className="text-sm text-muted-foreground italic line-clamp-2 pt-2 border-t border-border2">
+					<p className="text-sm text-muted-foreground italic line-clamp-2 pt-2 border-t border-border2 mt-auto">
 						{p.description}
 					</p>
 				)}

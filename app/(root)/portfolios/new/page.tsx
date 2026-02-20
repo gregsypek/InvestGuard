@@ -34,7 +34,7 @@ export default async function NewPortfolioPage() {
 							<ChevronLeft className="h-4 w-4" />
 						</Link>
 						<nav className="text-sm text-muted-foreground">
-							Portfolios / New
+							Portfolios / <span className="text-primary">New</span>
 						</nav>
 					</div>
 				}

@@ -17,17 +17,22 @@ export const PortfoliosHeader = ({
 	customBreadcrumbs,
 }: PortfoliosHeaderProps) => {
 	return (
-		<header className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8">
+		<header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
 			<div>
 				{/* Render navigation if passed from the page */}
 				{customBreadcrumbs}
-				<h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+				<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
+					{title}
+				</h1>
+				<p className="text-muted-foreground font-medium mt-1">
+					Zarządzaj wszystkimi portfelami i dokonuj zmian w swoich inwestycjach.
+				</p>
 			</div>
 
 			{/* Stats container with horizontal scroll on mobile */}
 			<div className="flex items-center justify-end flex-wrap gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
 				{/* Total global value across all portfolios */}
-				<div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full border border-primary/20 shrink-0">
+				<div className="flex items-center gap-2  text-primary px-4 py-2 rounded-full border border-primary/20 shrink-0">
 					<Wallet2 className="h-4 w-4" />
 					<span className="font-bold whitespace-nowrap">
 						{totalValue.toLocaleString()} PLN

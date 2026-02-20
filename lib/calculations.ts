@@ -2,7 +2,6 @@
 import { Asset } from "@prisma/client";
 import { CATEGORY_CONFIG } from "./constants";
 import { CategoryStatus, Portfolio, PortfolioWithAssets } from "./types";
-import { cookies } from "next/headers";
 
 /**
  * Calculates the gap between the current portfolio and the target model.

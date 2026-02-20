@@ -21,7 +21,6 @@ export async function PlannerList() {
 	}
 
 	return (
-		// Grid: 1 kolumna na małych ekranach, 2 na dużych (wewnątrz prawej sekcji)
 		<div className="flex flex-col gap-4">
 			{plans.map((plan) => (
 				<PlanCard key={plan.id} plan={plan} />

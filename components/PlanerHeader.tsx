@@ -13,9 +13,9 @@ export function PlannerHeader({
 	customBreadcrumbs,
 }: PlannerHeaderProps) {
 	return (
-		<div className="mb-8">
+		<div className="mb-8 xl:mb-16">
 			{customBreadcrumbs}
-			<div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+			<header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
 				<div>
 					<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
 						Planer Inwestycyjny
@@ -42,7 +42,7 @@ export function PlannerHeader({
 						</span>
 					</div>
 				</div>
-			</div>
+			</header>
 		</div>
 	);
 }

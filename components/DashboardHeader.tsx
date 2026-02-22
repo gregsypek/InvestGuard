@@ -17,12 +17,13 @@ export const DashboardHeader = ({
 					customBreadcrumbs
 				) : (
 					<nav className="text-sm text-muted-foreground mb-2 italic">
-						Dashboard / <span className="text-primary font-medium">{name}</span>
+						Panel Główny /{" "}
+						<span className="text-primary font-medium">{name}</span>
 					</nav>
 				)}
 				<div>
 					<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
-						{name}
+						Analiza Portfela
 					</h1>
 					<p className="text-muted-foreground font-medium mt-1">
 						Zarządzaj wybranym portfelem i kontroluj jego strategie

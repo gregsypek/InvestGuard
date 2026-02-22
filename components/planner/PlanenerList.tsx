@@ -9,7 +9,7 @@ export async function PlannerList() {
 
 	if (plans.length === 0) {
 		return (
-			<div className="flex h-50 flex-col items-center justify-center rounded-md border border-dashed bg-slate-50 text-center animate-in fade-in-50">
+			<div className="flex h-50 flex-col items-center justify-center rounded-md border border-dashed bg-card text-center animate-in fade-in-50">
 				<p className="text-muted-foreground text-sm">
 					Brak zaplanowanych inwestycji.
 				</p>

@@ -81,6 +81,11 @@ export default function PortfolioForm({
 		],
 	});
 
+	// EN: Shared focus styles to remove thick ring and use subtle border instead
+	// UI: Wspólne style dla focusa, aby usunąć gruby ring i użyć subtelnego borderu
+	const inputStyles =
+		"h-10 w-full bg-background/20 border-border2 focus:bg-background transition-all focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-blue-800 shadow-none";
+
 	// 3. Calculate total % (casting to number avoids the 'unknown' error)
 	const totalAllocation = (targets as number[]).reduce(
 		(acc: number, val) => acc + (Number(val) || 0),
@@ -140,6 +145,7 @@ export default function PortfolioForm({
 							{...field}
 							// Casting field.value fixes the 'unknown' TypeScript error
 							value={(field.value as number) ?? 0}
+							className={inputStyles}
 						/>
 					</FormControl>
 					<FormMessage />
@@ -166,7 +172,11 @@ export default function PortfolioForm({
 									<FormItem>
 										<FormLabel>Nazwa Portfela</FormLabel>
 										<FormControl>
-											<Input placeholder="np. Emerytalny" {...field} />
+											<Input
+												placeholder="np. Emerytalny"
+												{...field}
+												className={inputStyles}
+											/>
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -183,6 +193,7 @@ export default function PortfolioForm({
 												type="number"
 												{...field}
 												value={(field.value as number) ?? 0}
+												className={inputStyles}
 											/>
 										</FormControl>
 										<FormMessage />
@@ -203,6 +214,7 @@ export default function PortfolioForm({
 											{...field}
 											// Override the value to ensure it's never null
 											value={field.value ?? ""}
+											className={inputStyles}
 										/>
 									</FormControl>
 									<FormMessage />

@@ -4,6 +4,7 @@ export const APP_DESCRIPTION =
 	"A modern  platform for managage investments.";
 export const SERVER_URL =
 	process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+import { Portfolio } from "@prisma/client";
 import { AssetCategory, CategoryConfig } from "./types";
 
 import { Asset } from "./types";
@@ -212,4 +213,15 @@ export const inputStyles = cn(
 	"focus:bg-background focus:border-blue-500 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none",
 );
 
-
+// EN: Map database columns to UI category constants
+// UI: Mapowanie kolumn bazy danych na stałe kategorii UI
+export const PORTFOLIO_STRATEGY_MAP = {
+	targetBonds: "BONDS",
+	targetDeveloped: "DEVELOPED",
+	targetEmerging: "EMERGING",
+	targetGold: "GOLD",
+	targetBooster: "BOOSTER",
+	targetCash: "CASH",
+	targetCrypto: "CRYPTO",
+	targetCommodities: "COMMODITIES",
+} as const;

@@ -44,6 +44,29 @@
 	--color-portfolio-emerging: var(--portfolio-emerging);
 	--color-portfolio-booster: var(--portfolio-booster);
 	--color-portfolio-cash: var(--portfolio-cash);
+
+	/* EN: Defining custom colors using Tailwind 4 theme variables */
+	/* UI: Definicja kolorów dla modułów inwestycyjnych */
+
+	--color-bond-orange: oklch(0.96 0.04 70);
+	--color-bond-orange-border: oklch(0.85 0.1 70);
+
+	--color-bond-blue: oklch(0.99 0.03 240);
+	--color-bond-blue-border: oklch(0.85 0.08 240);
+
+	/* EN: Alpha Selection (Purple) theme */
+	--color-alpha-purple: oklch(0.92 0.06 300);
+	--color-alpha-purple-border: oklch(0.8 0.15 300);
+	/* EN: Dark mode overrides using CSS variables */
+	/* UI: Nadpisywanie kolorów dla trybu ciemnego */
+
+	--color-primary: var(--primary);
+	--color-switch-off: var(--switch-off);
+
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+
+	--color-muted-foreground: var(--muted-foreground);
 }
 
 @theme inline {
@@ -59,7 +82,7 @@
 
 :root {
 	/* Light mode settings ☀️ */
-	--background: oklch(1 0 0);
+	--background: oklch(0.99 0 00);
 	--foreground: oklch(0.12 0.03 245);
 
 	/* Sidebar uses your base navy color in light mode */
@@ -70,12 +93,22 @@
 	--card: oklch(1 0 0);
 
 	/* Softer, professional colors for light mode (lower Chroma) */
-	--portfolio-gold: oklch(0.6 0.1 85);
-	--portfolio-bonds: oklch(0.6 0.1 230);
-	--portfolio-developed: oklch(0.6 0.2 160);
-	--portfolio-emerging: oklch(0.7 0.1 140);
-	--portfolio-booster: oklch(0.7 0.1 20);
-	--portfolio-cash: oklch(0.9 0.2 40);
+	--portfolio-bonds: oklch(0.62 0.16 256); /* Blue */
+	--portfolio-developed: oklch(0.63 0.19 145); /* Green */
+	--portfolio-emerging: oklch(0.7 0.19 47); /* Orange */
+	--portfolio-gold: oklch(0.8 0.16 85); /* Gold/Yellow */
+	--portfolio-cash: oklch(0.85 0.1 180); /* Teal/Cyan */
+	--portfolio-crypto: oklch(0.68 0.14 195); /* Purple */
+	--portfolio-booster: oklch(0.65 0.2 30); /* Red/Pink */
+	--portfolio-commodities: oklch(0.5 0.1 50); /* Brown/Earth */
+
+	--primary: oklch(0.6 0.18 250);
+	--switch-off: oklch(0.82 0 0);
+
+	--popover: oklch(1 0 0);
+	--popover-foreground: var(--foreground);
+
+	--muted-foreground: oklch(0.55 0.03 245);
 }
 
 .dark {
@@ -95,10 +128,22 @@
 	/* Card background should be distinct from page background */
 	--card: oklch(0.18 0.04 250);
 
-	/* Vibrant, glowing colors for dark mode */
-	--portfolio-gold: oklch(0.85 0.12 85);
-	--portfolio-bonds: oklch(0.75 0.08 230);
-	--portfolio-developed: oklch(0.8 0.08 160);
-	--portfolio-emerging: oklch(0.75 0.1 140);
-	--portfolio-booster: oklch(0.8 0.1 20);
+	/* EN: Dark mode overrides using CSS variables */
+	/* UI: Nadpisywanie kolorów dla trybu ciemnego */
+	--color-bond-orange: oklch(0.18 0.04 250);
+	--color-bond-orange-border: oklch(0.4 0.1 70);
+
+	--color-bond-blue: oklch(0.18 0.04 250);
+	--color-bond-blue-border: oklch(0.4 0.08 240);
+
+	--color-alpha-purple: oklch(0.18 0.04 250);
+	--color-alpha-purple-border: oklch(0.4 0.15 300);
+
+	--primary: oklch(0.7 0.2 250);
+	--switch-off: oklch(0.4 0.05 250);
+
+	--popover: oklch(0.18 0.04 250);
+	--popover-foreground: var(--foreground);
+
+	--muted-foreground: oklch(0.7 0.03 245);
 }

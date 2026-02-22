@@ -3,7 +3,6 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
 
 import { addAssetAction } from "@/app/actions";
 import { Input } from "@/components/ui/input";
@@ -16,27 +15,30 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { SubmitButton } from "../SubmitButton";
-import { CATEGORY_ASSETS } from "@/lib/constants";
+import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
+import Link from "next/link";
+import { Button } from "../button";
 import { cn } from "@/lib/utils";
-
-const CATEGORY_LABELS: Record<string, string> = {
-	BONDS: "Obligacje",
-	DEVELOPED: "Rynki Rozwinięte",
-	EMERGING: "Rynki Wschodzące",
-	GOLD: "Złoto",
-	BOOSTER: "Booster (Alpha)",
-	CASH: "Gotówka",
-	CRYPTO: "Kryptowaluty",
-	COMMODITIES: "Surowce",
-};
-
-export default function AddAssetForm({ portfolioId }: { portfolioId: string }) {
+interface AddAssetFormProps {
+	portfolioId: string;
+	allowedCategories?: string[]; // Opcjonalna lista kategorii z bazy
+}
+export default function AddAssetForm({
+	portfolioId,
+	allowedCategories = [],
+}: AddAssetFormProps) {
 	const router = useRouter();
 	const formRef = useRef<HTMLFormElement>(null);
 	const [isPending, setIsPending] = useState(false);
-	const [selectedCategory, setSelectedCategory] = useState<string>("");
+	// EN: Initialize state with the only category if available to avoid React 19 cascading warnings
+	// UI: Inicjalizacja stanu jedyną dostępną kategorią, by uniknąć ostrzeżeń React 19
+	const [selectedCategory, setSelectedCategory] = useState<string>(() =>
+		allowedCategories.length === 1 ? allowedCategories[0] : "",
+	);
 
+	// EN: Filter categories or return empty array / UI: Filtrujemy kategorie lub zwracamy pustą tablicę
+	// const categoriesToDisplay = allowedCategories || [];
+	const hasNoCategories = allowedCategories.length === 0;
 	async function clientAction(formData: FormData) {
 		setIsPending(true);
 		const result = await addAssetAction(formData);
@@ -53,11 +55,6 @@ export default function AddAssetForm({ portfolioId }: { portfolioId: string }) {
 			toast.error(result?.message || "Wystąpił błąd podczas zapisywania");
 		}
 	}
-
-	// EN: Shared focus styles to remove thick ring and use subtle border instead
-	// UI: Wspólne style dla focusa, aby usunąć gruby ring i użyć subtelnego borderu
-	const inputStyles =
-		"h-10 w-full bg-background/50 border-border2 focus:bg-background transition-all focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-blue-500 shadow-none";
 
 	return (
 		<Card className="w-full bg-card shadow-lg border-border2 py-8">
@@ -129,48 +126,84 @@ export default function AddAssetForm({ portfolioId }: { portfolioId: string }) {
 
 					{/* EN: Fixing alignment by ensuring the container and trigger match Input heights exactly */}
 					{/* UI: Naprawa wyrównania poprzez wymuszenie identycznej wysokości SelectTrigger */}
-					<div>
+					<div className={cn(hasNoCategories && "-mt-3")}>
 						<Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1 mb-2">
 							Kategoria
 						</Label>
 						<Select
 							value={selectedCategory}
 							onValueChange={setSelectedCategory}
-							disabled={isPending}
+							// EN: Critical: Physical 'disabled' prevents useFormStatus from triggering loader incorrectly
+							// UI: Kluczowe: Fizyczny 'disabled' zapobiega błędnemu uruchamianiu loadera przez useFormStatus
+							disabled={isPending || hasNoCategories}
 							required
 						>
-							<SelectTrigger
-								className={cn(
-									inputStyles,
-									"flex items-center opacity-100 text-foreground",
-								)}
-							>
-								<SelectValue placeholder="Wybierz..." />
+							<SelectTrigger className={inputStyles}>
+								<SelectValue
+									placeholder={
+										hasNoCategories ? "Brak kategorii..." : "Wybierz..."
+									}
+								/>
 							</SelectTrigger>
-
 							<SelectContent>
-								{CATEGORY_ASSETS.map((category) => (
-									<SelectItem key={category} value={category}>
-										<div className="flex items-center gap-2">
-											<div
-												className="h-2 w-2 rounded-full border border-border2"
-												style={{
-													backgroundColor: `var(--portfolio-${category.toLowerCase()})`,
-												}}
-											/>
-											{CATEGORY_LABELS[category] || category}
-										</div>
-									</SelectItem>
-								))}
+								{hasNoCategories ? (
+									<div className="p-4 text-center text-xs text-destructive font-bold uppercase">
+										Brak zdefiniowanych kategorii w tym portfelu
+									</div>
+								) : (
+									allowedCategories.map((cat) => (
+										<SelectItem key={cat} value={cat}>
+											<div className="flex items-center gap-2">
+												{/* EN: Dot is back / UI: Kropka wraca */}
+												<div
+													className="h-2.5 w-2.5 rounded-full border border-border2"
+													style={{
+														backgroundColor:
+															COLORS[cat as keyof typeof COLORS] || "#ccc",
+													}}
+												/>
+												<span className="font-medium text-xs">
+													{CATEGORY_LABELS[
+														cat as keyof typeof CATEGORY_LABELS
+													] || cat}
+												</span>
+											</div>
+										</SelectItem>
+									))
+								)}
 							</SelectContent>
 						</Select>
+						{/* EN: Link to configuration if categories are missing */}
+						{/* UI: Link do konfiguracji, jeśli brakuje kategorii */}
+						{hasNoCategories && (
+							<Link
+								href={`/portfolios/edit/${portfolioId}`}
+								className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 mt-1 font-bold"
+							>
+								<Plus className="h-3 w-3" /> Skonfiguruj kategorie portfela
+							</Link>
+						)}
 					</div>
 
 					<div className="md:pb-0 flex justify-end">
-						<SubmitButton
+						{/* <SubmitButton
 							label={isPending ? "Zapisywanie..." : "Zapisz aktywo"}
-							className="w-full uppercase  text-xs h-10"
-						/>
+							// EN: Pass disabled prop to prevent 'Processing...' state on empty categories
+							// UI: Przekaż disabled, aby uniknąć stanu 'Processing...' przy braku kategorii
+							disabled={hasNoCategories || !selectedCategory}
+							className="w-full uppercase text-xs h-10"
+						/> */}
+						<Button
+							type="submit"
+							disabled={hasNoCategories || !selectedCategory}
+							className={cn(
+								"w-full md:w-auto font-semibold transition-all border duration-200 active:scale-95 cursor-pointer hover:border-border2 bg-blue-400",
+								(hasNoCategories || !selectedCategory) &&
+									"cursor-not-allowed opacity-50",
+							)}
+						>
+							<>{isPending ? "Zapisywanie..." : "Zapisz aktywo"}</>
+						</Button>
 					</div>
 				</form>
 			</CardContent>

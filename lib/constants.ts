@@ -4,7 +4,6 @@ export const APP_DESCRIPTION =
 	"A modern  platform for managage investments.";
 export const SERVER_URL =
 	process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
-import { Portfolio } from "@prisma/client";
 import { AssetCategory, CategoryConfig } from "./types";
 
 import { Asset } from "./types";

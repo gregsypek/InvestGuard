@@ -3,6 +3,7 @@
 import { db } from "../db";
 import { revalidatePath } from "next/cache";
 import { PortfolioFormValues, PortfolioSchema } from "../validations/portfolio";
+import { PORTFOLIO_STRATEGY_MAP } from "../constants";
 
 export async function createPortfolio(values: PortfolioFormValues) {
 	// Server-side validation
@@ -95,5 +96,48 @@ export async function deleteAsset(assetId: string) {
 	} catch (error) {
 		console.error("Asset Delete Error:", error);
 		return { success: false, error: "Failed to delete asset" };
+	}
+}
+
+export async function getPortfolioCategories(id: string) {
+	try {
+		const portfolio = await db.portfolio.findUnique({
+			where: { id },
+			select: {
+				targetDeveloped: true,
+				targetEmerging: true,
+				targetBonds: true,
+				targetGold: true,
+				targetBooster: true,
+				targetCash: true,
+				targetCrypto: true,
+				targetCommodities: true,
+			},
+		});
+		console.log("🚀 ~ getPortfolioCategories ~ portfolio:", portfolio);
+
+		if (!portfolio) return { success: false, categories: [] };
+
+		// EN: Map numeric targets to category strings if target > 0
+		// UI: Mapujemy cele liczbowe na nazwy kategorii, jeśli cel > 0
+		// const activeCategories = [];
+		// if (portfolio.targetBonds > 0) activeCategories.push("BONDS");
+		// if (portfolio.targetDeveloped > 0) activeCategories.push("DEVELOPED");
+		// if (portfolio.targetEmerging > 0) activeCategories.push("EMERGING");
+		// if (portfolio.targetGold > 0) activeCategories.push("GOLD");
+		// if (portfolio.targetBooster > 0) activeCategories.push("BOOSTER");
+		// if (portfolio.targetCash > 0) activeCategories.push("CASH");
+		// if (portfolio.targetCrypto > 0) activeCategories.push("CRYPTO");
+		// if (portfolio.targetCommodities > 0) activeCategories.push("COMMODITIES");
+		// Twoja logika w formie "reusable function"
+
+		const activeCategories = Object.entries(PORTFOLIO_STRATEGY_MAP)
+			.filter(([key]) => portfolio[key as keyof typeof portfolio]  > 0) // Najpierw odsiewamy to, co nas nie interesuje
+			.map(([, value]) => value); // Potem zostawiamy tylko nazwy kategorii
+
+		return { success: true, categories: activeCategories };
+	} catch (error) {
+		console.error("Error:", error);
+		return { success: false, categories: [] };
 	}
 }

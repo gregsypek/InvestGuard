@@ -2,14 +2,23 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import Menu from "./shared/Menu";
-
 import Cookies from "js-cookie";
-// Define what data the Header component needs
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "./ui/select";
+import { WalletCards } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 interface HeaderProps {
 	portfolios: { id: string; name: string }[];
 	userButton: React.ReactNode;
-	selectedPortfolioId: string; // Dodajemy to jako prop
+	selectedPortfolioId: string;
 }
+
 export default function Header({
 	portfolios = [],
 	userButton,
@@ -17,14 +26,9 @@ export default function Header({
 }: HeaderProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const currentId = searchParams.get("portfolioId");
 
 	const handlePortfolioChange = (id: string) => {
-		// 1. Zapisujemy w ciasteczku, żeby serwer wiedział o tym przy następnym wejściu
 		Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
-
-		// 2. Zmieniamy URL - to spowoduje, że Next.js "przerenderuje" komponenty
-		// Jeśli ID jest puste, możemy usunąć parametr z URL
 		if (id) {
 			router.push(`/dashboard?portfolioId=${id}`);
 		} else {
@@ -32,28 +36,64 @@ export default function Header({
 		}
 	};
 
-	// Wyliczamy wartość, którą select ma wyświetlić "tu i teraz"
-	const displayValue =
-		searchParams.get("portfolioId") || currentId || selectedPortfolioId || "";
+	// 1. Pobieramy surowe ID z URL lub ciastek
+	const rawId = searchParams.get("portfolioId") || selectedPortfolioId || "";
+
+	// 2. KLUCZOWE: Sprawdzamy, czy to ID faktycznie znajduje się w pobranych portfelach
+	// Eliminujemy w ten sposób "martwe" ID po usunięciu portfela
+	const isValidId = portfolios.some((p) => p.id === rawId);
+	const displayValue = isValidId ? rawId : "";
+
 	return (
-		<header className="flex justify-between items-center p-2  border-border  bg-background text-foreground border-b">
-			{/* <h1 className="text-xl font-bold">My Wallets</h1> */}
-			<div className="px-5  ">
-				<select
-					value={displayValue} // Select zawsze pokazuje to, co wynika z logiki powyżej
-					onChange={(e) => handlePortfolioChange(e.target.value)}
-					className="p-2 border rounded-md bg-background"
+		<header className="flex justify-between items-center p-2 border-b border-border bg-background text-foreground sticky top-0 z-50">
+			<div className="px-5 flex items-center gap-3">
+				<Select
+					value={displayValue || undefined}
+					onValueChange={(value) => handlePortfolioChange(value)}
+					disabled={portfolios.length === 0} // Zablokuj klikanie, jeśli lista jest pusta
 				>
-					<option value="">All Portfolios</option>
-					{portfolios?.map((p) => (
-						<option key={p.id} value={p.id}>
-							{p.name}
-						</option>
-					))}
-				</select>
+					<SelectTrigger
+						className={cn(
+							"w-55 bg-muted/50 border-border2 font-bold text-[11px] uppercase tracking-widest h-9 transition-all",
+							!displayValue && portfolios.length > 0
+								? "border-primary/50 animate-pulse"
+								: "border-border2",
+						)}
+					>
+						<div className="flex items-center gap-2 overflow-hidden">
+							<WalletCards
+								className={cn(
+									"h-4 w-4 shrink-0",
+									displayValue ? "text-primary" : "text-muted-foreground",
+								)}
+							/>
+							<div className="truncate">
+								<SelectValue
+									placeholder={
+										portfolios.length === 0
+											? "Brak portfeli"
+											: "Wybierz portfel..."
+									}
+								/>
+							</div>
+						</div>
+					</SelectTrigger>
+
+					<SelectContent>
+						{portfolios.map((p) => (
+							<SelectItem
+								key={p.id}
+								value={p.id}
+								className="text-xs font-medium focus:bg-primary/10"
+							>
+								{p.name}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</div>
-			<div className="px-5  ">
-				{/* Przekazujemy przycisk użytkownika do Menu */}
+
+			<div className="px-5 flex items-center gap-4">
 				<Menu userButton={userButton} />
 			</div>
 		</header>

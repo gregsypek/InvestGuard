@@ -1,63 +1,74 @@
+"use client";
+
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronUp, Lightbulb } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 import { useState } from "react";
 
-const BulbTip = ({ title, content }: { title: string; content: string }) => {
-	const [showTip, setShowTip] = useState(false); // EN: State to toggle visibility
+interface BulbTipProps {
+	title: string;
+	content: string;
+	// EN: Optional prop to start expanded (e.g., for desktop views)
+	// UI: Opcjonalny prop, aby zacząć w stanie rozwiniętym
+	defaultExpanded?: boolean;
+}
+
+const BulbTip = ({ title, content, defaultExpanded = false }: BulbTipProps) => {
+	const [showTip, setShowTip] = useState(defaultExpanded);
 
 	return (
-		<div className="rounded-xl overflow-hidden transition-all duration-300">
-			<button
-				onClick={() => setShowTip(!showTip)}
-				className="w-full p-4 flex items-center justify-between transition-colors cursor-pointer group"
-			>
-				<div className="flex items-center gap-2 font-bold text-lg">
-					{/* EN: Wrapper for the icon to handle the glow effect consistently */}
-					{/* UI: Kontener dla ikony, aby obsłużyć efekt poświaty */}
-					<div className="relative flex items-center justify-center">
-						{/* EN: The glow effect (hidden by default, appears on group-hover) */}
-						{/* UI: Efekt poświaty (ukryty, pojawia się po najechaniu na grupę) */}
-						<div
-							className={cn(
-								"absolute inset-0 bg-yellow-400 blur-md opacity-0",
-								showTip && "opacity-50 transition-opacity",
-							)}
-						/>
-
-						<Lightbulb
-							className={cn(
-								"relative h-6 w-6  transition-all duration-300",
-								showTip ? "text-yellow-400" : "text-yellow-600",
-							)}
-							aria-expanded={showTip}
-						/>
-					</div>
-
-					<span className="transition-colors duration-300 ">{title}</span>
-				</div>
-
-				<div className="text-muted-foreground  transition-colors">
-					{showTip ? (
-						<ChevronUp className="h-5 w-5" />
-					) : (
-						<ChevronDown className="h-5 w-5" />
+		<button
+			onClick={() => setShowTip(!showTip)}
+			// EN: Inline flex keeps everything on one line. Text matches terminal style.
+			// UI: Inline flex trzyma wszystko w jednej linii. Styl dopasowany do terminala.
+			className="inline-flex items-center text-[11px] font-medium uppercase tracking-wider cursor-pointer group text-left"
+			title="Kliknij, aby rozwinąć/zwinąć wskazówkę"
+		>
+			{/* EN: Icon Wrapper with subtle hover glow */}
+			{/* UI: Kontener ikony z subtelną poświatą przy najechaniu */}
+			<div className="relative flex items-center justify-center mr-1.5">
+				<div
+					className={cn(
+						"absolute inset-0 bg-yellow-400 blur-sm transition-opacity duration-300",
+						showTip ? "opacity-30" : "opacity-0 group-hover:opacity-20",
 					)}
-				</div>
-			</button>
+				/>
+				<Lightbulb
+					className={cn(
+						"relative h-3.5 w-3.5 transition-colors duration-300",
+						showTip
+							? "text-yellow-500"
+							: "text-yellow-600 group-hover:text-yellow-500",
+					)}
+				/>
+			</div>
 
-			{/* EN: Animating the visibility of the content */}
-			{/* UI: Animacja widoczności treści */}
-			<div
+			{/* EN: The Title (e.g. "Zasada:") */}
+			<span
 				className={cn(
-					"px-6 overflow-hidden transition-all duration-300 ease-in-out",
-					showTip ? "max-h-40 pb-6 opacity-100" : "max-h-0 opacity-0",
+					"transition-colors duration-300 whitespace-nowrap",
+					showTip
+						? "text-foreground font-bold"
+						: "text-muted-foreground group-hover:text-foreground",
 				)}
 			>
-				<p className="text-muted-foreground text-sm border-t border-bond-blue-border pt-4">
+				{title}
+			</span>
+
+			{/* EN: Horizontal expand container. We animate max-width for the sliding effect. */}
+			{/* UI: Kontener rozwijany w poziomie. Animujemy max-width dla efektu wysuwania. */}
+			<div
+				className={cn(
+					"overflow-hidden transition-all duration-500 ease-in-out flex items-center",
+					showTip ? "max-w-200 opacity-100" : "max-w-0 opacity-0",
+				)}
+			>
+				{/* EN: whitespace-nowrap prevents the text from wrapping onto multiple lines during animation */}
+				{/* UI: whitespace-nowrap zapobiega zawijaniu tekstu w trakcie animacji */}
+				<span className="pl-1 text-muted-foreground whitespace-nowrap">
 					{content}
-				</p>
+				</span>
 			</div>
-		</div>
+		</button>
 	);
 };
 

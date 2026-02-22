@@ -50,7 +50,8 @@ export default async function EditPortfolioPage({ params }: Props) {
 							<ChevronLeft className="h-4 w-4" />
 						</Link>
 						<nav className="text-sm text-muted-foreground">
-							Portfolios / Edit / {portfolio.name}
+							Portfolios / Edit /{" "}
+							<span className="text-primary">{portfolio.name}</span>
 						</nav>
 					</div>
 				}

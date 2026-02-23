@@ -1,14 +1,13 @@
-// lib/db.ts
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-export const db =
-	globalForPrisma.prisma ||
-	new PrismaClient({
-		// Prisma Accelerate URL z .env.local
-		accelerateUrl: process.env.PRISMA_DATABASE_URL,
-		log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-	});
+function createPrismaClient() {
+	const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+	return new PrismaClient({ adapter });
+}
+
+export const db = globalForPrisma.prisma || createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;

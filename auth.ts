@@ -1,17 +1,11 @@
 import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { db } from "@/lib/db"; // Upewnij się, że ścieżka do instancji Prisma jest poprawna
-
+import { db } from "@/lib/db";
+import { authConfig } from "./auth.config"; // Importujemy lekki szkielet
 export const { handlers, auth, signIn, signOut } = NextAuth({
 	adapter: PrismaAdapter(db),
 	session: { strategy: "jwt" },
-	providers: [
-		Google({
-			clientId: process.env.GOOGLE_CLIENT_ID,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-		}),
-	],
+	...authConfig, // Rozpakowujemy dostawców (Google) i strony
 	callbacks: {
 		// 1. Najpierw dopisujemy ID do tokena JWT
 		async jwt({ token, user }) {
@@ -30,4 +24,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 	},
 });
 
-// TODO: dopisać do swojego adresu bazy w .env:?sslmode=verify-full (jeśli  dostawca bazy to obsługuje).
+//TODO: dopisać do swojego adresu bazy w .env:?sslmode=verify-full (jeśli  dostawca bazy to obsługuje).

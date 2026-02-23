@@ -5,6 +5,7 @@ import { db } from "@/lib/db"; // Upewnij się, że ścieżka do instancji Prism
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
 	adapter: PrismaAdapter(db),
+	session: { strategy: "jwt" },
 	providers: [
 		Google({
 			clientId: process.env.GOOGLE_CLIENT_ID,
@@ -12,13 +13,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 		}),
 	],
 	callbacks: {
-		// EN: Attach userId to the session object
-		// UI: Przypisujemy ID użytkownika z bazy do sesji, by używać go w akcjach
-		async session({ session, user }) {
+		// 1. Najpierw dopisujemy ID do tokena JWT
+		async jwt({ token, user }) {
+			if (user) {
+				token.id = user.id;
+			}
+			return token;
+		},
+		// 2. Potem przekazujemy to ID z tokena do sesji widocznej w aplikacji
+		async session({ session, token }) {
 			if (session.user) {
-				session.user.id = user.id;
+				session.user.id = token.id as string;
 			}
 			return session;
 		},
 	},
 });
+
+// TODO: dopisać do swojego adresu bazy w .env:?sslmode=verify-full (jeśli  dostawca bazy to obsługuje).

@@ -1,64 +1,120 @@
 // components/ui/PortfolioEmptyState.tsx
-import { Wallet, SearchX, PlusCircle } from "lucide-react";
+import {
+	Wallet,
+	SearchX,
+	PlusCircle,
+	CalendarDays,
+	LayoutDashboard,
+} from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-// EN: Define possible states for the empty view
-// UI: Definiujemy możliwe stany dla widoku pustego
-type EmptyStateVariant = "NOT_SELECTED" | "NOT_FOUND";
+// EN: Added PLANNER to variants
+// UI: Dodaliśmy PLANNER do dostępnych wariantów
+type EmptyStateVariant =
+	| "NOT_SELECTED"
+	| "NOT_FOUND"
+	| "PLANNER"
+	| "PORTFOLIOS";
 
 interface Props {
 	variant: EmptyStateVariant;
+	title?: string;
+	description?: string;
+	userName?: string | null;
 }
 
-export default function PortfolioEmptyState({ variant }: Props) {
-	const isNotSelected = variant === "NOT_SELECTED";
+export default function PortfolioEmptyState({
+	variant,
+	title,
+	description,
+	userName,
+}: Props) {
+	// EN: Configuration map for different application areas
+	// UI: Mapa konfiguracji dla różnych obszarów aplikacji
+	const contentConfig = {
+		NOT_SELECTED: {
+			icon: <Wallet className="h-12 w-12 text-blue-500" />,
+			defaultTitle: "Wybierz portfel",
+			defaultDescription:
+				"Aby zobaczyć analizę i aktywa, musisz najpierw wybrać jeden ze swoich portfeli.",
+			showAddButton: true,
+		},
+		NOT_FOUND: {
+			icon: <SearchX className="h-12 w-12 text-destructive" />,
+			defaultTitle: "Nie znaleziono portfela",
+			defaultDescription:
+				"Wygląda na to, że portfel o tym identyfikatorze nie istnieje lub został usunięty.",
+			showAddButton: false,
+		},
+		PLANNER: {
+			icon: <CalendarDays className="h-12 w-12 text-emerald-500" />,
+			defaultTitle: "Zaprojektuj swój kolejny ruch",
+			defaultDescription:
+				"Twój portfel czeka na nowe aktywa. Zaplanuj zakupy  lub uzupełnij bazę, aby utrzymać strategię.",
+			showAddButton: true,
+		},
+		PORTFOLIOS: {
+			icon: <LayoutDashboard className="h-12 w-12 text-indigo-500" />,
+			defaultTitle: "Twoja lista portfeli jest pusta",
+			defaultDescription:
+				"Nie stworzyłeś jeszcze żadnego portfela inwestycyjnego. Dodaj go teraz, aby zacząć grupować swoje aktywa.",
+			showAddButton: true,
+		},
+	};
+
+	const config = contentConfig[variant];
+	const displayTitle = title ?? config.defaultTitle;
+	const displayDescription = description ?? config.defaultDescription;
 
 	return (
 		<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 max-w-md mx-auto p-6">
-			{/* EN: Visual icon based on the error type */}
-			<div className="p-5 bg-blue-500/10 rounded-full animate-in fade-in zoom-in duration-500">
-				{isNotSelected ? (
-					<Wallet className="h-12 w-12 text-blue-500" />
-				) : (
-					<SearchX className="h-12 w-12 text-destructive" />
-				)}
+			{/* EN: Personal greeting / UI: Personalizowane powitanie */}
+			{userName && variant !== "NOT_FOUND" && (
+				<div className="animate-in fade-in slide-in-from-top-4 duration-700">
+					<p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">
+						Witaj, {userName} 👋
+					</p>
+				</div>
+			)}
+
+			{/* EN: Icon container / UI: Kontener ikony */}
+			<div className="p-5 bg-muted/50 rounded-full animate-in fade-in zoom-in duration-500 shadow-inner">
+				{config.icon}
 			</div>
 
 			<div className="space-y-2">
-				<h2 className="text-2xl font-bold tracking-tight">
-					{isNotSelected ? "Wybierz portfel" : "Nie znaleziono portfela"}
-				</h2>
-
-				<p className="text-muted-foreground text-sm">
-					{isNotSelected
-						? "Aby zobaczyć analizę i aktywa, musisz najpierw wybrać jeden ze swoich portfeli z listy powyżej."
-						: "Wygląda na to, że portfel o tym identyfikatorze nie istnieje lub został usunięty."}
+				<h2 className="text-3xl font-black tracking-tighter">{displayTitle}</h2>
+				<p className="text-muted-foreground text-sm leading-relaxed">
+					{displayDescription}
 				</p>
 			</div>
 
-			<div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-				{/* EN: Primary action - always good to have a way out */}
-				<Button
-					asChild
-					variant={isNotSelected ? "default" : "outline"}
-					className="gap-2"
-				>
-					<Link href="/portfolios">
-						<Wallet className="h-4 w-4" />
-						Zarządzaj portfelami
-					</Link>
-				</Button>
+			<div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto pt-4">
+				{/* EN: Only show the "Manage" button if we are NOT already on the Portfolios page */}
+				{/* UI: Pokaż przycisk "Zarządzaj", tylko jeśli NIE jesteśmy na stronie listującej portfele */}
+				{variant !== "PORTFOLIOS" && (
+					<Button
+						asChild
+						variant={variant === "NOT_FOUND" ? "outline" : "default"}
+						className="gap-2 shadow-lg hover:shadow-xl transition-all"
+					>
+						<Link href="/portfolios">
+							<Wallet className="h-4 w-4" />
+							Zarządzaj portfelami
+						</Link>
+					</Button>
+				)}
 
-				{isNotSelected && (
+				{config.showAddButton && (
 					<Button
 						asChild
 						variant="outline"
-						className="gap-2 border-dashed hadow-lg cursor-pointer hover:bg-primary/40"
+						className="gap-2 border-dashed border-2 hover:bg-primary/5 transition-colors"
 					>
 						<Link href="/portfolios/new">
 							<PlusCircle className="h-4 w-4" />
-							Dodaj nowy
+							Dodaj swój pierwszy portfel
 						</Link>
 					</Button>
 				)}

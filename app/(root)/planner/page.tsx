@@ -12,16 +12,38 @@ import {
 import { getActivePortfolioId } from "@/lib/session";
 import { PlannerHeader } from "@/components/PlanerHeader";
 import { PlusSquare } from "lucide-react";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 
 interface Props {
 	searchParams: Promise<{ portfolioId?: string }>;
 }
 
 export default async function PlannerPage({ searchParams }: Props) {
-	const portfolios = await db.portfolio.findMany();
+	const session = await auth();
+
+	if (!session?.user?.id) {
+		redirect("/sign-in");
+	}
+	// 1. Pobieramy tylko portfele zalogowanego użytkownika
+	const portfolios = await db.portfolio.findMany({
+		where: { userId: session.user.id },
+	});
+
+	// 2. Obsługa pustego stanu: Jeśli brak portfeli, nie ma gdzie planować
+	if (portfolios.length === 0) {
+		return <PortfolioEmptyState variant="PLANNER" />;
+	}
+	// 3. Pobieramy plany przypisane do portfeli użytkownika
 	const investmentPlans = await db.investmentPlan.findMany({
-		where: { isExecuted: false },
-		include: { portfolio: true }, // EN: Crucial for the PlanCard to show names
+		where: {
+			isExecuted: false,
+			portfolio: {
+				userId: session.user.id, // Filtrowanie planów po właścicielu portfela
+			},
+		},
+		include: { portfolio: true },
 	});
 
 	const portfolioId = await getActivePortfolioId(searchParams);

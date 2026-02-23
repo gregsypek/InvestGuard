@@ -1,8 +1,7 @@
 // app/(root)/portfolios/page.tsx
 import { db } from "@/lib/db";
-import { Plus, LayoutGrid } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import PortfolioCard from "@/components/PortfolioCard";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { getGlobalStats } from "@/lib/calculations";
@@ -10,6 +9,9 @@ import { CategoryTable } from "@/components/CategoryTable";
 import AddButton from "@/components/ui/AddButton";
 import { cookies } from "next/headers";
 import { cn } from "@/lib/utils";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 
 interface Props {
 	searchParams: Promise<{ portfolioId?: string }>;
@@ -17,7 +19,14 @@ interface Props {
 
 export default async function PortfoliosPage({ searchParams }: Props) {
 	// EN: Fetch all portfolios with their assets for global aggregation
+	const session = await auth();
+
+	// Redirect to sign-in if the user is not authenticated
+	if (!session?.user?.id) {
+		redirect("/sign-in");
+	}
 	const portfolios = await db.portfolio.findMany({
+		where: { userId: session.user.id },
 		include: { assets: true },
 		orderBy: { createdAt: "desc" },
 	});
@@ -30,32 +39,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 
 	// EN: SCENARIO: No portfolios exist in the database
 	if (portfolios.length === 0) {
-		return (
-			<div className="flex flex-col items-center justify-center h-[70vh] text-center space-y-6 max-w-md mx-auto px-6">
-				<div className="p-4 bg-blue-500/10 rounded-full">
-					<LayoutGrid className="h-12 w-12 text-blue-500" />
-				</div>
-				<div className="space-y-2">
-					<h2 className="text-3xl font-bold tracking-tight">
-						Twoja lista jest pusta
-					</h2>
-					<p className="text-muted-foreground">
-						Nie stworzyłeś jeszcze żadnego portfela inwestycyjnego. Dodaj go
-						teraz, aby zacząć grupować swoje aktywa.
-					</p>
-				</div>
-				<Button
-					variant="outline"
-					asChild
-					className="gap-2 shadow-lg cursor-pointer hover:bg-primary/40"
-				>
-					<Link href="/portfolios/new">
-						<Plus className="h-5 w-5" />
-						Stwórz pierwszy portfel
-					</Link>
-				</Button>
-			</div>
-		);
+		return <PortfolioEmptyState variant="PORTFOLIOS" />;
 	}
 
 	const { totalValue, portfoliosCount, assetsCount, categoryTotals } =

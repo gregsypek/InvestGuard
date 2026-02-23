@@ -28,14 +28,24 @@ export default async function DashboardPage({ searchParams }: Props) {
 
 	// Render the empty state if the user has no portfolios yet
 	if (totalPortfoliosCount === 0) {
-		return <PortfolioEmptyState variant="NOT_SELECTED" />;
+		return (
+			<PortfolioEmptyState
+				variant="NOT_SELECTED"
+				userName={session.user.name}
+			/>
+		);
 	}
 
 	// Resolve the active portfolio ID from URL or Cookies
 	const portfolioId = await getActivePortfolioId(searchParams);
 
 	if (!portfolioId) {
-		return <PortfolioEmptyState variant="NOT_SELECTED" />;
+		return (
+			<PortfolioEmptyState
+				variant="NOT_SELECTED"
+				userName={session.user.name}
+			/>
+		);
 	}
 
 	// Fetch the specific portfolio ensuring it belongs to the current user
@@ -49,7 +59,9 @@ export default async function DashboardPage({ searchParams }: Props) {
 
 	// Handle case where the portfolio doesn't exist or belongs to someone else
 	if (!portfolio) {
-		return <PortfolioEmptyState variant="NOT_FOUND" />;
+		return (
+			<PortfolioEmptyState variant="NOT_FOUND" userName={session.user.name} />
+		);
 	}
 
 	// Perform calculations and render the view
@@ -59,7 +71,6 @@ export default async function DashboardPage({ searchParams }: Props) {
 		<DashboardClientView
 			portfolio={portfolio}
 			portfolioStatus={portfolioStatus}
-			userName={session.user.name}
 		/>
 	);
 }

@@ -59,7 +59,7 @@ const UserButton = async () => {
 						}}
 						className="w-full"
 					>
-						<button className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-destructive hover:text-destructive-foreground focus:bg-accent focus:text-accent-foreground">
+						<button className="relative flex w-full select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-destructive hover:text-destructive-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer">
 							Wyloguj się
 						</button>
 					</form>

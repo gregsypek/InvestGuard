@@ -10,11 +10,13 @@ import DashboardAnalitics from "./DashboardAnalitics";
 interface Props {
 	portfolio: PortfolioWithAssets;
 	portfolioStatus: CategoryStatus[];
+	userName?: string | null; // EN: New prop for user name / PL: Nowy prop na imię
 }
 
 export default function DashboardClientView({
 	portfolio,
 	portfolioStatus,
+	userName,
 }: Props) {
 	const { name, totalValue, progress, remaining, goal } =
 		getPortfolioStats(portfolio);
@@ -29,7 +31,11 @@ export default function DashboardClientView({
 	return (
 		<div className="space-y-10 pb-20">
 			{/* 1. NAGŁÓWEK I PODSUMOWANIE */}
-			<DashboardHeader name={name} totalValue={totalValue} />
+			<DashboardHeader
+				name={name}
+				totalValue={totalValue}
+				userName={userName}
+			/>
 
 			{/* 2. PASEK POSTĘPU DO CELU */}
 			{goal && goal > 0 && (

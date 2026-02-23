@@ -4,8 +4,12 @@ import { db } from "../db";
 import { revalidatePath } from "next/cache";
 import { PortfolioFormValues, PortfolioSchema } from "../validations/portfolio";
 import { PORTFOLIO_STRATEGY_MAP } from "../constants";
+import { auth } from "@/auth";
 
 export async function createPortfolio(values: PortfolioFormValues) {
+	const session = await auth();
+	if (!session?.user?.id) return { success: false, error: "Błąd autoryzacji" };
+
 	// Server-side validation
 	const validatedFields = PortfolioSchema.safeParse(values);
 
@@ -23,7 +27,7 @@ export async function createPortfolio(values: PortfolioFormValues) {
 				// Linking to a temporary user ID
 				user: {
 					connect: {
-						id: "1", // TODO: Replace with dynamic ID from auth session later
+						id: session.user.id, 
 					},
 				},
 			},
@@ -132,7 +136,7 @@ export async function getPortfolioCategories(id: string) {
 		// Twoja logika w formie "reusable function"
 
 		const activeCategories = Object.entries(PORTFOLIO_STRATEGY_MAP)
-			.filter(([key]) => portfolio[key as keyof typeof portfolio]  > 0) // Najpierw odsiewamy to, co nas nie interesuje
+			.filter(([key]) => portfolio[key as keyof typeof portfolio] > 0) // Najpierw odsiewamy to, co nas nie interesuje
 			.map(([, value]) => value); // Potem zostawiamy tylko nazwy kategorii
 
 		return { success: true, categories: activeCategories };

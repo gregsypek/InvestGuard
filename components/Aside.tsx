@@ -13,6 +13,7 @@ import {
 	History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { APP_NAME } from "@/lib/constants";
 
 // Navigation items for the main sidebar
 // Each item contains a Polish label and its corresponding English translation for future i18n
@@ -62,7 +63,8 @@ const Aside = () => {
 						<Rocket className="text-white w-6 h-6" />
 					</div>
 					<span className="font-bold text-xl text-white tracking-tight hidden md:inline-block">
-						MyWallets<span className="text-blue-500">.</span>
+						{APP_NAME}
+						<span className="text-blue-500">.</span>
 					</span>
 				</Link>
 			</div>

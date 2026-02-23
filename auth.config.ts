@@ -10,9 +10,10 @@ export const authConfig = {
 		}),
 	],
 	// Tutaj definiujemy stronę logowania, aby middleware wiedział, gdzie przekierować
-	// pages: {
-	// 	signIn: "/api/auth/signin",
-	// },
+	pages: {
+		// signIn: "/api/auth/signin",
+		signIn: "/sign-in",
+	},
 	callbacks: {
 		authorized({ auth, request: { nextUrl } }) {
 			const isLoggedIn = !!auth?.user;

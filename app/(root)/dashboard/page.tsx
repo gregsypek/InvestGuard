@@ -3,51 +3,63 @@ import { calculateGapAnalysis } from "@/lib/calculations";
 import DashboardClientView from "@/components/ui/DashboardClientView";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { getActivePortfolioId } from "@/lib/session";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 interface Props {
 	searchParams: Promise<{ portfolioId?: string }>;
 }
 
 export default async function DashboardPage({ searchParams }: Props) {
-	// EN: 1. Check global portfolio count for fresh onboarding
-	// UI: 1. Sprawdzamy ogólną liczbę portfeli dla nowych użytkowników
-	const totalPortfoliosCount = await db.portfolio.count();
+	// Fetch the current user session
+	const session = await auth();
 
+	// Redirect to sign-in if the user is not authenticated
+	if (!session?.user?.id) {
+		redirect("/sign-in");
+	}
+
+	// Count portfolios belonging ONLY to the logged-in user
+	const totalPortfoliosCount = await db.portfolio.count({
+		where: {
+			userId: session.user.id,
+		},
+	});
+
+	// Render the empty state if the user has no portfolios yet
 	if (totalPortfoliosCount === 0) {
-		// EN: Reuse the empty state for the "Fresh Start" scenario
-		// UI: Używamy stanu pustego dla scenariusza "Zacznij tutaj"
 		return <PortfolioEmptyState variant="NOT_SELECTED" />;
 	}
 
-	// EN: 2. Resolve the active portfolio ID (URL or Cookies)
-	// UI: 2. Ustalamy aktywne ID portfela
+	// Resolve the active portfolio ID from URL or Cookies
 	const portfolioId = await getActivePortfolioId(searchParams);
 
 	if (!portfolioId) {
 		return <PortfolioEmptyState variant="NOT_SELECTED" />;
 	}
 
-	// EN: 3. Fetch specific portfolio data
-	// UI: 3. Pobieramy dane konkretnego portfela
+	// Fetch the specific portfolio ensuring it belongs to the current user
 	const portfolio = await db.portfolio.findUnique({
-		where: { id: portfolioId },
+		where: {
+			id: portfolioId,
+			userId: session.user.id,
+		},
 		include: { assets: true },
 	});
 
-	// EN: Handle case where ID exists but portfolio is not in the DB
-	// UI: Obsługa przypadku, gdy ID istnieje, ale portfela nie ma w bazie (np. został usunięty)
+	// Handle case where the portfolio doesn't exist or belongs to someone else
 	if (!portfolio) {
 		return <PortfolioEmptyState variant="NOT_FOUND" />;
 	}
 
-	// EN: Success Scenario - Perform calculations and render the view
-	// UI: Scenariusz sukcesu - wykonujemy obliczenia i renderujemy widok
+	// Perform calculations and render the view
 	const portfolioStatus = calculateGapAnalysis(portfolio);
 
 	return (
 		<DashboardClientView
 			portfolio={portfolio}
 			portfolioStatus={portfolioStatus}
+			userName={session.user.name}
 		/>
 	);
 }

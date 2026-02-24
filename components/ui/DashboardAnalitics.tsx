@@ -9,6 +9,9 @@ import {
 	Star,
 	ListOrdered,
 	Circle,
+	TrendingUp,
+	TrendingDown,
+	Minus,
 } from "lucide-react";
 import PortfolioCharts from "../PortfolioCharts";
 import Link from "next/link";
@@ -38,6 +41,7 @@ import BulbTip from "../shared/BulbTip";
 import { Progress } from "@/components/ui/progress";
 import QuickAdjustCell from "../QuickAdjustCell";
 import { updateAssetValues } from "@/lib/actions/asset.actions";
+import { calculateAssetPL } from "@/lib/calculations";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
@@ -48,6 +52,9 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams.get("newAssetId");
+	const [currentPage, setCurrentPage] = useState(1);
+	const itemsPerPage = 10;
+	const totalPages = Math.ceil(assets.length / itemsPerPage);
 
 	// EN: Calculate total value for share percentage
 	// UI: Obliczanie całkowitej wartości dla procentowego udziału
@@ -56,11 +63,21 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 		[assets],
 	);
 
-	const [currentPage, setCurrentPage] = useState(1);
-	const itemsPerPage = 10;
-	const totalPages = Math.ceil(assets.length / itemsPerPage);
+	const assetsWithPL = useMemo(() => {
+		return assets.map((asset) => {
+			// Tu wywołujemy Twoją funkcję z calculations.ts
+			const { profitAmount, profitPercent } = calculateAssetPL(asset);
 
-	const paginatedAssets = assets.slice(
+			return {
+				...asset,
+				profitAmount,
+				profitPercent,
+			};
+		});
+	}, [assets]);
+
+	// Teraz tniemy listę, która ma już policzone zyski!
+	const paginatedAssets = assetsWithPL.slice(
 		(currentPage - 1) * itemsPerPage,
 		currentPage * itemsPerPage,
 	);
@@ -235,6 +252,9 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 								<TableHead className="w-45 font-bold text-center">
 									Korekta
 								</TableHead>
+								<TableHead className="text-right font-bold w-32">
+									Zysk / Strata
+								</TableHead>
 								<TableHead className="text-right font-bold">
 									Wartość Rynkowa
 								</TableHead>
@@ -309,12 +329,52 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 												</div>
 											</TableCell>
 
-											<TableCell className="w-40">
+											<TableCell className="w-40 text-center">
 												<QuickAdjustCell
 													assetId={asset.id}
 													currentValue={asset.currentValue}
 													onUpdate={updateAssetValues}
 												/>
+											</TableCell>
+											{/* Kolumna P&L - Kwota nad procentem */}
+											<TableCell className="text-right">
+												<div
+													className={cn(
+														"flex flex-col items-end font-mono",
+														asset.profitAmount > 0
+															? "text-emerald-500"
+															: asset.profitAmount < 0
+																? "text-red-500"
+																: "text-muted-foreground",
+													)}
+												>
+													{/* Górna linia: Strzałka + Kwota */}
+													<div className="flex items-center gap-1 text-sm font-bold">
+														{asset.profitAmount > 0 && (
+															<TrendingUp className="h-3 w-3" />
+														)}
+														{asset.profitAmount < 0 && (
+															<TrendingDown className="h-3 w-3" />
+														)}
+														{asset.profitAmount === 0 && (
+															<Minus className="h-3 w-3" />
+														)}
+
+														<span>
+															{asset.profitAmount > 0 ? "+" : ""}
+															{asset.profitAmount.toLocaleString(undefined, {
+																minimumFractionDigits: 2,
+															})}{" "}
+															PLN
+														</span>
+													</div>
+
+													{/* Dolna linia: Procent */}
+													<div className="text-[10px] opacity-80 font-bold">
+														{asset.profitAmount > 0 ? "+" : ""}
+														{asset.profitPercent.toFixed(2)}%
+													</div>
+												</div>
 											</TableCell>
 											{/* EN: Value - Mono font for financial clarity */}
 											<TableCell className={cn("text-right relative")}>

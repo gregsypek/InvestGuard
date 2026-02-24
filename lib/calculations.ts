@@ -91,3 +91,25 @@ export function getGlobalStats(portfolios: PortfolioWithAssets[]) {
 		categoryTotals, // Dane do wykresu lub tabeli
 	};
 }
+//PL (Profit & Loss)
+export function calculateAssetPL(asset: {
+	investedCapital: number;
+	currentValue: number;
+}) {
+	// 1. Zabezpieczenie przed dzieleniem przez zero
+	if (asset.investedCapital === 0) {
+		return { profitAmount: 0, profitPercent: 0 };
+	}
+
+	// 2. Obliczamy zysk kwotowy
+	const profitAmount = asset.currentValue - asset.investedCapital;
+
+	// 3. Obliczamy zysk procentowy
+	// Tutaj użyjemy Twojego wzoru: (zysk / kapitał) * 100
+	const profitPercent = (profitAmount / asset.investedCapital) * 100;
+
+	return {
+		profitAmount,
+		profitPercent,
+	};
+}

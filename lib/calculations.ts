@@ -11,22 +11,25 @@ export function calculateGapAnalysis(
 	portfolio: Portfolio & { assets: Asset[] },
 ): CategoryStatus[] {
 	const { assets } = portfolio;
-	const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
 
-	// Używamy naszej mapy konfiguracji, którą przygotowaliśmy wcześniej
+	// EN: Now using currentValue for total portfolio valuation
+	// UI: Teraz używamy currentValue do obliczenia całkowitej wartości portfela
+	const totalValue = assets.reduce((sum, asset) => sum + asset.currentValue, 0);
+
 	return CATEGORY_CONFIG.map((config) => {
-		// 1. Sumujemy aktywa dla danej kategorii (np. 'GOLD')
+		// 1. Sumujemy aktualną wycenę aktywów dla danej kategorii
 		const actualAmount = assets
 			.filter((a) => a.category === config.id)
-			.reduce((sum, a) => sum + a.value, 0);
+			.reduce((sum, a) => sum + a.currentValue, 0);
 
-		// 2. Pobieramy docelową wagę z portfela (dynamicznie przez targetKey)
+		// 2. Pobieramy docelową wagę (np. 55 dla BONDS)
 		const targetWeight =
 			(portfolio[config.targetKey as keyof Portfolio] as number) || 0;
 
-		// 3. Obliczamy procenty i różnice
+		// 3. Obliczamy procenty i różnice w oparciu o rynkową wycenę
 		const actualPercentage =
 			totalValue > 0 ? (actualAmount / totalValue) * 100 : 0;
+
 		const targetAmount = (targetWeight / 100) * totalValue;
 
 		const differenceWeight = actualPercentage - targetWeight;
@@ -49,7 +52,7 @@ export function getPortfolioStats(portfolio: PortfolioWithAssets) {
 	const { goal, name, assets } = portfolio;
 
 	// 1. Sumujemy wartość wszystkich aktywów
-	const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+	const totalValue = assets.reduce((sum, asset) => sum + asset.currentValue, 0);
 
 	// 2. Obliczamy postęp (wartość 0-100+)
 	// Używamy Math.max, aby uniknąć problemów, gdyby cel był ujemny
@@ -70,12 +73,12 @@ export function getPortfolioStats(portfolio: PortfolioWithAssets) {
 export function getGlobalStats(portfolios: PortfolioWithAssets[]) {
 	const allAssets = portfolios.flatMap((p) => p.assets);
 
-	const totalValue = allAssets.reduce((sum, a) => sum + a.value, 0);
+	const totalValue = allAssets.reduce((sum, a) => sum + a.currentValue, 0);
 
 	// Obliczamy udział kategorii w całym majątku 🥧
 	const categoryTotals = allAssets.reduce(
 		(acc, asset) => {
-			acc[asset.category] = (acc[asset.category] || 0) + asset.value;
+			acc[asset.category] = (acc[asset.category] || 0) + asset.currentValue;
 			return acc;
 		},
 		{} as Record<string, number>,

@@ -24,11 +24,30 @@ export const MODEL_ALLOCATION = [
 
 export interface Asset {
 	id: string;
-	name: string; // np. "iShares Physical Gold"
-	ticker?: string | null; // np. "IGLN.L"
+	name: string;
+	ticker?: string | null;
 	category: AssetCategory;
-	value: number;
-	targetPercentage: number; // np. 10 (for gold)
+
+	// REWOLUCJA FINANSOWA 💰
+	investedCapital: number; // Musi być, by liczyć zysk
+	currentValue: number; // Musi być, by liczyć rebalancing
+
+	// OGÓLNE DLA BOOSTER & BONDS 🚀
+	rationale?: string | null;
+	timeHorizon?: string | null; // W bazie mamy Enum lub String
+
+	// POLA DLA ALPHA / BOOSTER 💎
+	expectedRoi?: number | null; // Zmieniamy na number, by móc na tym liczyć
+	conviction?: number | null; // 1-100
+	riskLevel?: string | null;
+
+	// POLA DLA OBLIGACJI (BONDS) 📑
+	purchaseDate?: Date | null; // Prisma zwraca obiekty Date
+	maturityDate?: Date | null; // Prisma zwraca obiekty Date
+	interestRate?: number | null;
+	rateType?: string | null; // "FIXED" | "VARIABLE" (opcjonalne, bo nie każde aktywo to obligacja)
+
+	targetPercentage: number;
 }
 
 export interface StockPrice {

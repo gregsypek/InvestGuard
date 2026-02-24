@@ -27,22 +27,37 @@ enum TimeHorizon {
 }
 
 model Asset {
-  id               String   @id @default(cuid())
-  name             String
-  ticker           String? // Pytajnik oznacza, że pole jest opcjonalne (Twoja prośba!)
-  category         Category
-  value            Float
-  targetPercentage Float    @default(0)
+  id       String   @id @default(cuid())
+  name     String
+  ticker   String?
+  category Category
 
-  // Nowe pola dla sekcji Booster
-  rationale   String? // Opcjonalne, bo EDO ich nie potrzebują
-  timeHorizon TimeHorizon? // Korzystamy z Enuma powyżej
+  // BAZA FINANSOWA 💰📈
+  investedCapital Float @default(0) // Ile fizycznie wpłaciliśmy (np. 1000 PLN)
+  currentValue    Float @default(0) // Aktualna wycena rynkowa (np. 1300 PLN)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  // Relacja z Portfelem 🔗
-  portfolioId String // 1. Pole techniczne (Klucz obcy)
-  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade) // 2. Definicja relacji dla Pragmy
+  targetPercentage Float @default(0)
+
+  // OGÓLNE DLA BOOSTER & BONDS 🚀
+  rationale   String? // Twoja teza lub powód zakupu
+  timeHorizon TimeHorizon?
+
+  // POLA DLA ALPHA / BOOSTER 💎
+  expectedRoi Float?
+  conviction  Int?
+  riskLevel   String?
+
+  // POLA DLA OBLIGACJI (BONDS) 📑
+  purchaseDate DateTime?
+  maturityDate DateTime?
+  interestRate Float?
+  rateType     String? // "FIXED" lub "VARIABLE"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 }
 
 // Portfolio model - represents a distinct investment strategy or bucket

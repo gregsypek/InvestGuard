@@ -78,6 +78,7 @@ export async function executePlan(
 			const plan = await tx.investmentPlan.findUnique({
 				where: { id: planId },
 			});
+			console.log("🚀 ~ executePlan ~ plan:", plan);
 
 			if (!plan) throw new Error("Plan not found");
 
@@ -87,7 +88,9 @@ export async function executePlan(
 					name: plan.name,
 					ticker: plan.ticker,
 					category: plan.targetCategory,
-					value: finalValue,
+					// Przypisujemy kwotę z realizacji planu do obu nowych pól:
+					investedCapital: finalValue,
+					currentValue: finalValue,
 					portfolioId: plan.portfolioId,
 				},
 			});

@@ -18,7 +18,7 @@ const PortfolioCard = ({ portfolio: p }: PortfolioCardProps) => {
 	const { id, name, goal, assets } = p;
 
 	const totalValue = assets.reduce(
-		(sum: number, asset: Asset) => sum + asset.value,
+		(sum: number, asset: Asset) => sum + asset.currentValue,
 		0,
 	);
 	const progress = p.goal ? (totalValue / p.goal) * 100 : 0;

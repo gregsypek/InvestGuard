@@ -37,6 +37,7 @@ import {
 import BulbTip from "../shared/BulbTip";
 import { Progress } from "@/components/ui/progress";
 import QuickAdjustCell from "../QuickAdjustCell";
+import { updateAssetValues } from "@/lib/actions/asset.actions";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
@@ -51,7 +52,7 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 	// EN: Calculate total value for share percentage
 	// UI: Obliczanie całkowitej wartości dla procentowego udziału
 	const totalPortfolioValue = useMemo(
-		() => assets.reduce((sum, asset) => sum + asset.value, 0),
+		() => assets.reduce((sum, asset) => sum + asset.currentValue, 0),
 		[assets],
 	);
 
@@ -168,7 +169,7 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 										{/* PRAWA STRONA: Kwota + Przycisk usuwania */}
 										<div className="flex items-center gap-3">
 											<p className="font-semibold text-sm tabular-nums">
-												{asset.value.toLocaleString()} PLN
+												{asset.currentValue.toLocaleString()} PLN
 											</p>
 											<DeleteButton
 												id={asset.id}
@@ -254,7 +255,9 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 								paginatedAssets.map((asset) => {
 									const isHighlighted = asset.id === highlightedId;
 									const share = Number(
-										((asset.value / totalPortfolioValue) * 100).toFixed(1),
+										((asset.currentValue / totalPortfolioValue) * 100).toFixed(
+											1,
+										),
 									);
 									const categoryColor =
 										COLORS[asset.category as keyof typeof COLORS] || "#ccc";
@@ -308,8 +311,9 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 
 											<TableCell className="w-40">
 												<QuickAdjustCell
-													currentValue={asset.value}
-													assetName={asset.name}
+													assetId={asset.id}
+													currentValue={asset.currentValue}
+													onUpdate={updateAssetValues}
 												/>
 											</TableCell>
 											{/* EN: Value - Mono font for financial clarity */}
@@ -320,7 +324,7 @@ const DashboardAnalitics = ({ portfolio, portfolioStatus }: Props) => {
 												<div
 													className={"font-mono font-bold text-sm tabular-nums"}
 												>
-													{asset.value.toLocaleString(undefined, {
+													{asset.currentValue.toLocaleString(undefined, {
 														minimumFractionDigits: 2,
 														maximumFractionDigits: 2,
 													})}

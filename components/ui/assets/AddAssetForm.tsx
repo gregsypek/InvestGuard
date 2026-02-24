@@ -19,6 +19,7 @@ import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
 import Link from "next/link";
 import { Button } from "../button";
 import { cn } from "@/lib/utils";
+import { Plus } from "lucide-react";
 interface AddAssetFormProps {
 	portfolioId: string;
 	allowedCategories?: string[]; // Opcjonalna lista kategorii z bazy
@@ -107,14 +108,14 @@ export default function AddAssetForm({
 
 					<div className="space-y-2">
 						<Label
-							htmlFor="value"
+							htmlFor="currentValue"
 							className="text-xs font-semibold uppercase tracking-wider opacity-70"
 						>
 							Wartość (PLN)
 						</Label>
 						<Input
-							id="value"
-							name="value"
+							id="currentValue"
+							name="currentValue"
 							type="number"
 							step="0.01"
 							placeholder="5000"

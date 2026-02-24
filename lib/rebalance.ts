@@ -10,12 +10,12 @@ export interface RebalanceResult {
 import { Asset, MODEL_ALLOCATION } from "./types";
 
 export function calculateRebalance(assets: Asset[]): RebalanceResult[] {
-	const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+	const totalValue = assets.reduce((sum, asset) => sum + asset.currentValue, 0);
 
 	return assets.map((asset) => {
 		// Calculate total portfolio value
 		const currentPercentage =
-			totalValue > 0 ? (asset.value / totalValue) * 100 : 0;
+			totalValue > 0 ? (asset.currentValue / totalValue) * 100 : 0;
 
 		// Calculate deviation(odchylenie (np. 12% - 10% = 2%))
 		const deviation = currentPercentage - asset.targetPercentage;
@@ -44,7 +44,10 @@ export function getCategoryStats(assets: Asset[]) {
 			(a) => a.category === modelItem.name.toUpperCase(),
 		);
 
-		const actualAmount = categoryAssets.reduce((sum, a) => sum + a.value, 0);
+		const actualAmount = categoryAssets.reduce(
+			(sum, a) => sum + a.currentValue,
+			0,
+		);
 		const actualWeight = totalValue > 0 ? (actualAmount / totalValue) * 100 : 0;
 		const deviationWeight = actualWeight - modelItem.weight;
 

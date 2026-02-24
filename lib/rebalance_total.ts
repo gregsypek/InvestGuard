@@ -3,12 +3,12 @@ import { Asset, RebalanceResult } from "./types";
 
 export function calculateRebalance(assets: Asset[]): RebalanceResult[] {
 	// Calculate total portfolio value
-	const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+	const totalValue = assets.reduce((sum, asset) => sum + asset.currentValue, 0);
 
 	// 1. Group total values by category to check category-level targets
 	const categoryTotals = assets.reduce(
 		(acc, asset) => {
-			acc[asset.category] = (acc[asset.category] || 0) + asset.value;
+			acc[asset.category] = (acc[asset.category] || 0) + asset.currentValue;
 			return acc;
 		},
 		{} as Record<string, number>,

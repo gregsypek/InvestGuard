@@ -108,7 +108,7 @@ export default async function BoosterPage() {
 											</p>
 										</TableCell>
 										<TableCell className="text-right font-mono font-semibold text-primary">
-											{asset.value.toLocaleString()} PLN
+											{asset.currentValue.toLocaleString()} PLN
 										</TableCell>
 										<TableCell className="py-4 text-right">
 											<DeleteButton

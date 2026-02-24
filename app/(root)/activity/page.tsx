@@ -24,17 +24,27 @@ import { ListOrdered, AlertCircle } from "lucide-react";
 import { COLORS, CATEGORY_LABELS } from "@/lib/constants";
 import { ActivityHeader } from "@/components/ActivityHeader";
 import { DeleteButton } from "@/components/DeleteButton";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 
 export default async function ActivityPage({
 	searchParams,
 }: {
 	searchParams: Promise<{ page?: string }>;
 }) {
+	const session = await auth();
+	if (!session?.user?.id) redirect("/sign-in");
+
 	const resolvedParams = await searchParams;
 	const currentPage = Number(resolvedParams.page) || 1;
 	const take = 10;
 
-	const result = await getTransactionHistory(currentPage, take);
+	const result = await getTransactionHistory(
+		currentPage,
+		take,
+		session.user.id,
+	);
 
 	if (!result.success || !result.data) {
 		return (
@@ -43,6 +53,10 @@ export default async function ActivityPage({
 				<p className="font-bold">Błąd wczytywania historii transakcji.</p>
 			</div>
 		);
+	}
+	// OBSŁUGA PUSTEGO STANU
+	if (result.meta.totalCount === 0) {
+		return <PortfolioEmptyState variant="ACTIVITY" />;
 	}
 
 	const { data: transactions, meta } = result;

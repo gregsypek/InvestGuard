@@ -5,6 +5,7 @@ import {
 	PlusCircle,
 	CalendarDays,
 	LayoutDashboard,
+	ListOrdered,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,13 @@ export default function PortfolioEmptyState({
 			defaultDescription:
 				"Nie stworzyłeś jeszcze żadnego portfela inwestycyjnego. Dodaj go teraz, aby zacząć grupować swoje aktywa.",
 			showAddButton: true,
+		},
+		ACTIVITY: {
+			icon: <ListOrdered className="h-12 w-12 text-orange-500" />,
+			defaultTitle: "Historia jest pusta",
+			defaultDescription:
+				"Nie zarejestrowałeś jeszcze żadnych transakcji. Twoja aktywność pojawi się tutaj po zrealizowaniu planów lub dodaniu aktywów.",
+			showAddButton: false,
 		},
 	};
 

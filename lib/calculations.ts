@@ -113,3 +113,34 @@ export function calculateAssetPL(asset: {
 		profitPercent,
 	};
 }
+
+// lib/calculations.ts
+
+export function calculateBondProgress(purchaseDate: Date, maturityDate: Date) {
+	const now = new Date().getTime();
+	const start = purchaseDate.getTime();
+	const end = maturityDate.getTime();
+
+	// 1. Obliczamy całkowity czas i czas, który minął
+	const totalDuration = end - start;
+	const timeElapsed = now - start;
+
+	// 2. Jeśli mianownik jest zerem (błąd danych), zwracamy 0
+	if (totalDuration <= 0) return 0;
+
+	// 3. Obliczamy procent według Twojego wzoru
+	let progress = (timeElapsed / totalDuration) * 100;
+
+	// 4. Twoje warunki bezpieczeństwa (clamping)
+	if (progress > 100) progress = 100;
+	if (progress < 0) progress = 0;
+
+	return progress;
+}
+
+// export function getBondProgressColor(progress: number) {
+// 	if (progress < 30) return "bg-blue-500"; // Świeża inwestycja
+// 	if (progress < 70) return "bg-orange-500"; // W trakcie (indeksacja działa)
+// 	if (progress < 90) return "bg-emerald-500"; // Blisko wykupu
+// 	return "bg-green-400 animate-pulse"; // Gotowa do rolowania!
+// }

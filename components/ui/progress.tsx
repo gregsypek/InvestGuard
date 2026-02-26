@@ -9,28 +9,37 @@ import { cn } from "@/lib/utils";
 const Progress = React.forwardRef<
 	React.ElementRef<typeof ProgressPrimitive.Root>,
 	React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
-		indicatorColor?: string; // UI: Dodajemy nowy prop
+		indicatorColor?: string;
 	}
->(({ className, value, indicatorColor, ...props }, ref) => (
-	<ProgressPrimitive.Root
-		ref={ref}
-		className={cn(
-			"relative h-4 w-full overflow-hidden rounded-full bg-secondary",
-			className,
-		)}
-		{...props}
-	>
-		<ProgressPrimitive.Indicator
-			className="h-full w-full flex-1 bg-primary transition-all rounded-xl"
-			style={{
-				transform: `translateX(-${100 - (value || 0)}%)`,
-				// EN: Apply custom color if provided, otherwise fallback to class style
-				// UI: Nadpisujemy kolor tła, jeśli podano indicatorColor
-				backgroundColor: indicatorColor,
-			}}
-		/>
-	</ProgressPrimitive.Root>
-));
+>(({ className, value, indicatorColor, ...props }, ref) => {
+	// Sprawdzamy, czy przekazany kolor to zmienna CSS lub hex (zaczyna się od var lub #)
+	const isRawColor =
+		indicatorColor?.startsWith("var") || indicatorColor?.startsWith("#");
+
+	return (
+		<ProgressPrimitive.Root
+			ref={ref}
+			className={cn(
+				"relative h-4 w-full overflow-hidden rounded-full bg-secondary border border-border",
+				className,
+			)}
+			{...props}
+		>
+			<ProgressPrimitive.Indicator
+				className={cn(
+					"h-full w-full flex-1 transition-all rounded-xl",
+					// Jeśli to nie jest surowy kolor, traktujemy to jako klasę (np. bg-blue-500)
+					!isRawColor && (indicatorColor || "bg-primary"),
+				)}
+				style={{
+					transform: `translateX(-${100 - (value || 0)}%)`,
+					// Jeśli to jest surowy kolor (var lub hex), wrzucamy go do style
+					backgroundColor: isRawColor ? indicatorColor : undefined,
+				}}
+			/>
+		</ProgressPrimitive.Root>
+	);
+});
 Progress.displayName = ProgressPrimitive.Root.displayName;
 
 export { Progress };

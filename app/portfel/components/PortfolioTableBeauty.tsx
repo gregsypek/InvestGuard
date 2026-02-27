@@ -10,105 +10,119 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import {
+	ArrowUpRight,
+	ArrowDownRight,
+	Activity,
+	CheckCircle2,
+} from "lucide-react";
+
 interface Props {
 	data: CategoryStatus[];
 }
 
 export default function PortfolioTableBeauty({ data }: Props) {
-	console.log("🚀 ~ PortfolioTableBeauty ~ data:", data);
-
 	const filteredData = data.filter((x) => x.weight > 0);
+
 	return (
-		<Card className="border-border2 bg-card">
-			<CardHeader>
-				<CardTitle className="text-xl font-bold text-foreground">
-					Portfolio Health & Rebalancing
-				</CardTitle>
+		<Card className="bg-muted/30 border-none shadow-none">
+			<CardHeader className="pb-2">
+				<div className="flex items-center justify-between">
+					<CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+						<Activity className="h-5 w-5 text-primary" /> Kondycja i Rebalancing
+					</CardTitle>
+				</div>
+				<p className="text-xs text-muted-foreground mt-1">
+					Porównanie obecnej struktury portfela z Twoim celem inwestycyjnym.
+				</p>
 			</CardHeader>
 			<CardContent>
 				<Table>
 					<TableHeader>
-						<TableRow className="hover:bg-transparent border-border uppercase tracking-wider text-xs ">
-							<TableHead className="w-50 font-bold">Category</TableHead>
-							<TableHead className="text-right font-bold">Target</TableHead>
-							<TableHead className="text-right font-bold">Actual</TableHead>
-							<TableHead className="text-right font-bold">Deviation</TableHead>
-							<TableHead className="text-right text-primary font-bold">
-								Action (PLN)
+						<TableRow className="hover:bg-transparent border-border uppercase tracking-wider text-[10px] font-black">
+							<TableHead className="w-48">Kategoria</TableHead>
+							<TableHead className="text-right">Cel</TableHead>
+							<TableHead className="text-right">Aktualnie</TableHead>
+							<TableHead className="text-right">Odchylenie</TableHead>
+							<TableHead className="text-right text-primary">
+								Sugerowana Akcja
 							</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{filteredData.map((item) => (
-							<TableRow key={item.category} className="border-border">
-								<TableCell className="font-medium">
-									<div className="flex items-center gap-2">
-										{/* Small color indicator for the category */}
-										<Circle
-											className={cn("w-3 h-3 rounded-full", item.color)}
-										/>
-										{item.name}
-									</div>
-								</TableCell>
-								<TableCell className="text-right">{item.weight}%</TableCell>
-								<TableCell className="text-right">
-									{item.actualPercentage.toFixed(2)}%
-								</TableCell>
-								<TableCell
-									className={cn(
-										"text-right font-semibold",
-										item.differenceWeight > 2 || item.differenceWeight < -2
-											? "text-red-500"
-											: "text-green-500",
-									)}
-								>
-									{/* Show the differenceWeight in percentage points */}
-									{item.differenceWeight > 0 ? "+" : ""}
-									{item.differenceWeight.toFixed(1)} pp
-								</TableCell>
+						{filteredData.map((item) => {
+							const isSignificant = Math.abs(item.differenceWeight) > 2;
 
-								<TableCell className="text-right py-4">
-									{item.differencePLN === 0 ? (
-										// SYTUACJA: STAN IDEALNY / BRAK RUCHU
-										<div className="flex flex-col items-end gap-1">
-											<span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-												Zbalansowano
-											</span>
-											<span className="text-[10px] uppercase tracking-wider text-muted-foreground italic">
-												Brak akcji
+							return (
+								<TableRow
+									key={item.category}
+									className="border-border hover:bg-muted/10 transition-colors"
+								>
+									<TableCell className="py-4">
+										<div className="flex items-center gap-2">
+											{/* Wykorzystujemy kolor z Twoich stałych COLORS */}
+											<div
+												className={cn("w-1.5 h-6 rounded-full", item.color)}
+												style={{ backgroundColor: item.color }} // Jeśli color to HEX
+											/>
+											<span className="font-bold text-sm tracking-tight">
+												{item.name}
 											</span>
 										</div>
-									) : item.differencePLN > 0 ? (
-										// SYTUACJA: KUPNO (Niedoważenie)
-										<Button
-											size="sm"
-											className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shadow-sm"
-											// onClick={() => openPlanner(item)}
-										>
-											<ArrowUpRight className="h-4 w-4" />
-											Kup {item.differencePLN.toLocaleString()} PLN
-										</Button>
-									) : (
-										// SYTUACJA: SPRZEDAŻ (Przeważenie)
-										<Button
-											size="sm"
-											variant="outline"
-											className="border-red-200 text-red-600 bg-red-50/50 hover:bg-red-50 cursor-not-allowed opacity-70 gap-2"
-											disabled
-										>
-											<ArrowDownRight className="h-4 w-4" />
-											Sprzedaj {Math.abs(
-												item.differencePLN,
-											).toLocaleString()}{" "}
-											PLN
-										</Button>
-									)}
-								</TableCell>
-							</TableRow>
-						))}
+									</TableCell>
+
+									<TableCell className="text-right font-mono text-xs font-semibold">
+										{item.weight}%
+									</TableCell>
+
+									<TableCell className="text-right font-mono text-xs">
+										{item.actualPercentage.toFixed(2)}%
+									</TableCell>
+
+									<TableCell
+										className={cn(
+											"text-right font-mono text-xs font-bold",
+											isSignificant ? "text-red-500" : "text-emerald-500",
+										)}
+									>
+										{item.differenceWeight > 0 ? "+" : ""}
+										{item.differenceWeight.toFixed(1)} pp
+									</TableCell>
+
+									<TableCell className="text-right">
+										{Math.abs(item.differencePLN) < 10 ? ( // Ignoruj groszowe różnice
+											<div className="flex items-center justify-end gap-2 text-emerald-600 dark:text-emerald-400">
+												<span className="text-[10px] font-bold uppercase tracking-tighter">
+													Idealnie
+												</span>
+												<CheckCircle2 className="h-4 w-4" />
+											</div>
+										) : item.differencePLN > 0 ? (
+											<Button
+												size="sm"
+												className="bg-emerald-600/10 hover:bg-emerald-600 hover:text-white text-emerald-600 border-none shadow-none text-[10px] font-bold uppercase h-8 transition-all"
+											>
+												<ArrowUpRight className="h-3.5 w-3.5 mr-1" />
+												Dokup {item.differencePLN.toLocaleString()} PLN
+											</Button>
+										) : (
+											<Button
+												size="sm"
+												variant="outline"
+												className="text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white text-[10px] font-bold uppercase h-8 transition-all"
+											>
+												<ArrowDownRight className="h-3.5 w-3.5 mr-1" />
+												Nadmiar {Math.abs(
+													item.differencePLN,
+												).toLocaleString()}{" "}
+												PLN
+											</Button>
+										)}
+									</TableCell>
+								</TableRow>
+							);
+						})}
 					</TableBody>
 				</Table>
 			</CardContent>

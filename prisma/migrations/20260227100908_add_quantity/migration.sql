@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Asset" ADD COLUMN     "nominalValue" DOUBLE PRECISION,
+ADD COLUMN     "quantity" DOUBLE PRECISION NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "TransactionHistory" ADD COLUMN     "quantity" DOUBLE PRECISION NOT NULL DEFAULT 0;

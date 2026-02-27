@@ -27,10 +27,12 @@ enum TimeHorizon {
 }
 
 model Asset {
-  id       String   @id @default(cuid())
-  name     String
-  ticker   String?
-  category Category
+  id           String   @id @default(cuid())
+  name         String
+  ticker       String?
+  category     Category
+  quantity     Float    @default(0) // 🧱 Liczba jednostek (akcji, sztuk obligacji, gramów złota)
+  nominalValue Float? // 🏷️ Wartość nominalna (szczególnie ważna dla obligacji, np. 100 PLN)
 
   // BAZA FINANSOWA 💰📈
   investedCapital Float @default(0) // Ile fizycznie wpłaciliśmy (np. 1000 PLN)
@@ -109,17 +111,17 @@ model InvestmentPlan {
 }
 
 model TransactionHistory {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   assetName     String // e.g., "ETF MSCI World"
   ticker        String? // e.g., "EUNL.DE"
   executedValue Float // The actual amount spent
   category      Category // e.g., BONDS, GOLD
-  executedAt    DateTime @default(now())
+  executedAt    DateTime  @default(now())
   rationale     String? // Why did you buy this? (Copied from plan)
-
+  quantity      Float     @default(0) // 🧱 Ile sztuk kupiliśmy w tej transakcji
   // Reference to the portfolio
-  portfolioId String
-  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  portfolioId   String
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 }
 
 model User {

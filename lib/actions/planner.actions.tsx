@@ -70,40 +70,71 @@ function getNextMonth(dateStr: string): string {
 export async function executePlan(
 	planId: string,
 	finalValue: number,
+	purchasePrice: number, // EN: New parameter from the UI
 	executionNote?: string,
 ) {
 	try {
 		return await db.$transaction(async (tx) => {
-			// 1. Get the plan details
+			// 1. Pobieramy szczegóły planu
 			const plan = await tx.investmentPlan.findUnique({
 				where: { id: planId },
 			});
-			console.log("🚀 ~ executePlan ~ plan:", plan);
 
 			if (!plan) throw new Error("Plan not found");
 
-			// 2. Add to active assets 💰
-			await tx.asset.create({
-				data: {
-					name: plan.name,
-					ticker: plan.ticker,
-					category: plan.targetCategory,
-					// Przypisujemy kwotę z realizacji planu do obu nowych pól:
-					investedCapital: finalValue,
-					currentValue: finalValue,
+			// 2. OBLICZAMY ILOŚĆ JEDNOSTEK 🧱
+			// UI przesyła nam kurs (purchasePrice), więc dzielimy kwotę przez kurs
+			const calculatedQuantity = finalValue / purchasePrice;
+
+			// 3. SZUKAMY CZY MAMY JUŻ TAKI ASSET (Uśrednianie) ⚖️
+			// Szukamy w tym samym portfelu po tickerze (jeśli jest) lub nazwie
+			const existingAsset = await tx.asset.findFirst({
+				where: {
 					portfolioId: plan.portfolioId,
+					OR: [
+						{
+							ticker:
+								plan.ticker && plan.ticker !== "" ? plan.ticker : undefined,
+						},
+						{ name: plan.name },
+					],
 				},
 			});
 
-			// 3. Record in history 📜
-			// 2. Tworzymy historię, łącząc notatki
+			if (existingAsset) {
+				// AKTUALIZACJA: Dodajemy nową ilość i kapitał do istniejącego rekordu
+				await tx.asset.update({
+					where: { id: existingAsset.id },
+					data: {
+						quantity: existingAsset.quantity + calculatedQuantity,
+						investedCapital: existingAsset.investedCapital + finalValue,
+						currentValue: existingAsset.currentValue + finalValue, // Na start zakładamy cenę zakupu
+					},
+				});
+			} else {
+				// NOWY ASSET: Tworzymy go od zera z ilością
+				await tx.asset.create({
+					data: {
+						name: plan.name,
+						ticker: plan.ticker,
+						category: plan.targetCategory,
+						investedCapital: finalValue,
+						currentValue: finalValue,
+						quantity: calculatedQuantity, // Zapisujemy wyliczoną ilość
+						portfolioId: plan.portfolioId,
+					},
+				});
+			}
+
+			// 4. HISTORIA TRANSAKCJI 📜
+			// Dodajemy ilość również do historii, żeby w ActivityPage było widać ile kupiliśmy
 			await tx.transactionHistory.create({
 				data: {
 					assetName: plan.name,
 					ticker: plan.ticker,
 					executedValue: finalValue,
+					quantity: calculatedQuantity, // NOWE POLE W HISTORII
 					category: plan.targetCategory,
-					// Łączymy: jeśli jest notatka z realizacji, dodajemy ją po separatorze |
 					rationale: executionNote
 						? `PLAN: ${plan.rationale || "Brak"} | REALIZACJA: ${executionNote}`
 						: plan.rationale,
@@ -112,13 +143,13 @@ export async function executePlan(
 				},
 			});
 
-			// 4. Handle recurring plans 🔄
+			// 5. OBSŁUGA PLANÓW CYKLICZNYCH 🔁
 			if (plan.isRecurring) {
 				await tx.investmentPlan.create({
 					data: {
 						name: plan.name,
 						ticker: plan.ticker,
-						value: plan.value, // We keep the original planned value for next time
+						value: plan.value,
 						plannedDate: getNextMonth(plan.plannedDate),
 						targetCategory: plan.targetCategory,
 						portfolioId: plan.portfolioId,
@@ -128,14 +159,14 @@ export async function executePlan(
 				});
 			}
 
-			// 5. Remove the completed plan 🗑️
+			// 6. USUWANIE WYKONANEGO PLANU 🗑️
 			await tx.investmentPlan.delete({
 				where: { id: planId },
 			});
 
 			revalidatePath("/dashboard");
 			revalidatePath("/planner");
-			revalidatePath("/activity"); // Path for your new Activity Log page
+			revalidatePath("/activity");
 
 			return { success: true };
 		});

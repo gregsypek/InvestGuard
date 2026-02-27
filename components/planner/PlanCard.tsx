@@ -38,10 +38,25 @@ export function PlanCard({ plan }: PlanCardProps) {
 	const [finalValue, setFinalValue] = useState(plan.value);
 	const [executionNote, setExecutionNote] = useState("");
 
+	// 1. DODAJEMY STAN DLA KURSU (Domyślnie 100 dla obligacji lub 0)
+	const [purchasePrice, setPurchasePrice] = useState(
+		plan.targetCategory === "BONDS" ? 100 : 0,
+	);
 	const handleExecute = async () => {
+		// Prosta walidacja, żeby nie dzielić przez zero
+		if (purchasePrice <= 0) {
+			toast.error("Kurs zakupu musi być większy niż 0");
+			return;
+		}
 		try {
 			setIsPending(true);
-			const result = await executePlan(plan.id, finalValue, executionNote);
+			// 3. PRZEKAZUJEMY purchasePrice DO AKCJI
+			const result = await executePlan(
+				plan.id,
+				finalValue,
+				purchasePrice,
+				executionNote,
+			);
 
 			if (result.success) {
 				toast.success("Inwestycja zrealizowana! 🚀");
@@ -144,8 +159,8 @@ export function PlanCard({ plan }: PlanCardProps) {
 							<DialogHeader>
 								<DialogTitle>Potwierdź realizację</DialogTitle>
 								<DialogDescription>
-									Rejestrujesz zakup <strong>{plan.name}</strong>. Możesz
-									skorygować ostateczną kwotę transakcji.
+									Rejestrujesz zakup <strong>{plan.name}</strong>. System
+									automatycznie wyliczy liczbę jednostek i uśredni cenę.
 								</DialogDescription>
 							</DialogHeader>
 
@@ -161,15 +176,38 @@ export function PlanCard({ plan }: PlanCardProps) {
 										id="finalValue"
 										type="number"
 										step="0.01"
-										value={typeof finalValue === "number" ? finalValue : ""}
-										onChange={(e) => {
-											const val = e.target.valueAsNumber;
-											setFinalValue(isNaN(val) ? 0 : val);
-										}}
+										value={finalValue}
+										onChange={(e) => setFinalValue(e.target.valueAsNumber || 0)}
 										className={inputStyles}
 									/>
 								</div>
-
+								{/* 2. NOWE POLE: KURS ZAKUPU */}
+								<div className="space-y-2">
+									<Label
+										htmlFor="purchasePrice"
+										className="text-xs font-bold uppercase tracking-wider opacity-70"
+									>
+										Kurs zakupu (Cena za 1 szt.)
+									</Label>
+									<Input
+										id="purchasePrice"
+										type="number"
+										step="0.0001"
+										placeholder="Np. 450.25 lub 100 dla EDO"
+										value={purchasePrice || ""}
+										onChange={(e) =>
+											setPurchasePrice(e.target.valueAsNumber || 0)
+										}
+										className={inputStyles}
+									/>
+									{/* PODGLĄD ILE SZTUK WYJDZIE */}
+									{purchasePrice > 0 && (
+										<p className="text-[10px] text-blue-500 font-medium italic">
+											Wyliczona ilość: {(finalValue / purchasePrice).toFixed(4)}{" "}
+											szt.
+										</p>
+									)}
+								</div>
 								<div className="space-y-2">
 									<Label
 										htmlFor="note"

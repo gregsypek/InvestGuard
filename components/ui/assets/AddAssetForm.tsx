@@ -1,13 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-
-import { addAssetAction } from "@/app/actions";
-import { Input } from "@/components/ui/input";
+import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Coins, Plus, PlusCircle, Recycle } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -15,40 +10,93 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
-import Link from "next/link";
+import { useRef, useState } from "react";
+
+import AddButton from "../AddButton";
+import BulbTip from "@/components/shared/BulbTip";
 import { Button } from "../button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
+import { addAssetAction } from "@/app/actions";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+// 1. Rozbudowujemy interfejs o istniejące aktywa
 interface AddAssetFormProps {
 	portfolioId: string;
-	allowedCategories?: string[]; // Opcjonalna lista kategorii z bazy
+	allowedCategories?: string[];
+	existingAssets?: {
+		id: string;
+		name: string;
+		ticker: string | null;
+		category: string;
+	}[];
 }
 export default function AddAssetForm({
 	portfolioId,
 	allowedCategories = [],
+	existingAssets = [],
 }: AddAssetFormProps) {
 	const router = useRouter();
 	const formRef = useRef<HTMLFormElement>(null);
 	const [isPending, setIsPending] = useState(false);
-	// EN: Initialize state with the only category if available to avoid React 19 cascading warnings
-	// UI: Inicjalizacja stanu jedyną dostępną kategorią, by uniknąć ostrzeżeń React 19
+
+	// 2. Nowy stan dla wyboru: "Nowe" vs "Istniejące"
+	const [selectedExistingAsset, setSelectedExistingAsset] =
+		useState<string>("new");
+
+	// 3. Pola formularza uwzględniające datę, ilość i wycenę
+	const [executionDate, setExecutionDate] = useState(
+		new Date().toISOString().split("T")[0],
+	);
+	const [quantity, setQuantity] = useState<number>(0);
+	const [totalInvested, setTotalInvested] = useState<number>(0);
+
 	const [selectedCategory, setSelectedCategory] = useState<string>(() =>
 		allowedCategories.length === 1 ? allowedCategories[0] : "",
 	);
 
-	// EN: Filter categories or return empty array / UI: Filtrujemy kategorie lub zwracamy pustą tablicę
-	// const categoriesToDisplay = allowedCategories || [];
 	const hasNoCategories = allowedCategories.length === 0;
+
+	// Automatyczne wypełnianie danych, gdy wybierzemy istniejące aktywo
+	const handleExistingAssetChange = (assetId: string) => {
+		setSelectedExistingAsset(assetId);
+		if (assetId !== "new") {
+			const asset = existingAssets.find((a) => a.id === assetId);
+			if (asset) setSelectedCategory(asset.category);
+		} else {
+			setSelectedCategory(
+				allowedCategories.length === 1 ? allowedCategories[0] : "",
+			);
+		}
+	};
+
 	async function clientAction(formData: FormData) {
 		setIsPending(true);
+
+		// Dodajemy nasze wyliczenia i datę do formularza
+		formData.append("investedCapital", totalInvested.toString());
+		formData.append("currentValue", totalInvested.toString());
+		formData.append("executedAt", executionDate);
+
+		// Jeśli wybrano istniejące aktywo, wysyłamy jego ID
+		if (selectedExistingAsset !== "new") {
+			formData.append("existingAssetId", selectedExistingAsset);
+			// Opcjonalnie: upewniamy się, że nazwa/ticker lecą z bazy
+			const asset = existingAssets.find((a) => a.id === selectedExistingAsset);
+			if (asset) {
+				formData.set("name", asset.name);
+				if (asset.ticker) formData.set("ticker", asset.ticker);
+			}
+		}
+
 		const result = await addAssetAction(formData);
 		setIsPending(false);
 
 		if (result?.success) {
 			toast.success("Aktywo zostało dodane! 📈");
-			formRef.current?.reset();
-			setSelectedCategory("");
 			router.push(
 				`/dashboard?portfolioId=${result.portfolioId}&newAssetId=${result.newAssetId}`,
 			);
@@ -57,105 +105,172 @@ export default function AddAssetForm({
 		}
 	}
 
+	const isAddingNew = selectedExistingAsset === "new";
+
 	return (
-		<Card className="w-full bg-card shadow-lg border-border2 py-8">
-			<CardHeader className="pb-4">
-				<CardTitle className="text-xl font-bold flex items-center gap-2">
-					Dodaj nową inwestycję
-				</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<form
-					ref={formRef}
-					action={clientAction}
-					className="grid grid-cols-1 xl:grid-cols-5 gap-6 items-end"
-				>
-					<input type="hidden" name="portfolioId" value={portfolioId} />
-					<input type="hidden" name="category" value={selectedCategory} />
+		<div>
+			<div className="flex justify-between py-6">
+				<BulbTip
+					title="Kupujesz obligacje skarbowe? Skorzystaj z kreatora obligacji →"
+					content="Dzięki kreatorowi obligacji możesz łatwo dodawać swoje obligacje, a my automatycznie uwzględnimy je w analizie portfela i dashboardzie. Kliknij poniżej, aby przejść do kreatora skarbca i dodać swoje obligacje już teraz!"
+				/>
+				<AddButton className="gap-2 shadow-sm h-9">
+					<Link href={"/bonds/new"} className="gap-2 flex items-center">
+						<Plus className="h-4 w-4" />
+						Dodaj Obligację
+					</Link>
+				</AddButton>
+			</div>
 
-					<div className="space-y-2">
-						<Label
-							htmlFor="name"
-							className="text-xs font-semibold uppercase tracking-wider opacity-70"
-						>
-							Nazwa
-						</Label>
-						<Input
-							id="name"
-							name="name"
-							placeholder="np. iShares MSCI EM"
-							required
-							disabled={isPending}
-							className={inputStyles}
-						/>
-					</div>
+			<Card className="w-full bg-card shadow-lg border-border2 py-8 mt-6">
+				<CardHeader className="pb-4">
+					<CardTitle className="text-xl font-bold flex items-center gap-2">
+						Dodaj aktywo do portfela
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<form
+						ref={formRef}
+						action={clientAction}
+						/* Zmieniamy grid na auto-rows i dodajemy responsywne kolumny */
+						className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-y-6 gap-x-4 items-end"
+					>
+						<input type="hidden" name="portfolioId" value={portfolioId} />
+						<input type="hidden" name="category" value={selectedCategory} />
 
-					<div className="space-y-2">
-						<Label
-							htmlFor="ticker"
-							className="text-xs font-semibold uppercase tracking-wider opacity-70"
-						>
-							Symbol (Ticker)
-						</Label>
-						<Input
-							id="ticker"
-							name="ticker"
-							placeholder="EIMI.L"
-							disabled={isPending}
-							className={inputStyles}
-						/>
-					</div>
+						{/* TYP OPERACJI - Dajemy mu trochę więcej miejsca */}
+						<div className="flex flex-col gap-1">
+							<Label className="text-xs font-semibold uppercase opacity-70">
+								Typ operacji
+							</Label>
+							<Select
+								value={selectedExistingAsset}
+								onValueChange={handleExistingAssetChange}
+								disabled={isPending}
+							>
+								<SelectTrigger className={cn(inputStyles, "w-full min-w-50")}>
+									<SelectValue placeholder="Wybierz..." />
+								</SelectTrigger>
+								<SelectContent className="mb-0">
+									<SelectItem value="new" className="font-bold text-primary">
+										<div className="flex items-center gap-2">
+											<PlusCircle className="h-4 w-4" />
+											<span>Nowe aktywo</span>
+										</div>
+									</SelectItem>
+									{existingAssets.map((asset) => (
+										<SelectItem
+											key={asset.id}
+											value={asset.id}
+											className="cursor-pointer hover:bg-alpha-purple"
+										>
+											<div className="flex items-center gap-2">
+												<Coins className="h-4 w-4 text-amber-500" />
+												<span>Dokup: {asset.name}</span>
+											</div>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 
-					<div className="space-y-2">
-						<Label
-							htmlFor="currentValue"
-							className="text-xs font-semibold uppercase tracking-wider opacity-70"
-						>
-							Wartość (PLN)
-						</Label>
-						<Input
-							id="currentValue"
-							name="currentValue"
-							type="number"
-							step="0.01"
-							placeholder="5000"
-							required
-							disabled={isPending}
-							className={inputStyles}
-						/>
-					</div>
+						{/* DATA TRANSAKCJI */}
+						<div className="space-y-2">
+							<Label className="text-xs font-semibold uppercase opacity-70">
+								Data Zakupu
+							</Label>
+							<Input
+								type="date"
+								value={executionDate}
+								onChange={(e) => setExecutionDate(e.target.value)}
+								required
+								disabled={isPending}
+								className={cn(inputStyles, "w-full")}
+							/>
+						</div>
 
-					{/* EN: Fixing alignment by ensuring the container and trigger match Input heights exactly */}
-					{/* UI: Naprawa wyrównania poprzez wymuszenie identycznej wysokości SelectTrigger */}
-					<div className={cn(hasNoCategories && "-mt-3")}>
-						<Label className="text-[10px] font-bold uppercase tracking-widest opacity-60 ml-1 mb-2">
-							Kategoria
-						</Label>
-						<Select
-							value={selectedCategory}
-							onValueChange={setSelectedCategory}
-							// EN: Critical: Physical 'disabled' prevents useFormStatus from triggering loader incorrectly
-							// UI: Kluczowe: Fizyczny 'disabled' zapobiega błędnemu uruchamianiu loadera przez useFormStatus
-							disabled={isPending || hasNoCategories}
-							required
-						>
-							<SelectTrigger className={inputStyles}>
-								<SelectValue
-									placeholder={
-										hasNoCategories ? "Brak kategorii..." : "Wybierz..."
-									}
-								/>
-							</SelectTrigger>
-							<SelectContent>
-								{hasNoCategories ? (
-									<div className="p-4 text-center text-xs text-destructive font-bold uppercase">
-										Brak zdefiniowanych kategorii w tym portfelu
-									</div>
-								) : (
-									allowedCategories.map((cat) => (
+						{/* NAZWA I TICKER - Pojawiają się dynamicznie */}
+						{isAddingNew && (
+							<>
+								<div className="space-y-2">
+									<Label
+										htmlFor="name"
+										className="text-xs font-semibold uppercase opacity-70"
+									>
+										Nazwa
+									</Label>
+									<Input
+										id="name"
+										name="name"
+										placeholder="np. iShares MSCI EM"
+										required
+										className={inputStyles}
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label
+										htmlFor="ticker"
+										className="text-xs font-semibold uppercase opacity-70"
+									>
+										Symbol
+									</Label>
+									<Input
+										id="ticker"
+										name="ticker"
+										placeholder="EIMI.L"
+										className={inputStyles}
+									/>
+								</div>
+							</>
+						)}
+
+						{/* ILOŚĆ I WARTOŚĆ */}
+						<div className="space-y-2">
+							<Label className="text-xs font-semibold uppercase opacity-70">
+								Liczba jednostek
+							</Label>
+							<Input
+								type="number"
+								step="0.0001"
+								name="quantity"
+								onChange={(e) => setQuantity(e.target.valueAsNumber || 0)}
+								required
+								className={inputStyles}
+							/>
+						</div>
+
+						<div className="space-y-2">
+							<Label className="text-xs font-semibold uppercase opacity-70">
+								Wartość (PLN)
+							</Label>
+							<Input
+								type="number"
+								step="0.01"
+								onChange={(e) => setTotalInvested(e.target.valueAsNumber || 0)}
+								placeholder="Suma wpłaty"
+								required
+								className={inputStyles}
+							/>
+						</div>
+
+						{/* KATEGORIA */}
+						<div className="flex flex-col gap-1">
+							<Label className="text-[10px] font-bold uppercase opacity-60 ml-1">
+								Kategoria
+							</Label>
+							<Select
+								value={selectedCategory}
+								onValueChange={setSelectedCategory}
+								disabled={isPending || hasNoCategories || !isAddingNew}
+								required
+							>
+								<SelectTrigger className={inputStyles}>
+									<SelectValue placeholder="Kategoria" />
+								</SelectTrigger>
+								<SelectContent>
+									{allowedCategories.map((cat) => (
 										<SelectItem key={cat} value={cat}>
 											<div className="flex items-center gap-2">
-												{/* EN: Dot is back / UI: Kropka wraca */}
 												<div
 													className="h-2.5 w-2.5 rounded-full border border-border2"
 													style={{
@@ -170,44 +285,29 @@ export default function AddAssetForm({
 												</span>
 											</div>
 										</SelectItem>
-									))
-								)}
-							</SelectContent>
-						</Select>
-						{/* EN: Link to configuration if categories are missing */}
-						{/* UI: Link do konfiguracji, jeśli brakuje kategorii */}
-						{hasNoCategories && (
-							<Link
-								href={`/portfolios/edit/${portfolioId}`}
-								className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 mt-1 font-bold"
-							>
-								<Plus className="h-3 w-3" /> Skonfiguruj kategorie portfela
-							</Link>
-						)}
-					</div>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 
-					<div className="md:pb-0 flex justify-end">
-						{/* <SubmitButton
-							label={isPending ? "Zapisywanie..." : "Zapisz aktywo"}
-							// EN: Pass disabled prop to prevent 'Processing...' state on empty categories
-							// UI: Przekaż disabled, aby uniknąć stanu 'Processing...' przy braku kategorii
-							disabled={hasNoCategories || !selectedCategory}
-							className="w-full uppercase text-xs h-10"
-						/> */}
-						<Button
-							type="submit"
-							disabled={hasNoCategories || !selectedCategory}
-							className={cn(
-								"w-full md:w-auto font-semibold transition-all border duration-200 active:scale-95 cursor-pointer hover:border-border2 bg-blue-400",
-								(hasNoCategories || !selectedCategory) &&
-									"cursor-not-allowed opacity-50",
-							)}
-						>
-							<>{isPending ? "Zapisywanie..." : "Zapisz aktywo"}</>
-						</Button>
-					</div>
-				</form>
-			</CardContent>
-		</Card>
+						{/* PRZYCISK - Na większych ekranach zawsze ląduje na końcu rzędu lub w nowym rzędzie */}
+						<div className="md:col-span-2 lg:col-span-1 xl:col-start-4 2xl:col-start-5 flex justify-end">
+							<Button
+								type="submit"
+								disabled={
+									hasNoCategories ||
+									!selectedCategory ||
+									isPending ||
+									quantity <= 0
+								}
+								className="w-full font-semibold bg-blue-500 hover:bg-blue-600 h-10 shadow-md transition-all active:scale-95"
+							>
+								{isPending ? "Zapisywanie..." : "Zapisz aktywo"}
+							</Button>
+						</div>
+					</form>
+				</CardContent>
+			</Card>
+		</div>
 	);
 }

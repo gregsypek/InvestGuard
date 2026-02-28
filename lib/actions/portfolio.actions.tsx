@@ -1,10 +1,11 @@
 "use server";
 
-import { db } from "../db";
-import { revalidatePath } from "next/cache";
 import { PortfolioFormValues, PortfolioSchema } from "../validations/portfolio";
+
 import { PORTFOLIO_STRATEGY_MAP } from "../constants";
 import { auth } from "@/auth";
+import { db } from "../db";
+import { revalidatePath } from "next/cache";
 
 export async function createPortfolio(values: PortfolioFormValues) {
 	const session = await auth();
@@ -27,7 +28,7 @@ export async function createPortfolio(values: PortfolioFormValues) {
 				// Linking to a temporary user ID
 				user: {
 					connect: {
-						id: session.user.id, 
+						id: session.user.id,
 					},
 				},
 			},
@@ -143,5 +144,25 @@ export async function getPortfolioCategories(id: string) {
 	} catch (error) {
 		console.error("Error:", error);
 		return { success: false, categories: [] };
+	}
+}
+
+export async function getPortfolioAssets(portfolioId: string) {
+	try {
+		const assets = await db.asset.findMany({
+			where: { portfolioId },
+			select: {
+				id: true,
+				name: true,
+				ticker: true,
+				category: true,
+			},
+			orderBy: { name: "asc" }, // Ułatwi to szukanie na liście
+		});
+
+		return { success: true, data: assets };
+	} catch (error) {
+		console.error("Error fetching assets:", error);
+		return { success: false, data: [] };
 	}
 }

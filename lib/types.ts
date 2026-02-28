@@ -1,4 +1,4 @@
-import { Category, Prisma } from "@prisma/client";
+import { Category, Prisma, TransactionHistory } from "@prisma/client";
 
 export type AssetCategory =
 	| "BONDS"
@@ -16,7 +16,6 @@ export const MODEL_ALLOCATION = [
 	{ name: "Emerging", weight: 15, color: "bg-portfolio-emerging" },
 	{ name: "Gold", weight: 10, color: "bg-portfolio-gold" },
 	{ name: "Booster", weight: 5, color: "bg-portfolio-booster" },
-	{ name: "Gold", weight: 10, color: "bg-portfolio-gold" },
 	{ name: "Cash", weight: 0, color: "bg-portfolio-cash" },
 	{ name: "Crypto", weight: 0, color: "bg-portfolio-crypto" },
 	{ name: "Commodities", weight: 0, color: "bg-portfolio-commodities" },
@@ -32,6 +31,11 @@ export interface Asset {
 	investedCapital: number; // Musi być, by liczyć zysk
 	currentValue: number; // Musi być, by liczyć rebalancing
 
+	// NOWE POLA Z PRISMA 🧱
+	// EN: Add the new fields to the manual Asset interface
+	quantity: number; // Musi być, by liczyć średnią cenę i udziały
+
+	nominalValue?: number | null; // Opcjonalne dla obligacji
 	// OGÓLNE DLA BOOSTER & BONDS 🚀
 	rationale?: string | null;
 	timeHorizon?: string | null; // W bazie mamy Enum lub String
@@ -111,7 +115,12 @@ export interface Portfolio {
 	targetCommodities: number;
 }
 
-// To stworzy typ dokładnie taki, jaki zwraca zapytanie z "include: { assets: true }"
-export type PortfolioWithAssets = Prisma.PortfolioGetPayload<{
-	include: { assets: true };
-}>;
+// // To stworzy typ dokładnie taki, jaki zwraca zapytanie z "include: { assets: true }"
+// export type PortfolioWithAssets = Prisma.PortfolioGetPayload<{
+// 	include: { assets: true };
+// }>;
+
+export type PortfolioWithAssets = Portfolio & {
+	assets: Asset[];
+	transactionHistories: TransactionHistory[]; // ⬅️ DODAJ TĘ LINIĘ
+};

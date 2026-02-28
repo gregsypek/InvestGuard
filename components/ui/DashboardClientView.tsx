@@ -2,10 +2,11 @@
 
 import { CategoryStatus, PortfolioWithAssets } from "@/lib/types";
 import { useEffect, useState } from "react";
+
+import DashboardAnalytics from "./DashboardAnalytics";
 import DashboardGoal from "../DashboardGoal";
-import { getPortfolioStats } from "@/lib/calculations";
 import { DashboardHeader } from "../DashboardHeader";
-import DashboardAnalitics from "./DashboardAnalitics";
+import { getPortfolioStats } from "@/lib/calculations";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
@@ -16,7 +17,6 @@ interface Props {
 export default function DashboardClientView({
 	portfolio,
 	portfolioStatus,
-	userName,
 }: Props) {
 	const { name, totalValue, progress, remaining, goal } =
 		getPortfolioStats(portfolio);
@@ -32,9 +32,9 @@ export default function DashboardClientView({
 		<div className="space-y-10 pb-20">
 			{/* 1. NAGŁÓWEK I PODSUMOWANIE */}
 			<DashboardHeader
+				portfolio={portfolio}
 				name={name}
 				totalValue={totalValue}
-				userName={userName}
 			/>
 
 			{/* 2. PASEK POSTĘPU DO CELU */}
@@ -43,7 +43,7 @@ export default function DashboardClientView({
 			)}
 
 			{/* 3. REBALANCING & CHARTS (Sekcja analityczna) */}
-			<DashboardAnalitics
+			<DashboardAnalytics
 				portfolio={portfolio}
 				portfolioStatus={portfolioStatus}
 			/>

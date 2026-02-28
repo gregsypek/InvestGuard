@@ -1,4 +1,11 @@
-// components/portfolio/PortfolioTableBeauty.tsx
+import {
+	Activity,
+	ArrowDownRight,
+	ArrowUpRight,
+	CheckCircle2,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// components/portfolio/StrategyHealthTable.tsx
 import {
 	Table,
 	TableBody,
@@ -7,22 +14,16 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { Button } from "@/components/ui/button";
 import { CategoryStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-	ArrowUpRight,
-	ArrowDownRight,
-	Activity,
-	CheckCircle2,
-} from "lucide-react";
 
 interface Props {
 	data: CategoryStatus[];
 }
 
-export default function PortfolioTableBeauty({ data }: Props) {
+export default function StrategyHealthTable({ data }: Props) {
 	const filteredData = data.filter((x) => x.weight > 0);
 
 	return (
@@ -61,7 +62,6 @@ export default function PortfolioTableBeauty({ data }: Props) {
 								>
 									<TableCell className="py-4">
 										<div className="flex items-center gap-2">
-											{/* Wykorzystujemy kolor z Twoich stałych COLORS */}
 											<div
 												className={cn("w-1.5 h-6 rounded-full", item.color)}
 												style={{ backgroundColor: item.color }} // Jeśli color to HEX

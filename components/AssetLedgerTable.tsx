@@ -1,7 +1,13 @@
 "use client";
 
 import { CATEGORY_LABELS, COLORS, PAGE_ITEMS } from "@/lib/constants";
-import { History, ListOrdered, Plus } from "lucide-react";
+import {
+	ChevronDown,
+	ListOrdered,
+	Plus,
+	TrendingDown,
+	TrendingUp,
+} from "lucide-react";
 import React, { useMemo, useState } from "react";
 import {
 	Table,
@@ -29,18 +35,20 @@ import { useSearchParams } from "next/navigation";
 interface Props {
 	portfolio: PortfolioWithAssets;
 }
-const AssetLedger = ({ portfolio }: Props) => {
+
+const AssetLedgerTable = ({ portfolio }: Props) => {
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams.get("newAssetId");
+
+	// EN: State for UI interactions
 	const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
 
+	// EN: Calculate individual asset P&L based on current portfolio data
 	const assetsWithPL = useMemo(() => {
 		return assets.map((asset) => {
-			// Tu wywołujemy Twoją funkcję z calculations.ts
 			const { profitAmount, profitPercent } = calculateAssetPL(asset);
-
 			return {
 				...asset,
 				profitAmount,
@@ -49,41 +57,32 @@ const AssetLedger = ({ portfolio }: Props) => {
 		});
 	}, [assets]);
 
-	// Teraz tniemy listę, która ma już policzone zyski!
+	// EN: Prepare data for the current page
 	const paginatedAssets = assetsWithPL.slice(
 		(currentPage - 1) * PAGE_ITEMS,
 		currentPage * PAGE_ITEMS,
 	);
 
-	// EN: Calculate total value for share percentage
-	// UI: Obliczanie całkowitej wartości dla procentowego udziału
+	// EN: Total portfolio value for share calculations
 	const totalPortfolioValue = useMemo(
 		() => assets.reduce((sum, asset) => sum + asset.currentValue, 0),
 		[assets],
 	);
+
 	return (
 		<section className="pt-8 border-t border-border">
+			{/* --- HEADER SECTION --- */}
 			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1 mb-8">
 				<div className="space-y-1">
 					<h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
 						<ListOrdered className="h-6 w-6 text-primary" /> Szczegółowy Rejestr
 						Aktywów
 					</h2>
-					{/* <BulbTip
-							title="Zasada:"
-							content="Utrzymuj odchylenia poniżej 5%. Rebalansuj tylko gdy strategia tego wymaga, by unikać zbędnych kosztów."
-						/> */}
 					<div className="hidden sm:block">
 						<BulbTip
 							title="Zasada:"
 							content="Utrzymuj odchylenia poniżej 5%. Rebalansuj tylko gdy strategia tego wymaga."
 						/>
-					</div>
-					<div className="sm:hidden">
-						{/* Wersja mobilna: tylko ikona lub krótszy tekst */}
-						<p className="text-[10px] text-muted-foreground italic">
-							💡 Cel: odchylenie &lt; 5%
-						</p>
 					</div>
 				</div>
 
@@ -98,8 +97,6 @@ const AssetLedger = ({ portfolio }: Props) => {
 			</div>
 
 			<div className="w-full">
-				{/* EN: Table with Alpha-inspired visual density */}
-				{/* UI: Tabela inspirowana stylem Alpha z większą gęstością wizualną */}
 				<Table>
 					<TableHeader className="bg-muted/30">
 						<TableRow className="border-border">
@@ -124,54 +121,73 @@ const AssetLedger = ({ portfolio }: Props) => {
 						{paginatedAssets.length === 0 ? (
 							<TableRow>
 								<TableCell
-									colSpan={6}
-									className="text-center py-12 text-muted-foreground "
+									colSpan={7}
+									className="text-center py-12 text-muted-foreground"
 								>
 									Portfel jest pusty. Zacznij dodawać aktywa.
 								</TableCell>
 							</TableRow>
 						) : (
 							paginatedAssets.map((asset) => {
-								// Filtrujemy historię dla tego konkretnego aktywa
+								// EN: Filter transaction history for this specific asset
 								const assetHistory = portfolio.transactionHistories.filter(
 									(tx) =>
 										(tx.ticker && tx.ticker === asset.ticker) ||
 										tx.assetName === asset.name,
 								);
 
-								const isExpanded = expandedAssetId === asset.id;
+								const hasHistory = assetHistory.length > 0;
+								const isExpanded = expandedAssetId === asset.id && hasHistory;
 								const isHighlighted = asset.id === highlightedId;
+
+								// EN: Calculate current market price per unit
+								const currentUnitPrice =
+									asset.quantity > 0 ? asset.currentValue / asset.quantity : 0;
 								const share = Number(
 									((asset.currentValue / totalPortfolioValue) * 100).toFixed(1),
 								);
 								const categoryColor =
 									COLORS[asset.category as keyof typeof COLORS] || "#ccc";
+
 								return (
 									<React.Fragment key={asset.id}>
 										<TableRow
 											className={cn(
-												"border-border hover:bg-muted/20 transition-colors group cursor-pointer",
+												"border-border transition-colors group",
+												hasHistory
+													? "cursor-pointer hover:bg-muted/20"
+													: "opacity-90",
 												isExpanded && "bg-muted/30",
 												isHighlighted && "bg-primary/5",
 											)}
 											onClick={() =>
+												hasHistory &&
 												setExpandedAssetId(isExpanded ? null : asset.id)
 											}
 										>
-											{/* KOLUMNA 1: Nazwa, Ticker i Ilość */}
+											{/* KOLUMNA 1: Nazwa + Ticker + Ilość + Ikona rozwijania */}
 											<TableCell className="relative py-2">
-												<div className="font-bold text-sm">{asset.name}</div>
+												<div className="flex items-center gap-2">
+													{hasHistory && (
+														<ChevronDown
+															className={cn(
+																"h-3 w-3 text-primary transition-transform duration-200",
+																isExpanded ? "rotate-180" : "rotate-0",
+															)}
+														/>
+													)}
+													<div className="font-bold text-sm">{asset.name}</div>
+												</div>
 												<div className="flex items-center gap-2 mt-1">
 													<span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded uppercase">
 														{asset.ticker || "ASSET"}
 													</span>
-													<span className="text-[10px] text-blue-500 font-bold uppercase">
+													<span className="text-[10px] text-blue-500 font-bold">
 														{asset.quantity.toFixed(2)} szt.
 													</span>
 												</div>
 											</TableCell>
 
-											{/* KOLUMNA 2: Kategoria */}
 											<TableCell>
 												<div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase">
 													<div
@@ -182,7 +198,6 @@ const AssetLedger = ({ portfolio }: Props) => {
 												</div>
 											</TableCell>
 
-											{/* KOLUMNA 3: Alokacja (Progress Bar) */}
 											<TableCell>
 												<div className="space-y-1 pr-4">
 													<div className="flex justify-between text-[10px] font-bold">
@@ -199,7 +214,6 @@ const AssetLedger = ({ portfolio }: Props) => {
 												</div>
 											</TableCell>
 
-											{/* KOLUMNA 4: Korekta (QuickAdjust) */}
 											<TableCell>
 												<QuickAdjustCell
 													assetId={asset.id}
@@ -208,7 +222,6 @@ const AssetLedger = ({ portfolio }: Props) => {
 												/>
 											</TableCell>
 
-											{/* KOLUMNA 5: P&L */}
 											<TableCell className="text-right">
 												<div
 													className={cn(
@@ -228,7 +241,6 @@ const AssetLedger = ({ portfolio }: Props) => {
 												</div>
 											</TableCell>
 
-											{/* KOLUMNA 6: Wartość Rynkowa */}
 											<TableCell className="text-right font-bold font-mono text-sm tabular-nums">
 												{asset.currentValue.toLocaleString()}{" "}
 												<span className="text-[10px] font-normal opacity-50">
@@ -236,7 +248,6 @@ const AssetLedger = ({ portfolio }: Props) => {
 												</span>
 											</TableCell>
 
-											{/* KOLUMNA 7: Akcje (Usuwanie) */}
 											<TableCell className="text-right">
 												<DeleteButton
 													id={asset.id}
@@ -245,69 +256,96 @@ const AssetLedger = ({ portfolio }: Props) => {
 												/>
 											</TableCell>
 										</TableRow>
-										{/* --- ROZWIJANA HISTORIA TRANSFAKCJI --- */}
-										{isExpanded && (
-											<TableRow className="bg-muted/10 hover:bg-muted/10 border-none">
-												<TableCell colSpan={7} className="p-0">
-													<div className="px-6 py-4 animate-in fade-in slide-in-from-top-2 duration-300">
-														<div className="flex items-center gap-2 mb-3">
-															<History className="h-4 w-4 text-primary" />
-															<h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-																Historia zakupów dla {asset.name}
-															</h4>
-														</div>
 
-														<div className="space-y-2">
-															{/* Tutaj mapujemy historię. Zakładam, że dociągniesz relację transactions */}
-															{assetHistory?.length > 0 ? (
-																assetHistory.map((tx: any) => (
+										{/* --- EXPANDED TRANSACTION HISTORY --- */}
+										{isExpanded && (
+											<TableRow className="bg-muted/10 border-none hover:bg-muted/10">
+												<TableCell colSpan={7} className="p-0">
+													<div className="px-10 py-4 animate-in fade-in slide-in-from-top-1 duration-200">
+														<div className="space-y-3">
+															{assetHistory.map((tx: any) => {
+																// EN: Calculate specific performance for this individual trade
+																{
+																	/* txUnitPrice: To cena jednostkowa tej konkretnej transakcji (ile zapłaciłeś za sztukę w tamtym dniu). */
+																}
+																const txUnitPrice =
+																	tx.quantity !== 0
+																		? tx.executedValue / tx.quantity
+																		: 0;
+																// txProfitPercent: To wynik tej konkretnej „paczki” akcji. Pozwala Ci to zobaczyć, że np. akcje kupione w styczniu zarabiają 10%, a te z marca są 2% na minusie.
+																const txProfitPercent =
+																	txUnitPrice > 0
+																		? ((currentUnitPrice - txUnitPrice) /
+																				txUnitPrice) *
+																			100
+																		: 0;
+																const isBuy = tx.quantity > 0;
+
+																return (
 																	<div
 																		key={tx.id}
-																		className="flex items-center justify-between text-[11px] border-b border-border/50 pb-2 last:border-none"
+																		className="flex items-center justify-between text-[11px] border-b border-border/40 pb-2 last:border-none"
 																	>
-																		<div className="flex flex-col">
-																			<span className="font-bold">
+																		{/* Data & Transaction Type */}
+																		<div className="flex items-center gap-4">
+																			<span className="text-muted-foreground font-medium">
 																				{new Date(
 																					tx.executedAt,
 																				).toLocaleDateString()}
 																			</span>
-																			<span className="text-muted-foreground italic max-w-md truncate">
-																				&quot;{tx.rationale || "Brak notatki"}
-																				&quot;
+																			<span
+																				className={cn(
+																					"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
+																					isBuy
+																						? "bg-emerald-500/10 text-emerald-600"
+																						: "bg-orange-500/10 text-orange-600",
+																				)}
+																			>
+																				{isBuy ? "Kupno" : "Sprzedaż"}
 																			</span>
 																		</div>
-																		{/* <div className="flex gap-4 font-mono">
-																			<span>{tx.quantity.toFixed(4)} szt.</span>
-																			<span className="font-bold">
-																				{tx.executedValue.toLocaleString()} PLN
+
+																		{/* Position performance (current vs buy price) */}
+																		<div className="flex items-center gap-2">
+																			<span className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">
+																				Wynik paczki:
 																			</span>
-																		</div> */}
-																		<div className="flex gap-4 font-mono text-right">
+																			<div
+																				className={cn(
+																					"flex items-center gap-1 font-bold font-mono",
+																					txProfitPercent >= 0
+																						? "text-emerald-500"
+																						: "text-red-500",
+																				)}
+																			>
+																				{txProfitPercent >= 0 ? (
+																					<TrendingUp className="h-3 w-3" />
+																				) : (
+																					<TrendingDown className="h-3 w-3" />
+																				)}
+																				{txProfitPercent > 0 ? "+" : ""}
+																				{txProfitPercent.toFixed(2)}%
+																			</div>
+																		</div>
+
+																		{/* Values and Volume */}
+																		<div className="flex gap-6 font-mono text-right">
 																			<div className="flex flex-col">
 																				<span className="font-bold">
 																					{tx.executedValue.toLocaleString()}{" "}
 																					PLN
 																				</span>
-																				{/* EN: Show unit price for that specific buy / UI: Pokaż cenę jednostkową tego zakupu */}
 																				<span className="text-[9px] text-muted-foreground">
-																					@{" "}
-																					{(
-																						tx.executedValue / tx.quantity
-																					).toFixed(2)}{" "}
-																					/ szt.
+																					@ {txUnitPrice.toFixed(2)} / szt.
 																				</span>
 																			</div>
-																			<span className="min-w-[70px]">
+																			<span className="min-w-[70px] font-bold text-muted-foreground">
 																				{tx.quantity.toFixed(4)} szt.
 																			</span>
 																		</div>
 																	</div>
-																))
-															) : (
-																<p className="text-[10px] text-muted-foreground italic">
-																	Brak szczegółowej historii dla tego aktywa.
-																</p>
-															)}
+																);
+															})}
 														</div>
 													</div>
 												</TableCell>
@@ -321,7 +359,6 @@ const AssetLedger = ({ portfolio }: Props) => {
 				</Table>
 			</div>
 
-			{/* Pagination */}
 			<PaginatedBar
 				items={assets}
 				currentPage={currentPage}
@@ -331,4 +368,4 @@ const AssetLedger = ({ portfolio }: Props) => {
 	);
 };
 
-export default AssetLedger;
+export default AssetLedgerTable;

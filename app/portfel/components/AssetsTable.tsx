@@ -45,7 +45,7 @@ export default function AssetsTable({ assets }: { assets: Asset[] }) {
 									</span>
 								</td>
 								<td className="px-6 py-4 text-right">
-									{asset.value.toLocaleString()} PLN
+									{asset.currentValue.toLocaleString()} PLN
 								</td>
 								<td className="px-6 py-4 text-right">
 									{/* Calculation here */}

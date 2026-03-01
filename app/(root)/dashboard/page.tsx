@@ -54,8 +54,16 @@ export default async function DashboardPage({ searchParams }: Props) {
 			id: portfolioId,
 			userId: session.user.id,
 		},
-		include: { assets: true },
+		include: {
+			assets: true, // Pobieramy listę aktywów
+			transactionHistories: {
+				orderBy: {
+					executedAt: "desc", // Chcemy najnowsze transakcje na górze listy
+				},
+			},
+		},
 	});
+	// console.log("🚀 ~ DashboardPage ~ portfolio:", portfolio);
 
 	// Handle case where the portfolio doesn't exist or belongs to someone else
 	if (!portfolio) {

@@ -1,8 +1,13 @@
-// app/(root)/activity/page.tsx
+// import { ActivityHeader } from "@/components/history/ActivityHeader";
+import { AlertCircle, ListOrdered } from "lucide-react";
+import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import {
-	deleteHistoryItem,
-	getTransactionHistory,
-} from "@/lib/actions/history.actions";
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
 	Table,
 	TableBody,
@@ -11,22 +16,19 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+// app/(root)/activity/page.tsx
 import {
-	Pagination,
-	PaginationContent,
-	PaginationItem,
-	PaginationNext,
-	PaginationPrevious,
-} from "@/components/ui/pagination";
-import { ExportReport } from "@/components/history/ExportReport";
-// import { ActivityHeader } from "@/components/history/ActivityHeader";
-import { ListOrdered, AlertCircle } from "lucide-react";
-import { COLORS, CATEGORY_LABELS } from "@/lib/constants";
+	deleteHistoryItem,
+	getTransactionHistory,
+} from "@/lib/actions/history.actions";
+
 import { ActivityHeader } from "@/components/ActivityHeader";
 import { DeleteButton } from "@/components/DeleteButton";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import { ExportReport } from "@/components/history/ExportReport";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
+import { auth } from "@/auth";
+import { cn } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
 export default async function ActivityPage({
 	searchParams,
@@ -62,26 +64,15 @@ export default async function ActivityPage({
 	const { data: transactions, meta } = result;
 
 	return (
-		<div className="space-y-10 pb-20 ">
+		<div className="space-y-10 pb-20">
 			<ActivityHeader
-				totalTransactions={meta.totalCount} // EN: Assuming your meta returns totalCount
+				totalTransactions={meta.totalCount}
 				currentPage={currentPage}
 				totalPages={meta.totalPages}
-				customBreadcrumbs={
-					<nav className="text-sm text-muted-foreground mb-2 italic">
-						Narzędzia /{" "}
-						<span className="text-primary font-medium">Historia</span>
-					</nav>
-				}
 			/>
-			{/* EN: Parent container needs min-h-screen (or enough height) and
-			flex-col. UI: Kontener nadrzędny musi mieć flex-col i flex-1, aby
-			justify-between zadziałało.  */}
+
 			<div className="flex flex-col min-h-[calc(100vh-200px)] space-y-10">
-				{/* EN: Wrapping the main content in flex-1 to push footer down */}
-				{/* UI: Owijamy główną treść w flex-1, co wypchnie paginację na dół */}
 				<div className="flex-1 space-y-6">
-					{/* Toolbar */}
 					<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
 						<h2 className="h2-bold flex items-center gap-2">
 							<ListOrdered className="h-5 w-5 text-primary" /> Rejestr
@@ -90,96 +81,102 @@ export default async function ActivityPage({
 						<ExportReport data={transactions} />
 					</div>
 
-					{/* EN: Table Container with styling */}
-
 					<Table>
 						<TableHeader className="bg-muted/30">
 							<TableRow className="border-border hover:bg-transparent">
-								<TableHead className="font-bold">Data</TableHead>
-								<TableHead className="font-bold">Aktywo</TableHead>
-								<TableHead className="font-bold">Kategoria</TableHead>
-								<TableHead className="text-right font-bold">Wartość</TableHead>
-								<TableHead className="font-bold">Notatka</TableHead>
+								<TableHead className="font-bold text-xs uppercase">
+									Data
+								</TableHead>
+								<TableHead className="font-bold text-xs uppercase">
+									Aktywo
+								</TableHead>
+								<TableHead className="font-bold text-xs uppercase">
+									Kategoria
+								</TableHead>
+								<TableHead className="text-right font-bold text-xs uppercase">
+									Wartość
+								</TableHead>
+								<TableHead className="font-bold text-xs uppercase">
+									Notatka
+								</TableHead>
 								<TableHead className="w-12 text-right"></TableHead>
-							</TableRow>{" "}
+							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{transactions.length === 0 ? (
-								<TableRow>
-									<TableCell
-										colSpan={6}
-										className="text-center py-12 text-muted-foreground"
+							{transactions.map((t) => {
+								const categoryColor =
+									COLORS[t.category as keyof typeof COLORS] || "var(--primary)";
+								const isBuy = t.quantity > 0;
+								// Obliczamy cenę jednostkową na podstawie łącznej wartości i ilości
+								const unitPrice =
+									t.quantity !== 0 ? Math.abs(t.executedValue / t.quantity) : 0;
+
+								return (
+									<TableRow
+										key={t.id}
+										className="border-border hover:bg-muted/20 transition-colors"
 									>
-										Brak zarejestrowanych transakcji w historii.
-									</TableCell>
-								</TableRow>
-							) : (
-								transactions.map((t) => {
-									const categoryColor =
-										COLORS[t.category as keyof typeof COLORS] ||
-										"var(--primary)";
-									const categoryLabel =
-										CATEGORY_LABELS[t.category] || t.category;
+										<TableCell className="font-medium font-mono text-[13px]">
+											{new Date(t.executedAt).toLocaleDateString("pl-PL")}
+										</TableCell>
 
-									return (
-										<TableRow
-											key={t.id}
-											className="border-border hover:bg-muted/20 transition-colors"
-										>
-											<TableCell className="font-medium font-mono text-sm">
-												{new Date(t.executedAt).toLocaleDateString("pl-PL", {
-													year: "numeric",
-													month: "2-digit",
-													day: "2-digit",
-												})}
-											</TableCell>
-
-											<TableCell>
-												<div className="font-bold text-sm">{t.assetName}</div>
-												{t.ticker && (
-													<div className="text-[10px] text-muted-foreground font-mono bg-muted inline-block px-1.5 py-0.5 rounded mt-0.5">
-														{t.ticker}
-													</div>
-												)}
-											</TableCell>
-
-											<TableCell>
-												<div className="flex items-center gap-1.5">
-													<div
-														className="w-2 h-2 rounded-full border border-border shadow-xs"
-														style={{ backgroundColor: categoryColor }}
-													/>
-													<span className="text-[10px] uppercase  tracking-wider text-muted-foreground font-semibold">
-														{categoryLabel}
-													</span>
+										<TableCell>
+											<div className="font-bold text-sm">{t.assetName}</div>
+											{t.ticker && (
+												<div className="text-[10px] text-muted-foreground font-mono bg-muted inline-block px-1.5 py-0.5 rounded mt-0.5 uppercase">
+													{t.ticker}
 												</div>
-											</TableCell>
+											)}
+										</TableCell>
 
-											<TableCell className="text-right font-mono font-semibold text-sm">
-												{t.executedValue.toLocaleString(undefined, {
-													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
-												})}{" "}
-												<span className="text-xs text-muted-foreground">
+										<TableCell>
+											<div className="flex items-center gap-1.5">
+												<div
+													className="w-2 h-2 rounded-full border border-border"
+													style={{ backgroundColor: categoryColor }}
+												/>
+												<span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+													{CATEGORY_LABELS[t.category] || t.category}
+												</span>
+											</div>
+										</TableCell>
+
+										{/* KOLUMNA WARTOŚĆ: Stacking Mono z Plusem i Kolorem */}
+										<TableCell className="text-right">
+											<div className="flex flex-col items-end font-mono">
+												<span
+													className={cn(
+														"font-bold text-sm",
+														isBuy ? "text-emerald-500" : "text-orange-500",
+													)}
+												>
+													{isBuy ? "+" : "-"}
+													{t.executedValue.toLocaleString(undefined, {
+														minimumFractionDigits: 2,
+													})}{" "}
 													PLN
 												</span>
-											</TableCell>
+												<span className="text-[10px] text-muted-foreground">
+													{Math.abs(t.quantity).toFixed(4)} szt. @{" "}
+													{unitPrice.toFixed(2)}
+												</span>
+											</div>
+										</TableCell>
 
-											<TableCell className="max-w-40 xl:max-w-64 truncate text-xs text-muted-foreground italic">
-												{t.rationale ? `"${t.rationale}"` : "—"}
-											</TableCell>
+										<TableCell className="max-w-40 xl:max-w-64 truncate text-xs text-muted-foreground italic">
+											{t.rationale ? `"${t.rationale}"` : "—"}
+										</TableCell>
 
-											<TableCell className="text-right">
-												<DeleteButton
-													id={t.id}
-													onDelete={deleteHistoryItem}
-													confirmMsg="Czy napewno chcesz usunąć transakcję z historii"
-												/>
-											</TableCell>
-										</TableRow>
-									);
-								})
-							)}{" "}
+										<TableCell className="text-right">
+											<DeleteButton
+												id={t.id}
+												onDelete={deleteHistoryItem}
+												confirmMsg="Usunąć z historii?"
+											/>
+										</TableCell>
+									</TableRow>
+								);
+							})}
 						</TableBody>
 					</Table>
 				</div>

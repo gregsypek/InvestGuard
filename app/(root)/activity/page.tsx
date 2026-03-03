@@ -1,4 +1,3 @@
-// import { ActivityHeader } from "@/components/history/ActivityHeader";
 import { AlertCircle, ListOrdered } from "lucide-react";
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import {
@@ -16,7 +15,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-// app/(root)/activity/page.tsx
 import {
 	deleteHistoryItem,
 	getTransactionHistory,
@@ -106,8 +104,12 @@ export default async function ActivityPage({
 							{transactions.map((t) => {
 								const categoryColor =
 									COLORS[t.category as keyof typeof COLORS] || "var(--primary)";
+								// EN: Detect correction
+								const isCorrection = t.rationale?.includes("[KOREKTA STANU]");
+								// EN: Determine transaction type based on quantity sign
 								const isBuy = t.quantity > 0;
-								// Obliczamy cenę jednostkową na podstawie łącznej wartości i ilości
+
+								// EN: Calculate absolute unit price
 								const unitPrice =
 									t.quantity !== 0 ? Math.abs(t.executedValue / t.quantity) : 0;
 
@@ -116,10 +118,32 @@ export default async function ActivityPage({
 										key={t.id}
 										className="border-border hover:bg-muted/20 transition-colors"
 									>
-										<TableCell className="font-medium font-mono text-[13px]">
-											{new Date(t.executedAt).toLocaleDateString("pl-PL")}
+										{/* 1. KOLUMNA: DATA I TYP TRANSAKCJI */}
+										<TableCell>
+											<div className="flex flex-col gap-1.5 items-start">
+												<span className="font-medium font-mono text-[13px]">
+													{new Date(t.executedAt).toLocaleDateString("pl-PL")}
+												</span>
+												<span
+													className={cn(
+														"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
+														isCorrection
+															? "bg-blue-500/10 text-blue-600"
+															: isBuy
+																? "bg-emerald-500/10 text-emerald-600"
+																: "bg-orange-500/10 text-orange-600",
+													)}
+												>
+													{isCorrection
+														? "Korekta"
+														: isBuy
+															? "Kupno"
+															: "Sprzedaż"}
+												</span>
+											</div>
 										</TableCell>
 
+										{/* 2. KOLUMNA: AKTYWO */}
 										<TableCell>
 											<div className="font-bold text-sm">{t.assetName}</div>
 											{t.ticker && (
@@ -129,6 +153,7 @@ export default async function ActivityPage({
 											)}
 										</TableCell>
 
+										{/* 3. KOLUMNA: KATEGORIA */}
 										<TableCell>
 											<div className="flex items-center gap-1.5">
 												<div
@@ -141,7 +166,7 @@ export default async function ActivityPage({
 											</div>
 										</TableCell>
 
-										{/* KOLUMNA WARTOŚĆ: Stacking Mono z Plusem i Kolorem */}
+										{/* 4. KOLUMNA: WARTOŚĆ I ILOŚĆ */}
 										<TableCell className="text-right">
 											<div className="flex flex-col items-end font-mono">
 												<span
@@ -150,23 +175,33 @@ export default async function ActivityPage({
 														isBuy ? "text-emerald-500" : "text-orange-500",
 													)}
 												>
-													{isBuy ? "+" : "-"}
-													{t.executedValue.toLocaleString(undefined, {
+													{/* EN: Check if the value is effectively zero to avoid -0.00 */}
+													{/* PL: Sprawdzamy, czy wartość nie jest zerem, aby uniknąć wyświetlania -0.00 */}
+													{isBuy
+														? "+"
+														: Math.abs(t.executedValue) < 0.005
+															? ""
+															: "-"}
+													{Math.abs(t.executedValue).toLocaleString(undefined, {
 														minimumFractionDigits: 2,
+														maximumFractionDigits: 2,
 													})}{" "}
 													PLN
 												</span>
 												<span className="text-[10px] text-muted-foreground">
+													{/* EN: Use Math.abs to avoid negative quantity signs on UI */}
 													{Math.abs(t.quantity).toFixed(4)} szt. @{" "}
 													{unitPrice.toFixed(2)}
 												</span>
 											</div>
 										</TableCell>
 
+										{/* 5. KOLUMNA: NOTATKA */}
 										<TableCell className="max-w-40 xl:max-w-64 truncate text-xs text-muted-foreground italic">
 											{t.rationale ? `"${t.rationale}"` : "—"}
 										</TableCell>
 
+										{/* 6. KOLUMNA: AKCJE (USUŃ) */}
 										<TableCell className="text-right">
 											<DeleteButton
 												id={t.id}

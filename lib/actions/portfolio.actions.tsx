@@ -4,7 +4,7 @@ import { PortfolioFormValues, PortfolioSchema } from "../validations/portfolio";
 
 import { PORTFOLIO_STRATEGY_MAP } from "../constants";
 import { auth } from "@/auth";
-import { db } from "../db";
+import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 export async function createPortfolio(values: PortfolioFormValues) {
@@ -90,16 +90,40 @@ export async function deletePortfolio(id: string) {
 	}
 }
 
+// EN: Performs a hard delete of an asset and its entire transaction history
 export async function deleteAsset(assetId: string) {
 	try {
-		await db.asset.delete({
+		// EN: 1. Retrieve the asset to get its identifiers
+		const asset = await db.asset.findUnique({
 			where: { id: assetId },
 		});
 
+		if (!asset) {
+			return { success: false, error: "Asset not found" };
+		}
+
+		// EN: 2. Execute deletion of both history and the asset within a Prisma transaction
+		await db.$transaction(async (tx) => {
+			// EN: Delete the transaction history linked to this specific asset in this portfolio
+			await tx.transactionHistory.deleteMany({
+				where: {
+					portfolioId: asset.portfolioId,
+					assetName: asset.name,
+					...(asset.ticker ? { ticker: asset.ticker } : {}),
+				},
+			});
+
+			// EN: Finally, delete the actual asset from the Asset table
+			await tx.asset.delete({
+				where: { id: assetId },
+			});
+		});
+
+		// EN: Force refresh the client side to immediately reflect the deletion
 		revalidatePath("/dashboard");
 		return { success: true };
 	} catch (error) {
-		console.error("Asset Delete Error:", error);
+		console.error("Delete asset error:", error);
 		return { success: false, error: "Failed to delete asset" };
 	}
 }

@@ -412,113 +412,113 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 
 										{/* --- EXPANDED TRANSACTION HISTORY --- */}
 										{isExpanded && (
-											<>
-												<div className="h-32 w-full mt-4 mb-6 px-4">
-													<p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">
-														Historia budowania stosu:
-													</p>
-													<ResponsiveContainer width="100%" height="100%">
-														<AreaChart data={chartData}>
-															<defs>
-																<linearGradient
-																	id="colorAmount"
-																	x1="0"
-																	y1="0"
-																	x2="0"
-																	y2="1"
-																>
-																	<stop
-																		offset="5%"
-																		stopColor={categoryColor}
-																		stopOpacity={0.3}
-																	/>
-																	<stop
-																		offset="95%"
-																		stopColor={categoryColor}
-																		stopOpacity={0}
-																	/>
-																</linearGradient>
-															</defs>
-															<Tooltip
-																contentStyle={{
-																	fontSize: "10px",
-																	borderRadius: "8px",
-																}}
-																labelStyle={{ fontWeight: "bold" }}
-															/>
-															<Area
-																type="stepAfter" // EN: Step type is best for quantity changes
-																dataKey="amount"
-																stroke={categoryColor}
-																fillOpacity={1}
-																fill="url(#colorAmount)"
-																strokeWidth={2}
-															/>
-														</AreaChart>
-													</ResponsiveContainer>
-												</div>
-												<TableRow className="bg-muted/10 border-none hover:bg-muted/10">
-													<TableCell colSpan={7} className="p-0">
-														<div className="px-10 py-4 animate-in fade-in slide-in-from-top-1 duration-200">
-															<div className="space-y-3">
-																{assetHistory.map((tx: any) => {
-																	const isBuy = tx.quantity > 0;
-																	// EN: Detect if this transaction is a manual adjustment
-																	const isCorrection =
-																		tx.rationale?.includes("[KOREKTA STANU]");
+											<TableRow className="bg-muted/5 border-none hover:bg-muted/5">
+												<TableCell colSpan={7} className="p-0 border-none">
+													<div className="animate-in fade-in slide-in-from-top-1 duration-200">
+														<div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
+															{/* LEWA STRONA: Wykres akumulacji (3/12 szerokości) */}
+															<div className="lg:col-span-3 h-48 lg:h-full bg-background/50 rounded-xl border border-border/50 p-4">
+																<p className="text-[10px] font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
+																	<TrendingUp className="h-3 w-3" /> Historia
+																	budowania stosu
+																</p>
+																<ResponsiveContainer width="100%" height="80%">
+																	<AreaChart data={chartData}>
+																		<defs>
+																			<linearGradient
+																				id="colorAmount"
+																				x1="0"
+																				y1="0"
+																				x2="0"
+																				y2="1"
+																			>
+																				<stop
+																					offset="5%"
+																					stopColor={categoryColor}
+																					stopOpacity={0.3}
+																				/>
+																				<stop
+																					offset="95%"
+																					stopColor={categoryColor}
+																					stopOpacity={0}
+																				/>
+																			</linearGradient>
+																		</defs>
+																		<Tooltip
+																			contentStyle={{
+																				fontSize: "10px",
+																				borderRadius: "8px",
+																				backgroundColor: "#fff",
+																			}}
+																		/>
+																		<Area
+																			type="stepAfter"
+																			dataKey="amount"
+																			stroke={categoryColor}
+																			fillOpacity={1}
+																			fill="url(#colorAmount)"
+																			strokeWidth={2}
+																			dot={{ r: 2, fill: categoryColor }}
+																		/>
+																	</AreaChart>
+																</ResponsiveContainer>
+															</div>
 
-																	// Używamy wartości bezwzględnej dla ceny jednostkowej, aby uniknąć "-180 zł/szt"
-																	const txUnitPrice =
-																		tx.quantity !== 0
-																			? Math.abs(tx.executedValue / tx.quantity)
-																			: 0;
+															{/* PRAWA STRONA: Twoja logika listy transakcji (9/12 szerokości) */}
+															<div className="lg:col-span-9 space-y-3">
+																<p className="text-[10px] font-bold text-muted-foreground uppercase px-2 mb-1">
+																	Ostatnie operacje i obligacje
+																</p>
+																<div className="max-h-96 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+																	{assetHistory.map((t: any) => {
+																		// EN: Your original logic for transaction type and stats
+																		const isBuy = t.quantity > 0;
+																		const isCorrection =
+																			t.rationale?.includes("[KOREKTA STANU]");
+																		const txUnitPrice =
+																			t.quantity !== 0
+																				? Math.abs(t.executedValue / t.quantity)
+																				: 0;
+																		const txProfitPercent =
+																			isBuy && txUnitPrice > 0 && !isCorrection
+																				? ((currentUnitPrice - txUnitPrice) /
+																						txUnitPrice) *
+																					100
+																				: 0;
 
-																	// Wynik paczki (Profit %) liczymy TYLKO dla transakcji KUPNA (trzymanych akcji) i IGNORUJEMY korekty.
-																	const txProfitPercent =
-																		isBuy && txUnitPrice > 0 && !isCorrection
-																			? ((currentUnitPrice - txUnitPrice) /
-																					txUnitPrice) *
-																				100
-																			: 0;
-
-																	return (
-																		<div
-																			key={tx.id}
-																			className="flex items-center justify-between text-[11px] border-b border-border/40 pb-2 last:border-none"
-																		>
-																			{/* Data & Typ */}
-																			<div className="flex items-center gap-4">
-																				<span className="text-muted-foreground font-medium">
-																					{new Date(
-																						tx.executedAt,
-																					).toLocaleDateString()}
-																				</span>
-																				{/* Zmodyfikowany Badge - rozróżnia 3 stany */}
-																				<span
-																					className={cn(
-																						"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
-																						isCorrection
-																							? "bg-blue-500/10 text-blue-600"
+																		return (
+																			<div
+																				key={t.id}
+																				className="flex items-center justify-between text-[11px] bg-background/50 border border-border/40 p-3 rounded-lg hover:border-border transition-colors"
+																			>
+																				{/* 1. Data i Typ (Badge) */}
+																				<div className="flex items-center gap-4">
+																					<span className="text-muted-foreground font-medium">
+																						{new Date(
+																							t.executedAt,
+																						).toLocaleDateString()}
+																					</span>
+																					<span
+																						className={cn(
+																							"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
+																							isCorrection
+																								? "bg-blue-500/10 text-blue-600"
+																								: isBuy
+																									? "bg-emerald-500/10 text-emerald-600"
+																									: "bg-orange-500/10 text-orange-600",
+																						)}
+																					>
+																						{isCorrection
+																							? "Korekta"
 																							: isBuy
-																								? "bg-emerald-500/10 text-emerald-600"
-																								: "bg-orange-500/10 text-orange-600",
-																					)}
-																				>
-																					{isCorrection
-																						? "Korekta"
-																						: isBuy
-																							? "Kupno"
-																							: "Sprzedaż"}
-																				</span>
-																			</div>
+																								? "Kupno"
+																								: "Sprzedaż"}
+																					</span>
+																				</div>
 
-																			{/* Wynik paczki - Wyświetlamy tylko dla KUPNA */}
-																			<div className="flex items-center gap-2">
-																				{isBuy && !isCorrection ? (
-																					<>
-																						<span className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">
-																							Wynik paczki:
-																						</span>
+																				{/* 2. Wynik paczki (Profit %) */}
+																				<div className="flex items-center gap-2">
+																					{isBuy && !isCorrection ? (
 																						<div
 																							className={cn(
 																								"flex items-center gap-1 font-bold font-mono",
@@ -535,56 +535,60 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 																							{txProfitPercent > 0 ? "+" : ""}
 																							{txProfitPercent.toFixed(2)}%
 																						</div>
-																					</>
-																				) : (
-																					// Dla sprzedaży i korekty wyświetlamy status
-																					<span className="text-[9px] font-bold text-muted-foreground uppercase opacity-40">
-																						{isCorrection
-																							? "Wyrównanie"
-																							: "Zrealizowano"}
-																					</span>
-																				)}
-																			</div>
+																					) : (
+																						<span className="text-[9px] font-bold text-muted-foreground uppercase opacity-40">
+																							{isCorrection
+																								? "Wyrównanie"
+																								: "Zrealizowano"}
+																						</span>
+																					)}
+																				</div>
 
-																			{/* Wartości liczbowe */}
-																			<div className="flex gap-6 font-mono text-right">
-																				<div className="flex flex-col">
-																					<span
-																						className={cn(
-																							"font-bold",
-																							isCorrection
-																								? "text-blue-600"
-																								: !isBuy && "text-orange-600",
-																						)}
-																					>
-																						{/* Wyświetlamy wartość transakcji (Cash Flow) */}
-																						{tx.executedValue > 0 &&
-																						!isCorrection
+																				{/* 3. Wartości liczbowe (PLN i Sztuki) - Z FIXEM na -0.00 */}
+																				<div className="flex gap-6 font-mono text-right">
+																					<div className="flex flex-col">
+																						<span
+																							className={cn(
+																								"font-bold",
+																								isCorrection
+																									? "text-blue-600"
+																									: !isBuy && "text-orange-600",
+																							)}
+																						>
+																							{/* FIX dla -0.00: Jeśli wartość jest niemal zerowa, nie pokazuj minusa */}
+																							{isBuy
+																								? "+"
+																								: Math.abs(t.executedValue) <
+																									  0.01
+																									? ""
+																									: "-"}
+																							{Math.abs(
+																								t.executedValue,
+																							).toLocaleString(undefined, {
+																								minimumFractionDigits: 2,
+																							})}{" "}
+																							PLN
+																						</span>
+																						<span className="text-[9px] text-muted-foreground">
+																							@ {txUnitPrice.toFixed(2)} / szt.
+																						</span>
+																					</div>
+																					<span className="min-w-18 font-bold text-muted-foreground">
+																						{t.quantity > 0 && isCorrection
 																							? "+"
 																							: ""}
-																						{tx.executedValue.toLocaleString()}{" "}
-																						PLN
-																					</span>
-																					<span className="text-[9px] text-muted-foreground">
-																						@ {txUnitPrice.toFixed(2)} / szt.
+																						{t.quantity.toFixed(4)} szt.
 																					</span>
 																				</div>
-																				<span className="min-w-18 font-bold text-muted-foreground">
-																					{/* Wyświetlamy ilość ze znakiem */}
-																					{tx.quantity > 0 && isCorrection
-																						? "+"
-																						: ""}
-																					{tx.quantity.toFixed(4)} szt.
-																				</span>
 																			</div>
-																		</div>
-																	);
-																})}
+																		);
+																	})}
+																</div>
 															</div>
 														</div>
-													</TableCell>
-												</TableRow>
-											</>
+													</div>
+												</TableCell>
+											</TableRow>
 										)}
 									</React.Fragment>
 								);

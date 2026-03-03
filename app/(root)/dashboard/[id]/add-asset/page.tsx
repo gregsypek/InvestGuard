@@ -1,3 +1,8 @@
+import {
+	getPortfolioAssets,
+	getPortfolioCategories,
+} from "@/lib/actions/portfolio.actions";
+
 import AddAssetForm from "@/components/ui/assets/AddAssetForm";
 import { LibrarySquareIcon } from "lucide-react";
 
@@ -8,7 +13,16 @@ interface Props {
 export default async function AddAssetPage({ params }: Props) {
 	// Pobieramy id z parametrów ścieżki
 	const { id } = await params;
+	// Pobieramy dane równolegle, żeby było szybciej ⚡
+	const [categoriesResult, assetsResult] = await Promise.all([
+		getPortfolioCategories(id),
+		getPortfolioAssets(id), // Pobieramy aktywa: { id, name, ticker, category }
+	]);
 
+	const categories = categoriesResult.success
+		? categoriesResult.categories
+		: [];
+	const assets = assetsResult.success ? assetsResult.data : [];
 	return (
 		<section className="w-full flex flex-col justify-start  md:px-0 overflow-x-hidden">
 			<div className=" mb-4">
@@ -16,7 +30,11 @@ export default async function AddAssetPage({ params }: Props) {
 					<LibrarySquareIcon className="h-5 w-5 text-primary" /> Add Asset Form
 				</h2>
 			</div>
-			<AddAssetForm portfolioId={id} />
+			<AddAssetForm
+				portfolioId={id}
+				allowedCategories={categories}
+				existingAssets={assets}
+			/>
 		</section>
 	);
 }

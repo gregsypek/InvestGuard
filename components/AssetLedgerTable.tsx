@@ -1,5 +1,6 @@
 "use client";
 
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import { CATEGORY_LABELS, COLORS, PAGE_ITEMS } from "@/lib/constants";
 import {
 	ChevronDown,
@@ -219,6 +220,24 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 										tx.assetName === asset.name,
 								);
 
+								// 2. EN: Calculate cumulative data using reduce (Safe from "Reassigning variable" error)
+								// PL: Obliczamy sumę skumulowaną za pomocą reduce (bezpieczne i stabilne)
+								const chartData = [...assetHistory]
+									.sort(
+										(a, b) =>
+											new Date(a.executedAt).getTime() -
+											new Date(b.executedAt).getTime(),
+									)
+									.reduce((acc: any[], tx) => {
+										const lastAmount =
+											acc.length > 0 ? acc[acc.length - 1].amount : 0;
+										acc.push({
+											date: new Date(tx.executedAt).toLocaleDateString(),
+											amount: lastAmount + tx.quantity,
+										});
+										return acc;
+									}, []);
+
 								const hasHistory = assetHistory.length > 0;
 								const isExpanded = expandedAssetId === asset.id && hasHistory;
 								const isHighlighted = asset.id === highlightedId;
@@ -393,132 +412,179 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 
 										{/* --- EXPANDED TRANSACTION HISTORY --- */}
 										{isExpanded && (
-											<TableRow className="bg-muted/10 border-none hover:bg-muted/10">
-												<TableCell colSpan={7} className="p-0">
-													<div className="px-10 py-4 animate-in fade-in slide-in-from-top-1 duration-200">
-														<div className="space-y-3">
-															{assetHistory.map((tx: any) => {
-																const isBuy = tx.quantity > 0;
-																// EN: Detect if this transaction is a manual adjustment
-																const isCorrection =
-																	tx.rationale?.includes("[KOREKTA STANU]");
+											<>
+												<div className="h-32 w-full mt-4 mb-6 px-4">
+													<p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">
+														Historia budowania stosu:
+													</p>
+													<ResponsiveContainer width="100%" height="100%">
+														<AreaChart data={chartData}>
+															<defs>
+																<linearGradient
+																	id="colorAmount"
+																	x1="0"
+																	y1="0"
+																	x2="0"
+																	y2="1"
+																>
+																	<stop
+																		offset="5%"
+																		stopColor={categoryColor}
+																		stopOpacity={0.3}
+																	/>
+																	<stop
+																		offset="95%"
+																		stopColor={categoryColor}
+																		stopOpacity={0}
+																	/>
+																</linearGradient>
+															</defs>
+															<Tooltip
+																contentStyle={{
+																	fontSize: "10px",
+																	borderRadius: "8px",
+																}}
+																labelStyle={{ fontWeight: "bold" }}
+															/>
+															<Area
+																type="stepAfter" // EN: Step type is best for quantity changes
+																dataKey="amount"
+																stroke={categoryColor}
+																fillOpacity={1}
+																fill="url(#colorAmount)"
+																strokeWidth={2}
+															/>
+														</AreaChart>
+													</ResponsiveContainer>
+												</div>
+												<TableRow className="bg-muted/10 border-none hover:bg-muted/10">
+													<TableCell colSpan={7} className="p-0">
+														<div className="px-10 py-4 animate-in fade-in slide-in-from-top-1 duration-200">
+															<div className="space-y-3">
+																{assetHistory.map((tx: any) => {
+																	const isBuy = tx.quantity > 0;
+																	// EN: Detect if this transaction is a manual adjustment
+																	const isCorrection =
+																		tx.rationale?.includes("[KOREKTA STANU]");
 
-																// Używamy wartości bezwzględnej dla ceny jednostkowej, aby uniknąć "-180 zł/szt"
-																const txUnitPrice =
-																	tx.quantity !== 0
-																		? Math.abs(tx.executedValue / tx.quantity)
-																		: 0;
+																	// Używamy wartości bezwzględnej dla ceny jednostkowej, aby uniknąć "-180 zł/szt"
+																	const txUnitPrice =
+																		tx.quantity !== 0
+																			? Math.abs(tx.executedValue / tx.quantity)
+																			: 0;
 
-																// Wynik paczki (Profit %) liczymy TYLKO dla transakcji KUPNA (trzymanych akcji) i IGNORUJEMY korekty.
-																const txProfitPercent =
-																	isBuy && txUnitPrice > 0 && !isCorrection
-																		? ((currentUnitPrice - txUnitPrice) /
-																				txUnitPrice) *
-																			100
-																		: 0;
+																	// Wynik paczki (Profit %) liczymy TYLKO dla transakcji KUPNA (trzymanych akcji) i IGNORUJEMY korekty.
+																	const txProfitPercent =
+																		isBuy && txUnitPrice > 0 && !isCorrection
+																			? ((currentUnitPrice - txUnitPrice) /
+																					txUnitPrice) *
+																				100
+																			: 0;
 
-																return (
-																	<div
-																		key={tx.id}
-																		className="flex items-center justify-between text-[11px] border-b border-border/40 pb-2 last:border-none"
-																	>
-																		{/* Data & Typ */}
-																		<div className="flex items-center gap-4">
-																			<span className="text-muted-foreground font-medium">
-																				{new Date(
-																					tx.executedAt,
-																				).toLocaleDateString()}
-																			</span>
-																			{/* Zmodyfikowany Badge - rozróżnia 3 stany */}
-																			<span
-																				className={cn(
-																					"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
-																					isCorrection
-																						? "bg-blue-500/10 text-blue-600"
-																						: isBuy
-																							? "bg-emerald-500/10 text-emerald-600"
-																							: "bg-orange-500/10 text-orange-600",
-																				)}
-																			>
-																				{isCorrection
-																					? "Korekta"
-																					: isBuy
-																						? "Kupno"
-																						: "Sprzedaż"}
-																			</span>
-																		</div>
-
-																		{/* Wynik paczki - Wyświetlamy tylko dla KUPNA */}
-																		<div className="flex items-center gap-2">
-																			{isBuy && !isCorrection ? (
-																				<>
-																					<span className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">
-																						Wynik paczki:
-																					</span>
-																					<div
-																						className={cn(
-																							"flex items-center gap-1 font-bold font-mono",
-																							txProfitPercent >= 0
-																								? "text-emerald-500"
-																								: "text-red-500",
-																						)}
-																					>
-																						{txProfitPercent >= 0 ? (
-																							<TrendingUp className="h-3 w-3" />
-																						) : (
-																							<TrendingDown className="h-3 w-3" />
-																						)}
-																						{txProfitPercent > 0 ? "+" : ""}
-																						{txProfitPercent.toFixed(2)}%
-																					</div>
-																				</>
-																			) : (
-																				// Dla sprzedaży i korekty wyświetlamy status
-																				<span className="text-[9px] font-bold text-muted-foreground uppercase opacity-40">
-																					{isCorrection
-																						? "Wyrównanie"
-																						: "Zrealizowano"}
+																	return (
+																		<div
+																			key={tx.id}
+																			className="flex items-center justify-between text-[11px] border-b border-border/40 pb-2 last:border-none"
+																		>
+																			{/* Data & Typ */}
+																			<div className="flex items-center gap-4">
+																				<span className="text-muted-foreground font-medium">
+																					{new Date(
+																						tx.executedAt,
+																					).toLocaleDateString()}
 																				</span>
-																			)}
-																		</div>
-
-																		{/* Wartości liczbowe */}
-																		<div className="flex gap-6 font-mono text-right">
-																			<div className="flex flex-col">
+																				{/* Zmodyfikowany Badge - rozróżnia 3 stany */}
 																				<span
 																					className={cn(
-																						"font-bold",
+																						"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
 																						isCorrection
-																							? "text-blue-600"
-																							: !isBuy && "text-orange-600",
+																							? "bg-blue-500/10 text-blue-600"
+																							: isBuy
+																								? "bg-emerald-500/10 text-emerald-600"
+																								: "bg-orange-500/10 text-orange-600",
 																					)}
 																				>
-																					{/* Wyświetlamy wartość transakcji (Cash Flow) */}
-																					{tx.executedValue > 0 && !isCorrection
-																						? "+"
-																						: ""}
-																					{tx.executedValue.toLocaleString()}{" "}
-																					PLN
-																				</span>
-																				<span className="text-[9px] text-muted-foreground">
-																					@ {txUnitPrice.toFixed(2)} / szt.
+																					{isCorrection
+																						? "Korekta"
+																						: isBuy
+																							? "Kupno"
+																							: "Sprzedaż"}
 																				</span>
 																			</div>
-																			<span className="min-w-18 font-bold text-muted-foreground">
-																				{/* Wyświetlamy ilość ze znakiem */}
-																				{tx.quantity > 0 && isCorrection
-																					? "+"
-																					: ""}
-																				{tx.quantity.toFixed(4)} szt.
-																			</span>
+
+																			{/* Wynik paczki - Wyświetlamy tylko dla KUPNA */}
+																			<div className="flex items-center gap-2">
+																				{isBuy && !isCorrection ? (
+																					<>
+																						<span className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">
+																							Wynik paczki:
+																						</span>
+																						<div
+																							className={cn(
+																								"flex items-center gap-1 font-bold font-mono",
+																								txProfitPercent >= 0
+																									? "text-emerald-500"
+																									: "text-red-500",
+																							)}
+																						>
+																							{txProfitPercent >= 0 ? (
+																								<TrendingUp className="h-3 w-3" />
+																							) : (
+																								<TrendingDown className="h-3 w-3" />
+																							)}
+																							{txProfitPercent > 0 ? "+" : ""}
+																							{txProfitPercent.toFixed(2)}%
+																						</div>
+																					</>
+																				) : (
+																					// Dla sprzedaży i korekty wyświetlamy status
+																					<span className="text-[9px] font-bold text-muted-foreground uppercase opacity-40">
+																						{isCorrection
+																							? "Wyrównanie"
+																							: "Zrealizowano"}
+																					</span>
+																				)}
+																			</div>
+
+																			{/* Wartości liczbowe */}
+																			<div className="flex gap-6 font-mono text-right">
+																				<div className="flex flex-col">
+																					<span
+																						className={cn(
+																							"font-bold",
+																							isCorrection
+																								? "text-blue-600"
+																								: !isBuy && "text-orange-600",
+																						)}
+																					>
+																						{/* Wyświetlamy wartość transakcji (Cash Flow) */}
+																						{tx.executedValue > 0 &&
+																						!isCorrection
+																							? "+"
+																							: ""}
+																						{tx.executedValue.toLocaleString()}{" "}
+																						PLN
+																					</span>
+																					<span className="text-[9px] text-muted-foreground">
+																						@ {txUnitPrice.toFixed(2)} / szt.
+																					</span>
+																				</div>
+																				<span className="min-w-18 font-bold text-muted-foreground">
+																					{/* Wyświetlamy ilość ze znakiem */}
+																					{tx.quantity > 0 && isCorrection
+																						? "+"
+																						: ""}
+																					{tx.quantity.toFixed(4)} szt.
+																				</span>
+																			</div>
 																		</div>
-																	</div>
-																);
-															})}
+																	);
+																})}
+															</div>
 														</div>
-													</div>
-												</TableCell>
-											</TableRow>
+													</TableCell>
+												</TableRow>
+											</>
 										)}
 									</React.Fragment>
 								);

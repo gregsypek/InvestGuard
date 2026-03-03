@@ -26,6 +26,11 @@ enum TimeHorizon {
   LONG
 }
 
+enum TransactionType {
+  BUY
+  SELL
+}
+
 model Asset {
   id           String   @id @default(cuid())
   name         String
@@ -60,6 +65,8 @@ model Asset {
 
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, ticker]) //unikalny klucz złożony, który uniemożliwi stworzenie dwóch rekordów w tym samym portfelu
 }
 
 // Portfolio model - represents a distinct investment strategy or bucket
@@ -111,17 +118,18 @@ model InvestmentPlan {
 }
 
 model TransactionHistory {
-  id            String    @id @default(cuid())
+  id            String          @id @default(cuid())
+  type          TransactionType @default(BUY) // 🆕 Określamy typ ruchu
   assetName     String // e.g., "ETF MSCI World"
   ticker        String? // e.g., "EUNL.DE"
   executedValue Float // The actual amount spent
   category      Category // e.g., BONDS, GOLD
-  executedAt    DateTime  @default(now())
+  executedAt    DateTime        @default(now())
   rationale     String? // Why did you buy this? (Copied from plan)
-  quantity      Float     @default(0) // 🧱 Ile sztuk kupiliśmy w tej transakcji
+  quantity      Float           @default(0) // 🧱 Ile sztuk kupiliśmy w tej transakcji
   // Reference to the portfolio
   portfolioId   String
-  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  portfolio     Portfolio       @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 }
 
 model User {

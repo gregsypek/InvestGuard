@@ -4,7 +4,7 @@ import { ArrowRightCircle, ChartArea, Plus } from "lucide-react";
 import { CategoryStatus, PortfolioWithAssets } from "@/lib/types";
 
 import AddButton from "./AddButton";
-import AssetLedger from "../AssetLedger";
+import AssetLedger from "../AssetLedgerTable";
 import Link from "next/link";
 import PortfolioCharts from "../PortfolioCharts";
 import React from "react";
@@ -16,9 +16,15 @@ import { useSearchParams } from "next/navigation";
 interface Props {
 	portfolio: PortfolioWithAssets;
 	portfolioStatus: CategoryStatus[];
+	// EN: Add the new prop to the interface
+	allPortfoliosWithCash: { id: string; name: string }[];
 }
 
-const DashboardAnalytics = ({ portfolio, portfolioStatus }: Props) => {
+const DashboardAnalytics = ({
+	portfolio,
+	portfolioStatus,
+	allPortfoliosWithCash,
+}: Props) => {
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams.get("newAssetId");
@@ -111,7 +117,10 @@ const DashboardAnalytics = ({ portfolio, portfolioStatus }: Props) => {
 			</div>
 
 			{/* --- BOTTOM SECTION: RICH ASSET TABLE --- */}
-			<AssetLedger portfolio={portfolio} />
+			<AssetLedger
+				portfolio={portfolio}
+				allPortfoliosWithCash={allPortfoliosWithCash}
+			/>
 		</div>
 	);
 };

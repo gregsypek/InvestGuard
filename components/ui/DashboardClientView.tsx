@@ -11,12 +11,15 @@ import { getPortfolioStats } from "@/lib/calculations";
 interface Props {
 	portfolio: PortfolioWithAssets;
 	portfolioStatus: CategoryStatus[];
-	userName?: string | null; // EN: New prop for user name / PL: Nowy prop na imię
+	// EN: Add the new prop here to receive data from the Server Component
+	allPortfoliosWithCash: { id: string; name: string }[];
+	userName?: string | null;
 }
 
 export default function DashboardClientView({
 	portfolio,
 	portfolioStatus,
+	allPortfoliosWithCash,
 }: Props) {
 	const { name, totalValue, progress, remaining, goal } =
 		getPortfolioStats(portfolio);
@@ -46,6 +49,7 @@ export default function DashboardClientView({
 			<DashboardAnalytics
 				portfolio={portfolio}
 				portfolioStatus={portfolioStatus}
+				allPortfoliosWithCash={allPortfoliosWithCash}
 			/>
 		</div>
 	);

@@ -124,3 +124,14 @@ export type PortfolioWithAssets = Portfolio & {
 	assets: Asset[];
 	transactionHistories: TransactionHistory[]; // ⬅️ DODAJ TĘ LINIĘ
 };
+
+export interface Bond {
+	id: string;
+	ticker: string | null; // Allow null here
+	purchaseDate: string;
+	maturityDate: string;
+	investedCapital: number;
+	currentValue: number;
+	interestRate: number | null;
+	name: string;
+}

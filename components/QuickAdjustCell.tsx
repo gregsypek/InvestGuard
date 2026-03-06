@@ -1,20 +1,24 @@
+"use client";
 // EN: Local component for inline adjustment logic
 
 import { CheckCheck, X } from "lucide-react";
-import { Button } from "./ui/button";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+
 import { ActionResponse } from "@/lib/types";
+import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 // UI: Lokalny komponent do logiki szybkiej korekty
 const QuickAdjustCell = ({
 	currentValue,
-	assetId, // Zmieniamy assetName na assetId, aby wiedzieć co aktualizować
+	assetId,
 	onUpdate, // Dodamy propa do wywołania akcji serwerowej
+	label = "Koryguj wycenę", // <--- DODANY PROP Z DOMYŚLNĄ WARTOŚCIĄ
 }: {
 	currentValue: number;
 	assetId: string;
 	onUpdate: (id: string, newValue: number) => Promise<ActionResponse>;
+	label?: string; // <--- DODANY TYP
 }) => {
 	const [isEditing, setIsEditing] = useState(false);
 	const [inputValue, setInputValue] = useState("");
@@ -33,7 +37,7 @@ const QuickAdjustCell = ({
 					setInputValue(currentValue.toString()); // Startujemy od obecnej ceny
 				}}
 			>
-				Koryguj wycenę
+				{label} {/* <--- UŻYWAMY PROPA */}
 			</Button>
 		);
 	}

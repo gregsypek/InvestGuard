@@ -19,16 +19,21 @@ export async function addAssetAction(formData: FormData) {
 
 	const executedAtRaw = formData.get("executedAt") as string;
 	const executedAt = executedAtRaw ? new Date(executedAtRaw) : new Date();
-
 	const name = formData.get("name") as string;
 	const ticker = (formData.get("ticker") as string)?.trim() || null;
 	const category = formData.get("category") as Category;
 
+	const isBond = category === "BONDS"; // EN: Identify if it's a bond tranche
+
+	// EN: MAGIC TRICK - Append timestamp to bond tickers to bypass DB constraints
+	const dbTicker = isBond && ticker ? `${ticker}_${Date.now()}` : ticker;
+
 	try {
 		let targetAssetId = existingAssetId;
 
-		// 1. BEZPIECZNE SZUKANIE (zapobiega duplikatom) 🛡️
-		if (!targetAssetId || targetAssetId === "new") {
+		// 1. ZMODYFIKOWANE SZUKANIE 🛡️
+		// EN: Skip searching for duplicates if it's a bond
+		if (!isBond && (!targetAssetId || targetAssetId === "new")) {
 			const searchConditions: any[] = [{ name, portfolioId }];
 			if (ticker) searchConditions.push({ ticker, portfolioId });
 
@@ -39,7 +44,8 @@ export async function addAssetAction(formData: FormData) {
 		}
 
 		// 2. AKTUALIZACJA LUB TWORZENIE ⚖️
-		if (targetAssetId && targetAssetId !== "new") {
+		if (!isBond && targetAssetId && targetAssetId !== "new") {
+			// EN: Update existing stock/crypto
 			await db.asset.update({
 				where: { id: targetAssetId },
 				data: {
@@ -49,36 +55,41 @@ export async function addAssetAction(formData: FormData) {
 				},
 			});
 		} else {
+			// EN: Always create a new record for bonds, using the unique dbTicker
 			const newAsset = await db.asset.create({
 				data: {
 					name,
-					ticker,
+					ticker: dbTicker, // <-- Używamy unikalnego tickera!
 					quantity,
 					investedCapital,
 					currentValue,
 					category,
 					portfolioId,
+					purchaseDate: executedAt,
+					interestRate: 0,
 					targetPercentage: 0,
 				},
 			});
 			targetAssetId = newAsset.id;
 		}
 
-		// 3. ZAPIS NOWEJ PACZKI DO HISTORII 📜
+		// 3. ZAPIS DO HISTORII 📜
 		await db.transactionHistory.create({
 			data: {
 				portfolioId,
 				assetName: name,
-				ticker,
+				ticker: dbTicker, // <-- Tu też używamy unikalnego
 				quantity,
 				executedValue: investedCapital,
-				executedAt, // Używamy wybranej daty z kalendarza!
+				executedAt,
 				category,
 				rationale: existingAssetId !== "new" ? "Dokupienie" : "Pierwszy zakup",
 			},
 		});
 
 		revalidatePath("/dashboard");
+		revalidatePath("/bond-reports"); // EN: Make sure reports page refreshes too
+
 		return {
 			success: true,
 			portfolioId,
@@ -87,7 +98,6 @@ export async function addAssetAction(formData: FormData) {
 		};
 	} catch (error) {
 		console.error("Database error while adding asset:", error);
-		// Returning an error message for the client
 		return { success: false, message: "Błąd bazy danych" };
 	}
 }
@@ -250,4 +260,51 @@ export async function adjustAssetAction(formData: FormData) {
 
 		return { success: true };
 	});
+}
+// EN: Update interest rate and automatically recalculate current value
+export async function updateBondInterestRate(id: string, newRate: number) {
+	try {
+		// 1. Fetch current bond data to get invested capital and purchase date
+		const bond = await db.asset.findUnique({ where: { id } });
+		if (!bond) throw new Error("Bond not found");
+
+		const capital = bond.investedCapital ?? 0;
+		const purchaseDate = bond.purchaseDate
+			? new Date(bond.purchaseDate)
+			: new Date();
+		const now = new Date();
+
+		// 2. Simple interest calculation: (Capital * Rate * Time)
+		// EN: We calculate years elapsed to get an estimated accrued interest
+		const diffTime = Math.abs(now.getTime() - purchaseDate.getTime());
+		const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365);
+
+		// EN: New value = Initial capital + estimated interest earned
+		const newCurrentValue = capital + capital * (newRate / 100) * diffYears;
+
+		// 3. Update both fields in the database
+		await db.asset.update({
+			where: { id },
+			data: {
+				interestRate: newRate,
+				currentValue: Number(newCurrentValue.toFixed(2)),
+			},
+		});
+
+		revalidatePath("/bond-reports");
+		return { success: true, message: "Zaktualizowano stawkę i wycenę" };
+	} catch {
+		return { success: false, message: "Błąd podczas przeliczania" };
+	}
+}
+
+// EN: Action to remove a bond tranche from the ledger
+export async function deleteBond(id: string) {
+	try {
+		await db.asset.delete({ where: { id } });
+		revalidatePath("/bond-reports");
+		return { success: true, message: "Transza usunięta pomyślnie" };
+	} catch {
+		return { success: false, message: "Nie udało się usunąć transzy" };
+	}
 }

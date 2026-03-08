@@ -298,13 +298,46 @@ export async function updateBondInterestRate(id: string, newRate: number) {
 	}
 }
 
-// EN: Action to remove a bond tranche from the ledger
+// app/actions.ts
 export async function deleteBond(id: string) {
 	try {
-		await db.asset.delete({ where: { id } });
+		// 1. Pobieramy dane przed usunięciem
+		const bond = await db.asset.findUnique({
+			where: { id },
+		});
+
+		if (!bond) return { success: false, message: "Nie znaleziono obligacji" };
+
+		await db.$transaction([
+			// 2. Dodajemy wpis do historii (bilansujący na zero)
+			db.transactionHistory.create({
+				data: {
+					portfolioId: bond.portfolioId,
+					assetName: bond.name || (bond.ticker ?? "NIE PODANO"),
+					ticker: bond.ticker,
+					quantity: -bond.quantity, // Ujemna ilość, żeby wyzerować stos na wykresie
+					executedValue: -bond.currentValue, // Ujemna wartość
+					executedAt: new Date(),
+					category: "BONDS",
+					rationale: "[ZAMKNIĘCIE POZYCJI] Usunięcie transzy z portfela",
+				},
+			}),
+			// 3. Usuwamy samo aktywo
+			db.asset.delete({
+				where: { id },
+			}),
+		]);
+
+		// 4. Revalidujemy wszystkie ścieżki, gdzie te dane występują
 		revalidatePath("/bond-reports");
-		return { success: true, message: "Transza usunięta pomyślnie" };
-	} catch {
+		revalidatePath("/dashboard");
+
+		return {
+			success: true,
+			message: "Transza usunięta i zarchiwizowana w historii",
+		};
+	} catch (error) {
+		console.error("Delete error:", error);
 		return { success: false, message: "Nie udało się usunąć transzy" };
 	}
 }

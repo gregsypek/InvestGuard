@@ -1,8 +1,5 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import Menu from "./shared/Menu";
-import Cookies from "js-cookie";
 import {
 	Select,
 	SelectContent,
@@ -10,6 +7,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "./ui/select";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+import Cookies from "js-cookie";
+import Menu from "./shared/Menu";
 import { WalletCards } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,31 +27,44 @@ export default function Header({
 }: HeaderProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const pathname = usePathname();
 
-	const handlePortfolioChange = (id: string) => {
-		Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
-		if (id) {
-			router.push(`/dashboard?portfolioId=${id}`);
-		} else {
-			router.push(`/dashboard`);
-		}
-	};
+	// 1. Pobieranie ID z parametrów lub ścieżki
+	const idFromParams = searchParams.get("portfolioId");
+	const segments = pathname.split("/");
+	const idFromPath = segments[2];
 
-	// 1. Pobieramy surowe ID z URL lub ciastek
-	const rawId = searchParams.get("portfolioId") || selectedPortfolioId || "";
-
-	// 2. KLUCZOWE: Sprawdzamy, czy to ID faktycznie znajduje się w pobranych portfelach
-	// Eliminujemy w ten sposób "martwe" ID po usunięciu portfela
+	// 2. Łączenie logiki
+	const rawId = idFromParams || idFromPath || selectedPortfolioId || "";
 	const isValidId = portfolios.some((p) => p.id === rawId);
 	const displayValue = isValidId ? rawId : "";
+
+	// 3. Funkcja obsługi zmiany
+	const handlePortfolioChange = (id: string) => {
+		Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
+
+		if (
+			pathname.includes("/bond-reports/") &&
+			pathname.includes("/add-asset")
+		) {
+			// Zamieniamy ID w ścieżce dynamicznej
+			const newPath = pathname.replace(idFromPath, id);
+			router.push(newPath);
+		} else {
+			// Standardowa nawigacja z parametrem
+			const params = new URLSearchParams(searchParams.toString());
+			params.set("portfolioId", id);
+			router.push(`${pathname}?${params.toString()}`);
+		}
+	};
 
 	return (
 		<header className="flex justify-between items-center p-2 border-b border-border bg-background text-foreground sticky top-0 z-50">
 			<div className="px-5 flex items-center gap-3">
 				<Select
 					value={displayValue || undefined}
-					onValueChange={(value) => handlePortfolioChange(value)}
-					disabled={portfolios.length === 0} // Zablokuj klikanie, jeśli lista jest pusta
+					onValueChange={handlePortfolioChange}
+					disabled={portfolios.length === 0}
 				>
 					<SelectTrigger
 						className={cn(

@@ -163,3 +163,48 @@ export const BOND_TYPES = {
 	DOS: { label: "DOS (2-letnie)", duration: 2, category: "OBLIGACJE" },
 	OTS: { label: "OTS (3-miesięczne)", duration: 0.25, category: "OBLIGACJE" },
 };
+
+export const BOND_CONFIG = {
+	ROD: {
+		label: "ROD (12-letnie)",
+		color: "bg-purple-400", // Fioletowy dla wyróżnienia serii rodzinnej
+		border: "border-purple-200",
+	},
+	EDO: {
+		label: "EDO (10-letnie)",
+		color: "bg-orange-300",
+		border: "border-orange-200",
+	},
+	ROS: {
+		label: "ROS (6-letnie)",
+		color: "bg-pink-400", // Różowy/Karmazynowy dla ROS
+		border: "border-pink-200",
+	},
+	COI: {
+		label: "COI (4-letnie)",
+		color: "bg-emerald-300",
+		border: "border-emerald-200",
+	},
+	DOS: {
+		label: "DOS (2-letnie)",
+		color: "bg-blue-300",
+		border: "border-blue-200",
+	},
+	OTS: {
+		label: "OTS (3-miesięczne)",
+		color: "bg-slate-300",
+		border: "border-slate-200",
+	},
+};
+export const BOND_TEMPLATES = {
+	ROD: {
+		label: "ROD (12-letnie Rodzinne)",
+		duration: 12,
+		rateType: "VARIABLE",
+	},
+	EDO: { label: "EDO (10-letnie)", duration: 10, rateType: "VARIABLE" },
+	ROS: { label: "ROS (6-letnie Rodzinne)", duration: 6, rateType: "VARIABLE" },
+	COI: { label: "COI (4-letnie)", duration: 4, rateType: "VARIABLE" },
+	DOS: { label: "DOS (2-letnie)", duration: 2, rateType: "FIXED" },
+	OTS: { label: "OTS (3-miesięczne)", duration: 0.25, rateType: "FIXED" },
+};

@@ -298,7 +298,6 @@ export async function updateBondInterestRate(id: string, newRate: number) {
 	}
 }
 
-// app/actions.ts
 export async function deleteBond(id: string) {
 	try {
 		// 1. Pobieramy dane przed usunięciem

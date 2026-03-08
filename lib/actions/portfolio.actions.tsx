@@ -143,7 +143,7 @@ export async function getPortfolioCategories(id: string) {
 				targetCommodities: true,
 			},
 		});
-		console.log("🚀 ~ getPortfolioCategories ~ portfolio:", portfolio);
+		// console.log("🚀 ~ getPortfolioCategories ~ portfolio:", portfolio);
 
 		if (!portfolio) return { success: false, categories: [] };
 

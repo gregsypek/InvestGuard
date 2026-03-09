@@ -89,6 +89,9 @@ export default async function ActivityPage({
 									Aktywo
 								</TableHead>
 								<TableHead className="font-bold text-xs uppercase">
+									Portfel
+								</TableHead>
+								<TableHead className="font-bold text-xs uppercase">
 									Kategoria
 								</TableHead>
 								<TableHead className="text-right font-bold text-xs uppercase">
@@ -97,7 +100,7 @@ export default async function ActivityPage({
 								<TableHead className="font-bold text-xs uppercase">
 									Notatka
 								</TableHead>
-								<TableHead className="w-12 text-right"></TableHead>
+								{/* <TableHead className="w-12 text-right"></TableHead> */}
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -152,6 +155,12 @@ export default async function ActivityPage({
 												</div>
 											)}
 										</TableCell>
+										{/* 2. KOLUMNA: PORTFEL */}
+										<TableCell>
+											<div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+												{t.portfolio.name}
+											</div>
+										</TableCell>
 
 										{/* 3. KOLUMNA: KATEGORIA */}
 										<TableCell>
@@ -201,14 +210,15 @@ export default async function ActivityPage({
 											{t.rationale ? `"${t.rationale}"` : "—"}
 										</TableCell>
 
+										{/* DELETE IS FORBIDDEN IN HISTORY */}
 										{/* 6. KOLUMNA: AKCJE (USUŃ) */}
-										<TableCell className="text-right">
+										{/* <TableCell className="text-right">
 											<DeleteButton
 												id={t.id}
 												onDelete={deleteHistoryItem}
 												confirmMsg="Usunąć z historii?"
 											/>
-										</TableCell>
+										</TableCell> */}
 									</TableRow>
 								);
 							})}

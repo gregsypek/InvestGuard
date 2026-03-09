@@ -5,6 +5,7 @@ import { calculateGapAnalysis } from "@/lib/calculations";
 import { db } from "@/lib/db";
 import { getActivePortfolioId } from "@/lib/session";
 import { redirect } from "next/navigation";
+export const dynamic = "force-dynamic";
 
 interface Props {
 	searchParams: Promise<{ portfolioId?: string }>;
@@ -29,10 +30,7 @@ export default async function DashboardPage({ searchParams }: Props) {
 	// Render the empty state if the user has no portfolios yet
 	if (totalPortfoliosCount === 0) {
 		return (
-			<PortfolioEmptyState
-				variant="NOT_SELECTED"
-				userName={session.user.name}
-			/>
+			<PortfolioEmptyState variant="PORTFOLIOS" userName={session.user.name} />
 		);
 	}
 
@@ -88,10 +86,6 @@ export default async function DashboardPage({ searchParams }: Props) {
 			name: true,
 		},
 	});
-	console.log(
-		"🚀 ~ DashboardPage ~ allPortfoliosWithCash:",
-		allPortfoliosWithCash,
-	);
 
 	// Perform calculations and render the view
 	const portfolioStatus = calculateGapAnalysis(portfolio);

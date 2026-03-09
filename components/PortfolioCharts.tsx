@@ -10,15 +10,17 @@ export default function PortfolioCharts({ data }: Props) {
 
 	console.log("🚀 ~ PortfolioCharts ~ data:", data);
 	return (
-		<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+		<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
 			<PortfolioPieChart
 				data={filteredData}
-				title="Target Strategy"
+				// title="Target Strategy"
+				title="Docelowa Strategia"
 				dataKey="weight"
 			/>
 			<PortfolioPieChart
 				data={filteredData}
-				title="Current Allocation"
+				// title="Current Allocation"
+				title="Aktualna Strategia"
 				dataKey="actualPercentage"
 			/>
 		</div>

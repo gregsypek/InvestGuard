@@ -1,8 +1,8 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useFormStatus } from "react-dom";
 
 /**
  * Custom Submit Button component
@@ -28,12 +28,12 @@ export function SubmitButton({
 		<Button
 			type="submit"
 			disabled={isDisabled}
-			className={`w-full md:w-auto font-semibold transition-all border duration-200 active:scale-95 cursor-pointer hover:border-border2 bg-blue-400 ${className || ""}`}
+			className={`w-60  font-semibold transition-all border duration-200 active:scale-95 cursor-pointer hover:border-border2 bg-blue-400 ${className || ""}`}
 		>
 			{isDisabled ? (
 				<>
-					<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-					Przetwarzanie ...
+					<Loader2 className="mr-2 h-4 w-4 " />
+					Uzupełnij dane ...
 				</>
 			) : (
 				<>

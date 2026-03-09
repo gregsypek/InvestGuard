@@ -62,9 +62,9 @@ const DashboardAnalytics = ({
 
 					<section>
 						<div className="flex justify-between items-center mb-6">
-							<h2 className="text-xl font-bold tracking-tight uppercase italic flex items-center gap-2">
-								<ChartArea className="h-5 w-5 text-primary" /> Allocation
-								Strategy
+							<h2 className="text-xl font-bold tracking-tight  flex items-center gap-2">
+								<ChartArea className="h-5 w-5 text-primary" />
+								Strategia Alokacji
 							</h2>
 						</div>
 						<PortfolioCharts data={portfolioStatus} />

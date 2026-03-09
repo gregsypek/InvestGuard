@@ -28,6 +28,7 @@ import {
 } from "@/lib/validations/portfolio";
 import { ActionResponse, Portfolio } from "@/lib/types";
 import z from "zod";
+import { inputStyles } from "@/lib/constants";
 
 interface PortfolioFormProps {
 	portfolioId?: string;
@@ -83,8 +84,6 @@ export default function PortfolioForm({
 
 	// EN: Shared focus styles to remove thick ring and use subtle border instead
 	// UI: Wspólne style dla focusa, aby usunąć gruby ring i użyć subtelnego borderu
-	const inputStyles =
-		"h-10 w-full bg-background/20 border-border2 focus:bg-background transition-all focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-blue-800 shadow-none";
 
 	// 3. Calculate total % (casting to number avoids the 'unknown' error)
 	const totalAllocation = (targets as number[]).reduce(

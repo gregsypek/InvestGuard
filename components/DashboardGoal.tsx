@@ -9,13 +9,13 @@ type Props = {
 };
 const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 	return (
-		<section className="bg-card border border-border2 p-6 rounded-2xl shadow-sm">
+		<section className="bg-card dark:bg-background border border-blue-200 p-4 rounded-2xl shadow-sm">
 			<div className="flex justify-between items-end mb-4">
 				<div>
 					<div className="flex items-center gap-2 text-primary mb-1">
 						<Target className="h-4 w-4" />
 						<span className="text-sm font-bold uppercase tracking-wider">
-							Goal Progress
+							Postęp do celu
 						</span>
 					</div>
 					<p className="text-2xl font-black">{progress.toFixed(1)}%</p>
@@ -23,11 +23,11 @@ const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 				<div className="text-right">
 					<p className="text-sm text-muted-foreground italic">
 						{remaining > 0
-							? `Only ${remaining.toLocaleString()} PLN to reach your goal!`
-							: "Goal achieved! 🚀"}
+							? `Zostało tylko ${remaining.toLocaleString()} PLN do zrealizowania celu!`
+							: "Cel zrealizowany! 🚀"}
 					</p>
 					<p className="text-xs font-medium text-muted-foreground">
-						Target: {goal.toLocaleString()} PLN
+						Cel: {goal.toLocaleString()} PLN
 					</p>
 				</div>
 			</div>

@@ -129,7 +129,7 @@ export interface Bond {
 	id: string;
 	ticker: string | null; // Allow null here
 	purchaseDate: string;
-	maturityDate: string;
+	maturityDate: string | null;
 	investedCapital: number;
 	currentValue: number;
 	interestRate: number | null;

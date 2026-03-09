@@ -13,7 +13,7 @@ interface BoosterCardProps {
 		id: string;
 		name: string;
 		ticker: string | null;
-		value: number;
+		currentValue: number;
 		rationale: string | null; // Database can return null
 		timeHorizon: "SHORT" | "MEDIUM" | "LONG" | string | null;
 	};
@@ -71,7 +71,7 @@ export default function BoosterCard({ asset }: BoosterCardProps) {
 					{new Intl.NumberFormat("en-US", {
 						style: "currency",
 						currency: "PLN",
-					}).format(asset.value)}
+					}).format(asset.currentValue)}
 				</span>
 			</CardFooter>
 		</Card>

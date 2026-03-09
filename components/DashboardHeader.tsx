@@ -1,7 +1,8 @@
-import { calculateAssetPL } from "@/lib/calculations";
-import { PortfolioWithAssets } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import { Container, Wallet2 } from "lucide-react";
+
+import { PortfolioWithAssets } from "@/lib/types";
+import { calculateAssetPL } from "@/lib/calculations";
+import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 
 type Props = {
@@ -63,7 +64,7 @@ export const DashboardHeader = ({
 					</nav>
 				)}
 				<div>
-					{/* Przywróciłem dynamiczne {name} zamiast sztywnego tekstu */}
+					{/* Dynamiczne {name} zamiast sztywnego tekstu */}
 					<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
 						{name}
 					</h1>

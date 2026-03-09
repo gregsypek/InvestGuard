@@ -98,9 +98,8 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 		<>
 			<form action={handleSubmit} className="w-full border-border2 space-y-6">
 				{/* SEKCJA WYBORU SERII Z KOLORAMI */}
-				<div className="space-y-3">
-					<Label className="text-xl font-bold text-foreground flex items-center gap-2 pt-2">
-						<LibrarySquareIcon className="h-5 w-5 text-primary" />
+				<div className="space-y-4">
+					<Label className="font-bold text-foreground pt-2">
 						Wybierz Serię
 					</Label>
 					<div className="flex flex-wrap justify-between gap-4">

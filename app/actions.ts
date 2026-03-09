@@ -333,10 +333,10 @@ export async function deleteBond(id: string) {
 
 		return {
 			success: true,
-			message: "Transza usunięta i zarchiwizowana w historii",
+			message: "Obligacja usunięta i zarchiwizowana w historii",
 		};
 	} catch (error) {
 		console.error("Delete error:", error);
-		return { success: false, message: "Nie udało się usunąć transzy" };
+		return { success: false, message: "Nie udało się usunąć obligacji" };
 	}
 }

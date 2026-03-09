@@ -1,21 +1,15 @@
 "use client";
 
-import {
-	Calendar,
-	ChevronDown,
-	ChevronRight,
-	Clock,
-	Trash2,
-} from "lucide-react";
+import { Calendar, ChevronDown, ChevronRight, Clock } from "lucide-react";
 import React, { Fragment, useMemo, useState } from "react";
-import { deleteBond, updateBondInterestRate } from "@/app/actions";
 
 import { Bond } from "@/lib/types";
-import { Button } from "@/components/ui/button";
+import { DeleteButton } from "./DeleteButton";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { Progress } from "@/components/ui/progress";
 import QuickAdjustCell from "@/components/QuickAdjustCell";
-import { toast } from "sonner";
+import { handleDeleteBond } from "@/lib/actions/bond-actions";
+import { updateBondInterestRate } from "@/app/actions";
 
 interface Props {
 	initialBonds: Bond[];
@@ -58,14 +52,6 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 		const total = endTime - startTime;
 		const current = now - startTime;
 		return Math.max(0, Math.min(100, (current / total) * 100));
-	};
-
-	const handleDelete = async (id: string) => {
-		if (confirm("Czy na pewno chcesz usunąć tę transzę z portfela?")) {
-			const result = await deleteBond(id);
-			if (result.success) toast.success(result.message);
-			else toast.error(result.message);
-		}
 	};
 
 	// EN: Function to estimate maturity date based on series type
@@ -128,7 +114,7 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 								{/* EN: PARENT ROW */}
 								<tr
 									onClick={() => toggleGroup(ticker)}
-									className="cursor-pointer font-semibold border-b border-border hover:bg-muted/40 transition-colors "
+									className="cursor-pointer font-semibold border-b border-border hover:bg-muted/40 transition-colors bg-blue-400/5"
 								>
 									<td className="px-6 py-4 flex items-center gap-2">
 										{isOpen ? (
@@ -168,12 +154,12 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 										return (
 											<tr
 												key={bond.id}
-												className="border-b border-border/50 bg-blue-500/5 hover:bg-muted/20 transition-colors relative"
+												className="border-b border-border/50  hover:bg-muted/20 transition-colors relative"
 											>
 												{/* EN: Visual indentation for child rows */}
 												<td className="pl-14 px-4 py-4 relative">
-													<div className="absolute left-8 top-0 bottom-0 w-px bg-primary/20" />
-													<div className="absolute left-8 top-1/2 w-4 h-px bg-primary/20" />
+													<div className="absolute left-8 top-0 bottom-0 w-px bg-blue-400" />
+													<div className="absolute left-8 top-1/2 w-4 h-px bg-blue-400" />
 
 													<div className="flex flex-col gap-1.5">
 														<input
@@ -220,14 +206,11 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 													{bond.currentValue?.toLocaleString()}
 												</td>
 												<td className="px-6 py-4 text-right">
-													<Button
-														variant="ghost"
-														size="icon"
-														className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-														onClick={() => handleDelete(bond.id)}
-													>
-														<Trash2 size={16} />
-													</Button>
+													<DeleteButton
+														id={bond.id}
+														onDelete={handleDeleteBond}
+														confirmMsg="Czy napewno chcesz usunąć wybraną obligację?"
+													/>
 												</td>
 											</tr>
 										);

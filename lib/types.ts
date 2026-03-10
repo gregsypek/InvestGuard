@@ -127,11 +127,11 @@ export type PortfolioWithAssets = Portfolio & {
 
 export interface Bond {
 	id: string;
-	ticker: string | null; // Allow null here
-	purchaseDate: string;
-	maturityDate: string | null;
+	ticker: string | null;
+	name: string;
+	purchaseDate: string; // Musi być stringiem dla tabeli
+	maturityDate: string | null; // Tu dopuszczamy null
 	investedCapital: number;
 	currentValue: number;
 	interestRate: number | null;
-	name: string;
 }

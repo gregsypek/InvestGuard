@@ -6,8 +6,8 @@ import {
 	Calendar,
 	Info,
 	Landmark,
-	LibrarySquareIcon,
 	Lightbulb,
+	Percent,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SubmitButton } from "../SubmitButton";
-import { addAssetAction } from "@/app/actions";
+import { addBond } from "@/lib/actions/bond-actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,7 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 	const [purchaseDate, setPurchaseDate] = useState<string>(
 		new Date().toISOString().split("T")[0],
 	);
+	const [interestRate, setInterestRate] = useState<number | "">("");
 
 	// Automatyczne wyliczanie wartości
 	const investedCapital = quantity * 100;
@@ -60,35 +61,34 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 	async function handleSubmit(formData: FormData) {
 		setIsPending(true);
 
+		// 1. Podstawowe dane, których serwer nie "zgadnie"
 		formData.append("category", "BONDS");
 		formData.append("portfolioId", portfolioId);
-
-		// EN: Now we distinguish between the general ticker (EDO) and specific name (EDO1035)
-		formData.append("name", specificName || series); // Jeśli puste, użyj "EDO" jako fallback
+		formData.append("name", specificName || series);
 		formData.append("ticker", series);
 
-		// 3. MAPOWANIE WARTOŚCI: Upewniamy się, że kwoty są poprawnie przekazane
+		// 2. Wartości finansowe i data zakupu
 		formData.append("investedCapital", investedCapital.toString());
-		formData.append("currentValue", investedCapital.toString());
+		formData.append("purchaseDate", purchaseDate); // ISO String z Twojego state'u
+		formData.append("interestRate", interestRate.toString());
 
-		// 4. DATA: addAssetAction oczekuje pola "executedAt" dla historii transakcji
-		formData.append("executedAt", purchaseDate);
-
-		// Opcjonalnie: jeśli  akcja addAssetAction obsługuje te pola, możesz je też wysłać
-		// formData.append("maturityDate", maturityDate);
-		// formData.append("rateType", BOND_TEMPLATES[series].rateType);
+		// UWAGA: rateType, interestRate i maturityDate zostawiamy dla addBond na serwerze!
+		// Serwer pobierze je sobie z BOND_TEMPLATES na podstawie "series".
 
 		try {
-			const result = await addAssetAction(formData);
+			// Wywołujemy Twoją nową, modułową akcję
+			const result = await addBond(formData, portfolioId);
 
 			if (result?.success) {
-				toast.success("Obligacja dodana do skarbca! 🏛️");
-				router.push(`/bond-reports`);
+				toast.success("Obligacja dodana do portfela! 🏛️");
+				// Używamy portfolioId w ścieżce, żeby wrócić dokładnie tam, skąd przyszliśmy
+				router.push(`/bond-reports/${portfolioId}`);
 			} else {
-				toast.error(result?.message || "Błąd zapisu w bazie danych");
+				// Wyświetlamy błąd zwrócony z serwera (np. błąd bazy)
+				toast.error(result?.error || "Błąd zapisu w bazie danych");
 			}
 		} catch {
-			toast.error("Wystąpił nieoczekiwany błąd");
+			toast.error("Wystąpił nieoczekiwany błąd sieci");
 		} finally {
 			setIsPending(false);
 		}
@@ -176,6 +176,30 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 								onChange={(e) => setPurchaseDate(e.target.value)}
 								required
 							/>
+						</div>
+						<div className="space-y-2">
+							<Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+								<Percent className="h-3.5 w-3.5" /> Oprocentowanie (1. rok)
+							</Label>
+							<div className="relative">
+								<Input
+									type="number"
+									step="0.01"
+									name="interestRate"
+									placeholder="np. 6.80"
+									value={interestRate}
+									// EN: Handle empty string properly so it doesn't force a '0'
+									onChange={(e) =>
+										setInterestRate(
+											e.target.value === "" ? "" : Number(e.target.value),
+										)
+									}
+									className="pr-8"
+								/>
+								<span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">
+									%
+								</span>
+							</div>
 						</div>
 					</div>
 

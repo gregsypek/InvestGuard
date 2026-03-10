@@ -29,6 +29,7 @@ enum TimeHorizon {
 enum TransactionType {
   BUY
   SELL
+  UPDATE
 }
 
 model Asset {

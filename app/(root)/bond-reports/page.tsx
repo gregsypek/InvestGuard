@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
-import { getActivePortfolioId } from "@/lib/session";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
+import { getActivePortfolioId } from "@/lib/session";
+import { redirect } from "next/navigation";
 
 interface Props {
 	searchParams: Promise<{ portfolioId?: string }>;

@@ -18,7 +18,7 @@ import { Button } from "../button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { addAssetAction } from "@/app/actions";
+import { addAssetAction } from "@/lib/actions/asset-actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -80,7 +80,7 @@ export default function AddAssetForm({
 		formData.append("investedCapital", totalInvested.toString());
 		formData.append("currentValue", totalInvested.toString());
 		formData.append("executedAt", executionDate);
-
+		formData.append("purchaseDate", executionDate);
 		// Jeśli wybrano istniejące aktywo, wysyłamy jego ID
 		if (selectedExistingAsset !== "new") {
 			formData.append("existingAssetId", selectedExistingAsset);

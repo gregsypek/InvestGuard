@@ -49,7 +49,8 @@ export async function addAssetAction(formData: FormData) {
 	const category = formData.get("category") as Category;
 
 	const isBond = category === "BONDS"; // EN: Identify if it's a bond tranche
-
+const purchaseDateRaw = formData.get("purchaseDate") as string;
+const purchaseDate = purchaseDateRaw ? new Date(purchaseDateRaw) : executedAt;
 	// EN: MAGIC TRICK - Append timestamp to bond tickers to bypass DB constraints
 	const dbTicker = isBond && ticker ? `${ticker}_${Date.now()}` : ticker;
 
@@ -90,7 +91,7 @@ export async function addAssetAction(formData: FormData) {
 					currentValue,
 					category,
 					portfolioId,
-					purchaseDate: executedAt,
+					purchaseDate,
 					interestRate: 0,
 					targetPercentage: 0,
 				},

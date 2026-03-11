@@ -56,7 +56,7 @@ model Asset {
   riskLevel   String?
 
   // POLA DLA OBLIGACJI (BONDS) 📑
-  purchaseDate DateTime?
+  purchaseDate DateTime
   maturityDate DateTime?
   interestRate Float?
   rateType     String? // "FIXED" lub "VARIABLE"

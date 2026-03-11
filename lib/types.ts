@@ -46,7 +46,7 @@ export interface Asset {
 	riskLevel?: string | null;
 
 	// POLA DLA OBLIGACJI (BONDS) 📑
-	purchaseDate?: Date | null; // Prisma zwraca obiekty Date
+	purchaseDate: Date; // Prisma zwraca obiekty Date
 	maturityDate?: Date | null; // Prisma zwraca obiekty Date
 	interestRate?: number | null;
 	rateType?: string | null; // "FIXED" | "VARIABLE" (opcjonalne, bo nie każde aktywo to obligacja)
@@ -129,7 +129,7 @@ export interface Bond {
 	id: string;
 	ticker: string | null;
 	name: string;
-	purchaseDate: string; // Musi być stringiem dla tabeli
+	purchaseDate: Date;
 	maturityDate: string | null; // Tu dopuszczamy null
 	investedCapital: number;
 	currentValue: number;

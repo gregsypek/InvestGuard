@@ -80,6 +80,7 @@ export async function getBondsData(portfolioId: string) {
 			investedCapital: Number(b.investedCapital) ?? 0,
 			currentValue: Number(b.currentValue) ?? 0,
 			interestRate: b.interestRate ?? 0,
+			quantity: b.quantity ?? 0,
 		};
 	});
 
@@ -207,6 +208,12 @@ export async function addBond(formData: FormData, portfolioId: string) {
 		const investedCapital = Number(formData.get("investedCapital"));
 		const purchaseDate = new Date(formData.get("purchaseDate") as string);
 		const interestRate = Number(formData.get("interestRate")) || 0;
+		const manualCurrentValueRaw = formData.get("manualCurrentValue");
+
+		// Jeśli użytkownik wpisał wycenę z banku, używamy jej. Jeśli nie, wycena = wkład.
+		const startingCurrentValue = manualCurrentValueRaw
+			? Number(manualCurrentValueRaw)
+			: investedCapital;
 
 		// 1. ZGUBIONA ILOŚĆ 🧱
 		const quantity = Number(formData.get("quantity")) || 1;
@@ -230,7 +237,7 @@ export async function addBond(formData: FormData, portfolioId: string) {
 					quantity, // Dodajemy ilość sztuk!
 					rateType,
 					investedCapital,
-					currentValue: investedCapital,
+					currentValue: startingCurrentValue,
 					interestRate,
 					purchaseDate,
 					maturityDate,
@@ -268,77 +275,236 @@ export async function addBond(formData: FormData, portfolioId: string) {
 	}
 }
 
+// export async function updateBondInterestRate(id: string, newRate: number) {
+// 	try {
+// 		const bond = await db.asset.findUnique({ where: { id } });
+// 		if (!bond) throw new Error("Bond not found");
+
+// 		const capital = bond.investedCapital ?? 0;
+// 		const purchaseDate = bond.purchaseDate
+// 			? new Date(bond.purchaseDate)
+// 			: new Date();
+// 		const now = new Date();
+
+// 		const diffYears = Math.max(
+// 			0,
+// 			(now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25),
+// 		);
+
+// 		let newCurrentValue = capital;
+// 		const r = newRate / 100;
+
+// 		// 1. CZYSZCZENIE TICKERA Z DATY (np. EDO_17098273 -> EDO)
+// 		const cleanTicker = bond.ticker
+// 			? bond.ticker.split("_")[0].toUpperCase()
+// 			: "";
+
+// 		// LOGIKA ROZPOZNAWANIA TYPU OBLIGACJI (Używamy czystego tickera!)
+// 		if (
+// 			bond.rateType === "FIXED" ||
+// 			cleanTicker === "OTS" ||
+// 			cleanTicker === "DOS"
+// 		) {
+// 			newCurrentValue = capital * (1 + r * diffYears);
+// 		} else {
+// 			newCurrentValue = capital * Math.pow(1 + r, diffYears);
+// 		}
+
+// 		// 2. TRANSAKCJA PRISMA
+// 		await db.$transaction([
+// 			db.asset.update({
+// 				where: { id },
+// 				data: {
+// 					interestRate: newRate,
+// 					currentValue: Number(newCurrentValue.toFixed(2)),
+// 				},
+// 			}),
+// 			db.transactionHistory.create({
+// 				data: {
+// 					// UWAGA: Upewnij się, że masz "UPDATE" w schema.prisma!
+// 					type: "UPDATE",
+// 					assetName: bond.name,
+// 					ticker: bond.ticker, // W historii zostawiamy pełny ticker dla śladu
+// 					executedValue: Number(newCurrentValue.toFixed(2)),
+// 					quantity: bond.quantity, // Dodano ilość dla spójności
+// 					category: bond.category,
+// 					portfolioId: bond.portfolioId,
+// 					rationale: `Aktualizacja oprocentowania: ${newRate}%`,
+// 				},
+// 			}),
+// 		]);
+
+// 		// Odświeżamy widoki
+// 		revalidatePath("/bond-reports");
+// 		revalidatePath("/dashboard");
+
+// 		return { success: true };
+// 	} catch (error) {
+// 		// 3. LOGOWANIE BŁĘDU DO TERMINALA
+// 		console.error("🔥 Błąd Prisma w updateBondInterestRate:", error);
+// 		// Zwracamy klucz 'error', na który czeka QuickAdjustCell
+// 		return {
+// 			success: false,
+// 			error: "Błąd aktualizacji wyceny. Sprawdź terminal.",
+// 		};
+// 	}
+// }
+// lib/actions/bond-actions.ts
+
+export async function updateBondValue(id: string, newValue: number) {
+	try {
+		const bond = await db.asset.findUnique({ where: { id } });
+		if (!bond) throw new Error("Bond not found");
+
+		await db.$transaction([
+			db.asset.update({
+				where: { id },
+				data: { currentValue: newValue },
+			}),
+			db.transactionHistory.create({
+				data: {
+					type: "UPDATE",
+					assetName: bond.name,
+					ticker: bond.ticker,
+					executedValue: newValue,
+					quantity: bond.quantity,
+					category: bond.category,
+					portfolioId: bond.portfolioId,
+					rationale: `Ręczna korekta wyceny: ${newValue} PLN`,
+				},
+			}),
+		]);
+
+		revalidatePath("/bond-reports");
+		return { success: true };
+	} catch (error) {
+		console.error(error);
+		return { success: false, error: "Błąd aktualizacji kwoty PLN" };
+	}
+}
+
 export async function updateBondInterestRate(id: string, newRate: number) {
 	try {
 		const bond = await db.asset.findUnique({ where: { id } });
 		if (!bond) throw new Error("Bond not found");
 
-		const capital = bond.investedCapital ?? 0;
-		const purchaseDate = bond.purchaseDate
-			? new Date(bond.purchaseDate)
-			: new Date();
-		const now = new Date();
+		// 1. PRZYWRACAMY CZYSZCZENIE TICKERA
+		const cleanTicker = bond.ticker?.split("_")[0].toUpperCase() || "";
 
+		// 2. PRZYWRACAMY MATEMATYKĘ (Logika rozpoznawania typu)
+		const capital = bond.investedCapital ?? 0;
+		const purchaseDate = new Date(bond.purchaseDate);
+		const now = new Date();
 		const diffYears = Math.max(
 			0,
 			(now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25),
 		);
 
-		let newCurrentValue = capital;
+		let simulatedValue = capital;
 		const r = newRate / 100;
 
-		// 1. CZYSZCZENIE TICKERA Z DATY (np. EDO_17098273 -> EDO)
-		const cleanTicker = bond.ticker
-			? bond.ticker.split("_")[0].toUpperCase()
-			: "";
-
-		// LOGIKA ROZPOZNAWANIA TYPU OBLIGACJI (Używamy czystego tickera!)
 		if (
 			bond.rateType === "FIXED" ||
 			cleanTicker === "OTS" ||
 			cleanTicker === "DOS"
 		) {
-			newCurrentValue = capital * (1 + r * diffYears);
+			simulatedValue = capital * (1 + r * diffYears); // Prosty
 		} else {
-			newCurrentValue = capital * Math.pow(1 + r, diffYears);
+			simulatedValue = capital * Math.pow(1 + r, diffYears); // Składany
 		}
 
-		// 2. TRANSAKCJA PRISMA
+		// 3. BEZPIECZNIK: Jeśli nowe oprocentowanie to 0, NIE dotykamy wyceny (zostawiamy ręczną)
+		// Jeśli > 0, system "proponuje" nową wycenę na podstawie matematyki
+		const finalValue =
+			newRate === 0 ? bond.currentValue : Number(simulatedValue.toFixed(2));
+
 		await db.$transaction([
 			db.asset.update({
 				where: { id },
 				data: {
 					interestRate: newRate,
-					currentValue: Number(newCurrentValue.toFixed(2)),
+					currentValue: finalValue, // Przywracamy automatyczną aktualizację!
 				},
 			}),
 			db.transactionHistory.create({
 				data: {
-					// UWAGA: Upewnij się, że masz "UPDATE" w schema.prisma!
 					type: "UPDATE",
 					assetName: bond.name,
-					ticker: bond.ticker, // W historii zostawiamy pełny ticker dla śladu
-					executedValue: Number(newCurrentValue.toFixed(2)),
-					quantity: bond.quantity, // Dodano ilość dla spójności
+					ticker: bond.ticker,
+					executedValue: finalValue,
 					category: bond.category,
 					portfolioId: bond.portfolioId,
-					rationale: `Aktualizacja oprocentowania: ${newRate}%`,
+					rationale: `Automatyczna aktualizacja wyceny przy zmianie stopy na ${newRate}%`,
 				},
 			}),
 		]);
 
-		// Odświeżamy widoki
 		revalidatePath("/bond-reports");
-		revalidatePath("/dashboard");
-
 		return { success: true };
 	} catch (error) {
-		// 3. LOGOWANIE BŁĘDU DO TERMINALA
-		console.error("🔥 Błąd Prisma w updateBondInterestRate:", error);
-		// Zwracamy klucz 'error', na który czeka QuickAdjustCell
-		return {
-			success: false,
-			error: "Błąd aktualizacji wyceny. Sprawdź terminal.",
-		};
+		console.error("Błąd przeliczeń:", error);
+		return { success: false, error: "Błąd automatyki obligacji" };
+	}
+}
+
+// lib/actions/bond-actions.ts
+
+export async function sellBondAction(formData: FormData) {
+	try {
+		const bondId = formData.get("bondId") as string;
+		const quantityToSell = Number(formData.get("quantity"));
+		const sellPrice = Number(formData.get("sellPrice")); // Total value received
+		const portfolioId = formData.get("portfolioId") as string;
+		const targetPortfolioId = formData.get("targetPortfolioId") as string;
+		const note = formData.get("note") as string;
+		const bond = await db.asset.findUnique({ where: { id: bondId } });
+		if (!bond || bond.quantity < quantityToSell) {
+			return { success: false, error: "Insufficient bond quantity" };
+		}
+
+		// 1. SMART LOGIC: Calculate proportional reduction
+		const ratio = quantityToSell / bond.quantity;
+		const capitalReduction = bond.investedCapital * ratio;
+		const valueReduction = bond.currentValue * ratio;
+
+		const isFullSale = bond.quantity === quantityToSell;
+
+		await db.$transaction(async (tx) => {
+			if (isFullSale) {
+				// Delete asset if everything is sold
+				await tx.asset.delete({ where: { id: bondId } });
+			} else {
+				// Update asset with reduced values
+				await tx.asset.update({
+					where: { id: bondId },
+					data: {
+						quantity: { decrement: quantityToSell },
+						investedCapital: { decrement: capitalReduction },
+						currentValue: { decrement: valueReduction },
+					},
+				});
+			}
+
+			// 2. Record the sale in history
+			await tx.transactionHistory.create({
+				data: {
+					portfolioId: targetPortfolioId, // Gotówka wpływa tutaj
+					type: "SELL",
+					assetName: bond.name,
+					ticker: bond.ticker,
+					quantity: -quantityToSell, // Negative for sales
+					executedValue: sellPrice,
+					category: "BONDS",
+					rationale: note || `Sprzedaż częściowa: ${quantityToSell} sztuk`,
+				},
+			});
+		});
+
+		revalidatePath("/bond-reports");
+		revalidatePath("/dashboard");
+		return { success: true };
+	} catch (error) {
+		console.error("Bond Sale Error:", error);
+		return { success: false, error: "Failed to process sale" };
 	}
 }

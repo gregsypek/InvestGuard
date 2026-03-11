@@ -134,4 +134,5 @@ export interface Bond {
 	investedCapital: number;
 	currentValue: number;
 	interestRate: number | null;
+	quantity: number;
 }

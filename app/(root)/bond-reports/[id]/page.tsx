@@ -6,6 +6,7 @@ import BondLedgerTable from "@/components/BondLedgerTable";
 import BulbTip from "@/components/shared/BulbTip";
 import Link from "next/link";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
+import { db } from "@/lib/db";
 import { getBondsData } from "@/lib/actions/bond-actions";
 import { notFound } from "next/navigation";
 
@@ -14,6 +15,14 @@ interface Props {
 }
 
 export default async function BondReportsPage({ params }: Props) {
+	// 2. Fetch all portfolios to display global stats in the header
+	const allPortfolios = await db.portfolio.findMany({
+		select: {
+			id: true,
+			name: true,
+		},
+	});
+
 	const { id } = await params;
 	if (!id) return <PortfolioEmptyState variant="NOT_FOUND" />;
 
@@ -69,7 +78,11 @@ export default async function BondReportsPage({ params }: Props) {
 					/>
 				</div>
 			) : (
-				<BondLedgerTable initialBonds={bonds} portfolioId={id} />
+				<BondLedgerTable
+					initialBonds={bonds}
+					portfolioId={id}
+					allPortfolios={allPortfolios}
+				/>
 			)}
 		</div>
 	);

@@ -1,26 +1,50 @@
 "use client";
 
-import { Calendar, ChevronDown, ChevronRight, Clock } from "lucide-react";
-import React, { Fragment, useMemo, useState } from "react";
+import {
+	Calendar,
+	ChevronDown,
+	ChevronRight,
+	Clock,
+	HandCoins,
+} from "lucide-react";
+import React, { Fragment, useMemo, useState, useTransition } from "react";
+import {
+	handleDeleteBond,
+	sellBondAction,
+	updateBondInterestRate,
+	updateBondValue,
+} from "@/lib/actions/bond-actions";
 
 import { Bond } from "@/lib/types";
 import { DeleteButton } from "./DeleteButton";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { Progress } from "@/components/ui/progress";
 import QuickAdjustCell from "@/components/QuickAdjustCell";
-import { handleDeleteBond } from "@/lib/actions/bond-actions";
-import { updateBondInterestRate } from "@/app/actions";
+import { SellAssetModal } from "./SellAssetModal";
+import { toast } from "sonner";
 
 interface Props {
 	initialBonds: Bond[];
 	portfolioId: string;
+	allPortfolios: { id: string; name: string }[];
 }
 
 // EN: Extracted to a clean, dedicated component
-export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
+export default function BondLedgerTable({
+	initialBonds,
+	portfolioId,
+	allPortfolios,
+}: Props) {
 	const [openGroups, setOpenGroups] = useState<string[]>([]);
-
+	const [assetToSell, setAssetToSell] = useState<Bond | null>(null);
+	const [isPending, startTransition] = useTransition(); // Do obsługi ładowania
 	// EN: Grouping bonds using useMemo for better performance
+
+	// Przygotowujemy listę pod modal (filtrujemy np. tylko te, które przyjmują gotówkę)
+	const portfoliosWithCash = allPortfolios.map((p) => ({
+		id: p.id,
+		name: p.name,
+	}));
 	const groupedBonds = useMemo(() => {
 		return initialBonds.reduce(
 			(acc, b) => {
@@ -43,21 +67,22 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 	};
 
 	// EN: Helper to calculate progress using objects instead of strings
-	const calculateProgress = (start: string, end: Date) => {
+	const calculateProgress = (start: Date | string, end: Date | string) => {
+		// new Date() bezpiecznie parsuje zarówno obiekty Date jak i Stringi ISO
 		const startTime = new Date(start).getTime();
-		const endTime = end.getTime();
+		const endTime = new Date(end).getTime();
 		const now = new Date().getTime();
 
 		if (now >= endTime) return 100;
 		const total = endTime - startTime;
 		const current = now - startTime;
+
 		return Math.max(0, Math.min(100, (current / total) * 100));
 	};
 
 	// EN: Function to estimate maturity date based on series type
 	const getMaturityDate = (bond: Bond) => {
-		if (bond.maturityDate && bond.maturityDate !== "null")
-			return new Date(bond.maturityDate);
+		if (bond.maturityDate) return new Date(bond.maturityDate);
 
 		const durations: Record<string, number> = {
 			ROD: 12,
@@ -68,7 +93,10 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 			DOS: 2,
 		};
 
-		const years = bond.ticker ? durations[bond.ticker] : 0;
+		const cleanTicker = bond.ticker?.split("_")[0].toUpperCase() || "";
+		const years = durations[cleanTicker] || 0;
+
+		// Bezpieczne tworzenie daty z purchaseDate
 		const d = new Date(bond.purchaseDate);
 		d.setFullYear(d.getFullYear() + years);
 		return d;
@@ -78,6 +106,32 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 		return <PortfolioEmptyState variant="NOT_FOUND" />;
 	}
 
+	const handleConfirmSell = async (data: {
+		quantity: number;
+		price: number;
+		targetId: string;
+		note: string;
+	}) => {
+		if (!assetToSell) return;
+
+		const formData = new FormData();
+		formData.append("bondId", assetToSell.id);
+		formData.append("quantity", data.quantity.toString());
+		formData.append("sellPrice", data.price.toString());
+		formData.append("portfolioId", portfolioId);
+		formData.append("targetPortfolioId", data.targetId); // ID portfela na który wpłynie gotówka
+		formData.append("note", data.note);
+
+		startTransition(async () => {
+			const result = await sellBondAction(formData);
+			if (result.success) {
+				setAssetToSell(null);
+				toast.success("Sprzedano obligacje");
+			} else {
+				toast.error(result.error);
+			}
+		});
+	};
 	return (
 		// EN: Moved rounded corners and overflow hidden to the wrapper div for proper table styling
 		<div className="overflow-hidden">
@@ -94,7 +148,7 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 							Oprocentowanie
 						</th>
 						<th className="h-12 px-4 text-left font-medium text-muted-foreground">
-							Wycena (PLN)
+							Kapitał / Wycena
 						</th>
 						<th className="h-12 px-6 text-right font-medium text-muted-foreground">
 							Akcje
@@ -199,13 +253,67 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 														currentValue={bond.interestRate || 0}
 														assetId={bond.id}
 														onUpdate={updateBondInterestRate}
-														label={`${bond.interestRate}%`}
+														label={`${bond.interestRate || 0}%`}
 													/>
 												</td>
-												<td className="px-4 py-4 font-mono text-xs font-semibold">
+												{/* <td className="px-4 py-4 font-mono text-xs font-semibold">
 													{bond.currentValue?.toLocaleString()}
+												</td> */}
+												<td className="px-4 py-4">
+													<div className="flex flex-col items-start gap-0.5">
+														{/* Wkład własny (szary, mniejszy) */}
+														<span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+															Wkład: {bond.investedCapital?.toLocaleString()}{" "}
+															PLN
+														</span>
+
+														{/* Aktualna Wycena (wyraźna, pogrubiona) */}
+														{/* <span className="font-mono text-xs font-bold text-foreground">
+															{bond.currentValue?.toLocaleString()} PLN
+														</span> */}
+														{/* <td className="px-4 py-4"> */}
+														<QuickAdjustCell
+															currentValue={bond.currentValue || 0}
+															assetId={bond.id}
+															onUpdate={updateBondValue} // Nowa akcja!
+															label={`${bond.currentValue?.toLocaleString()} PLN`}
+														/>
+														{/* </td> */}
+														{/* Wyliczony Zysk (na zielono, jeśli jest na plusie) */}
+														{bond.currentValue &&
+														bond.investedCapital &&
+														bond.currentValue > bond.investedCapital ? (
+															<span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 rounded-sm">
+																+
+																{(
+																	bond.currentValue - bond.investedCapital
+																).toLocaleString(undefined, {
+																	minimumFractionDigits: 2,
+																	maximumFractionDigits: 2,
+																})}{" "}
+																PLN
+															</span>
+														) : null}
+													</div>
 												</td>
-												<td className="px-6 py-4 text-right">
+												{/* <td className="px-6 py-4 text-right">
+													<DeleteButton
+														id={bond.id}
+														onDelete={handleDeleteBond}
+														confirmMsg="Czy napewno chcesz usunąć wybraną obligację?"
+													/>
+												</td> */}
+												<td className="px-6 py-4 text-right flex justify-end gap-2">
+													<button
+														onClick={(e) => {
+															e.stopPropagation(); // Żeby nie zwijać wiersza przy kliknięciu
+															setAssetToSell(bond); // To aktywuje modal
+														}}
+														className="p-2 hover:bg-emerald-500/10 text-emerald-600 rounded-full transition-colors"
+													>
+														<HandCoins size={16} />
+													</button>
+
 													<DeleteButton
 														id={bond.id}
 														onDelete={handleDeleteBond}
@@ -220,6 +328,19 @@ export default function BondLedgerTable({ initialBonds, portfolioId }: Props) {
 					})}
 				</tbody>
 			</table>
+			{/* MODAL SPRZEDAŻY - To tutaj "zużywasz" funkcję handleConfirmSell */}
+			{assetToSell && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+					<SellAssetModal
+						asset={assetToSell}
+						portfoliosWithCash={portfoliosWithCash}
+						currentPortfolioId={portfolioId}
+						onConfirm={handleConfirmSell}
+						onClose={() => setAssetToSell(null)}
+						isLoading={isPending}
+					/>
+				</div>
+			)}
 		</div>
 	);
 }

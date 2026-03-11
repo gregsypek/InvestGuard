@@ -32,6 +32,7 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 		new Date().toISOString().split("T")[0],
 	);
 	const [interestRate, setInterestRate] = useState<number | "">("");
+	const [manualCurrentValue, setManualCurrentValue] = useState<number | "">("");
 
 	// Automatyczne wyliczanie wartości
 	const investedCapital = quantity * 100;
@@ -71,8 +72,10 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 		formData.append("investedCapital", investedCapital.toString());
 		formData.append("purchaseDate", purchaseDate); // ISO String z Twojego state'u
 		formData.append("interestRate", interestRate.toString());
-
-		// UWAGA: rateType, interestRate i maturityDate zostawiamy dla addBond na serwerze!
+		if (manualCurrentValue !== "") {
+			formData.append("manualCurrentValue", manualCurrentValue.toString());
+		}
+		// NOTE: rateType, interestRate i maturityDate zostawiamy dla addBond na serwerze!
 		// Serwer pobierze je sobie z BOND_TEMPLATES na podstawie "series".
 
 		try {
@@ -164,7 +167,6 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 								</span>
 							</p>
 						</div>
-
 						<div className="space-y-2">
 							<Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
 								<Calendar className="h-3.5 w-3.5" /> Data Zakupu
@@ -177,9 +179,30 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 								required
 							/>
 						</div>
+						{/* Wewnątrz formularza (np. pod Data Zakupu): */}
 						<div className="space-y-2">
 							<Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
-								<Percent className="h-3.5 w-3.5" /> Oprocentowanie (1. rok)
+								💰 Aktualna Wycena (dla starych obligacji)
+							</Label>
+							<Input
+								type="number"
+								step="0.01"
+								placeholder={`Opcjonalnie (domyślnie: ${investedCapital} PLN)`}
+								value={manualCurrentValue}
+								onChange={(e) =>
+									setManualCurrentValue(
+										e.target.value === "" ? "" : Number(e.target.value),
+									)
+								}
+							/>
+							<p className="text-[9px] text-muted-foreground">
+								Wpisz kwotę z konta maklerskiego, jeśli dodajesz historyczną
+								transzę.
+							</p>
+						</div>
+						<div className="space-y-2">
+							<Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+								<Percent className="h-3.5 w-3.5" /> Aktualne Oprocentowanie (%)
 							</Label>
 							<div className="relative">
 								<Input

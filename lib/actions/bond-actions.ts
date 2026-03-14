@@ -200,7 +200,6 @@ function getBondMaturityDate(purchaseDate: Date, ticker: string): Date {
 	return maturity;
 }
 
-// EN: The main Server Action remains async because it writes to the DB
 export async function addBond(formData: FormData, portfolioId: string) {
 	try {
 		const rawTicker = formData.get("ticker") as string;
@@ -210,57 +209,69 @@ export async function addBond(formData: FormData, portfolioId: string) {
 		const interestRate = Number(formData.get("interestRate")) || 0;
 		const manualCurrentValueRaw = formData.get("manualCurrentValue");
 
-		// Jeśli użytkownik wpisał wycenę z banku, używamy jej. Jeśli nie, wycena = wkład.
-		const startingCurrentValue = manualCurrentValueRaw
-			? Number(manualCurrentValueRaw)
-			: investedCapital;
-
-		// 1. ZGUBIONA ILOŚĆ 🧱
 		const quantity = Number(formData.get("quantity")) || 1;
-
 		// 2. MAGIC TRICK - Omijamy limit unikalności Prismy
 		const dbTicker = `${rawTicker}_${Date.now()}`;
-
-		// UWAGA: Do logiki i wyliczeń używamy "czystego" tickera (np. EDO), a nie tego z datą
 		const rateType = getRateTypeByTicker(rawTicker);
 		const maturityDate = getBondMaturityDate(purchaseDate, rawTicker);
 
-		// 3. TRANSAKCJA - Zapisujemy do OBU tabel naraz ⚖️
+		// EN: NEW INITIAL VALUATION LOGIC
+		let startingCurrentValue = investedCapital;
+
+		if (manualCurrentValueRaw) {
+			// EN: If the user entered the valuation manually, we trust them
+			startingCurrentValue = Number(manualCurrentValueRaw);
+		} else if (interestRate > 0) {
+			// EN: If only the percentage was provided, the server calculates the valuation itself
+			const now = new Date();
+			const diffYears = Math.max(
+				0,
+				(now.getTime() - purchaseDate.getTime()) /
+					(1000 * 60 * 60 * 24 * 365.25),
+			);
+			const r = interestRate / 100;
+
+			if (rateType === "FIXED" || rawTicker === "OTS" || rawTicker === "DOS") {
+				startingCurrentValue = investedCapital * (1 + r * diffYears); // EN: Simple interest
+			} else {
+				startingCurrentValue = investedCapital * Math.pow(1 + r, diffYears); // EN: Compound interest
+			}
+		}
+
+		startingCurrentValue = Number(startingCurrentValue.toFixed(2)); // EN: Round to two decimal places
+
 		await db.$transaction(async (tx) => {
-			// Zapisujemy samą obligację (Asset)
 			await tx.asset.create({
 				data: {
 					name,
-					ticker: dbTicker, // Zapisujemy unikalny ticker z datą
+					ticker: dbTicker,
 					portfolioId,
 					category: "BONDS",
-					quantity, // Dodajemy ilość sztuk!
+					quantity,
 					rateType,
 					investedCapital,
-					currentValue: startingCurrentValue,
+					currentValue: startingCurrentValue, // EN: Save the CALCULATED valuation
 					interestRate,
 					purchaseDate,
 					maturityDate,
 				},
 			});
-
 			// Zapisujemy ślad w historii (TransactionHistory)
 			await tx.transactionHistory.create({
 				data: {
 					portfolioId,
 					assetName: name,
 					ticker: dbTicker,
-					quantity, // Tu też ilość
-					executedValue: investedCapital,
+					quantity,
+					executedValue: investedCapital, // EN: Record initial investment in history (so the chart starts from zero)
 					executedAt: purchaseDate,
 					category: "BONDS",
-					type: "BUY", // Wymagany przez Twój enum
+					type: "BUY",
 					rationale: "Zakup nowej serii obligacji",
 				},
 			});
 		});
-
-		// 4. REWALIDACJA - Odświeżamy wszystkie miejsca, gdzie obligacja ma być widoczna 🔄
+		// 4. REWALIDACJA - Odświeżamy wszystkie miejsca, gdzie obligacja ma być widoczna
 		revalidatePath(`/bond-reports/${portfolioId}`);
 		revalidatePath("/dashboard");
 		revalidatePath("/bond-reports");
@@ -275,86 +286,13 @@ export async function addBond(formData: FormData, portfolioId: string) {
 	}
 }
 
-// export async function updateBondInterestRate(id: string, newRate: number) {
-// 	try {
-// 		const bond = await db.asset.findUnique({ where: { id } });
-// 		if (!bond) throw new Error("Bond not found");
-
-// 		const capital = bond.investedCapital ?? 0;
-// 		const purchaseDate = bond.purchaseDate
-// 			? new Date(bond.purchaseDate)
-// 			: new Date();
-// 		const now = new Date();
-
-// 		const diffYears = Math.max(
-// 			0,
-// 			(now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25),
-// 		);
-
-// 		let newCurrentValue = capital;
-// 		const r = newRate / 100;
-
-// 		// 1. CZYSZCZENIE TICKERA Z DATY (np. EDO_17098273 -> EDO)
-// 		const cleanTicker = bond.ticker
-// 			? bond.ticker.split("_")[0].toUpperCase()
-// 			: "";
-
-// 		// LOGIKA ROZPOZNAWANIA TYPU OBLIGACJI (Używamy czystego tickera!)
-// 		if (
-// 			bond.rateType === "FIXED" ||
-// 			cleanTicker === "OTS" ||
-// 			cleanTicker === "DOS"
-// 		) {
-// 			newCurrentValue = capital * (1 + r * diffYears);
-// 		} else {
-// 			newCurrentValue = capital * Math.pow(1 + r, diffYears);
-// 		}
-
-// 		// 2. TRANSAKCJA PRISMA
-// 		await db.$transaction([
-// 			db.asset.update({
-// 				where: { id },
-// 				data: {
-// 					interestRate: newRate,
-// 					currentValue: Number(newCurrentValue.toFixed(2)),
-// 				},
-// 			}),
-// 			db.transactionHistory.create({
-// 				data: {
-// 					// UWAGA: Upewnij się, że masz "UPDATE" w schema.prisma!
-// 					type: "UPDATE",
-// 					assetName: bond.name,
-// 					ticker: bond.ticker, // W historii zostawiamy pełny ticker dla śladu
-// 					executedValue: Number(newCurrentValue.toFixed(2)),
-// 					quantity: bond.quantity, // Dodano ilość dla spójności
-// 					category: bond.category,
-// 					portfolioId: bond.portfolioId,
-// 					rationale: `Aktualizacja oprocentowania: ${newRate}%`,
-// 				},
-// 			}),
-// 		]);
-
-// 		// Odświeżamy widoki
-// 		revalidatePath("/bond-reports");
-// 		revalidatePath("/dashboard");
-
-// 		return { success: true };
-// 	} catch (error) {
-// 		// 3. LOGOWANIE BŁĘDU DO TERMINALA
-// 		console.error("🔥 Błąd Prisma w updateBondInterestRate:", error);
-// 		// Zwracamy klucz 'error', na który czeka QuickAdjustCell
-// 		return {
-// 			success: false,
-// 			error: "Błąd aktualizacji wyceny. Sprawdź terminal.",
-// 		};
-// 	}
-// }
-// lib/actions/bond-actions.ts
-
 export async function updateBondValue(id: string, newValue: number) {
 	try {
 		const bond = await db.asset.findUnique({ where: { id } });
 		if (!bond) throw new Error("Bond not found");
+
+		// RÓŻNICA DO HISTORII TRANSAKCJI
+		const valueDelta = newValue - bond.currentValue;
 
 		await db.$transaction([
 			db.asset.update({
@@ -363,13 +301,13 @@ export async function updateBondValue(id: string, newValue: number) {
 			}),
 			db.transactionHistory.create({
 				data: {
+					portfolioId: bond.portfolioId,
 					type: "UPDATE",
 					assetName: bond.name,
 					ticker: bond.ticker,
-					executedValue: newValue,
-					quantity: bond.quantity,
-					category: bond.category,
-					portfolioId: bond.portfolioId,
+					quantity: 0,
+					executedValue: valueDelta, // Różnica
+					category: "BONDS",
 					rationale: `Ręczna korekta wyceny: ${newValue} PLN`,
 				},
 			}),
@@ -388,17 +326,16 @@ export async function updateBondInterestRate(id: string, newRate: number) {
 		const bond = await db.asset.findUnique({ where: { id } });
 		if (!bond) throw new Error("Bond not found");
 
-		// 1. PRZYWRACAMY CZYSZCZENIE TICKERA
-		const cleanTicker = bond.ticker?.split("_")[0].toUpperCase() || "";
-
-		// 2. PRZYWRACAMY MATEMATYKĘ (Logika rozpoznawania typu)
-		const capital = bond.investedCapital ?? 0;
-		const purchaseDate = new Date(bond.purchaseDate);
+		const purchaseDate = new Date(bond.purchaseDate!);
 		const now = new Date();
+
 		const diffYears = Math.max(
 			0,
 			(now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25),
 		);
+
+		const cleanTicker = bond.ticker?.split("_")[0].toUpperCase() || "";
+		const capital = bond.investedCapital ?? 0;
 
 		let simulatedValue = capital;
 		const r = newRate / 100;
@@ -408,22 +345,23 @@ export async function updateBondInterestRate(id: string, newRate: number) {
 			cleanTicker === "OTS" ||
 			cleanTicker === "DOS"
 		) {
-			simulatedValue = capital * (1 + r * diffYears); // Prosty
+			simulatedValue = capital * (1 + r * diffYears);
 		} else {
-			simulatedValue = capital * Math.pow(1 + r, diffYears); // Składany
+			simulatedValue = capital * Math.pow(1 + r, diffYears);
 		}
 
-		// 3. BEZPIECZNIK: Jeśli nowe oprocentowanie to 0, NIE dotykamy wyceny (zostawiamy ręczną)
-		// Jeśli > 0, system "proponuje" nową wycenę na podstawie matematyki
 		const finalValue =
 			newRate === 0 ? bond.currentValue : Number(simulatedValue.toFixed(2));
+
+		// 🆕 RÓŻNICA DO HISTORII TRANSAKCJI (Delta zysku/straty)
+		const valueDelta = finalValue - bond.currentValue;
 
 		await db.$transaction([
 			db.asset.update({
 				where: { id },
 				data: {
 					interestRate: newRate,
-					currentValue: finalValue, // Przywracamy automatyczną aktualizację!
+					currentValue: finalValue,
 				},
 			}),
 			db.transactionHistory.create({
@@ -431,80 +369,137 @@ export async function updateBondInterestRate(id: string, newRate: number) {
 					type: "UPDATE",
 					assetName: bond.name,
 					ticker: bond.ticker,
-					executedValue: finalValue,
-					category: bond.category,
+					executedValue: valueDelta,
+					quantity: 0,
 					portfolioId: bond.portfolioId,
-					rationale: `Automatyczna aktualizacja wyceny przy zmianie stopy na ${newRate}%`,
+					category: bond.category,
+					rationale: `Korekta: ${newRate}% (Nowa wycena: ${finalValue} PLN)`,
 				},
 			}),
 		]);
 
 		revalidatePath("/bond-reports");
+		revalidatePath("/dashboard");
 		return { success: true };
 	} catch (error) {
-		console.error("Błąd przeliczeń:", error);
-		return { success: false, error: "Błąd automatyki obligacji" };
+		console.error("🔥 Błąd TypeScript w updateBondInterestRate:", error);
+		return { success: false, error: "Błąd aktualizacji stopy procentowej." };
 	}
 }
 
-// lib/actions/bond-actions.ts
-
 export async function sellBondAction(formData: FormData) {
+	// 1. Pobieranie danych (Używamy klucza 'bondId', bo tak wysyła BondLedgerTable)
+	const bondId = formData.get("bondId") as string;
+	const quantityToSell = Number(formData.get("quantity"));
+
+	// ZMIANA: Pobieramy gotową kwotę całkowitą (np. 300), NIE mnożymy jej ponownie przez ilość
+	const totalSellValue = Number(formData.get("sellPrice"));
+
+	const targetPortfolioId = formData.get("targetPortfolioId") as string;
+	const note = (formData.get("note") as string) || "";
+	const executedAt =
+		new Date(formData.get("executedAt") as string) || new Date();
+
 	try {
-		const bondId = formData.get("bondId") as string;
-		const quantityToSell = Number(formData.get("quantity"));
-		const sellPrice = Number(formData.get("sellPrice")); // Total value received
-		const portfolioId = formData.get("portfolioId") as string;
-		const targetPortfolioId = formData.get("targetPortfolioId") as string;
-		const note = formData.get("note") as string;
 		const bond = await db.asset.findUnique({ where: { id: bondId } });
 		if (!bond || bond.quantity < quantityToSell) {
-			return { success: false, error: "Insufficient bond quantity" };
+			return {
+				success: false,
+				error: "Niewystarczająca ilość jednostek obligacji.",
+			};
 		}
 
-		// 1. SMART LOGIC: Calculate proportional reduction
 		const ratio = quantityToSell / bond.quantity;
 		const capitalReduction = bond.investedCapital * ratio;
-		const valueReduction = bond.currentValue * ratio;
+		const realizedProfit = totalSellValue - capitalReduction;
 
 		const isFullSale = bond.quantity === quantityToSell;
 
 		await db.$transaction(async (tx) => {
+			// 2. AKTUALIZACJA OBLIGACJI
 			if (isFullSale) {
-				// Delete asset if everything is sold
 				await tx.asset.delete({ where: { id: bondId } });
 			} else {
-				// Update asset with reduced values
 				await tx.asset.update({
 					where: { id: bondId },
 					data: {
 						quantity: { decrement: quantityToSell },
 						investedCapital: { decrement: capitalReduction },
-						currentValue: { decrement: valueReduction },
+						currentValue: { decrement: bond.currentValue * ratio },
 					},
 				});
 			}
 
-			// 2. Record the sale in history
+			// 3. HISTORIA SPRZEDAŻY (Zostaje w portfelu OBLIGACJI dla wykresu)
 			await tx.transactionHistory.create({
 				data: {
-					portfolioId: targetPortfolioId, // Gotówka wpływa tutaj
 					type: "SELL",
+					portfolioId: bond.portfolioId, // Historia tam, gdzie było aktywo
 					assetName: bond.name,
 					ticker: bond.ticker,
-					quantity: -quantityToSell, // Negative for sales
-					executedValue: sellPrice,
+					quantity: -quantityToSell,
+					executedValue: totalSellValue,
 					category: "BONDS",
-					rationale: note || `Sprzedaż częściowa: ${quantityToSell} sztuk`,
+					executedAt,
+					rationale:
+						note ||
+						`Sprzedaż: ${quantityToSell} szt. Zysk: +${realizedProfit.toFixed(2)} PLN`,
 				},
 			});
+
+			// 4. KSIĘGOWANIE GOTÓWKI (Jeśli wybrano portfel docelowy)
+			if (targetPortfolioId && targetPortfolioId !== "none") {
+				const existingCash = await tx.asset.findFirst({
+					where: { portfolioId: targetPortfolioId, ticker: "CASH" },
+				});
+
+				if (existingCash) {
+					await tx.asset.update({
+						where: { id: existingCash.id },
+						data: {
+							quantity: { increment: totalSellValue },
+							currentValue: { increment: totalSellValue },
+							investedCapital: { increment: totalSellValue },
+						},
+					});
+				} else {
+					// Tworzymy nową pozycję CASH
+					await tx.asset.create({
+						data: {
+							portfolioId: targetPortfolioId,
+							name: "Gotówka",
+							ticker: "CASH",
+							category: "CASH",
+							quantity: totalSellValue,
+							currentValue: totalSellValue,
+							investedCapital: totalSellValue,
+							purchaseDate: executedAt,
+						},
+					});
+				}
+
+				// Historia wpływu do portfela CASH (Zielony plus)
+				await tx.transactionHistory.create({
+					data: {
+						type: "BUY",
+						portfolioId: targetPortfolioId,
+						assetName: "Gotówka",
+						ticker: "CASH",
+						quantity: totalSellValue,
+						executedValue: totalSellValue,
+						category: "CASH",
+						executedAt,
+						rationale: `Wpływ ze sprzedaży obligacji ${bond.name}`,
+					},
+				});
+			}
 		});
 
 		revalidatePath("/bond-reports");
 		revalidatePath("/dashboard");
 		return { success: true };
 	} catch (error) {
-		console.error("Bond Sale Error:", error);
-		return { success: false, error: "Failed to process sale" };
+		console.error("Błąd sprzedaży obligacji:", error);
+		return { success: false, error: "Błąd serwera podczas sprzedaży." };
 	}
 }

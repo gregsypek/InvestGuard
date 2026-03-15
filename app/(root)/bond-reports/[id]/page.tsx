@@ -1,4 +1,5 @@
 import { Landmark, Plus } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
 
 import AddButton from "@/components/ui/AddButton";
 import { BondHeader } from "@/components/BondHeader";
@@ -6,28 +7,56 @@ import BondLedgerTable from "@/components/BondLedgerTable";
 import BulbTip from "@/components/shared/BulbTip";
 import Link from "next/link";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getBondsData } from "@/lib/actions/bond-actions";
-import { notFound } from "next/navigation";
 
 interface Props {
 	params: Promise<{ id: string }>;
+	searchParams: Promise<{ portfolioId?: string }>; // 🆕 Dodajemy obsługę query params
 }
 
-export default async function BondReportsPage({ params }: Props) {
-	// 2. Fetch all portfolios to display global stats in the header
-	const allPortfolios = await db.portfolio.findMany({
+export default async function BondReportsPage({ params, searchParams }: Props) {
+	// // 2. Fetch all portfolios to display global stats in the header
+	// const allPortfolios = await db.portfolio.findMany({
+	// 	select: {
+	// 		id: true,
+	// 		name: true,
+	// 	},
+	// });
+
+	// Fetch the current user session
+	const session = await auth();
+
+	// Redirect to sign-in if the user is not authenticated
+	if (!session?.user?.id) {
+		redirect("/sign-in");
+	}
+	const allPortfoliosWithCash = await db.portfolio.findMany({
+		where: {
+			userId: session.user.id,
+			// Szukamy portfeli, które mają zdefiniowany cel na gotówkę większy niż 0%
+			// lub po prostu wszystkie portfele użytkownika, jeśli dopuszczasz wpłatę do każdego
+			targetCash: {
+				gt: 0,
+			},
+		},
 		select: {
 			id: true,
 			name: true,
 		},
 	});
+	const { id: pathId } = await params;
+	const { portfolioId: queryId } = await searchParams; // 🆕 Pobieramy ID z ?portfolioId=...
+	if (!pathId) return <PortfolioEmptyState variant="NOT_FOUND" />;
 
-	const { id } = await params;
-	if (!id) return <PortfolioEmptyState variant="NOT_FOUND" />;
+	// 1. LOGIKA SYNCHRONIZACJI:
+	// Jeśli w URL jest portfolioId, to ono jest "ważniejsze" (wybrane z selektora).
+	// Jeśli nie ma, używamy ID ze ścieżki.
+	const activeId = queryId || pathId;
 
 	// EN: Fetch bonds again (Next.js automatically deduplicates identical fetch requests in the background)
-	const data = await getBondsData(id);
+	const data = await getBondsData(activeId);
 	console.log("🚀 ~ BondReportsPage ~ data:", data);
 	if (!data) {
 		return notFound();
@@ -60,7 +89,7 @@ export default async function BondReportsPage({ params }: Props) {
 
 				<AddButton className="gap-2 shadow-sm h-9">
 					<Link
-						href={`/bond-reports/${id}/add-asset`}
+						href={`/bond-reports/${activeId}/add-asset`}
 						className="gap-2 flex items-center"
 					>
 						<Plus className="h-4 w-4" />
@@ -80,8 +109,8 @@ export default async function BondReportsPage({ params }: Props) {
 			) : (
 				<BondLedgerTable
 					initialBonds={bonds}
-					portfolioId={id}
-					allPortfolios={allPortfolios}
+					portfolioId={activeId}
+					allPortfolios={allPortfoliosWithCash}
 				/>
 			)}
 		</div>

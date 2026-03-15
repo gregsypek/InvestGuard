@@ -28,7 +28,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { adjustAssetAction, sellAssetAction } from "@/app/actions";
+import {
+	adjustAssetAction,
+	sellAssetAction,
+	updateAssetValues,
+} from "@/lib/actions/asset-actions";
 
 import AddButton from "./ui/AddButton";
 import { AdjustAssetModal } from "./AdjustAssetModal";
@@ -44,7 +48,6 @@ import { calculateAssetPL } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
 import { deleteAsset } from "@/lib/actions/portfolio.actions";
 import { toast } from "sonner";
-import { updateAssetValues } from "@/lib/actions/asset.actions";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
@@ -266,10 +269,24 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 											new Date(b.executedAt).getTime(),
 									)
 									.reduce((acc: any[], tx) => {
-										// For bonds, we sum the executedValue to show portfolio growth, for stocks we sum quantity
-										const valueToAdd = isAggregatedBond
-											? tx.executedValue
-											: tx.quantity;
+										// 🆕 ZMIANA LOGIKI WYKRESU:
+										let valueToAdd = 0;
+
+										if (isAggregatedBond) {
+											// Dla obligacji operujemy na wartości (PLN)
+											if (tx.type === "SELL") {
+												// Sprzedaż musi POMNIEJSZAĆ słupek na wykresie
+												valueToAdd = -Math.abs(tx.executedValue);
+											} else {
+												// KUPNO i KOREKTA (korekta może być +/- więc po prostu dodajemy jej wartość)
+												valueToAdd = tx.executedValue;
+											}
+										} else {
+											// Dla innych aktywów (np. akcji) operujemy na ilości (szt.)
+											// W bazie danych quantity przy sprzedaży jest już ujemne (np. -1)
+											valueToAdd = tx.quantity;
+										}
+
 										const lastAmount =
 											acc.length > 0 ? acc[acc.length - 1].amount : 0;
 										acc.push({
@@ -390,7 +407,11 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 												>
 													<div>
 														{asset.profitAmount > 0 ? "+" : ""}
-														{asset.profitAmount.toLocaleString()} PLN
+														{asset.profitAmount.toLocaleString(undefined, {
+															minimumFractionDigits: 2,
+															maximumFractionDigits: 2,
+														})}{" "}
+														PLN
 													</div>
 													<div className="text-[10px] opacity-70">
 														{asset.profitPercent.toFixed(2)}%
@@ -399,7 +420,10 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 											</TableCell>
 
 											<TableCell className="text-right font-bold font-mono text-sm tabular-nums">
-												{asset.currentValue.toLocaleString()}{" "}
+												{asset.currentValue.toLocaleString(undefined, {
+													minimumFractionDigits: 2,
+													maximumFractionDigits: 2,
+												})}{" "}
 												<span className="text-[10px] font-normal opacity-50">
 													PLN
 												</span>
@@ -546,23 +570,15 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 																<div className="max-h-96 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
 																	{/* EN: We map ONLY over visibleHistory to respect the toggle/slice logic */}
 																	{visibleHistory.map((t: any) => {
-																		const isBuy = t.quantity > 0;
-																		const isCorrection =
-																			t.rationale?.includes("[KOREKTA STANU]");
-																		// EN: If it's a sell or deletion, t.quantity will be negative, so we use Math.abs
+																		// ZMIANA 1: Polegamy na typie z bazy (Enum)
+																		const isBuy = t.type === "BUY";
+																		const isSell = t.type === "SELL";
+																		const isCorrection = t.type === "UPDATE";
+
+																		// Obliczamy cenę jednostkową tylko dla kupna/sprzedaży
 																		const txUnitPrice =
 																			t.quantity !== 0
 																				? Math.abs(t.executedValue / t.quantity)
-																				: 0;
-
-																		const txProfitPercent =
-																			isBuy &&
-																			txUnitPrice > 0 &&
-																			!isCorrection &&
-																			!isAggregatedBond
-																				? ((currentUnitPrice - txUnitPrice) /
-																						txUnitPrice) *
-																					100
 																				: 0;
 
 																		return (
@@ -580,7 +596,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 																						className={cn(
 																							"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
 																							isCorrection
-																								? "bg-blue-500/10 text-blue-600"
+																								? "bg-blue-500/10 text-blue-600" // Niebieski dla UPDATE
 																								: isBuy
 																									? "bg-emerald-500/10 text-emerald-600"
 																									: "bg-orange-500/10 text-orange-600",
@@ -589,7 +605,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 																						{isCorrection
 																							? "Korekta"
 																							: isBuy
-																								? "Zakup"
+																								? "Kupno"
 																								: "Sprzedaż"}
 																					</span>
 																					{isAggregatedBond && (
@@ -605,30 +621,43 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 																							className={cn(
 																								"font-bold",
 																								isCorrection
-																									? "text-blue-600"
-																									: !isBuy && "text-orange-600",
+																									? t.executedValue >= 0
+																										? "text-blue-600"
+																										: "text-red-500" // Niebieski zysk, czerwona strata korekty
+																									: isBuy
+																										? "text-emerald-500"
+																										: "text-orange-600",
 																							)}
 																						>
-																							{/* EN: Handling negative values for sells/deletions without double minus signs */}
-																							{isBuy
-																								? "+"
-																								: t.executedValue > 0
-																									? "-"
-																									: ""}
+																							{/* ZMIANA 2: Pokazujemy +/- dla korekty na podstawie executedValue */}
+																							{isCorrection
+																								? t.executedValue > 0
+																									? "+"
+																									: ""
+																								: isBuy
+																									? "+"
+																									: "-"}
 																							{Math.abs(
 																								t.executedValue,
 																							).toLocaleString(undefined, {
 																								minimumFractionDigits: 2,
+																								maximumFractionDigits: 2,
 																							})}{" "}
 																							PLN
 																						</span>
-																						<span className="text-[9px] text-muted-foreground">
-																							@ {txUnitPrice.toFixed(2)} / szt.
-																						</span>
+																						{!isCorrection && (
+																							<span className="text-[9px] text-muted-foreground">
+																								@ {txUnitPrice.toFixed(2)} /
+																								szt.
+																							</span>
+																						)}
 																					</div>
 																					<span className="min-w-18 font-bold text-muted-foreground">
-																						{t.quantity > 0 ? "+" : ""}
-																						{t.quantity.toFixed(4)} szt.
+																						{isCorrection
+																							? "0.0000"
+																							: (t.quantity > 0 ? "+" : "") +
+																								t.quantity.toFixed(4)}{" "}
+																						szt.
 																					</span>
 																				</div>
 																			</div>

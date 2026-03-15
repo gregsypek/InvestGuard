@@ -15,17 +15,13 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	deleteHistoryItem,
-	getTransactionHistory,
-} from "@/lib/actions/history.actions";
 
 import { ActivityHeader } from "@/components/ActivityHeader";
-import { DeleteButton } from "@/components/DeleteButton";
 import { ExportReport } from "@/components/history/ExportReport";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
+import { getTransactionHistory } from "@/lib/actions/history.actions";
 import { redirect } from "next/navigation";
 
 export default async function ActivityPage({
@@ -107,21 +103,18 @@ export default async function ActivityPage({
 							{transactions.map((t) => {
 								const categoryColor =
 									COLORS[t.category as keyof typeof COLORS] || "var(--primary)";
-								// EN: Detect correction
-								const isCorrection = t.rationale?.includes("[KOREKTA STANU]");
-								// EN: Determine transaction type based on quantity sign
-								const isBuy = t.quantity > 0;
 
-								// EN: Calculate absolute unit price
-								const unitPrice =
-									t.quantity !== 0 ? Math.abs(t.executedValue / t.quantity) : 0;
+								// ZMIANA 3: Koniec zgadywania po słowach i znakach. Używamy Enuma:
+								const isBuy = t.type === "BUY";
+								const isSell = t.type === "SELL";
+								const isCorrection = t.type === "UPDATE";
 
 								return (
 									<TableRow
 										key={t.id}
 										className="border-border hover:bg-muted/20 transition-colors"
 									>
-										{/* 1. KOLUMNA: DATA I TYP TRANSAKCJI */}
+										{/* 1. DATA I TYP TRANSAKCJI */}
 										<TableCell>
 											<div className="flex flex-col gap-1.5 items-start">
 												<span className="font-medium font-mono text-[13px]">
@@ -129,7 +122,7 @@ export default async function ActivityPage({
 												</span>
 												<span
 													className={cn(
-														"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
+														"w-fit px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
 														isCorrection
 															? "bg-blue-500/10 text-blue-600"
 															: isBuy
@@ -146,7 +139,7 @@ export default async function ActivityPage({
 											</div>
 										</TableCell>
 
-										{/* 2. KOLUMNA: AKTYWO */}
+										{/* 2. AKTYWO */}
 										<TableCell>
 											<div className="font-bold text-sm">{t.assetName}</div>
 											{t.ticker && (
@@ -155,14 +148,15 @@ export default async function ActivityPage({
 												</div>
 											)}
 										</TableCell>
-										{/* 2. KOLUMNA: PORTFEL */}
+
+										{/* 3. PORTFEL */}
 										<TableCell>
 											<div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
 												{t.portfolio.name}
 											</div>
 										</TableCell>
 
-										{/* 3. KOLUMNA: KATEGORIA */}
+										{/* 4. KATEGORIA */}
 										<TableCell>
 											<div className="flex items-center gap-1.5">
 												<div
@@ -175,50 +169,45 @@ export default async function ActivityPage({
 											</div>
 										</TableCell>
 
-										{/* 4. KOLUMNA: WARTOŚĆ I ILOŚĆ */}
-										<TableCell className="text-right">
-											<div className="flex flex-col items-end font-mono">
-												<span
-													className={cn(
-														"font-bold text-sm",
-														isBuy ? "text-emerald-500" : "text-orange-500",
-													)}
-												>
-													{/* EN: Check if the value is effectively zero to avoid -0.00 */}
-													{/* PL: Sprawdzamy, czy wartość nie jest zerem, aby uniknąć wyświetlania -0.00 */}
-													{isBuy
+										{/* 5. WARTOŚĆ I ILOŚĆ */}
+										<TableCell className="text-right font-mono font-bold">
+											<div
+												className={cn(
+													isCorrection
+														? t.executedValue >= 0
+															? "text-blue-600"
+															: "text-red-500" // Kolor dla wyniku korekty
+														: isBuy
+															? "text-emerald-600"
+															: "text-orange-600",
+												)}
+											>
+												{/* ZMIANA 4: Dynamiczny znak dla UPDATE na podstawie zapisanej Delty */}
+												{isCorrection
+													? t.executedValue > 0
 														? "+"
-														: Math.abs(t.executedValue) < 0.005
-															? ""
-															: "-"}
-													{Math.abs(t.executedValue).toLocaleString(undefined, {
-														minimumFractionDigits: 2,
-														maximumFractionDigits: 2,
-													})}{" "}
-													PLN
-												</span>
-												<span className="text-[10px] text-muted-foreground">
-													{/* EN: Use Math.abs to avoid negative quantity signs on UI */}
-													{Math.abs(t.quantity).toFixed(4)} szt. @{" "}
-													{unitPrice.toFixed(2)}
-												</span>
+														: ""
+													: isBuy
+														? "+"
+														: "-"}
+												{Math.abs(t.executedValue).toLocaleString(undefined, {
+													minimumFractionDigits: 2,
+												})}{" "}
+												PLN
+											</div>
+											<div className="text-[10px] text-muted-foreground font-normal">
+												{/* Sztuki: Korekta to zawsze 0 */}
+												{isCorrection
+													? "0.0000"
+													: (isBuy ? "+" : "") + t.quantity.toFixed(4)}{" "}
+												szt.
 											</div>
 										</TableCell>
 
-										{/* 5. KOLUMNA: NOTATKA */}
+										{/* 6. NOTATKA */}
 										<TableCell className="max-w-40 xl:max-w-64 truncate text-xs text-muted-foreground italic">
 											{t.rationale ? `"${t.rationale}"` : "—"}
 										</TableCell>
-
-										{/* DELETE IS FORBIDDEN IN HISTORY */}
-										{/* 6. KOLUMNA: AKCJE (USUŃ) */}
-										{/* <TableCell className="text-right">
-											<DeleteButton
-												id={t.id}
-												onDelete={deleteHistoryItem}
-												confirmMsg="Usunąć z historii?"
-											/>
-										</TableCell> */}
 									</TableRow>
 								);
 							})}

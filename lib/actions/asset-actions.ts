@@ -49,8 +49,8 @@ export async function addAssetAction(formData: FormData) {
 	const category = formData.get("category") as Category;
 
 	const isBond = category === "BONDS"; // EN: Identify if it's a bond tranche
-const purchaseDateRaw = formData.get("purchaseDate") as string;
-const purchaseDate = purchaseDateRaw ? new Date(purchaseDateRaw) : executedAt;
+	const purchaseDateRaw = formData.get("purchaseDate") as string;
+	const purchaseDate = purchaseDateRaw ? new Date(purchaseDateRaw) : executedAt;
 	// EN: MAGIC TRICK - Append timestamp to bond tickers to bypass DB constraints
 	const dbTicker = isBond && ticker ? `${ticker}_${Date.now()}` : ticker;
 
@@ -132,14 +132,16 @@ export async function sellAssetAction(formData: FormData) {
 	// Extracting data from the modal form
 	const assetId = formData.get("assetId") as string;
 	const quantityToSell = Number(formData.get("quantity"));
-	const sellPricePerUnit = Number(formData.get("sellPrice"));
+	// const sellPricePerUnit = Number(formData.get("sellPrice"));
 	const targetCashPortfolioId = formData.get("targetPortfolioId") as string; // Selected from dropdown
 	const executedAt = new Date(formData.get("executedAt") as string);
 
 	// EN: 1. Fetch the note from the form (can be null if not provided)
 	const note = formData.get("note") as string | null;
 
-	const totalSellValue = quantityToSell * sellPricePerUnit;
+	// const totalSellValue = quantityToSell * sellPricePerUnit;
+	// ZMIANA: To co przychodzi z formularza to już CAŁKOWITA kwota (Total Value)
+	const totalSellValue = Number(formData.get("sellPrice"));
 
 	return await db.$transaction(async (tx) => {
 		// 1. Fetch the current state of the asset
@@ -209,6 +211,10 @@ export async function sellAssetAction(formData: FormData) {
 						quantity: totalSellValue,
 						currentValue: totalSellValue,
 						investedCapital: totalSellValue,
+						// 🚀 NAPRAWA: To pole jest wymagane w Twoim modelu Asset
+						purchaseDate: new Date(),
+						// Opcjonalnie możesz ustawić maturityDate na null, jeśli model na to pozwala
+						maturityDate: null,
 					},
 				});
 			}

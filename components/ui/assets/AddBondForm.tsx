@@ -9,13 +9,13 @@ import {
 	Lightbulb,
 	Percent,
 } from "lucide-react";
+import { addBond, updateBondInterestRate } from "@/lib/actions/bond-actions";
 import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SubmitButton } from "../SubmitButton";
-import { addBond } from "@/lib/actions/bond-actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -33,6 +33,31 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 	);
 	const [interestRate, setInterestRate] = useState<number | "">("");
 	const [manualCurrentValue, setManualCurrentValue] = useState<number | "">("");
+
+	// 1. Calculate time passed in years
+	const timePassedInYears = useMemo(() => {
+		const start = new Date(purchaseDate);
+		const now = new Date();
+		const diff = now.getTime() - start.getTime();
+		const msInYear = 365.25 * 24 * 60 * 60 * 1000;
+		return Math.max(diff / msInYear, 0);
+	}, [purchaseDate]);
+
+	// 2. Logic for automatic rate calculation
+	const handleManualValueChange = (value: number | "") => {
+		setManualCurrentValue(value);
+
+		// EN: Only calculate if more than 0.01 year passed and we have invested capital
+		if (value !== "" && investedCapital > 0 && timePassedInYears > 0.1) {
+			// Formula: r = ((Kt / K0)^(1/t) - 1) * 100
+			const calculatedRate =
+				(Math.pow(value / investedCapital, 1 / timePassedInYears) - 1) * 100;
+			setInterestRate(Number(calculatedRate.toFixed(2)));
+		}
+	};
+
+	// 3. UI logic: Disable interest rate ONLY if manual value is provided
+	const isRateDisabled = manualCurrentValue !== "";
 
 	// Automatyczne wyliczanie wartości
 	const investedCapital = quantity * 100;
@@ -57,7 +82,6 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 			</main>
 		);
 	}
-	// AddBondForm.tsx
 
 	async function handleSubmit(formData: FormData) {
 		setIsPending(true);
@@ -70,24 +94,26 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 
 		// 2. Wartości finansowe i data zakupu
 		formData.append("investedCapital", investedCapital.toString());
-		formData.append("purchaseDate", purchaseDate); // ISO String z Twojego state'u
-		formData.append("interestRate", interestRate.toString());
+		formData.append("purchaseDate", purchaseDate);
+
 		if (manualCurrentValue !== "") {
 			formData.append("manualCurrentValue", manualCurrentValue.toString());
 		}
-		// NOTE: rateType, interestRate i maturityDate zostawiamy dla addBond na serwerze!
-		// Serwer pobierze je sobie z BOND_TEMPLATES na podstawie "series".
+
+		// Zamiast wysyłać cokolwiek, wyślijmy tylko to co sensowne
+		if (interestRate !== "") {
+			formData.append("interestRate", interestRate.toString());
+		} else {
+			formData.append("interestRate", "0"); // Fallback
+		}
 
 		try {
-			// Wywołujemy Twoją nową, modułową akcję
 			const result = await addBond(formData, portfolioId);
 
 			if (result?.success) {
 				toast.success("Obligacja dodana do portfela! 🏛️");
-				// Używamy portfolioId w ścieżce, żeby wrócić dokładnie tam, skąd przyszliśmy
 				router.push(`/bond-reports/${portfolioId}`);
 			} else {
-				// Wyświetlamy błąd zwrócony z serwera (np. błąd bazy)
 				toast.error(result?.error || "Błąd zapisu w bazie danych");
 			}
 		} catch {
@@ -133,7 +159,6 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 					{/* Dane Zakupu */}
 					<div className="space-y-4">
-						{/* EN: Input for specific series identifier */}
 						<div className="space-y-2">
 							<Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">
 								<Landmark className="h-3.5 w-3.5" /> Symbol Serii (opcjonalnie)
@@ -179,10 +204,10 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 								required
 							/>
 						</div>
-						{/* Wewnątrz formularza (np. pod Data Zakupu): */}
+
 						<div className="space-y-2">
 							<Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
-								💰 Aktualna Wycena (dla starych obligacji)
+								💰 Aktualna Wycena
 							</Label>
 							<Input
 								type="number"
@@ -190,7 +215,7 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 								placeholder={`Opcjonalnie (domyślnie: ${investedCapital} PLN)`}
 								value={manualCurrentValue}
 								onChange={(e) =>
-									setManualCurrentValue(
+									handleManualValueChange(
 										e.target.value === "" ? "" : Number(e.target.value),
 									)
 								}
@@ -202,27 +227,25 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 						</div>
 						<div className="space-y-2">
 							<Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
-								<Percent className="h-3.5 w-3.5" /> Aktualne Oprocentowanie (%)
+								<Percent className="h-3.5 w-3.5" /> Startowe Oprocentowanie (%)
 							</Label>
-							<div className="relative">
-								<Input
-									type="number"
-									step="0.01"
-									name="interestRate"
-									placeholder="np. 6.80"
-									value={interestRate}
-									// EN: Handle empty string properly so it doesn't force a '0'
-									onChange={(e) =>
-										setInterestRate(
-											e.target.value === "" ? "" : Number(e.target.value),
-										)
-									}
-									className="pr-8"
-								/>
-								<span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">
-									%
-								</span>
-							</div>
+							<Input
+								type="number"
+								step="0.01"
+								value={interestRate}
+								disabled={isRateDisabled}
+								className={cn(isRateDisabled && "bg-muted opacity-50")}
+								onChange={(e) =>
+									setInterestRate(
+										e.target.value === "" ? "" : Number(e.target.value),
+									)
+								}
+							/>
+							{isRateDisabled && (
+								<p className="text-[9px] text-blue-500 italic font-medium">
+									Zablokowane: wyliczono automatycznie z aktualnej wyceny.
+								</p>
+							)}
 						</div>
 					</div>
 
@@ -263,10 +286,10 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 					<SubmitButton
 						disabled={isPending || !series || quantity <= 0}
 						label={isPending ? "Zapisywanie..." : "Dodaj do portfela 🏛️"}
-						// isLoading={isPending || !series || quantity <= 0}
 					/>
 				</div>
 			</form>
+
 			{/* --- NOWA UNIWERSALNA LEGENDA (DYNAMICZNA) --- */}
 			<div className="mt-8 flex flex-col gap-6 px-6 py-6 bg-muted/10 rounded-2xl border border-border/40">
 				<div className="flex items-center justify-between">
@@ -284,17 +307,14 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 					</div>
 				</div>
 
-				{/* EN: Grid layout for 6 items - responsive (2 columns on mobile, 3 on tablet, 6 on desktop) */}
 				<div className="flex flex-nowrap gap-6">
 					{Object.entries(BOND_CONFIG).map(([key, config]) => {
-						// Pobieramy czas trwania z drugiego obiektu dla pełnej informacji
 						const duration =
 							BOND_TEMPLATES[key as keyof typeof BOND_TEMPLATES]?.duration;
 						const isYears = duration >= 1;
 
 						return (
 							<div key={key} className="flex gap-2 group">
-								{/* EN: Using the exact background color from your config */}
 								<div
 									className={cn(
 										"w-2 h-2 rounded-full shadow-sm shrink-0",

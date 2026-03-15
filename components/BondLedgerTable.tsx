@@ -113,14 +113,13 @@ export default function BondLedgerTable({
 		note: string;
 	}) => {
 		if (!assetToSell) return;
-
 		const formData = new FormData();
-		formData.append("bondId", assetToSell.id);
+		formData.append("bondId", assetToSell.id); // 👈 Upewnij się że tu jest 'bondId'
 		formData.append("quantity", data.quantity.toString());
-		formData.append("sellPrice", data.price.toString());
-		formData.append("portfolioId", portfolioId);
-		formData.append("targetPortfolioId", data.targetId); // ID portfela na który wpłynie gotówka
-		formData.append("note", data.note);
+		formData.append("sellPrice", data.price.toString()); // To jest nasze 'totalValue' z modalu
+		formData.append("targetPortfolioId", data.targetId);
+		formData.append("executedAt", new Date().toISOString());
+		if (data.note) formData.append("note", data.note);
 
 		startTransition(async () => {
 			const result = await sellBondAction(formData);
@@ -191,7 +190,11 @@ export default function BondLedgerTable({
 										Podsumowanie grupy
 									</td>
 									<td className="px-4 py-4 font-mono font-bold text-foreground">
-										{totalVal.toLocaleString()} PLN
+										{totalVal.toLocaleString(undefined, {
+											minimumFractionDigits: 2,
+											maximumFractionDigits: 2,
+										})}{" "}
+										PLN
 									</td>
 									<td className="px-6 py-4"></td>
 								</tr>
@@ -234,6 +237,13 @@ export default function BondLedgerTable({
 																"pl-PL",
 															)}
 														</div>
+														<div className="flex flex-col">
+															<span className="text-[10px] text-muted-foreground uppercase">
+																<span className="font-black text-primary">
+																	{bond.quantity} szt.
+																</span>
+															</span>
+														</div>
 													</div>
 												</td>
 												<td className="px-4 py-4">
@@ -263,7 +273,11 @@ export default function BondLedgerTable({
 													<div className="flex flex-col items-start gap-0.5">
 														{/* Wkład własny (szary, mniejszy) */}
 														<span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-															Wkład: {bond.investedCapital?.toLocaleString()}{" "}
+															Wkład:{" "}
+															{bond.investedCapital?.toLocaleString(undefined, {
+																minimumFractionDigits: 2,
+																maximumFractionDigits: 2,
+															})}{" "}
 															PLN
 														</span>
 
@@ -328,7 +342,7 @@ export default function BondLedgerTable({
 					})}
 				</tbody>
 			</table>
-			{/* MODAL SPRZEDAŻY - To tutaj "zużywasz" funkcję handleConfirmSell */}
+			{/* MODAL SPRZEDAŻY */}
 			{assetToSell && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
 					<SellAssetModal

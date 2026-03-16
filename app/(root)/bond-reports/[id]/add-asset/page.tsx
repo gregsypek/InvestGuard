@@ -24,7 +24,7 @@ export default async function AddBondPage({ params }: Props) {
 			<div className="flex justify-between items-center mb-6">
 				<h2 className="text-xl font-bold tracking-tight  flex items-center gap-2">
 					<LibrarySquareIcon className="h-5 w-5 text-primary" />
-					Formularz dodawania obligacji
+					{/* Formularz dodawania obligacji */}
 				</h2>
 			</div>
 			<AddBondForm portfolioId={id} />

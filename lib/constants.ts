@@ -208,3 +208,4 @@ export const BOND_TEMPLATES = {
 	DOS: { label: "DOS (2-letnie)", duration: 2, rateType: "FIXED" },
 	OTS: { label: "OTS (3-miesięczne)", duration: 0.25, rateType: "FIXED" },
 };
+//NOTE: FIXED (Stałe): Odsetki proste (np. OTS) lub proste z wypłatą. VARIABLE/INDEXED (Zmienne/Indeksowane): Kapitalizacja roczna (EDO, COI, ROD).

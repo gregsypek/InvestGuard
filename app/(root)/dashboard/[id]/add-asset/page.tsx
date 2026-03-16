@@ -8,10 +8,11 @@ import { LibrarySquareIcon } from "lucide-react";
 
 interface Props {
 	params: Promise<{ id: string }>;
+	// searchParams: Promise<{ portfolioId?: string }>; // Dodajemy obsługę query params
 }
 
 export default async function AddAssetPage({ params }: Props) {
-	// Pobieramy id z parametrów ścieżki
+	// Pobieramy ID wyłącznie z trasy - to jest jedyne słuszne źródło
 	const { id } = await params;
 	// Pobieramy dane równolegle, żeby było szybciej ⚡
 	const [categoriesResult, assetsResult] = await Promise.all([
@@ -26,14 +27,16 @@ export default async function AddAssetPage({ params }: Props) {
 	return (
 		<section className="w-full flex flex-col justify-start  md:px-0 overflow-x-hidden">
 			<div className=" mb-4">
-				<h2 className="h2-bold flex items-center gap-2">
-					<LibrarySquareIcon className="h-5 w-5 text-primary" /> Add Asset Form
+				<h2 className="text-xl font-bold tracking-tight  flex items-center gap-2">
+					<LibrarySquareIcon className="h-5 w-5 text-primary" /> Formularze
+					dodawania aktywów
 				</h2>
 			</div>
 			<AddAssetForm
 				portfolioId={id}
 				allowedCategories={categories}
 				existingAssets={assets}
+				key={id}
 			/>
 		</section>
 	);

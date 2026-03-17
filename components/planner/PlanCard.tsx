@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { InvestmentPlan, Portfolio } from "@prisma/client";
-import { toast } from "sonner";
+import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
+import { CalendarIcon, CheckSquare, Loader2, RefreshCw } from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -12,16 +11,27 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { InvestmentPlan, Portfolio } from "@prisma/client";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "../ui/select";
+import {
+	deleteInvestmentPlan,
+	executePlan,
+} from "@/lib/actions/planner.actions";
+
 import { Button } from "@/components/ui/button";
+import { DeleteButton } from "../DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, CalendarIcon, RefreshCw, CheckSquare } from "lucide-react";
-import {
-	executePlan,
-	deleteInvestmentPlan,
-} from "@/lib/actions/planner.actions";
-import { COLORS, CATEGORY_LABELS, inputStyles } from "@/lib/constants";
-import { DeleteButton } from "../DeleteButton";
+import { SimpleSwitch } from "../ui/SimpleSwitchProps";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 // EN: Extend the Plan type to include the related Portfolio name
 type PlanWithPortfolio = InvestmentPlan & {
@@ -30,42 +40,58 @@ type PlanWithPortfolio = InvestmentPlan & {
 
 interface PlanCardProps {
 	plan: PlanWithPortfolio;
+	// EN: New prop to tell us if the portfolio has a cash asset to draw from
+	hasCashInPortfolio: boolean;
+	allPortfoliosWithCash: { id: string; name: string }[];
 }
 
-export function PlanCard({ plan }: PlanCardProps) {
+export function PlanCard({
+	plan,
+	hasCashInPortfolio,
+	allPortfoliosWithCash,
+}: PlanCardProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isPending, setIsPending] = useState(false);
 	const [finalValue, setFinalValue] = useState(plan.value);
 	const [executionNote, setExecutionNote] = useState("");
-
+	const [isBooked, setIsBooked] = useState(hasCashInPortfolio); // EN: Default to true only if cash exists
+	const router = useRouter();
 	// 1. DODAJEMY STAN DLA KURSU (Domyślnie 100 dla obligacji lub 0)
 	const [purchasePrice, setPurchasePrice] = useState(
 		plan.targetCategory === "BONDS" ? 100 : 0,
 	);
+	const [sourcePortfolioId, setSourcePortfolioId] = useState<string>("");
+
 	const handleExecute = async () => {
-		// Prosta walidacja, żeby nie dzielić przez zero
-		if (purchasePrice <= 0) {
+		// Dla gotówki kurs to zawsze 1, dla reszty to co w input
+		const effectivePrice =
+			plan.targetCategory === "CASH" ? 1 : Number(purchasePrice);
+
+		if (effectivePrice <= 0) {
 			toast.error("Kurs zakupu musi być większy niż 0");
 			return;
 		}
+
+		setIsPending(true);
 		try {
-			setIsPending(true);
-			// 3. PRZEKAZUJEMY purchasePrice DO AKCJI
 			const result = await executePlan(
 				plan.id,
-				finalValue,
-				purchasePrice,
+				Number(finalValue),
+				effectivePrice,
+				isBooked,
+				sourcePortfolioId, // ✅ TO JEST KLUCZOWE: Piąty parametr
 				executionNote,
 			);
 
 			if (result.success) {
-				toast.success("Inwestycja zrealizowana! 🚀");
+				toast.success("Zrealizowano pomyślnie");
 				setIsOpen(false);
+				router.refresh();
 			} else {
-				toast.error(result?.error || "Wystąpił błąd podczas realizacji.");
+				toast.error("Błąd: " + (result as any).error);
 			}
 		} catch {
-			toast.error("Błąd sieci. Spróbuj ponownie.");
+			toast.error("Błąd połączenia");
 		} finally {
 			setIsPending(false);
 		}
@@ -163,8 +189,83 @@ export function PlanCard({ plan }: PlanCardProps) {
 									automatycznie wyliczy liczbę jednostek i uśredni cenę.
 								</DialogDescription>
 							</DialogHeader>
+							<div className="space-y-4 rounded-xl border p-4 bg-muted/20">
+								<div className="flex items-center justify-between">
+									<div className="space-y-0.5">
+										<Label className="text-sm font-bold">
+											Księgowanie automatyczne
+										</Label>
+										<p className="text-[10px] text-muted-foreground uppercase">
+											Pobierz środki z istniejącej gotówki
+										</p>
+									</div>
+									<SimpleSwitch
+										checked={isBooked}
+										onChange={(val) => {
+											setIsBooked(val);
+											if (!val) setSourcePortfolioId("");
+										}}
+									/>
+								</div>
+
+								{isBooked && (
+									<div className="animate-in slide-in-from-top-2 duration-200">
+										<Label className="text-[10px] font-black uppercase opacity-60 ml-1">
+											Wybierz portfel źródłowy
+										</Label>
+										<Select
+											value={sourcePortfolioId}
+											onValueChange={setSourcePortfolioId}
+										>
+											<SelectTrigger className="bg-background mt-1">
+												<SelectValue placeholder="Wybierz źródło środków" />
+											</SelectTrigger>
+											<SelectContent>
+												{/* allPortfoliosWithCash przekazane z rodzica */}
+												{allPortfoliosWithCash.map((p) => (
+													<SelectItem key={p.id} value={p.id}>
+														{p.name} (CASH)
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+								)}
+							</div>
 
 							<div className="grid gap-4 py-4">
+								{/* EN: Conditional rendering for the booking option */}
+								{/* {hasCashInPortfolio ? (
+									<div className="flex items-center justify-between space-x-2 rounded-lg border p-3 shadow-sm bg-muted/30">
+										<div className="space-y-0.5">
+											<Label className="text-sm font-bold">
+												Księgowanie automatyczne
+											</Label>
+											<p className="text-[10px] text-muted-foreground uppercase font-medium">
+												Odejmij kwotę od CASH w portfelu:{" "}
+												<span className="text-primary">
+													{plan.portfolio?.name}
+												</span>
+											</p>
+										</div>
+										<input
+											type="checkbox"
+											checked={isBooked}
+											onChange={(e) => setIsBooked(e.target.checked)}
+											className="h-5 w-5 accent-green-600 cursor-pointer"
+										/>
+									</div>
+								) : (
+									<div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
+										<p className="text-[10px] text-amber-600 font-bold uppercase">
+											Brak gotówki (CASH) w tym portfelu.
+										</p>
+										<p className="text-[10px] text-muted-foreground">
+											Realizacja zostanie zaksięgowana jako nowa wpłata
+											zewnętrzna.
+										</p>
+									</div>
+								)} */}
 								<div className="space-y-2">
 									<Label
 										htmlFor="finalValue"
@@ -193,12 +294,15 @@ export function PlanCard({ plan }: PlanCardProps) {
 										id="purchasePrice"
 										type="number"
 										step="0.0001"
-										placeholder="Np. 450.25 lub 100 dla EDO"
-										value={purchasePrice || ""}
+										// Jeśli gotówka, pokazujemy 1, jeśli nie - wpisaną cenę
+										value={
+											plan.targetCategory === "CASH" ? "1" : purchasePrice || ""
+										}
 										onChange={(e) =>
 											setPurchasePrice(e.target.valueAsNumber || 0)
 										}
 										className={inputStyles}
+										disabled={plan.targetCategory === "CASH"}
 									/>
 									{/* PODGLĄD ILE SZTUK WYJDZIE */}
 									{purchasePrice > 0 && (

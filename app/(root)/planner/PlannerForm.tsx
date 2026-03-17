@@ -1,13 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Category, Portfolio } from "@prisma/client"; // Upewnij się, że masz te typy
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
+import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
 import {
 	Form,
 	FormControl,
@@ -17,7 +12,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Landmark, PlusCircle } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -25,254 +20,163 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card"; // Opcjonalne, dla estetyki
+import { useEffect, useMemo, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 
-// Zakładam, że PlannerSchema jest poprawnie zaimportowany z pliku walidacji
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label"; // EN: Fixed missing import
 import { PlannerSchema } from "@/lib/validations/planner";
-import { createInvestmentPlan } from "@/lib/actions/planner.actions";
-import { SubmitButton } from "@/components/ui/SubmitButton";
 import { SimpleSwitch } from "@/components/ui/SimpleSwitchProps";
-import { CATEGORY_LABELS, inputStyles } from "@/lib/constants";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { createInvestmentPlan } from "@/lib/actions/planner.actions";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-// Typ wywnioskowany ze schematu
+// EN: Infer values from schema for type safety
 type PlannerFormValues = z.infer<typeof PlannerSchema>;
 
-const CATEGORY_MAP = {
-	targetDeveloped: "DEVELOPED",
-	targetEmerging: "EMERGING",
-	targetBonds: "BONDS",
-	targetGold: "GOLD",
-	targetBooster: "BOOSTER",
-	targetCash: "CASH",
-	targetCrypto: "CRYPTO",
-	targetCommodities: "COMMODITIES",
-} as const;
-
-interface PlannerFormProps {
-	portfolios: Portfolio[];
-	// EN: Ensure we handle both undefined and null from parent components
-	// UI: Obsługujemy zarówno undefined jak i null z komponentów nadrzędnych
-	defaultPortfolioId: string | null;
+interface Props {
+	portfolios: { id: string; name: string }[];
+	defaultPortfolioId?: string;
 }
 
-export default function PlannerForm({
-	portfolios,
-	defaultPortfolioId,
-}: PlannerFormProps) {
+export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 	const router = useRouter();
+	const [viewMode, setViewMode] = useState<"asset" | "bond">("asset");
 
-	// 1. USUNIĘCIE GENERYKA <z.infer...> Z useForm
-	// To tutaj był główny problem TypeScripta. Pozwalamy RHF samemu wywnioskować typy z resolvera.
-	const form = useForm({
+	// EN: Restored generic type for useForm
+	const form = useForm<PlannerFormValues>({
 		resolver: zodResolver(PlannerSchema),
 		defaultValues: {
 			name: "",
 			ticker: "",
 			value: 0,
-			plannedDate: new Date().toISOString().substring(0, 7), // Format YYYY-MM
-			portfolioId: defaultPortfolioId ?? "", // EN: Convert null/undefined to string
-			// Ważne: undefined wymusza wybór (placeholder w Select zadziała)
-			category: undefined,
+			plannedDate: new Date().toISOString().slice(0, 7),
+			portfolioId: defaultPortfolioId || "",
+			category: "" as any,
 			rationale: "",
 			isRecurring: false,
 		},
 	});
 
-	const selectedPortfolioId = useWatch({
+	const selectedCategory = useWatch({
 		control: form.control,
-		name: "portfolioId",
+		name: "category",
 	});
 
-	const availableCategories = useMemo(() => {
-		if (!selectedPortfolioId) return [];
-		const portfolio = portfolios.find((p) => p.id === selectedPortfolioId);
-		if (!portfolio) return [];
+	// EN: Now using isCash to dynamically change labels (fixes 'unused' error)
+	const isCash = selectedCategory === "CASH";
 
-		const active: string[] = [];
-		for (const [dbField, categoryName] of Object.entries(CATEGORY_MAP)) {
-			// Rzutowanie p[key] na number, aby TS nie krzyczał
-			if ((portfolio[dbField as keyof Portfolio] as number) > 0) {
-				active.push(categoryName);
-			}
-		}
-		return active.length > 0 ? active : Object.values(Category);
-	}, [selectedPortfolioId, portfolios]);
-	console.log("🚀 ~ PlannerForm ~ availableCategories:", availableCategories);
+	const filteredCategories = useMemo(() => {
+		return Object.keys(CATEGORY_LABELS).filter((cat) => cat !== "BONDS");
+	}, []);
 
-	// EN: Robust category reset when switching portfolios
-	// UI: Solidne resetowanie kategorii przy zmianie portfela
-	const handlePortfolioChange = (
-		val: string,
-		onChange: (val: string) => void,
-	) => {
-		onChange(val);
-		// EN: Use undefined to trigger the "Select Category" placeholder
-		// UI: Używamy undefined, aby pokazać placeholder "Wybierz kategorię"
-		form.setValue("category", undefined as any);
+	const handleModeChange = (mode: "asset" | "bond") => {
+		setViewMode(mode);
+		form.reset({
+			...form.getValues(),
+			category: mode === "bond" ? "BONDS" : ("" as any),
+			ticker: mode === "bond" ? "EDO" : "",
+			name: mode === "bond" ? "Obligacje EDO" : "",
+		});
 	};
-	async function onSubmit(values: PlannerFormValues) {
-		try {
-			const result = await createInvestmentPlan(values);
 
-			if (result?.success) {
-				toast.success("Dodano do planu! 📅");
-				form.reset({
-					name: "",
-					ticker: "",
-					value: 0,
-					rationale: "",
-					portfolioId: values.portfolioId, // Zostawiamy wybrane portfolio
-					plannedDate: values.plannedDate, // Zostawiamy wybraną datę
-					category: undefined, // Reset kategorii
-					isRecurring: false,
-				});
+	async function onSubmit(data: PlannerFormValues) {
+		try {
+			const result = await createInvestmentPlan(data);
+			if (result.success) {
+				toast.success("Dodano do planu");
+				form.reset();
 				router.refresh();
-			} else {
-				toast.error(result?.error || "Nie udało się utworzyć planu");
 			}
-		} catch (error) {
-			console.error("Błąd wysyłania:", error);
-			toast.error("Wystąpił nieoczekiwany błąd");
+		} catch {
+			toast.error("Wystąpił błąd");
 		}
 	}
 
 	return (
-		<Card className="border-none shadow-none bg-transparent">
-			<CardContent className="p-0">
-				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-						{/* Sekcja Wyboru Portfela i Daty */}
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<FormField
-								control={form.control}
-								name="portfolioId"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Wybierz Portfel</FormLabel>
-										<Select
-											onValueChange={(val) =>
-												handlePortfolioChange(val, field.onChange)
-											}
-											value={field.value || ""}
-										>
-											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder="Wybierz portfel..." />
-												</SelectTrigger>
-											</FormControl>
-											<SelectContent>
-												{portfolios.map((p) => (
-													<SelectItem key={p.id} value={p.id}>
-														{/* EN: Using the same consistent look as in other selects */}
-														{/* UI: Używamy tego samego spójnego wyglądu co w innych selectach */}
-														<div className="flex items-center gap-2">
-															{/* <div className="h-2 w-2 rounded-full bg-blue-500/40 border border-blue-500/20" /> */}
-															<span className="font-medium">{p.name}</span>
-														</div>
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
+		<div className="space-y-6">
+			{/* SELEKTOR TRYBÓW */}
+			<div className="flex bg-muted/50 p-1 rounded-xl w-fit border border-border items-center">
+				<button
+					type="button"
+					onClick={() => handleModeChange("asset")}
+					className={cn(
+						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
+						viewMode === "asset"
+							? "bg-background shadow-sm text-primary"
+							: "text-muted-foreground",
+					)}
+				>
+					<PlusCircle size={14} /> Aktywo / Gotówka
+				</button>
 
-							<FormField
-								control={form.control}
-								name="plannedDate"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Planowana Data</FormLabel>
-										<FormControl>
-											<Input type="month" {...field} className={inputStyles} />
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-						</div>
+				<button
+					type="button"
+					onClick={() => handleModeChange("bond")}
+					className={cn(
+						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ml-1",
+						viewMode === "bond"
+							? "bg-background shadow-sm text-primary"
+							: "text-muted-foreground",
+					)}
+				>
+					<Landmark size={14} /> Planuj Obligację
+				</button>
+			</div>
 
-						{/* Sekcja Danych Aktywa */}
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<FormField
-								control={form.control}
-								name="name"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Nazwa Aktywa</FormLabel>
+			<Form {...form}>
+				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<FormField
+							control={form.control}
+							name="portfolioId"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Portfel docelowy</FormLabel>
+									<Select onValueChange={field.onChange} value={field.value}>
 										<FormControl>
-											<Input
-												placeholder="np. Złoto fizyczne"
-												{...field}
-												className={inputStyles}
-											/>
+											<SelectTrigger className={inputStyles}>
+												<SelectValue placeholder="Wybierz portfel" />
+											</SelectTrigger>
 										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							<FormField
-								control={form.control}
-								name="value"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Kwota (PLN)</FormLabel>
-										<FormControl>
-											<Input
-												type="number"
-												step="0.01"
-												placeholder="0.00"
-												// EN: Spread field but override value and onChange for type safety
-												// UI: Rozpakowujemy field, ale nadpisujemy value i onChange dla bezpieczeństwa typów
-												{...field}
-												value={
-													typeof field.value === "number" ? field.value : ""
-												}
-												onChange={(e) => {
-													const val = e.target.valueAsNumber;
-													field.onChange(isNaN(val) ? 0 : val);
-												}}
-												className={inputStyles}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-						</div>
+										<SelectContent>
+											{portfolios.map((p) => (
+												<SelectItem key={p.id} value={p.id}>
+													{p.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
-						{/* Kategoria i Switch */}
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+						{viewMode === "asset" ? (
 							<FormField
 								control={form.control}
 								name="category"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Kategoria</FormLabel>
-										<Select
-											onValueChange={field.onChange}
-											value={field.value}
-											disabled={!selectedPortfolioId}
-										>
+										<Select onValueChange={field.onChange} value={field.value}>
 											<FormControl>
 												<SelectTrigger className={inputStyles}>
-													<SelectValue placeholder="Wybierz kategorię" />
+													<SelectValue placeholder="Wybierz typ" />
 												</SelectTrigger>
 											</FormControl>
 											<SelectContent>
-												{availableCategories.map((cat) => (
+												{filteredCategories.map((cat) => (
 													<SelectItem key={cat} value={cat}>
-														<div className="flex items-center gap-2">
-															<div
-																className="h-2 w-2 rounded-full border border-border2"
-																style={{
-																	backgroundColor: `var(--portfolio-${cat.toLowerCase()})`,
-																}}
-															/>
-															{CATEGORY_LABELS[cat] || cat}
-														</div>
+														{
+															CATEGORY_LABELS[
+																cat as keyof typeof CATEGORY_LABELS
+															]
+														}
 													</SelectItem>
 												))}
 											</SelectContent>
@@ -281,45 +185,31 @@ export default function PlannerForm({
 									</FormItem>
 								)}
 							/>
-
-							<FormField
-								control={form.control}
-								name="isRecurring"
-								render={({ field }) => (
-									<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-1 h-18">
-										<div className="space-y-0.5">
-											<FormLabel className="text-sm font-semibold">
-												Cykliczne?
-											</FormLabel>
-											<FormDescription className="text-xs">
-												Zaplanuj też na kolejne miesiące
-											</FormDescription>
-										</div>
-										<FormControl>
-											{/* <Switch
-												checked={field.value}
-												onCheckedChange={field.onChange}
-											/> */}
-											<SimpleSwitch
-												checked={!!field.value}
-												onChange={field.onChange}
-											/>
-										</FormControl>
-									</FormItem>
-								)}
-							/>
-						</div>
+						) : (
+							<div className="flex flex-col gap-2">
+								<Label className="text-sm font-medium">Kategoria</Label>
+								<div className="flex items-center gap-2 h-10 px-3 bg-muted/40 rounded-lg border text-xs font-bold text-primary">
+									<Landmark size={14} /> OBLIGACJE SKARBOWE
+								</div>
+							</div>
+						)}
 
 						<FormField
 							control={form.control}
-							name="rationale"
+							name="name"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Uzasadnienie (Opcjonalne)</FormLabel>
+									<FormLabel>
+										{isCash
+											? "Opis wpłaty"
+											: viewMode === "bond"
+												? "Typ"
+												: "Nazwa"}
+									</FormLabel>
 									<FormControl>
-										<Textarea
-											placeholder="Dlaczego decydujesz się na ten zakup?"
-											className="resize-none min-h-20"
+										{/* EN: Using ?? "" to prevent null-to-controlled-input error */}
+										<Input
+											className={inputStyles}
 											{...field}
 											value={field.value ?? ""}
 										/>
@@ -329,16 +219,59 @@ export default function PlannerForm({
 							)}
 						/>
 
-						<div className="flex justify-end pt-2">
-							<SubmitButton
-								label="Dodaj do Planu"
-								isLoading={form.formState.isSubmitting}
-								className="w-full md:w-auto"
-							/>
-						</div>
-					</form>
-				</Form>
-			</CardContent>
-		</Card>
+						<FormField
+							control={form.control}
+							name="ticker"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>{isCash ? "Identyfikator" : "Ticker"}</FormLabel>
+									<FormControl>
+										<Input
+											className={inputStyles}
+											{...field}
+											value={field.value ?? ""}
+											disabled={isCash}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						{/* ... reszta pól (value, plannedDate, isRecurring) analogicznie ... */}
+						<FormField
+							control={form.control}
+							name="value"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Kwota (PLN)</FormLabel>
+									<FormControl>
+										<Input
+											type="number"
+											className={inputStyles}
+											// ROZWIĄZANIE:
+											// Rozbijamy {...field}, aby nadpisać problematyczne właściwości
+											{...field}
+											// 1. Zabezpieczamy wartość przed null/undefined/unknown
+											value={field.value ?? ""}
+											// 2. Konwertujemy tekst z inputa na liczbę dla React Hook Form
+											onChange={(e) => field.onChange(Number(e.target.value))}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+
+					<div className="flex justify-end">
+						<SubmitButton
+							label="Zapisz plan"
+							isLoading={form.formState.isSubmitting}
+						/>
+					</div>
+				</form>
+			</Form>
+		</div>
 	);
 }

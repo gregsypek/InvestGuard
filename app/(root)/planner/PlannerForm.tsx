@@ -48,7 +48,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 	const [viewMode, setViewMode] = useState<"asset" | "bond">("asset");
 
 	// EN: Restored generic type for useForm
-	const form = useForm<PlannerFormValues>({
+	const form = useForm({
 		resolver: zodResolver(PlannerSchema),
 		defaultValues: {
 			name: "",
@@ -56,7 +56,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 			value: 0,
 			plannedDate: new Date().toISOString().slice(0, 7),
 			portfolioId: defaultPortfolioId || "",
-			category: "" as any,
+			category: undefined,
 			rationale: "",
 			isRecurring: false,
 		},
@@ -155,36 +155,94 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 								</FormItem>
 							)}
 						/>
+						<FormField
+							control={form.control}
+							name="plannedDate"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>
+										{viewMode === "bond"
+											? "Dokładna data zakupu"
+											: "Miesiąc realizacji"}
+									</FormLabel>
+									<FormControl>
+										<Input
+											// EN: Dynamic type switching based on mode
+											type={viewMode === "bond" ? "date" : "month"}
+											className={inputStyles}
+											{...field}
+											value={field.value ?? ""}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="isRecurring"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-1 h-18">
+									<div className="space-y-0.5">
+										<FormLabel className="text-sm font-semibold">
+											Cykliczne?
+										</FormLabel>
+										<FormDescription className="text-xs">
+											Zaplanuj też na kolejne miesiące
+										</FormDescription>
+									</div>
+									<FormControl>
+										{/* <Switch
+												checked={field.value}
+												onCheckedChange={field.onChange}
+											/> */}
+										<SimpleSwitch
+											checked={!!field.value}
+											onChange={field.onChange}
+										/>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
 
 						{viewMode === "asset" ? (
-							<FormField
-								control={form.control}
-								name="category"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Kategoria</FormLabel>
-										<Select onValueChange={field.onChange} value={field.value}>
-											<FormControl>
-												<SelectTrigger className={inputStyles}>
-													<SelectValue placeholder="Wybierz typ" />
-												</SelectTrigger>
-											</FormControl>
-											<SelectContent>
-												{filteredCategories.map((cat) => (
-													<SelectItem key={cat} value={cat}>
-														{
-															CATEGORY_LABELS[
-																cat as keyof typeof CATEGORY_LABELS
-															]
-														}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
+							<>
+								<FormField
+									control={form.control}
+									name="category"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Kategoria</FormLabel>
+											<Select
+												onValueChange={field.onChange}
+												value={field.value}
+											>
+												<FormControl>
+													<SelectTrigger className={inputStyles}>
+														<SelectValue placeholder="Wybierz typ" />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{filteredCategories.map((cat) => (
+														<SelectItem key={cat} value={cat}>
+															<div className="flex items-center gap-2">
+																<div
+																	className="h-2 w-2 rounded-full border border-border2"
+																	style={{
+																		backgroundColor: `var(--portfolio-${cat.toLowerCase()})`,
+																	}}
+																/>
+																{CATEGORY_LABELS[cat] || cat}
+															</div>
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</>
 						) : (
 							<div className="flex flex-col gap-2">
 								<Label className="text-sm font-medium">Kategoria</Label>

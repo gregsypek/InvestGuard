@@ -1,7 +1,14 @@
 "use client";
 
 import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
-import { CalendarIcon, CheckSquare, Loader2, RefreshCw } from "lucide-react";
+import {
+	CalendarIcon,
+	CheckSquare,
+	Landmark,
+	Loader2,
+	RefreshCw,
+	Trash2,
+} from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -9,7 +16,6 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { InvestmentPlan, Portfolio } from "@prisma/client";
 import {
@@ -23,15 +29,16 @@ import {
 	deleteInvestmentPlan,
 	executePlan,
 } from "@/lib/actions/planner.actions";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "../DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SimpleSwitch } from "../ui/SimpleSwitchProps";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 // EN: Extend the Plan type to include the related Portfolio name
 type PlanWithPortfolio = InvestmentPlan & {
@@ -40,7 +47,6 @@ type PlanWithPortfolio = InvestmentPlan & {
 
 interface PlanCardProps {
 	plan: PlanWithPortfolio;
-	// EN: New prop to tell us if the portfolio has a cash asset to draw from
 	hasCashInPortfolio: boolean;
 	allPortfoliosWithCash: { id: string; name: string }[];
 }
@@ -50,22 +56,31 @@ export function PlanCard({
 	hasCashInPortfolio,
 	allPortfoliosWithCash,
 }: PlanCardProps) {
+	const router = useRouter();
 	const [isOpen, setIsOpen] = useState(false);
 	const [isPending, setIsPending] = useState(false);
+
+	// --- STANY DLA PÓL EDYCYJNYCH ---
+	const [finalName, setFinalName] = useState(plan.name);
 	const [finalValue, setFinalValue] = useState(plan.value);
-	const [executionNote, setExecutionNote] = useState("");
-	const [isBooked, setIsBooked] = useState(hasCashInPortfolio); // EN: Default to true only if cash exists
-	const router = useRouter();
-	// 1. DODAJEMY STAN DLA KURSU (Domyślnie 100 dla obligacji lub 0)
-	const [purchasePrice, setPurchasePrice] = useState(
+	const [purchasePrice, setPurchasePrice] = useState<number>(
 		plan.targetCategory === "BONDS" ? 100 : 0,
 	);
-	const [sourcePortfolioId, setSourcePortfolioId] = useState<string>("");
+
+	// EN: Initialize date as YYYY-MM-DD for the date input
+	const [finalDate, setFinalDate] = useState(() => {
+		if (plan.plannedDate.length === 10) return plan.plannedDate;
+		return `${plan.plannedDate}-01`;
+	});
+
+	const [executionNote, setExecutionNote] = useState("");
+	const [isBooked, setIsBooked] = useState(hasCashInPortfolio);
+	const [sourcePortfolioId, setSourcePortfolioId] = useState("");
+
+	const isCash = plan.targetCategory === "CASH";
 
 	const handleExecute = async () => {
-		// Dla gotówki kurs to zawsze 1, dla reszty to co w input
-		const effectivePrice =
-			plan.targetCategory === "CASH" ? 1 : Number(purchasePrice);
+		const effectivePrice = isCash ? 1 : Number(purchasePrice);
 
 		if (effectivePrice <= 0) {
 			toast.error("Kurs zakupu musi być większy niż 0");
@@ -74,292 +89,257 @@ export function PlanCard({
 
 		setIsPending(true);
 		try {
+			// EN: Passing all 8 arguments to the server action
 			const result = await executePlan(
 				plan.id,
 				Number(finalValue),
 				effectivePrice,
 				isBooked,
-				sourcePortfolioId, // ✅ TO JEST KLUCZOWE: Piąty parametr
+				sourcePortfolioId,
 				executionNote,
+				finalName, // Parametr 7: Nazwa
+				finalDate, // Parametr 8: Precyzyjna data
 			);
 
 			if (result.success) {
-				toast.success("Zrealizowano pomyślnie");
+				toast.success("Plan zrealizowany pomyślnie! 🚀");
 				setIsOpen(false);
 				router.refresh();
 			} else {
-				toast.error("Błąd: " + (result as any).error);
+				toast.error("Błąd: " + result.error);
 			}
 		} catch {
-			toast.error("Błąd połączenia");
+			toast.error("Błąd połączenia. Spróbuj ponownie.");
 		} finally {
 			setIsPending(false);
 		}
 	};
 
-	// EN: Category color logic matching the asset list
-	const categoryColor =
-		COLORS[plan.targetCategory as keyof typeof COLORS] || "var(--primary)";
-	const categoryLabel =
-		CATEGORY_LABELS[plan.targetCategory] || plan.targetCategory;
+	const handleDelete = async () => {
+		if (confirm("Usunąć plan?")) {
+			const res = await deleteInvestmentPlan(plan.id);
+			if (res.success) toast.success("Usunięto");
+		}
+	};
 
 	return (
-		<div className="bg-card border border-border2 p-3 lg:p-4 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-4 transition-all duration-300  hover:bg-blue-500/5 group relative">
-			{/* EN: LEFT SIDE: Name, Category, Portfolio */}
-			{/* UI: LEWA STRONA: Nazwa, Kategoria, Portfel */}
-			<div className="flex items-start gap-3">
-				{/* EN: Recurring indicator if applicable */}
-				{plan.isRecurring && (
-					<div
-						className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10"
-						title="Plan cykliczny"
-					>
-						<RefreshCw className="h-3 w-3 text-blue-500" />
+		<div className="group relative bg-card border  border-primary/50 rounded-2xl p-3 transition-all duration-300 shadow-sm hover:shadow-md overflow-hidden">
+			<div className="flex flex-col gap-4">
+				<div className="flex justify-between items-start">
+					<div className="space-y-1">
+						<div className="flex items-center gap-2">
+							{plan.isRecurring && (
+								<div
+									className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10"
+									title="Plan cykliczny"
+								>
+									<RefreshCw className="h-3 w-3 text-blue-500" />
+								</div>
+							)}
+							<span
+								className="h-2 w-2 rounded-full"
+								style={{
+									backgroundColor:
+										COLORS[plan.targetCategory as keyof typeof COLORS] ||
+										"#ccc",
+								}}
+							/>
+							<h3 className="text-sm  font-bold truncate">{plan.name}</h3>
+						</div>
+						<p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+							{
+								CATEGORY_LABELS[
+									plan.targetCategory as keyof typeof CATEGORY_LABELS
+								]
+							}{" "}
+							• {plan.portfolio?.name}
+						</p>
+					</div>
+
+					<div className="flex items-center gap-1">
+						<button
+							onClick={() => setIsOpen(true)}
+							className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors"
+						>
+							<CheckSquare size={16} />
+						</button>
+						{/* <DeleteButton
+							id={plan.id}
+							onDelete={async (id) => {
+								const res = await deleteInvestmentPlan(id);
+								if (res.success) router.refresh();
+							}}
+						/> */}
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={handleDelete}
+							className="h-6 w-6 text-muted-foreground hover:text-red-600"
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+						</Button>
+					</div>
+				</div>
+
+				<div className="grid grid-cols-2 gap-3">
+					<div className="flex flex-wrap gap-3 items-center">
+						<p className="font-mono text-xs tabular-nums text-muted-foreground ">
+							Planowana kwota
+						</p>
+						<p className="text-xs font-mono tracking-tighter">
+							{plan.value.toLocaleString()}{" "}
+							<span className="text-[10px]">PLN</span>
+						</p>
+					</div>
+					<div className="flex flex-wrap gap-3 items-center">
+						<p className="font-mono text-xs  text-muted-foreground">Termin</p>
+						<p className="text-xs font-mono tracking-tighter flex items-center gap-1">
+							<CalendarIcon size={12} className="text-primary" />
+							{plan.plannedDate}
+						</p>
+					</div>
+				</div>
+
+				{plan.rationale && (
+					<div className="text-[11px] text-muted-foreground leading-relaxed italic border-l-2 border-primary/20 pl-3 py-1">
+						"{plan.rationale}"
 					</div>
 				)}
+			</div>
 
-				<div className="space-y-1">
-					<div className="flex items-center gap-2">
-						<h4 className="font-bold text-sm leading-none">{plan.name}</h4>
-						{plan.ticker && (
-							<span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">
-								{plan.ticker}
-							</span>
-						)}
-					</div>
+			<Dialog open={isOpen} onOpenChange={setIsOpen}>
+				<DialogContent className="max-w-2xl bg-card border-border shadow-2xl rounded-3xl p-8">
+					<DialogHeader className="space-y-3">
+						<div className="h-12 w-12 rounded-2xl bg-green-500/10 flex items-center justify-center mb-2">
+							<RefreshCw className="h-6 w-6 text-green-600" />
+						</div>
+						<DialogTitle className="text-2xl font-black tracking-tight">
+							Potwierdź realizację
+						</DialogTitle>
+						<DialogDescription className="text-sm font-medium">
+							Uzupełnij ostateczne parametry transakcji rynkowej.
+						</DialogDescription>
+					</DialogHeader>
 
-					<div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-						{/* Category indicator */}
-						<div className="flex items-center gap-1.5">
-							<div
-								className="w-2 h-2 rounded-full border border-border2 shadow-xs"
-								style={{ backgroundColor: categoryColor }}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+						{/* EDYCJA NAZWY I DATY */}
+						<div className="space-y-2">
+							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
+								Nazwa aktywa
+							</Label>
+							<Input
+								value={finalName}
+								onChange={(e) => setFinalName(e.target.value)}
+								className={inputStyles}
 							/>
-							<p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-								{categoryLabel}
-							</p>
 						</div>
 
-						{/* Portfolio Name */}
-						<div className="flex items-center gap-1.5 border-l border-border2 pl-3">
-							<span className="text-[10px] font-mono text-muted-foreground uppercase">
-								{plan.portfolio?.name || "Brak portfela"}
-							</span>
+						<div className="space-y-2">
+							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
+								Dokładna data zakupu
+							</Label>
+							<Input
+								type="date"
+								value={finalDate}
+								onChange={(e) => setFinalDate(e.target.value)}
+								className={inputStyles}
+							/>
+						</div>
+
+						{/* OSTATECZNA KWOTA */}
+						<div className="space-y-2">
+							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
+								Kwota ostateczna (PLN)
+							</Label>
+							<Input
+								type="number"
+								value={finalValue}
+								onChange={(e) => setFinalValue(Number(e.target.value))}
+								className={inputStyles}
+							/>
+						</div>
+
+						{/* KURS ZAKUPU */}
+						<div className="space-y-2">
+							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
+								{isCash ? "Kurs wymiany" : "Kurs zakupu (Cena za 1 szt.)"}
+							</Label>
+							<Input
+								type="number"
+								step="any"
+								value={isCash ? "1" : purchasePrice || ""}
+								onChange={(e) => setPurchasePrice(e.target.valueAsNumber || 0)}
+								disabled={isCash}
+								className={cn(inputStyles, isCash && "bg-muted opacity-50")}
+							/>
+						</div>
+
+						{/* SEKCJA KSIĘGOWANIA */}
+						<div className="md:col-span-2 space-y-4 rounded-2xl border border-border p-5 bg-muted/20">
+							<div className="flex items-center justify-between">
+								<div className="space-y-0.5">
+									<Label className="text-sm font-bold">
+										Księgowanie automatyczne
+									</Label>
+									<p className="text-[10px] text-muted-foreground uppercase font-medium">
+										Odejmij kwotę od zasobów CASH
+									</p>
+								</div>
+								<SimpleSwitch checked={isBooked} onChange={setIsBooked} />
+							</div>
+
+							{isBooked && (
+								<div className="animate-in fade-in slide-in-from-top-2 duration-300">
+									<Label className="text-[10px] font-black uppercase opacity-60 ml-1">
+										Wybierz portfel źródłowy
+									</Label>
+									<Select
+										value={sourcePortfolioId}
+										onValueChange={setSourcePortfolioId}
+									>
+										<SelectTrigger className="bg-background mt-1 h-11 rounded-xl">
+											<SelectValue placeholder="Wybierz źródło środków" />
+										</SelectTrigger>
+										<SelectContent>
+											{allPortfoliosWithCash.map((p) => (
+												<SelectItem key={p.id} value={p.id}>
+													{p.name} (CASH)
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							)}
+						</div>
+
+						<div className="md:col-span-2 space-y-2">
+							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
+								Notatka z transakcji
+							</Label>
+							<Input
+								placeholder="Np. prowizja 5 PLN, kurs bankowy..."
+								value={executionNote}
+								onChange={(e) => setExecutionNote(e.target.value)}
+								className={inputStyles}
+							/>
 						</div>
 					</div>
-				</div>
-			</div>
 
-			{/* EN: RIGHT SIDE: Value, Date, Actions */}
-			{/* UI: PRAWA STRONA: Kwota, Data, Akcje */}
-			<div className="flex flex-wrap sm:flex-nowrap items-center gap-4 sm:gap-6 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-border2 pt-3 sm:pt-0 mt-1 sm:mt-0">
-				<div className="flex flex-col items-start sm:items-end">
-					<p className="font-semibold text-sm tabular-nums text-foreground">
-						{plan.value.toLocaleString(undefined, {
-							minimumFractionDigits: 2,
-							maximumFractionDigits: 2,
-						})}{" "}
-						PLN
-					</p>
-					<div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">
-						<CalendarIcon className="h-3 w-3" />
-						{plan.plannedDate}
-					</div>
-				</div>
-
-				<div className="flex items-center gap-2">
-					{/* EN: Execution Dialog */}
-					<Dialog open={isOpen} onOpenChange={setIsOpen}>
-						<DialogTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="p-2 text-muted-foreground hover:text-blue-600  transition-colors disabled:opacity-50 group cursor-pointer"
-								title="Realizuj plan"
-							>
-								<CheckSquare className="h-4 w-4 transition-colors group-hover:scale-110 " />
-							</Button>
-						</DialogTrigger>
-
-						<DialogContent className="sm:max-w-md">
-							<DialogHeader>
-								<DialogTitle>Potwierdź realizację</DialogTitle>
-								<DialogDescription>
-									Rejestrujesz zakup <strong>{plan.name}</strong>. System
-									automatycznie wyliczy liczbę jednostek i uśredni cenę.
-								</DialogDescription>
-							</DialogHeader>
-							<div className="space-y-4 rounded-xl border p-4 bg-muted/20">
-								<div className="flex items-center justify-between">
-									<div className="space-y-0.5">
-										<Label className="text-sm font-bold">
-											Księgowanie automatyczne
-										</Label>
-										<p className="text-[10px] text-muted-foreground uppercase">
-											Pobierz środki z istniejącej gotówki
-										</p>
-									</div>
-									<SimpleSwitch
-										checked={isBooked}
-										onChange={(val) => {
-											setIsBooked(val);
-											if (!val) setSourcePortfolioId("");
-										}}
-									/>
-								</div>
-
-								{isBooked && (
-									<div className="animate-in slide-in-from-top-2 duration-200">
-										<Label className="text-[10px] font-black uppercase opacity-60 ml-1">
-											Wybierz portfel źródłowy
-										</Label>
-										<Select
-											value={sourcePortfolioId}
-											onValueChange={setSourcePortfolioId}
-										>
-											<SelectTrigger className="bg-background mt-1">
-												<SelectValue placeholder="Wybierz źródło środków" />
-											</SelectTrigger>
-											<SelectContent>
-												{/* allPortfoliosWithCash przekazane z rodzica */}
-												{allPortfoliosWithCash.map((p) => (
-													<SelectItem key={p.id} value={p.id}>
-														{p.name} (CASH)
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</div>
-								)}
-							</div>
-
-							<div className="grid gap-4 py-4">
-								{/* EN: Conditional rendering for the booking option */}
-								{/* {hasCashInPortfolio ? (
-									<div className="flex items-center justify-between space-x-2 rounded-lg border p-3 shadow-sm bg-muted/30">
-										<div className="space-y-0.5">
-											<Label className="text-sm font-bold">
-												Księgowanie automatyczne
-											</Label>
-											<p className="text-[10px] text-muted-foreground uppercase font-medium">
-												Odejmij kwotę od CASH w portfelu:{" "}
-												<span className="text-primary">
-													{plan.portfolio?.name}
-												</span>
-											</p>
-										</div>
-										<input
-											type="checkbox"
-											checked={isBooked}
-											onChange={(e) => setIsBooked(e.target.checked)}
-											className="h-5 w-5 accent-green-600 cursor-pointer"
-										/>
-									</div>
-								) : (
-									<div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
-										<p className="text-[10px] text-amber-600 font-bold uppercase">
-											Brak gotówki (CASH) w tym portfelu.
-										</p>
-										<p className="text-[10px] text-muted-foreground">
-											Realizacja zostanie zaksięgowana jako nowa wpłata
-											zewnętrzna.
-										</p>
-									</div>
-								)} */}
-								<div className="space-y-2">
-									<Label
-										htmlFor="finalValue"
-										className="text-xs font-bold uppercase tracking-wider opacity-70"
-									>
-										Ostateczna Kwota (PLN)
-									</Label>
-									<Input
-										id="finalValue"
-										type="number"
-										step="0.01"
-										value={finalValue}
-										onChange={(e) => setFinalValue(e.target.valueAsNumber || 0)}
-										className={inputStyles}
-									/>
-								</div>
-								{/* 2. NOWE POLE: KURS ZAKUPU */}
-								<div className="space-y-2">
-									<Label
-										htmlFor="purchasePrice"
-										className="text-xs font-bold uppercase tracking-wider opacity-70"
-									>
-										Kurs zakupu (Cena za 1 szt.)
-									</Label>
-									<Input
-										id="purchasePrice"
-										type="number"
-										step="0.0001"
-										// Jeśli gotówka, pokazujemy 1, jeśli nie - wpisaną cenę
-										value={
-											plan.targetCategory === "CASH" ? "1" : purchasePrice || ""
-										}
-										onChange={(e) =>
-											setPurchasePrice(e.target.valueAsNumber || 0)
-										}
-										className={inputStyles}
-										disabled={plan.targetCategory === "CASH"}
-									/>
-									{/* PODGLĄD ILE SZTUK WYJDZIE */}
-									{purchasePrice > 0 && (
-										<p className="text-[10px] text-blue-500 font-medium italic">
-											Wyliczona ilość: {(finalValue / purchasePrice).toFixed(4)}{" "}
-											szt.
-										</p>
-									)}
-								</div>
-								<div className="space-y-2">
-									<Label
-										htmlFor="note"
-										className="text-xs font-bold uppercase tracking-wider opacity-70"
-									>
-										Notatka z transakcji (Opcjonalnie)
-									</Label>
-									<Input
-										id="note"
-										placeholder="Np. kurs USD 4.02, prowizja 5 PLN"
-										value={executionNote}
-										onChange={(e) => setExecutionNote(e.target.value)}
-										className={inputStyles}
-									/>
-								</div>
-							</div>
-
-							<DialogFooter className="flex gap-2 sm:justify-end">
-								<Button
-									variant="outline"
-									onClick={() => setIsOpen(false)}
-									className="w-full sm:w-auto h-10"
-								>
-									Anuluj
-								</Button>
-								<Button
-									onClick={handleExecute}
-									disabled={isPending}
-									className="w-full sm:w-auto h-10 bg-green-600 hover:bg-green-700 font-bold uppercase tracking-wider text-xs"
-								>
-									{isPending ? (
-										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									) : (
-										"Kupuję Aktywo"
-									)}
-								</Button>
-							</DialogFooter>
-						</DialogContent>
-					</Dialog>
-
-					{/* EN: Reusing the same DeleteButton from assets list */}
-					<DeleteButton
-						id={plan.id}
-						onDelete={deleteInvestmentPlan}
-						confirmMsg={`Usunąć plan: ${plan.name}?`}
-					/>
-				</div>
-			</div>
+					<DialogFooter>
+						<Button
+							onClick={handleExecute}
+							disabled={isPending || (isBooked && !sourcePortfolioId)}
+							className="w-full h-14 bg-green-600 hover:bg-green-700 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-green-500/20 transition-all active:scale-95"
+						>
+							{isPending ? (
+								<Loader2 className="h-5 w-5 animate-spin" />
+							) : (
+								"Zatwierdź i Kupuję"
+							)}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

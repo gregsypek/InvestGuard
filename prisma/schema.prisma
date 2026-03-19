@@ -97,12 +97,12 @@ model Portfolio {
 }
 
 model InvestmentPlan {
-  id          String  @id @default(cuid())
-  name        String // np. "ETF MSCI World"
-  ticker      String? // np. "EUNL.DE"
-  value       Float // Kwota planowana
-  plannedDate String // Format "YYYY-MM" (dla Twojego kalendarza)
-
+  id             String   @id @default(cuid())
+  name           String // np. "ETF MSCI World"
+  ticker         String? // np. "EUNL.DE"
+  value          Float // Kwota planowana
+  plannedDate    String // Format "YYYY-MM" (dla Twojego kalendarza)
+  conviction     Int? // Twoje przekonanie 0-100
   // Docelowe przeznaczenie (używamy Twoich stałych kategorii)
   targetCategory Category
 

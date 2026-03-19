@@ -42,26 +42,29 @@ export async function addAssetAction(formData: FormData) {
 	const investedCapital = Number(formData.get("investedCapital"));
 	const currentValue = Number(formData.get("currentValue"));
 
+	const convictionRaw = formData.get("conviction");
+	const conviction = convictionRaw ? Number(convictionRaw) : null;
+	const rationale = formData.get("rationale") as string;
+
 	const executedAtRaw = formData.get("executedAt") as string;
 	const executedAt = executedAtRaw ? new Date(executedAtRaw) : new Date();
 	const name = formData.get("name") as string;
 	const ticker = (formData.get("ticker") as string)?.trim() || null;
 	const category = formData.get("category") as Category;
 
-	const isBond = category === "BONDS"; // EN: Identify if it's a bond tranche
+	const isBond = category === "BONDS";
 	const purchaseDateRaw = formData.get("purchaseDate") as string;
 	const purchaseDate = purchaseDateRaw ? new Date(purchaseDateRaw) : executedAt;
-	// EN: MAGIC TRICK - Append timestamp to bond tickers to bypass DB constraints
 	const dbTicker = isBond && ticker ? `${ticker}_${Date.now()}` : ticker;
 
 	try {
 		let targetAssetId = existingAssetId;
 
-		// 1. ZMODYFIKOWANE SZUKANIE 🛡️
-		// EN: Skip searching for duplicates if it's a bond
+		// 1. ZMODYFIKOWANE SZUKANIE (✅ FIX: Szukamy tylko w tej samej kategorii!)
 		if (!isBond && (!targetAssetId || targetAssetId === "new")) {
-			const searchConditions: any[] = [{ name, portfolioId }];
-			if (ticker) searchConditions.push({ ticker, portfolioId });
+			// Wymuszamy dopasowanie kategorii, aby Booster nie połączył się ze zwykłymi akcjami
+			const searchConditions: any[] = [{ name, portfolioId, category }];
+			if (ticker) searchConditions.push({ ticker, portfolioId, category });
 
 			const existing = await db.asset.findFirst({
 				where: { OR: searchConditions },
@@ -69,29 +72,31 @@ export async function addAssetAction(formData: FormData) {
 			if (existing) targetAssetId = existing.id;
 		}
 
-		// 2. AKTUALIZACJA LUB TWORZENIE ⚖️
+		// 2. AKTUALIZACJA LUB TWORZENIE
 		if (!isBond && targetAssetId && targetAssetId !== "new") {
-			// EN: Update existing stock/crypto
 			await db.asset.update({
 				where: { id: targetAssetId },
 				data: {
 					quantity: { increment: quantity },
 					investedCapital: { increment: investedCapital },
 					currentValue: { increment: currentValue },
+					conviction: conviction !== null ? conviction : undefined,
+					rationale: rationale || undefined,
 				},
 			});
 		} else {
-			// EN: Always create a new record for bonds, using the unique dbTicker
 			const newAsset = await db.asset.create({
 				data: {
 					name,
-					ticker: dbTicker, // <-- Używamy unikalnego tickera!
+					ticker: dbTicker,
 					quantity,
 					investedCapital,
 					currentValue,
 					category,
 					portfolioId,
 					purchaseDate,
+					conviction,
+					rationale,
 					interestRate: 0,
 					targetPercentage: 0,
 				},
@@ -99,28 +104,31 @@ export async function addAssetAction(formData: FormData) {
 			targetAssetId = newAsset.id;
 		}
 
-		// 3. ZAPIS DO HISTORII 📜
+		// 3. ZAPIS DO HISTORII
 		await db.transactionHistory.create({
 			data: {
 				portfolioId,
 				assetName: name,
-				ticker: dbTicker, // <-- Tu też używamy unikalnego
+				ticker: dbTicker,
 				quantity,
 				executedValue: investedCapital,
 				executedAt,
 				category,
-				rationale: existingAssetId !== "new" ? "Dokupienie" : "Pierwszy zakup",
+				rationale:
+					rationale ||
+					(existingAssetId !== "new" ? "Dokupienie" : "Pierwszy zakup"),
 			},
 		});
 
 		revalidatePath("/dashboard");
-		revalidatePath("/bond-reports"); // EN: Make sure reports page refreshes too
+		revalidatePath("/bond-reports");
+		revalidatePath("/alpha"); // ✅ Odświeża stronę Boosterów
 
 		return {
 			success: true,
 			portfolioId,
 			newAssetId: targetAssetId,
-			message: "Dodano aktywo! 🚀",
+			message: "Aktywo dodane pomyślnie! 🚀",
 		};
 	} catch (error) {
 		console.error("Database error while adding asset:", error);

@@ -1,7 +1,8 @@
+// components/AddAssetForm.tsx
 "use client";
 
 import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
-import { Coins, Landmark, PlusCircle, Recycle } from "lucide-react";
+import { Coins, Landmark, PlusCircle, Recycle, TrendingUp } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -9,13 +10,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import AddBondForm from "./AddBondForm"; // EN: Import the bond form component
+import AddBondForm from "./AddBondForm";
 import BulbTip from "@/components/shared/BulbTip";
 import { Button } from "../button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import { addAssetAction } from "@/lib/actions/asset-actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -37,35 +40,63 @@ export default function AddAssetForm({
 	allowedCategories = [],
 	existingAssets = [],
 }: AddAssetFormProps) {
-	console.log("🚀 ~ AddAssetForm ~ portfolioId:", portfolioId);
 	const router = useRouter();
 	const formRef = useRef<HTMLFormElement>(null);
 	const [isPending, setIsPending] = useState(false);
 
-	// --- STANY WIDOKU ---
-	// EN: Added viewMode to switch between asset types and 'bond' mode
 	const [viewMode, setViewMode] = useState<"asset" | "bond">("asset");
-	const [isAddingNew, setIsAddingNew] = useState(true);
-
-	// --- STANY FORMULARZA AKTYWÓW ---
-	const [selectedAssetId, setSelectedAssetId] = useState<string>("new");
 	const [selectedCategory, setSelectedCategory] = useState<string>("");
-	const [ticker, setTicker] = useState("");
+	const [isAddingNew, setIsAddingNew] = useState(true);
+	const [selectedAssetId, setSelectedAssetId] = useState<string>("new");
+
 	const [name, setName] = useState("");
+	const [ticker, setTicker] = useState("");
 	const [quantity, setQuantity] = useState<number>(0);
 	const [investedCapital, setInvestedCapital] = useState<number>(0);
 
-	const isCash = selectedCategory === "CASH";
+	const [conviction, setConviction] = useState<number>(50);
+	const [rationale, setRationale] = useState<string>("");
 
-	const handleExistingAssetChange = (assetId: string) => {
-		setSelectedAssetId(assetId);
-		if (assetId === "new") {
+	// ✅ FIX: useMemo zapobiega błędom w useEffect ("missing dependency")
+	const filteredCategories = useMemo(
+		() => allowedCategories.filter((cat) => cat !== "BONDS"),
+		[allowedCategories],
+	);
+	const isCashHub =
+		allowedCategories.includes("CASH") && filteredCategories.length === 1;
+	const isBondHub =
+		allowedCategories.includes("BONDS") && filteredCategories.length === 0;
+
+	const isCash = selectedCategory === "CASH";
+	const isBooster = selectedCategory === "BOOSTER";
+
+	useEffect(() => {
+		if (isCashHub) {
+			setSelectedCategory("CASH");
+			setTicker("CASH");
+			setName("Gotówka");
+		} else if (filteredCategories.length === 1) {
+			setSelectedCategory(filteredCategories[0]);
+		}
+
+		if (isBondHub) setViewMode("bond");
+		else setViewMode("asset");
+	}, [isCashHub, isBondHub, portfolioId, filteredCategories]);
+
+	useEffect(() => {
+		if (selectedAssetId === "new") {
 			setIsAddingNew(true);
-			setTicker("");
-			setName("");
-			setSelectedCategory("");
+			if (isCashHub) {
+				setTicker("CASH");
+				setName("Gotówka");
+				setSelectedCategory("CASH");
+			} else {
+				setTicker("");
+				setName("");
+				setSelectedCategory("");
+			}
 		} else {
-			const asset = existingAssets.find((a) => a.id === assetId);
+			const asset = existingAssets.find((a) => a.id === selectedAssetId);
 			if (asset) {
 				setIsAddingNew(false);
 				setTicker(asset.ticker || "");
@@ -73,93 +104,68 @@ export default function AddAssetForm({
 				setSelectedCategory(asset.category);
 			}
 		}
-	};
+	}, [selectedAssetId, existingAssets, isCashHub]);
 
 	const handleSubmitAsset = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setIsPending(true);
+		if (!selectedCategory) {
+			toast.error("Wybierz kategorię");
+			return;
+		}
 
+		setIsPending(true);
 		const formData = new FormData();
 		formData.append("portfolioId", portfolioId);
 		formData.append("category", selectedCategory);
-		formData.append("ticker", isCash ? "CASH" : ticker);
-		formData.append("name", isCash ? "Gotówka" : name);
+		formData.append("existingAssetId", selectedAssetId);
+		formData.append("name", name);
+		formData.append("ticker", ticker);
 		formData.append("quantity", quantity.toString());
 		formData.append("investedCapital", investedCapital.toString());
 		formData.append("currentValue", investedCapital.toString());
 
+		if (isBooster) {
+			formData.append("conviction", conviction.toString());
+			formData.append("rationale", rationale);
+		}
+
 		try {
 			const result = await addAssetAction(formData);
 			if (result.success) {
-				toast.success(isCash ? "Zaksięgowano gotówkę" : "Zapisano operację");
+				toast.success(result.message);
 				formRef.current?.reset();
+				setName("");
+				setTicker("");
 				setQuantity(0);
 				setInvestedCapital(0);
-				if (isAddingNew) {
-					setTicker("");
-					setName("");
-					setSelectedCategory("");
-				}
+				setRationale("");
+				setConviction(50);
+				setSelectedAssetId("new");
 				router.refresh();
 			} else {
-				toast.error(result.message || "Wystąpił błąd");
+				toast.error(result.message);
 			}
 		} catch {
-			toast.error("Błąd połączenia z serwerem");
+			toast.error("Wystąpił błąd");
 		} finally {
 			setIsPending(false);
 		}
 	};
-	// --- LOGIKA POMOCNICZA (nad useEffect) ---
-	const filteredCategories = allowedCategories.filter((cat) => cat !== "BONDS");
-
-	// Sprawdzamy, czy portfel ma tylko jedną kategorię (Hub)
-	const isCashHub =
-		allowedCategories.includes("CASH") && filteredCategories.length === 1;
-	const isBondHub =
-		allowedCategories.includes("BONDS") && filteredCategories.length === 0;
-
-	const defaultCat =
-		filteredCategories.length === 1 ? filteredCategories[0] : "";
-
-	useEffect(() => {
-		// MASTER RESET: Czyścimy wszystko przy zmianie portfela
-		setIsAddingNew(true);
-		setSelectedAssetId("new");
-		setQuantity(0);
-		setInvestedCapital(0);
-		setTicker("");
-		setName("");
-
-		if (isBondHub) {
-			setViewMode("bond");
-			setSelectedCategory("BONDS");
-		} else if (isCashHub) {
-			setViewMode("asset");
-			setSelectedCategory("CASH");
-			setTicker("CASH");
-			setName("Gotówka");
-		} else {
-			setViewMode("asset");
-			setSelectedCategory("");
-		}
-	}, [portfolioId, isCashHub, isBondHub]); // Reaguje na zmianę ID portfela
 
 	return (
-		<div className="space-y-6">
-			{/* --- SELEKTOR TRYBÓW (Zintegrowany) --- */}
-			<div className="flex bg-muted/50 p-1 rounded-xl w-fit border border-border items-center">
+		<div className="space-y-6 animate-in fade-in duration-300">
+			<div className="flex p-1  w-fit  items-center gap-3">
 				<button
 					type="button"
 					onClick={() => {
 						setViewMode("asset");
-						handleExistingAssetChange("new");
+						setSelectedAssetId("new");
 					}}
 					className={cn(
 						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
 						viewMode === "asset" && isAddingNew
-							? "bg-background shadow-sm text-primary"
-							: "text-muted-foreground hover:text-foreground",
+							? "bg-background shadow-md text-primary border border2"
+							: "text-muted-foreground hover:text-foreground border",
 					)}
 				>
 					<PlusCircle size={14} /> Nowe Aktywo / Gotówka
@@ -171,27 +177,27 @@ export default function AddAssetForm({
 						onClick={() => {
 							setViewMode("asset");
 							setIsAddingNew(false);
+							setSelectedAssetId(existingAssets[0].id);
 						}}
 						className={cn(
 							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
 							viewMode === "asset" && !isAddingNew
-								? "bg-background shadow-sm text-primary"
-								: "text-muted-foreground hover:text-foreground",
+								? "bg-background shadow-sm text-primary border border2"
+								: "text-muted-foreground hover:text-foreground border",
 						)}
 					>
 						<Recycle size={14} /> Dokup istniejące
 					</button>
 				)}
 
-				{/* EN: Button instead of Link to stay on the same page */}
 				<button
 					type="button"
 					onClick={() => setViewMode("bond")}
 					className={cn(
-						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border-l border-border/50 ml-1",
+						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all  ml-1",
 						viewMode === "bond"
-							? "bg-background shadow-sm text-primary"
-							: "text-muted-foreground hover:text-foreground",
+							? "bg-background shadow-sm text-primary border border2"
+							: "text-muted-foreground hover:text-foreground border",
 					)}
 				>
 					<Landmark className="h-4 w-4" />
@@ -199,42 +205,29 @@ export default function AddAssetForm({
 				</button>
 			</div>
 
-			{/* --- RENDEROWANIE ODPOWIEDNIEGO FORMULARZA --- */}
+			{/* RENDEROWANIE ZAWARTOŚCI ZAKŁADKI */}
 			{viewMode === "bond" ? (
-				<div className="animate-in fade-in slide-in-from-top-1 duration-200">
-					<AddBondForm portfolioId={portfolioId} />
-				</div>
+				// Formularz Obligacji renderuje się PONIŻEJ zakładek
+				<AddBondForm portfolioId={portfolioId} />
 			) : (
-				<form
-					ref={formRef}
-					onSubmit={handleSubmitAsset}
-					className="space-y-6 animate-in fade-in slide-in-from-top-1 duration-200"
-				>
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end">
-						{/* SELEKCJA ISTNIEJĄCEGO */}
+				// Formularz Aktywów
+				<form ref={formRef} onSubmit={handleSubmitAsset}>
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end  p-4 ">
 						{!isAddingNew && (
-							<div className="flex flex-col gap-1">
+							<div className="flex flex-col col-span-2">
 								<Label className="text-xs font-bold uppercase opacity-60">
 									Wybierz z portfela
 								</Label>
-
 								<Select
-									onValueChange={handleExistingAssetChange}
-									// Jeśli selectedAssetId to "new", przesyłamy undefined, co aktywuje placeholder
-									value={
-										selectedAssetId === "new" ? undefined : selectedAssetId
-									}
+									value={selectedAssetId}
+									onValueChange={setSelectedAssetId}
 								>
 									<SelectTrigger className={inputStyles}>
 										<SelectValue placeholder="Wybierz aktywo" />
 									</SelectTrigger>
 									<SelectContent>
 										{existingAssets.map((asset) => (
-											<SelectItem
-												key={asset.id}
-												value={asset.id}
-												className="cursor-pointer"
-											>
+											<SelectItem key={asset.id} value={asset.id}>
 												<div className="flex items-center gap-2">
 													<Coins className="h-4 w-4 text-amber-500" />
 													{asset.name} ({asset.ticker?.split("_")[0]})
@@ -246,22 +239,20 @@ export default function AddAssetForm({
 							</div>
 						)}
 
-						{/* KATEGORIA */}
-						<div className="flex flex-col gap-1">
+						<div className="flex flex-col gap-1 col-span-2">
 							<Label className="text-xs font-bold uppercase opacity-60">
 								Kategoria
 							</Label>
 							<Select
-								onValueChange={(value) => {
-									setSelectedCategory(value);
-									if (value === "CASH") {
+								value={selectedCategory}
+								onValueChange={(val) => {
+									setSelectedCategory(val);
+									if (val === "CASH") {
 										setTicker("CASH");
 										setName("Gotówka");
 									}
 								}}
 								disabled={!isAddingNew}
-								value={selectedCategory || defaultCat}
-								required
 							>
 								<SelectTrigger className={inputStyles}>
 									<SelectValue placeholder="Wybierz typ" />
@@ -289,13 +280,13 @@ export default function AddAssetForm({
 							</Select>
 						</div>
 
-						{/* TICKER & NAZWA & ILOŚĆ & WKŁAD (Twoja istniejąca logika) */}
+						{/* TICKER & NAZWA & ILOŚĆ & WKŁAD  */}
 						<div className="space-y-2">
 							<Label className="text-xs font-bold uppercase opacity-60">
 								{isCash ? "Identyfikator" : "Ticker"}
 							</Label>
 							<Input
-								value={isCash ? "CASH" : ticker.split("_")[0]}
+								value={isCash ? "CASH" : ticker}
 								onChange={(e) => setTicker(e.target.value.toUpperCase())}
 								disabled={isCash || !isAddingNew}
 								className={cn(inputStyles, isCash && "bg-muted font-bold")}
@@ -303,7 +294,7 @@ export default function AddAssetForm({
 							/>
 						</div>
 
-						<div className="space-y-2">
+						<div className="space-y-2 lg:col-span-1">
 							<Label className="text-xs font-bold uppercase opacity-60">
 								Nazwa
 							</Label>
@@ -316,7 +307,7 @@ export default function AddAssetForm({
 							/>
 						</div>
 
-						<div className="space-y-2">
+						<div className="space-y-2 lg:col-span-1">
 							<Label className="text-xs font-bold uppercase opacity-60">
 								{isCash ? "Kwota (PLN)" : "Liczba jednostek"}
 							</Label>
@@ -335,7 +326,7 @@ export default function AddAssetForm({
 						</div>
 
 						{!isCash && (
-							<div className="space-y-2">
+							<div className="space-y-2 lg:col-span-1">
 								<Label className="text-xs font-bold uppercase opacity-60">
 									Wkład (PLN)
 								</Label>
@@ -350,11 +341,50 @@ export default function AddAssetForm({
 							</div>
 						)}
 
-						<div className="md:col-span-2 lg:col-span-1 lg:col-start-4 xl:col-start-5 flex justify-end">
+						{isBooster && (
+							<div className="md:col-span-2 lg:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 mt-2 bg-blue-500/5 rounded-2xl border border-blue-500/20 animate-in fade-in slide-in-from-top-2">
+								<div className="md:col-span-2 flex items-center gap-2 mb-2">
+									<TrendingUp className="h-4 w-4 text-blue-500" />
+									<h3 className="text-sm font-bold uppercase tracking-tight text-blue-500">
+										Parametry Strategiczne Alpha
+									</h3>
+								</div>
+
+								<div className="space-y-4">
+									<div className="flex justify-between items-center">
+										<Label className="text-xs font-bold uppercase opacity-70">
+											Przekonanie: {conviction}%
+										</Label>
+									</div>
+									<Slider
+										value={[conviction]}
+										max={100}
+										min={1}
+										step={1}
+										onValueChange={(vals) => setConviction(vals[0])}
+										className="py-4"
+									/>
+								</div>
+
+								<div className="space-y-2">
+									<Label className="text-xs font-bold uppercase opacity-70">
+										Teza Inwestycyjna
+									</Label>
+									<Textarea
+										placeholder="Dlaczego dodajesz tę spółkę do segmentu Alpha?"
+										value={rationale}
+										onChange={(e) => setRationale(e.target.value)}
+										className="resize-none h-20 bg-background/50"
+									/>
+								</div>
+							</div>
+						)}
+
+						<div className="md:col-span-2 lg:col-span-1 lg:col-start-4 xl:col-start-5 flex justify-end mt-4">
 							<Button
 								type="submit"
 								disabled={!selectedCategory || isPending || quantity <= 0}
-								className="w-full font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+								className="w-full font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg h-10"
 							>
 								{isPending
 									? "..."
@@ -366,6 +396,7 @@ export default function AddAssetForm({
 							</Button>
 						</div>
 					</div>
+
 					{isCash && (
 						<BulbTip
 							title="Gotówka"

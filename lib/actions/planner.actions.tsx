@@ -23,6 +23,7 @@ export async function createInvestmentPlan(
 		category,
 		rationale,
 		isRecurring,
+		conviction,
 	} = validatedFields.data;
 
 	try {
@@ -36,6 +37,7 @@ export async function createInvestmentPlan(
 				targetCategory: category as Category,
 				rationale,
 				isRecurring,
+				conviction,
 			},
 		});
 		revalidatePath("/planner");
@@ -166,6 +168,7 @@ export async function executePlan(
 						quantity: { increment: calculatedQuantity },
 						investedCapital: { increment: finalValue },
 						currentValue: { increment: finalValue },
+						conviction: plan.conviction || undefined,
 					},
 				});
 			} else {
@@ -181,8 +184,13 @@ export async function executePlan(
 						purchaseDate: executionDate,
 						// ✅ FIX: Nominał 100 PLN dla obligacji (ważne dla tabeli)
 						nominalValue: isBond ? 100 : 0,
+
+						conviction: plan.conviction,
+						rationale: plan.rationale,
+
 						interestRate: 0,
 						targetPercentage: 0,
+						// ✅ PRZEPISYWANIE DANYCH ANALITYCZNYCH
 					},
 				});
 			}
@@ -223,6 +231,7 @@ export async function executePlan(
 			revalidatePath("/dashboard");
 			revalidatePath("/planner");
 			revalidatePath("/activity");
+			revalidatePath("/alpha");
 			return { success: true };
 		});
 	} catch (error: any) {

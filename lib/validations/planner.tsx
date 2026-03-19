@@ -1,6 +1,7 @@
+import * as z from "zod";
+
 // lib/validations/planner.ts
 import { Category } from "@prisma/client";
-import * as z from "zod";
 
 export const PlannerSchema = z.object({
 	name: z.string().min(1, "Nazwa jest wymagana"),
@@ -13,6 +14,7 @@ export const PlannerSchema = z.object({
 	// UI: Używamy nativeEnum dla Enumów Prismy, aby uniknąć błędów walidacji
 	category: z.enum(Category),
 
+	conviction: z.number().min(1).max(100).optional().nullable(),
 	rationale: z.string().optional().nullable(),
 	isRecurring: z.boolean().default(false),
 });

@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label"; // EN: Fixed missing import
 import { PlannerSchema } from "@/lib/validations/planner";
 import { SimpleSwitch } from "@/components/ui/SimpleSwitchProps";
+import { Slider } from "@/components/ui/slider";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 			category: undefined,
 			rationale: "",
 			isRecurring: false,
+			conviction: 50,
 		},
 	});
 
@@ -321,7 +323,72 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 							)}
 						/>
 					</div>
+					{viewMode === "asset" && (
+						<div className="space-y-6 pt-6 border-t border-border/50">
+							<div className="flex items-center gap-2">
+								<div className="h-1 w-8 bg-primary rounded-full" />
+								<h3 className="text-xs font-black uppercase tracking-widest opacity-70">
+									Analiza Strategiczna
+								</h3>
+							</div>
 
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+								{/* POLE: PRZEKONANIE (CONVICTION) */}
+								<FormField
+									control={form.control}
+									name="conviction"
+									render={({ field }) => (
+										<FormItem className="space-y-4">
+											<div className="flex justify-between items-center">
+												<FormLabel className="text-sm font-bold">
+													Poziom przekonania
+												</FormLabel>
+												<span className="text-xs font-black text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20">
+													{field.value || 50}%
+												</span>
+											</div>
+											<FormControl>
+												<Slider
+													min={1}
+													max={100}
+													step={1}
+													defaultValue={[field.value || 50]}
+													onValueChange={(vals) => field.onChange(vals[0])}
+													className="py-4"
+												/>
+											</FormControl>
+											<FormDescription className="text-[10px]">
+												Jak bardzo wierzysz w sukces tej tezy? (Skala 1-100%)
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								{/* POLE: TEZA (RATIONALE) */}
+								<FormField
+									control={form.control}
+									name="rationale"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel className="text-sm font-bold">
+												Teza inwestycyjna
+											</FormLabel>
+											<FormControl>
+												<Textarea
+													placeholder="Np. Spółka jest niedowartościowana o 20% względem sektora, czekam na wyniki kwartalne..."
+													className="resize-none min-h-[100px] bg-background"
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</div>
+						</div>
+					)}
 					<div className="flex justify-end">
 						<SubmitButton
 							label="Zapisz plan"

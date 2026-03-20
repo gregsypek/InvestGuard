@@ -351,7 +351,11 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 														{asset.cleanTicker}
 													</span>
 													<span className="text-[10px] text-blue-500 font-bold">
-														{isAggregatedBond || `${asset.quantity} szt`}
+														{isAggregatedBond ||
+															`${asset.quantity.toLocaleString(undefined, {
+																minimumFractionDigits: 2,
+																maximumFractionDigits: 2,
+															})} szt`}
 													</span>
 												</div>
 											</TableCell>

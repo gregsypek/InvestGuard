@@ -1,11 +1,3 @@
-import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import {
 	ArrowRight,
 	BarChart3,
@@ -14,6 +6,15 @@ import {
 	TrendingUp,
 	Wallet,
 } from "lucide-react";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+
+import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
 	// TYMCZASOWY PRZEŁĄCZNIK WIDOKU
@@ -51,7 +52,7 @@ function GuestOnboarding() {
 			</section>
 
 			{/* Features / Education Grid */}
-			<section className="py-16 px-6 container mx-auto">
+			<section className=" px-6 container mx-auto">
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 					<Card>
 						<CardHeader>

@@ -139,7 +139,7 @@ export default async function ActivityPage({
 											</div>
 										</TableCell>
 
-										{/* 2. AKTYWO */}
+										{/* 2. KOLUMNA: AKTYWO */}
 										<TableCell>
 											<div className="font-bold text-sm">{t.assetName}</div>
 											{t.ticker && (
@@ -149,14 +149,14 @@ export default async function ActivityPage({
 											)}
 										</TableCell>
 
-										{/* 3. PORTFEL */}
+										{/* 2. KOLUMNA: PORTFEL */}
 										<TableCell>
 											<div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
 												{t.portfolio.name}
 											</div>
 										</TableCell>
 
-										{/* 4. KATEGORIA */}
+										{/* 3. KOLUMNA: KATEGORIA */}
 										<TableCell>
 											<div className="flex items-center gap-1.5">
 												<div
@@ -169,7 +169,7 @@ export default async function ActivityPage({
 											</div>
 										</TableCell>
 
-										{/* 5. WARTOŚĆ I ILOŚĆ */}
+										{/* 4. KOLUMNA: WARTOŚĆ I ILOŚĆ */}
 										<TableCell className="text-right font-mono font-bold">
 											<div
 												className={cn(

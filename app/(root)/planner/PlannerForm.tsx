@@ -71,6 +71,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 
 	// EN: Now using isCash to dynamically change labels (fixes 'unused' error)
 	const isCash = selectedCategory === "CASH";
+	const isBooster = selectedCategory === "BOOSTER";
 
 	const filteredCategories = useMemo(() => {
 		return Object.keys(CATEGORY_LABELS).filter((cat) => cat !== "BONDS");
@@ -323,7 +324,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 							)}
 						/>
 					</div>
-					{viewMode === "asset" && (
+					{viewMode === "asset" && isBooster && (
 						<div className="space-y-6 pt-6 border-t border-border/50">
 							<div className="flex items-center gap-2">
 								<div className="h-1 w-8 bg-primary rounded-full" />

@@ -56,6 +56,7 @@ export function PlanCard({
 	hasCashInPortfolio,
 	allPortfoliosWithCash,
 }: PlanCardProps) {
+	console.log("🚀 ~ PlanCard ~ plan:", plan);
 	const router = useRouter();
 	const [isOpen, setIsOpen] = useState(false);
 	const [isPending, setIsPending] = useState(false);
@@ -145,6 +146,11 @@ export function PlanCard({
 								}}
 							/>
 							<h3 className="text-sm  font-bold truncate">{plan.name}</h3>
+							{plan.conviction && (
+								<span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
+									{plan.conviction}% - pewność
+								</span>
+							)}
 						</div>
 						<p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
 							{

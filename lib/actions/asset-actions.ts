@@ -55,6 +55,7 @@ export async function addAssetAction(formData: FormData) {
 	const isBond = category === "BONDS";
 	const purchaseDateRaw = formData.get("purchaseDate") as string;
 	const purchaseDate = purchaseDateRaw ? new Date(purchaseDateRaw) : executedAt;
+	// EN: MAGIC TRICK - Append timestamp to bond tickers to bypass DB constraints
 	const dbTicker = isBond && ticker ? `${ticker}_${Date.now()}` : ticker;
 
 	try {

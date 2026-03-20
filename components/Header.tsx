@@ -41,20 +41,23 @@ export default function Header({
 
 	// 3. Funkcja obsługi zmiany
 	const handlePortfolioChange = (id: string) => {
+		// 1. Zapisujemy wybór w ciastku
 		Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
 
-		if (
-			pathname.includes("/bond-reports/") &&
-			pathname.includes("/add-asset")
-		) {
-			// Zamieniamy ID w ścieżce dynamicznej
-			const newPath = pathname.replace(idFromPath, id);
-			router.push(newPath);
+		// 2. Pobieramy aktualną ścieżkę
+		const segments = window.location.pathname.split("/");
+		const dashboardIndex = segments.indexOf("dashboard");
+
+		if (dashboardIndex !== -1 && segments[dashboardIndex + 1]) {
+			// Podmieniamy segment ID (zaraz po 'dashboard')
+			segments[dashboardIndex + 1] = id;
+			const newPath = segments.join("/");
+
+			// 3. Twarde przeładowanie na nowy adres bez pytajników
+			window.location.href = newPath;
 		} else {
-			// Standardowa nawigacja z parametrem
-			const params = new URLSearchParams(searchParams.toString());
-			params.set("portfolioId", id);
-			router.push(`${pathname}?${params.toString()}`);
+			// Jeśli jesteśmy na /dashboard, idziemy do konkretnego portfela
+			window.location.href = `/dashboard/${id}`;
 		}
 	};
 

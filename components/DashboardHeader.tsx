@@ -1,9 +1,13 @@
-import { Container, Wallet2 } from "lucide-react";
+"use client";
 
+import { ChevronLeft, Container, Wallet2 } from "lucide-react";
+
+import Link from "next/link";
 import { PortfolioWithAssets } from "@/lib/types";
 import { calculateAssetPL } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
+import { usePathname } from "next/navigation";
 
 type Props = {
 	portfolio: PortfolioWithAssets;
@@ -17,6 +21,9 @@ export const DashboardHeader = ({
 	name,
 	customBreadcrumbs,
 }: Props) => {
+	const pathname = usePathname(); // EN: Get current URL path
+	// EN: Check if we are currently on the add-asset subpage
+	const isAddAssetPage = pathname.endsWith("/add-asset");
 	// 1. Hooki (zawsze na górze)
 	const assets = useMemo(() => portfolio?.assets || [], [portfolio?.assets]);
 	const assetsWithPL = useMemo(() => {
@@ -51,25 +58,37 @@ export const DashboardHeader = ({
 	// Zmienna pomocnicza, by sprawdzić czy mamy już dane do statystyk
 	const isLoading = !portfolio || !portfolio.assets;
 
+	// EN: Define default breadcrumbs based on current route
+	const defaultBreadcrumbs = isAddAssetPage ? (
+		<div className="flex items-center gap-2 mb-2">
+			<Link href={`/dashboard/${portfolio.id}`}>
+				<ChevronLeft className="h-4 w-4 text-primary hover:scale-110 transition-transform" />
+			</Link>
+			<nav className="text-sm text-muted-foreground italic">
+				Panel Główny / {name} /{" "}
+				<span className="text-primary font-medium">Dodaj aktywo</span>
+			</nav>
+		</div>
+	) : (
+		<nav className="text-sm text-muted-foreground mb-2 italic">
+			Panel Główny / <span className="text-primary font-medium">{name}</span>
+		</nav>
+	);
+
 	return (
 		<header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 			{/* LEWA STRONA: Zawsze widoczna (Breadcrumbs i Tytuł) */}
 			<div>
-				{customBreadcrumbs ? (
-					customBreadcrumbs
-				) : (
-					<nav className="text-sm text-muted-foreground mb-2 italic">
-						Panel Główny /{" "}
-						<span className="text-primary font-medium">{name}</span>
-					</nav>
-				)}
+				{/* EN: Use custom breadcrumbs if provided, otherwise use our smart default */}
+				{customBreadcrumbs || defaultBreadcrumbs}
 				<div>
-					{/* Dynamiczne {name} zamiast sztywnego tekstu */}
 					<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
 						{name}
 					</h1>
 					<p className="text-muted-foreground font-medium mt-1">
-						Zarządzaj portfelem i kontroluj strategie
+						{isAddAssetPage
+							? "Zarządzaj składem swojego portfela"
+							: "Zarządzaj portfelem i kontroluj strategie"}
 					</p>
 				</div>
 			</div>

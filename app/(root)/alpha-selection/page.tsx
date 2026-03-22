@@ -1,7 +1,11 @@
-"use client";
-
-import { AlphaHeader } from "@/components/AlphaHeader";
-import { BondStatCard } from "@/components/shared/BondStatCard";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Plus, Target, TrendingUp } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -10,84 +14,95 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	Pagination,
-	PaginationContent,
-	PaginationItem,
-	PaginationNext,
-	PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import {
-	Target,
-	TrendingUp,
-	Plus,
-	MoreHorizontal,
-	Lightbulb,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import AddButton from "@/components/ui/AddButton";
-import Link from "next/link";
-import BulbTip from "@/components/shared/BulbTip";
 
-export default function AlphaSelectionPage() {
+import AddButton from "@/components/ui/AddButton";
+import { AlphaHeader } from "@/components/AlphaHeader";
+import { BondStatCard } from "@/components/shared/BondStatCard";
+import { BoosterActionsClient } from "@/components/alpha/BoosterActionsClient";
+import BulbTip from "@/components/shared/BulbTip";
+import { Category } from "@prisma/client";
+import Link from "next/link";
+import { Progress } from "@/components/ui/progress";
+import { auth } from "@/auth";
+import { cn } from "@/lib/utils";
+import { db } from "@/lib/db";
+import { getActivePortfolioId } from "@/lib/session";
+import { redirect } from "next/navigation";
+
+// Dodano import DropdownMenu
+
+export default async function AlphaSelectionPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ portfolioId?: string }>;
+}) {
+	// Pobieramy ID aktywnego portfela
+	const activeId = await getActivePortfolioId(searchParams);
+
+	// Jeśli nie ma żadnego portfela, kierujemy do domyślnego dashboardu,
+	// ale zakładamy, że użytkownik Alpha ma już portfel.
+	const targetUrl = activeId
+		? `/dashboard/${activeId}/add-asset?cat=BOOSTER`
+		: "/dashboard";
+	const session = await auth();
+	if (!session?.user?.id) redirect("/sign-in");
+
+	const userPortfolio = await db.portfolio.findFirst({
+		where: { userId: session.user.id },
+	});
+
+	const targetPortfolioId = userPortfolio?.id || "default";
+
+	// 1. FETCH DATA: Get only Booster assets for this user
+	const boosterAssets = await db.asset.findMany({
+		where: {
+			category: "BOOSTER" as Category,
+			portfolio: { userId: session.user.id },
+		},
+		include: { portfolio: true },
+		orderBy: { conviction: "desc" },
+	});
+	console.log("🚀 ~ AlphaSelectionPage ~ boosterAssets:", boosterAssets);
+
+	// 2. FETCH TOTAL PORTFOLIO VALUE: For the "Share" KPI
+	const allAssets = await db.asset.findMany({
+		where: { portfolio: { userId: session.user.id } },
+		select: { currentValue: true },
+	});
+
+	const totalPortfolioValue = allAssets.reduce(
+		(sum, a) => sum + a.currentValue,
+		0,
+	);
+	const totalBoosterValue = boosterAssets.reduce(
+		(sum, a) => sum + a.currentValue,
+		0,
+	);
+
+	// 3. CALCULATE KPIs
+	// EN: Portfolio share calculation
+	const sharePercentage =
+		totalPortfolioValue > 0
+			? (totalBoosterValue / totalPortfolioValue) * 100
+			: 0;
+
+	// EN: Aggregate ROI for the Booster segment
+	const totalInvested = boosterAssets.reduce(
+		(sum, a) => sum + a.investedCapital,
+		0,
+	);
+	const totalCurrent = boosterAssets.reduce(
+		(sum, a) => sum + a.currentValue,
+		0,
+	);
+	const boosterRoi =
+		totalInvested > 0
+			? ((totalCurrent - totalInvested) / totalInvested) * 100
+			: 0;
+
 	// EN: Mock variables for pagination
 	const currentPage = 1;
 	const totalPages = 5;
-
-	// EN: Mock data - simplified colors for the tabular layout
-	const alphaBets = [
-		{
-			id: "1",
-			ticker: "META",
-			name: "Meta Platforms",
-			thesis: "Monetyzacja AI w ekosystemie reklamowym i dominacja VR/AR.",
-			conviction: 85,
-			roi: 18.4,
-			risk: "Średnie",
-			riskColor: "bg-blue-500",
-			progressColor: "bg-blue-600",
-		},
-		{
-			id: "2",
-			ticker: "PBR",
-			name: "Petrobras",
-			thesis:
-				"Niedowartościowany sektor surowców w Ameryce Łacińskiej i wysoka dywidenda.",
-			conviction: 60,
-			roi: -2.1,
-			risk: "Wysokie",
-			riskColor: "bg-red-500",
-			progressColor: "bg-emerald-600",
-		},
-
-		{
-			id: "2",
-			ticker: "PBR",
-			name: "Petrobras",
-			thesis:
-				"Niedowartościowany sektor surowców w Ameryce Łacińskiej i wysoka dywidenda.",
-			conviction: 60,
-			roi: -2.1,
-			risk: "Wysokie",
-			riskColor: "bg-red-500",
-			progressColor: "bg-emerald-600",
-		},
-
-		{
-			id: "2",
-			ticker: "PBR",
-			name: "Petrobras",
-			thesis:
-				"Niedowartościowany sektor surowców w Ameryce Łacińskiej i wysoka dywidenda.",
-			conviction: 60,
-			roi: -2.1,
-			risk: "Wysokie",
-			riskColor: "bg-red-500",
-			progressColor: "bg-emerald-600",
-		},
-	];
 
 	return (
 		<div className="space-y-10 ">
@@ -106,22 +121,22 @@ export default function AlphaSelectionPage() {
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 				<BondStatCard
 					title="Udział w Portfelu"
-					value="7.5%"
+					value={`${sharePercentage.toFixed(1)}%`}
 					description="Sugerowany limit: 10%"
-					variant="orange"
+					variant={sharePercentage > 10 ? "orange" : "neutral"}
 					iconColor="text-orange-600"
 				/>
 				<BondStatCard
-					title="Wynik Selekcji"
-					value="+4.2 pp"
-					description="Wynik ponad benchmark"
-					variant="green"
+					title="Wynik Selekcji (ROI)"
+					value={`${boosterRoi >= 0 ? "+" : ""}${boosterRoi.toFixed(2)}%`}
+					description="Całkowity zwrot segmentu"
+					valueColor={boosterRoi >= 0 ? "green" : "red"}
 					icon={TrendingUp}
 				/>
 				<BondStatCard
-					title="Termin Weryfikacji"
-					value="lipiec 2026"
-					description="Kwartalny przegląd tez"
+					title="Liczba Pozycji"
+					value={boosterAssets.length.toString()}
+					description="Aktywne tezy inwestycyjne"
 					variant="neutral"
 					icon={Target}
 				/>
@@ -130,7 +145,6 @@ export default function AlphaSelectionPage() {
 			{/* EN: Main Table Section */}
 			<div className="flex flex-col min-h-[calc(100vh-350px)] space-y-6 justify-between pt-4">
 				{/* EN: Toolbar with integrated inline BulbTip */}
-				{/* UI: Toolbar ze zintegrowaną wskazówką zamiast wielkiego komponentu */}
 				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
 					<div className="space-y-1">
 						<h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -145,22 +159,26 @@ export default function AlphaSelectionPage() {
 					</div>
 
 					<AddButton className="gap-2 shadow-sm h-9">
-						<Link href={"/aplha/new"} className="gap-2 flex items-center">
+						<Link href={targetUrl} className="gap-2 flex items-center">
 							<Plus className="h-4 w-4" />
 							Nowa Teza
 						</Link>
 					</AddButton>
 				</div>
 
-				{/* EN: Table Container */}
+				{/* EN: Table Container - Poprawiono wyrównanie kolumn i dodano menu Akcji */}
 				<div className="w-full ">
 					<Table>
 						<TableHeader className="bg-muted/30">
 							<TableRow className="border-border hover:bg-transparent">
 								<TableHead className="font-bold">Aktywo</TableHead>
 								<TableHead className="font-bold">Ryzyko</TableHead>
-								<TableHead className="font-bold w-50">Przekonanie</TableHead>
+								<TableHead className="font-bold w-48">Przekonanie</TableHead>
 								<TableHead className="font-bold">Teza (Skrót)</TableHead>
+
+								{/* NOWA KOLUMNA: WARTOŚĆ (Header 5) */}
+								<TableHead className="text-right font-bold">Wartość</TableHead>
+
 								<TableHead className="text-right font-bold">
 									Wynik (ROI)
 								</TableHead>
@@ -168,101 +186,113 @@ export default function AlphaSelectionPage() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{alphaBets.length === 0 ? (
-								<TableRow>
-									<TableCell
-										colSpan={6}
-										className="text-center py-12 text-muted-foreground"
-									>
-										Brak aktywnych pozycji w selekcji Alpha.
-									</TableCell>
-								</TableRow>
-							) : (
-								alphaBets.map((bet) => (
+							{boosterAssets.map((asset) => {
+								const individualRoi =
+									asset.investedCapital > 0
+										? ((asset.currentValue - asset.investedCapital) /
+												asset.investedCapital) *
+											100
+										: 0;
+
+								const convictionColor =
+									asset.conviction && asset.conviction > 70
+										? "bg-emerald-600"
+										: "bg-amber-500";
+
+								return (
 									<TableRow
-										key={bet.id}
+										key={asset.id}
 										className="border-border hover:bg-muted/20 transition-colors group"
 									>
-										{/* Ticker & Name */}
+										{/* 1. AKTYWO */}
 										<TableCell>
-											<div className="font-bold text-sm">{bet.name}</div>
+											<div className="font-bold text-sm">{asset.name}</div>
 											<div className="text-[10px] text-muted-foreground font-mono bg-muted inline-block px-1.5 py-0.5 rounded mt-0.5">
-												{bet.ticker}
+												{asset.ticker}
 											</div>
 										</TableCell>
 
-										{/* Risk Indicator */}
+										{/* 2. RYZYKO */}
 										<TableCell>
-											<div className="flex items-center gap-1.5">
+											<div className="flex items-center gap-2">
 												<div
 													className={cn(
-														"w-2 h-2 rounded-full border border-border shadow-xs",
-														bet.riskColor,
+														"h-1.5 w-1.5 rounded-full border border-border shadow-xs",
+														convictionColor,
 													)}
 												/>
-												<span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-													{bet.risk}
+												<span className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground opacity-90">
+													{asset.conviction && asset.conviction > 70
+														? "Niskie"
+														: "Średnie"}
 												</span>
 											</div>
 										</TableCell>
 
-										{/* Conviction Bar */}
+										{/* 3. PRZEKONANIE */}
 										<TableCell>
 											<div className="space-y-1.5 pr-4">
 												<div className="flex justify-between text-[10px] font-bold text-muted-foreground">
-													<span>POZIOM</span>
-													<span>{bet.conviction}%</span>
+													<span>PEWNOŚĆ</span>
+													<span>{asset.conviction}%</span>
 												</div>
 												<Progress
-													value={bet.conviction}
+													value={asset.conviction || 0}
 													className="h-1.5 bg-muted"
-													indicatorColor={bet.progressColor}
+													indicatorColor={convictionColor}
 												/>
 											</div>
 										</TableCell>
 
-										{/* Thesis Rationale */}
-										<TableCell className="max-w-40 xl:max-w-64 truncate text-xs text-muted-foreground italic">
-											&quot;{bet.thesis}&quot;
+										{/* 4. TEZA */}
+										<TableCell className="max-w-40 xl:max-w-64">
+											<p className="text-xs text-muted-foreground italic truncate">
+												&quot;{asset.rationale || "Brak opisanej tezy..."}&quot;
+											</p>
 										</TableCell>
 
-										{/* ROI Value */}
+										{/* 5. NOWA KOMÓRKA: WARTOŚĆ (Wyrównana z Header 5) */}
+										<TableCell className="text-right">
+											<div className="text-sm font-bold font-mono">
+												{asset.currentValue.toLocaleString()}{" "}
+												<span className="text-[10px] text-muted-foreground">
+													PLN
+												</span>
+											</div>
+											<div className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter">
+												Wkład: {asset.investedCapital.toLocaleString()}
+											</div>
+										</TableCell>
+
+										{/* 6. ROI */}
 										<TableCell
 											className={cn(
 												"text-right font-mono font-bold text-sm",
-												bet.roi >= 0 ? "text-green-600" : "text-red-500",
+												individualRoi >= 0 ? "text-green-600" : "text-red-500",
 											)}
 										>
-											{bet.roi > 0 && "+"}
-											{bet.roi.toFixed(1)}%
+											{individualRoi > 0 && "+"}
+											{individualRoi.toFixed(1)}%
 										</TableCell>
 
-										{/* Actions */}
+										{/* 7. AKCJE */}
 										<TableCell className="text-right">
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-8 w-8 text-muted-foreground hover:text-primary  transition-opacity cursor-pointer"
-											>
-												<MoreHorizontal className="h-4 w-4" />
-											</Button>
+											<BoosterActionsClient asset={asset} />
 										</TableCell>
 									</TableRow>
-								))
-							)}
+								);
+							})}
 						</TableBody>
 					</Table>
 				</div>
 
 				{/* EN: Pagination - pushed to bottom via mt-auto */}
-				{/* UI: Paginacja - spychana na dół za pomocą mt-auto */}
 				{totalPages > 1 && (
 					<div className="mt-auto pt-8 flex justify-center">
 						<Pagination>
 							<PaginationContent className="bg-card/50 border border-border rounded-full px-2 shadow-sm">
 								<PaginationItem>
 									<PaginationPrevious
-										// FIX: Zmieniono linki z /activity na /alpha i dodano zmienne
 										href={`/alpha?page=${Math.max(1, currentPage - 1)}`}
 										aria-disabled={currentPage <= 1}
 										className={

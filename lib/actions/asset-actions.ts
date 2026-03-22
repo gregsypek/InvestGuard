@@ -49,31 +49,53 @@ export async function addAssetAction(formData: FormData) {
 	const executedAtRaw = formData.get("executedAt") as string;
 	const executedAt = executedAtRaw ? new Date(executedAtRaw) : new Date();
 	const name = formData.get("name") as string;
-	const ticker = (formData.get("ticker") as string)?.trim() || null;
+	const ticker =
+		(formData.get("ticker") as string)?.trim().toUpperCase() || null;
 	const category = formData.get("category") as Category;
 
 	const isBond = category === "BONDS";
 	const purchaseDateRaw = formData.get("purchaseDate") as string;
 	const purchaseDate = purchaseDateRaw ? new Date(purchaseDateRaw) : executedAt;
-	// EN: MAGIC TRICK - Append timestamp to bond tickers to bypass DB constraints
-	const dbTicker = isBond && ticker ? `${ticker}_${Date.now()}` : ticker;
 
 	try {
 		let targetAssetId = existingAssetId;
 
-		// 1. ZMODYFIKOWANE SZUKANIE (✅ FIX: Szukamy tylko w tej samej kategorii!)
+		// 1. INTELIGENTNE SZUKANIE (Unikanie P2002)
 		if (!isBond && (!targetAssetId || targetAssetId === "new")) {
-			// Wymuszamy dopasowanie kategorii, aby Booster nie połączył się ze zwykłymi akcjami
-			const searchConditions: any[] = [{ name, portfolioId, category }];
-			if (ticker) searchConditions.push({ ticker, portfolioId, category });
-
+			// Szukamy aktywa o tym samym tickerze w TYM SAMYM portfelu (bez filtrowania kategorii)
 			const existing = await db.asset.findFirst({
-				where: { OR: searchConditions },
+				where: { ticker, portfolioId },
 			});
-			if (existing) targetAssetId = existing.id;
+
+			if (existing) {
+				// Jeśli kategoria się zgadza - aktualizujemy
+				if (existing.category === category) {
+					targetAssetId = existing.id;
+				} else {
+					// Jeśli kategoria jest INNA (np. CASH w Passive vs CASH w Booster)
+					// to MUSIMY stworzyć nowy wpis, ale z innym dbTicker, żeby baza nie wywaliła błędu
+					// targetAssetId pozostaje "new", a my modyfikujemy ticker dla bazy poniżej
+				}
+			}
 		}
 
-		// 2. AKTUALIZACJA LUB TWORZENIE
+		// 2. GENEROWANIE TICKERA DLA BAZY (Magic Trick)
+		// Jeśli to nowa pozycja (targetAssetId === "new"), a ticker już istnieje w bazie (ale w innej kategorii)
+		// lub jeśli to obligacja - dodajemy sufiks czasowy, by zachować unikalność
+		let dbTicker = ticker;
+		if (isBond && ticker) {
+			dbTicker = `${ticker}_${Date.now()}`;
+		} else if (targetAssetId === "new" && ticker) {
+			// Sprawdzamy czy ten konkretny ticker jest już zajęty przez inną kategorię
+			const conflict = await db.asset.findFirst({
+				where: { ticker, portfolioId },
+			});
+			if (conflict) {
+				dbTicker = `${ticker}_${category}`; // np. CASH_BOOSTER
+			}
+		}
+
+		// 3. AKTUALIZACJA LUB TWORZENIE
 		if (!isBond && targetAssetId && targetAssetId !== "new") {
 			await db.asset.update({
 				where: { id: targetAssetId },
@@ -105,7 +127,7 @@ export async function addAssetAction(formData: FormData) {
 			targetAssetId = newAsset.id;
 		}
 
-		// 3. ZAPIS DO HISTORII
+		// 4. ZAPIS DO HISTORII (Używamy dbTicker, aby transakcja była powiązana z właściwym rekordem)
 		await db.transactionHistory.create({
 			data: {
 				portfolioId,
@@ -122,21 +144,17 @@ export async function addAssetAction(formData: FormData) {
 		});
 
 		revalidatePath("/dashboard");
-		revalidatePath("/bond-reports");
-		revalidatePath("/alpha"); // ✅ Odświeża stronę Boosterów
+		revalidatePath("/alpha");
 
 		return {
 			success: true,
-			portfolioId,
-			newAssetId: targetAssetId,
 			message: "Aktywo dodane pomyślnie! 🚀",
 		};
 	} catch (error) {
-		console.error("Database error while adding asset:", error);
+		console.error("Database error:", error);
 		return { success: false, message: "Błąd bazy danych" };
 	}
 }
-
 export async function sellAssetAction(formData: FormData) {
 	// Extracting data from the modal form
 	const assetId = formData.get("assetId") as string;
@@ -301,4 +319,32 @@ export async function adjustAssetAction(formData: FormData) {
 
 		return { success: true };
 	});
+}
+
+export async function deleteAssetAction(id: string) {
+	try {
+		await db.asset.delete({ where: { id } });
+		revalidatePath("/alpha");
+		revalidatePath("/dashboard");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Błąd podczas usuwania" };
+	}
+}
+
+export async function updateAlphaDetails(
+	id: string,
+	conviction: number,
+	rationale: string,
+) {
+	try {
+		await db.asset.update({
+			where: { id },
+			data: { conviction, rationale },
+		});
+		revalidatePath("/alpha");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Błąd podczas aktualizacji" };
+	}
 }

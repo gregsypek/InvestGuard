@@ -3,7 +3,14 @@
 import * as z from "zod";
 
 import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
-import { Coins, Landmark, PlusCircle, Recycle, TrendingUp } from "lucide-react";
+import {
+	Coins,
+	Landmark,
+	Plus,
+	PlusCircle,
+	Recycle,
+	TrendingUp,
+} from "lucide-react";
 import {
 	Form,
 	FormControl,
@@ -24,9 +31,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { AddAssetSchema } from "@/lib/validations/asset";
 import AddBondForm from "./AddBondForm";
+import AddButton from "../AddButton";
 import { Button } from "../button";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 import { Slider } from "@/components/ui/slider";
+import { SubmitButton } from "../SubmitButton";
 import { Textarea } from "@/components/ui/textarea";
 import { addAssetAction } from "@/lib/actions/asset-actions";
 import { cn } from "@/lib/utils";
@@ -159,7 +169,6 @@ export default function AddAssetForm({
 		setIsPending(false);
 	};
 
-	console.log("🚀 ~ AddAssetForm ~ allowedCategories:", allowedCategories);
 	return (
 		<div className="space-y-6 animate-in fade-in duration-300">
 			{/* NAWIGACJA ZAKŁADEK */}
@@ -401,19 +410,14 @@ export default function AddAssetForm({
 							/>
 
 							<div className="lg:col-span-1 flex justify-end">
-								<Button
-									type="submit"
-									disabled={isPending || (quantityValue ?? 0) <= 0}
-									className="w-full font-bold bg-blue-600 hover:bg-blue-700 h-10 shadow-lg transition-transform active:scale-95"
-								>
-									{isPending
-										? "Przetwarzanie..."
-										: isCash
-											? "Zaksięguj"
-											: isAddingNew
-												? "Dodaj"
-												: "Dokup"}
-								</Button>
+								<SubmitButton
+									label={isCash ? "Zaksięguj" : isAddingNew ? "Dodaj" : "Dokup"}
+									isLoading={isPending}
+									// Przycisk będzie wyłączony jeśli trwa wysyłka LUB ilość <= 0
+									disabled={(quantityValue ?? 0) <= 0}
+									// Nadpisujemy szerokość na pełną, by wypełnił komórkę gridu
+									className="w-full h-10 shadow-lg"
+								/>
 							</div>
 
 							{/* SEKCJA ALPHA */}

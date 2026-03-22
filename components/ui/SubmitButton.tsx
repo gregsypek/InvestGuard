@@ -28,7 +28,7 @@ export function SubmitButton({
 		<Button
 			type="submit"
 			disabled={isDisabled}
-			className={`w-60  font-semibold transition-all border duration-200 active:scale-95 cursor-pointer hover:border-border2 bg-blue-400 ${className || ""}`}
+			className={`w-full  font-semibold transition-all border duration-200 active:scale-95 cursor-pointer hover:border-border2 bg-blue-400 ${className || ""}`}
 		>
 			{isDisabled ? (
 				<>

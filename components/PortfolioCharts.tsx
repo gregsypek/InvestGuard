@@ -8,9 +8,8 @@ interface Props {
 export default function PortfolioCharts({ data }: Props) {
 	const filteredData = data.filter((x) => x.weight > 0);
 
-	console.log("🚀 ~ PortfolioCharts ~ data:", data);
 	return (
-		<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+		<div className="grid lg:grid-cols-2 gap-6 items-stretch ">
 			<PortfolioPieChart
 				data={filteredData}
 				// title="Target Strategy"

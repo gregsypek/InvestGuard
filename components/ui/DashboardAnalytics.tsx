@@ -53,26 +53,16 @@ const DashboardAnalytics = ({
 					<section>
 						<div className="flex justify-between items-center mb-6">
 							<h2 className="text-xl font-bold tracking-tight  flex items-center gap-2">
-								<ArrowRightCircle className="h-5 w-5 text-primary" /> Przewodnik
-								rebalansowania
+								<ArrowRightCircle className="h-5 w-5 text-primary" />
+								Przewodnik rebalansowania
 							</h2>
 						</div>
 						<StrategyHealthTable data={portfolioStatus} />
 					</section>
-
-					<section>
-						<div className="flex justify-between items-center mb-6">
-							<h2 className="text-xl font-bold tracking-tight  flex items-center gap-2">
-								<ChartArea className="h-5 w-5 text-primary" />
-								Strategia Alokacji
-							</h2>
-						</div>
-						<PortfolioCharts data={portfolioStatus} />
-					</section>
 				</div>
 
 				{/* SIDEBAR: Recent Assets (Minimalist style) */}
-				<aside className="space-y-6 ">
+				<aside className="space-y-6">
 					<div className="flex justify-between items-center px-1">
 						<h2 className="text-lg font-bold flex items-center gap-2">
 							Ostatnie aktywa
@@ -115,7 +105,15 @@ const DashboardAnalytics = ({
 					</div>
 				</aside>
 			</div>
-
+			<section>
+				<div className="flex justify-between items-center mb-6">
+					<h2 className="text-xl font-bold tracking-tight  flex items-center gap-2">
+						<ChartArea className="h-5 w-5 text-primary" />
+						Strategia Alokacji
+					</h2>
+				</div>
+				<PortfolioCharts data={portfolioStatus} />
+			</section>
 			{/* --- BOTTOM SECTION: RICH ASSET TABLE --- */}
 			<AssetLedger
 				portfolio={portfolio}

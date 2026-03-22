@@ -54,7 +54,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 	}
 
 	return (
-		<Card className="border-border2 bg-card">
+		<Card className=" bg-background border-none shadow-none">
 			<CardHeader>
 				<CardTitle className="text-xl font-bold text-foreground">
 					Skład i Zdrowie Portfela
@@ -86,7 +86,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 							return (
 								<TableRow
 									key={category}
-									className="border-border2 hover:bg-muted/20 transition-colors"
+									className="border-border hover:bg-muted/20 transition-colors"
 								>
 									<TableCell className="font-medium">
 										<div className="flex items-center gap-3">

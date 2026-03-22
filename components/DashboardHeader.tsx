@@ -4,6 +4,7 @@ import { ChevronLeft, Container, Wallet2 } from "lucide-react";
 
 import Link from "next/link";
 import { PortfolioWithAssets } from "@/lib/types";
+import { ValueCard } from "./shared/ValueCard";
 import { calculateAssetPL } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
@@ -93,7 +94,7 @@ export const DashboardHeader = ({
 				</div>
 			</div>
 
-			{/* PRAWA STRONA: Statystyki (Pulsują, gdy isLoading jest true) */}
+			{/* PRAWA STRONA: Statystyki */}
 			<div className="flex items-center justify-end flex-wrap gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
 				{isLoading ? (
 					// SZKIELET STATYSTYK
@@ -106,36 +107,25 @@ export const DashboardHeader = ({
 					// REALNE DANE
 					<>
 						{/* Całkowita Wartość */}
-						<div className="flex items-center flex-col text-primary px-4 py-2 rounded-xl border border-primary/20 shrink-0">
-							<p className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">
-								Całkowita Wartość
-							</p>
-							<div className="flex items-center gap-2">
-								<Wallet2 className="h-4 w-4" />
-								<span className="font-mono font-black">
-									{totalPortfolioValue.toLocaleString()}
-								</span>
-							</div>
-						</div>
+						<ValueCard
+							label="Całkowita Wartość"
+							icon={Wallet2}
+							value={totalPortfolioValue}
+							formatString
+							suffix="PLN"
+						/>
 
 						{/* Kapitał */}
-						<div className="flex items-center flex-col text-primary px-4 py-2 rounded-xl border border-primary/20 shrink-0">
-							<p className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">
-								Zainwestowany kapitał
-							</p>
-							<div className="flex items-center font-mono font-black gap-2">
-								<Container className="h-4 w-4" />
-								<span className="font-mono font-black">
-									{totalInvestedCapital.toLocaleString()}
-								</span>
-							</div>
-						</div>
+						<ValueCard
+							label="Zainwestowany kapitał"
+							icon={Container}
+							value={totalInvestedCapital}
+							formatString
+							suffix="PLN"
+						/>
 
 						{/* P&L */}
-						<div className="flex items-center flex-col text-primary px-4 py-2 rounded-xl border border-primary/20 shrink-0">
-							<p className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">
-								Całkowity Wynik (P&L)
-							</p>
+						<ValueCard label="Całkowity Wynik (P&L)">
 							<div
 								className={cn(
 									"flex items-baseline gap-2 font-mono font-black",
@@ -148,14 +138,16 @@ export const DashboardHeader = ({
 							>
 								<span className="text-md tabular-nums">
 									{totalProfitAmount > 0 ? "+" : ""}
-									{totalProfitAmount.toLocaleString()}
+									{totalProfitAmount.toLocaleString(undefined, {
+										minimumFractionDigits: 2,
+									})}
 								</span>
 								<span className="text-[10px] font-bold">
 									({totalProfitPercent > 0 ? "+" : ""}
 									{totalProfitPercent.toFixed(2)}%)
 								</span>
 							</div>
-						</div>
+						</ValueCard>
 					</>
 				)}
 			</div>

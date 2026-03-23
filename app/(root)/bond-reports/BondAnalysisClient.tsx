@@ -1,7 +1,6 @@
 "use client";
 
 import {
-	AlertTriangle,
 	Calendar,
 	ChevronDown,
 	ChevronRight,
@@ -9,7 +8,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import React, { Fragment, useMemo, useState } from "react";
-import { deleteBond, updateBondInterestRate } from "@/app/actions";
+import { deleteBond, updateBondInterestRate } from "@/lib/actions/bond-actions";
 
 import { Bond } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ export default function BondAnalysisClient({
 	const [openGroups, setOpenGroups] = useState<string[]>([]);
 	// EN: Grouping bonds using useMemo for better performance and debugging
 	const groupedBonds = useMemo(() => {
-		console.log("📊 Przeliczam grupy dla obligacji:", initialBonds.length);
+		// console.log("📊 Przeliczam grupy dla obligacji:", initialBonds.length);
 		return initialBonds.reduce(
 			(acc, b) => {
 				// EN: Fallback for missing tickers to prevent disappearing rows

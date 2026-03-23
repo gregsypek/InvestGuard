@@ -1,11 +1,10 @@
-// app/(root)/layout.tsx
-import { auth } from "@/auth";
 import Aside from "@/components/Aside";
 import Header from "@/components/Header";
 import { LoginButton } from "@/components/shared/header/LoginButton";
 import UserButton from "@/components/shared/header/UserButton";
-import { db } from "@/lib/db";
+import { auth } from "@/auth";
 import { cookies } from "next/headers"; // Importujemy narzędzie do ciasteczek
+import { db } from "@/lib/db";
 export default async function RootLayout({
 	children,
 }: {

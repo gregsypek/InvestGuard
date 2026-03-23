@@ -45,10 +45,10 @@ export async function PlannerList() {
 			name: true,
 		},
 	});
-	console.log(
-		"🚀 ~ PlannerList ~ allPortfoliosWithCash:",
-		allPortfoliosWithCash,
-	);
+	// console.log(
+	// 	"🚀 ~ PlannerList ~ allPortfoliosWithCash:",
+	// 	allPortfoliosWithCash,
+	// );
 
 	if (plans.length === 0) {
 		return (

@@ -19,6 +19,7 @@ import {
 import { ActivityHeader } from "@/components/ActivityHeader";
 import { ExportReport } from "@/components/history/ExportReport";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
+import { SectionHeader } from "@/components/shared/SectionHeader";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { getTransactionHistory } from "@/lib/actions/history.actions";
@@ -68,10 +69,7 @@ export default async function ActivityPage({
 			<div className="flex flex-col min-h-[calc(100vh-200px)] space-y-10">
 				<div className="flex-1 space-y-6">
 					<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
-						<h2 className="h2-bold flex items-center gap-2">
-							<ListOrdered className="h-5 w-5 text-primary" /> Rejestr
-							Transakcji
-						</h2>
+						<SectionHeader title="Rejestr Transakcji" icon={ListOrdered} />
 						<ExportReport data={transactions} />
 					</div>
 

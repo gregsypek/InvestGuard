@@ -1,4 +1,4 @@
-import { Landmark, Plus } from "lucide-react";
+import { Banknote, Landmark, Plus } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import AddButton from "@/components/ui/AddButton";
@@ -7,6 +7,8 @@ import BondLedgerTable from "@/components/BondLedgerTable";
 import BulbTip from "@/components/shared/BulbTip";
 import Link from "next/link";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { SubHeader } from "@/components/shared/SubHeader";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getBondsData } from "@/lib/actions/bond-actions";
@@ -17,14 +19,6 @@ interface Props {
 }
 
 export default async function BondReportsPage({ params, searchParams }: Props) {
-	// // 2. Fetch all portfolios to display global stats in the header
-	// const allPortfolios = await db.portfolio.findMany({
-	// 	select: {
-	// 		id: true,
-	// 		name: true,
-	// 	},
-	// });
-
 	// Fetch the current user session
 	const session = await auth();
 
@@ -36,7 +30,6 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 		where: {
 			userId: session.user.id,
 			// Szukamy portfeli, które mają zdefiniowany cel na gotówkę większy niż 0%
-			// lub po prostu wszystkie portfele użytkownika, jeśli dopuszczasz wpłatę do każdego
 			targetCash: {
 				gt: 0,
 			},
@@ -47,7 +40,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 		},
 	});
 	const { id: pathId } = await params;
-	const { portfolioId: queryId } = await searchParams; // 🆕 Pobieramy ID z ?portfolioId=...
+	const { portfolioId: queryId } = await searchParams; //  Pobieramy ID z ?portfolioId=...
 	if (!pathId) return <PortfolioEmptyState variant="NOT_FOUND" />;
 
 	// 1. LOGIKA SYNCHRONIZACJI:
@@ -57,7 +50,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 
 	// EN: Fetch bonds again (Next.js automatically deduplicates identical fetch requests in the background)
 	const data = await getBondsData(activeId);
-	console.log("🚀 ~ BondReportsPage ~ data:", data);
+	// console.log("🚀 ~ BondReportsPage ~ data:", data);
 	if (!data) {
 		return notFound();
 	}
@@ -76,15 +69,16 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 			{/* PASEK AKCJI (Dodaj Serię) */}
 			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
 				<div className="space-y-1">
-					<h2 className="text-xl font-bold tracking-tight  flex items-center gap-2">
-						<Landmark className="h-5 w-5 text-primary" /> Portfel Obligacji
-					</h2>
-					<div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
-						<BulbTip
-							title="Pamiętaj: "
-							content="Wcześniejszy wykup to koszt ok. 0.70-3.00 PLN za sztukę."
-						/>
-					</div>
+					<BulbTip
+						title="Pamiętaj:"
+						content="Wcześniejszy wykup to koszt ok. 0.70-3.00 PLN za sztukę."
+					/>
+					<SectionHeader title="Portfel Obligacji" icon={Landmark} />
+					<SubHeader
+						title="Analiza bezpiecznych aktywów"
+						description="Tabela przedstawia wszystkie obligacje z portfela posegregowane rodzajami"
+						icon={Banknote}
+					/>
 				</div>
 
 				<AddButton className="gap-2 shadow-sm h-9">

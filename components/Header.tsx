@@ -31,10 +31,22 @@ export default function Header({
 
 	// 1. Pobieranie ID z parametrów lub ścieżki
 	const idFromParams = searchParams.get("portfolioId");
-	const segments = pathname.split("/");
-	const idFromPath = segments[2];
 
-	// 2. Łączenie logiki
+	// Inteligentne wyciąganie ID ze ścieżki
+	const segments = pathname.split("/");
+	let idFromPath = "";
+
+	if (segments.includes("edit")) {
+		// Jeśli ścieżka to /portfolios/edit/[id], bierzemy segment po "edit"
+		const editIndex = segments.indexOf("edit");
+		idFromPath = segments[editIndex + 1];
+	} else if (segments.includes("dashboard")) {
+		// Jeśli ścieżka to /dashboard/[id], bierzemy segment po "dashboard"
+		const dashboardIndex = segments.indexOf("dashboard");
+		idFromPath = segments[dashboardIndex + 1];
+	}
+
+	// 2. Łączenie logiki (Parametr > Ścieżka > Ciasteczko)
 	const rawId = idFromParams || idFromPath || selectedPortfolioId || "";
 	const isValidId = portfolios.some((p) => p.id === rawId);
 	const displayValue = isValidId ? rawId : "";
@@ -60,7 +72,6 @@ export default function Header({
 			window.location.href = `/dashboard/${id}`;
 		}
 	};
-
 	return (
 		<header className="flex justify-between items-center p-2 border-b border-border bg-background text-foreground sticky top-0 z-50">
 			<div className="px-5 flex items-center gap-3">

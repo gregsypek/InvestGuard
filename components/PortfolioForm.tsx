@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import Cookies from "js-cookie";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { ActionResponse, Portfolio } from "@/lib/types";
+import { Card, CardContent } from "./ui/card";
 import {
 	Form,
 	FormControl,
@@ -12,23 +10,28 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { SubmitButton } from "./ui/SubmitButton";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import {
-	createPortfolio,
-	updatePortfolio,
-} from "@/lib/actions/portfolio.actions";
 import {
 	PortfolioFormValues,
 	PortfolioSchema,
 } from "@/lib/validations/portfolio";
-import { ActionResponse, Portfolio } from "@/lib/types";
-import z from "zod";
+import {
+	createPortfolio,
+	updatePortfolio,
+} from "@/lib/actions/portfolio.actions";
+import { useForm, useWatch } from "react-hook-form";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+import Cookies from "js-cookie";
+import { CustomCardHeader } from "./shared/CustomCardHeader";
+import { Input } from "@/components/ui/input";
+import { Pencil } from "lucide-react";
+import { SubmitButton } from "./ui/SubmitButton";
+import { Textarea } from "@/components/ui/textarea";
 import { inputStyles } from "@/lib/constants";
+import { toast } from "sonner";
+import { useEffect } from "react";
+import z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface PortfolioFormProps {
 	portfolioId?: string;
@@ -91,13 +94,28 @@ export default function PortfolioForm({
 		0,
 	);
 
+	// useEffect(() => {
+	// 	if (effectivePortfolioId && !searchParams.get("portfolioId")) {
+	// 		const params = new URLSearchParams(searchParams.toString());
+	// 		params.set("portfolioId", effectivePortfolioId);
+	// 		router.replace(`${pathname}?${params.toString()}`);
+	// 	}
+	// }, [effectivePortfolioId, pathname, router, searchParams]);
+	// components/PortfolioForm.tsx
+
+	// components/PortfolioForm.tsx
+
 	useEffect(() => {
+		// Jeśli jesteśmy w edycji, NIE dopisujemy parametru do URL.
+		// Header i tak go teraz znajdzie dzięki poprawce powyżej.
+		if (isEditMode) return;
+
 		if (effectivePortfolioId && !searchParams.get("portfolioId")) {
 			const params = new URLSearchParams(searchParams.toString());
 			params.set("portfolioId", effectivePortfolioId);
 			router.replace(`${pathname}?${params.toString()}`);
 		}
-	}, [effectivePortfolioId, pathname, router, searchParams]);
+	}, [effectivePortfolioId, pathname, router, searchParams, isEditMode]);
 
 	// ✅ W onSubmit musimy sparsować dane, aby zamienić je na typy wynikowe (infer)
 	async function onSubmit(data: z.input<typeof PortfolioSchema>) {
@@ -154,12 +172,16 @@ export default function PortfolioForm({
 	);
 
 	return (
-		<Card className="bg-card border-border2 shadow-sm rounded-xl py-6 mb-8">
-			<CardHeader className="px-6 py-0 mb-2">
-				<CardTitle className="leading-none font-bold text-xl">
-					{isEditMode ? `Edytuj ${initialData?.name}` : "Dodaj nowy Portfel"}
-				</CardTitle>
-			</CardHeader>
+		<Card className="bg-background border-none shadow-none space-y-6">
+			<CustomCardHeader
+				className="ps-0"
+				icon={Pencil}
+				title={
+					isEditMode
+						? `Formularz do edycji portfela -  ${initialData?.name} `
+						: "Formularz do tworzenia nowego Portfela"
+				}
+			/>
 			<CardContent className="px-6">
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -222,7 +244,7 @@ export default function PortfolioForm({
 						/>
 
 						{/* Strategy Section */}
-						<div className="mt-8 space-y-4 border-t pt-6">
+						<div className="mt-8 space-y-4 pt-8 border-t border-border ">
 							<div className="flex justify-between items-center">
 								<div>
 									<h3 className="text-lg font-semibold">

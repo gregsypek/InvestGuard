@@ -5,7 +5,7 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Plus, Target, TrendingUp } from "lucide-react";
+import { Plus, Rocket, Target, TrendingUp } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -23,6 +23,8 @@ import BulbTip from "@/components/shared/BulbTip";
 import { Category } from "@prisma/client";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { SubHeader } from "@/components/shared/SubHeader";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
@@ -62,7 +64,7 @@ export default async function AlphaSelectionPage({
 		include: { portfolio: true },
 		orderBy: { conviction: "desc" },
 	});
-	console.log("🚀 ~ AlphaSelectionPage ~ boosterAssets:", boosterAssets);
+	// console.log("🚀 ~ AlphaSelectionPage ~ boosterAssets:", boosterAssets);
 
 	// 2. FETCH TOTAL PORTFOLIO VALUE: For the "Share" KPI
 	const allAssets = await db.asset.findMany({
@@ -147,15 +149,21 @@ export default async function AlphaSelectionPage({
 				{/* EN: Toolbar with integrated inline BulbTip */}
 				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
 					<div className="space-y-1">
-						<h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+						{/* <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
 							<Target className="h-5 w-5 text-primary" /> Aktywne Pozycje
-						</h2>
+						</h2> */}
 						<div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
 							<BulbTip
 								title="Zasada:"
 								content="Weryfikuj kwartalnie. Brak aktualności = wyjście."
 							/>
 						</div>
+						<SectionHeader title="Aktywne Pozycje" icon={Target} />
+						<SubHeader
+							title="Analiza ryzykownych aktywów"
+							description="Tabela uzasadnia zakup i określa stope zwrotu ryzykownych aktywów z kategori 'Booster'"
+							icon={Rocket}
+						/>
 					</div>
 
 					<AddButton className="gap-2 shadow-sm h-9">
@@ -167,7 +175,7 @@ export default async function AlphaSelectionPage({
 				</div>
 
 				{/* EN: Table Container - Poprawiono wyrównanie kolumn i dodano menu Akcji */}
-				<div className="w-full ">
+				<div className="w-full ps-6">
 					<Table>
 						<TableHeader className="bg-muted/30">
 							<TableRow className="border-border hover:bg-transparent">

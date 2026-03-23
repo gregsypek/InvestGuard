@@ -1,11 +1,12 @@
+import { ChevronLeft, LibrarySquareIcon, Pencil } from "lucide-react";
+
+import Link from "next/link";
 // app/(root)/portfolios/edit/[id]/page.tsx
 import PortfolioForm from "@/components/PortfolioForm";
-import { db } from "@/lib/db";
-import { notFound } from "next/navigation";
-import { getGlobalStats } from "@/lib/calculations";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { db } from "@/lib/db";
+import { getGlobalStats } from "@/lib/calculations";
+import { notFound } from "next/navigation";
 
 interface Props {
 	params: Promise<{ id: string }>;
@@ -37,7 +38,7 @@ export default async function EditPortfolioPage({ params }: Props) {
 		<div className="space-y-8">
 			{/* Reusable header with global stats and custom back navigation */}
 			<PortfoliosHeader
-				title="Edit Portfolio"
+				title="Edytuj portfel"
 				totalValue={totalValue}
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
@@ -50,17 +51,16 @@ export default async function EditPortfolioPage({ params }: Props) {
 							<ChevronLeft className="h-4 w-4" />
 						</Link>
 						<nav className="text-sm text-muted-foreground">
-							Portfolios / Edit /{" "}
+							Portfele / Edycja /
 							<span className="text-primary">{portfolio.name}</span>
 						</nav>
 					</div>
 				}
 			/>
 
-			<div>
-				{/* The actual editing form */}
+			<section className="w-full flex flex-col justify-start  md:px-0 overflow-x-hidden">
 				<PortfolioForm initialData={portfolio} portfolioId={id} />
-			</div>
+			</section>
 		</div>
 	);
 }

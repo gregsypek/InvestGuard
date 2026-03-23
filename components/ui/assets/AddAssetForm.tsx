@@ -3,14 +3,7 @@
 import * as z from "zod";
 
 import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
-import {
-	Coins,
-	Landmark,
-	Plus,
-	PlusCircle,
-	Recycle,
-	TrendingUp,
-} from "lucide-react";
+import { Coins, Landmark, PlusCircle, Recycle, TrendingUp } from "lucide-react";
 import {
 	Form,
 	FormControl,
@@ -31,10 +24,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { AddAssetSchema } from "@/lib/validations/asset";
 import AddBondForm from "./AddBondForm";
-import AddButton from "../AddButton";
-import { Button } from "../button";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
 import { Slider } from "@/components/ui/slider";
 import { SubmitButton } from "../SubmitButton";
 import { Textarea } from "@/components/ui/textarea";

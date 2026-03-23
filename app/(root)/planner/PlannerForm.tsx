@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 
-import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
+import { CATEGORY_LABELS, inputStyles } from "@/lib/constants";
 import {
 	Form,
 	FormControl,
@@ -20,8 +20,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label"; // EN: Fixed missing import
@@ -101,19 +101,20 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 ">
 			{/* SELEKTOR TRYBÓW */}
-			<div className="flex bg-muted/50 p-1 rounded-xl w-fit border border-border items-center">
+			<div className="flex bg-muted/50 p-1 gap-3  items-center">
 				<button
 					type="button"
 					onClick={() => handleModeChange("asset")}
 					className={cn(
-						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
+						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ml-1",
 						viewMode === "asset"
-							? "bg-background shadow-sm text-primary"
-							: "text-muted-foreground",
+							? "bg-background shadow-sm text-primary border border2"
+							: "text-muted-foreground border hover:text-foreground",
 					)}
 				>
+					{" "}
 					<PlusCircle size={14} /> Aktywo / Gotówka
 				</button>
 
@@ -123,8 +124,8 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 					className={cn(
 						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ml-1",
 						viewMode === "bond"
-							? "bg-background shadow-sm text-primary"
-							: "text-muted-foreground",
+							? "bg-background shadow-sm text-primary border border2"
+							: "text-muted-foreground border hover:text-foreground",
 					)}
 				>
 					<Landmark size={14} /> Planuj Obligację

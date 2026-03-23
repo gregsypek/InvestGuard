@@ -1,6 +1,8 @@
 // components/planner/PlannerHeader.tsx
 import { CalendarClock, TrendingUp } from "lucide-react";
 
+import { ValueCard } from "./shared/ValueCard";
+
 interface PlannerHeaderProps {
 	totalPlannedValue: number;
 	plannedCount: number;
@@ -28,19 +30,21 @@ export function PlannerHeader({
 				{/* EN: Quick stats matching the portfolio style */}
 				{/* UI: Szybkie statystyki pasujące do stylu portfeli */}
 				<div className="flex flex-wrap gap-4 p-4 justify-end">
-					<div className="flex items-center gap-2  text-primary px-4 py-2 rounded-full border border-primary/20 shrink-0">
-						<TrendingUp className="h-4 w-4" />
-						<span className="font-bold whitespace-nowrap">
-							{totalPlannedValue.toLocaleString()} PLN
-						</span>
-					</div>
+					<ValueCard
+						value={totalPlannedValue}
+						suffix="PLN"
+						formatString
+						icon={TrendingUp}
+						label="Całkowita wartość"
+					/>
 
-					<div className="flex items-center gap-2 bg-muted px-4 py-2 rounded-full border border-border shrink-0">
-						<CalendarClock className="h-4 w-4 text-portfolio-emerging" />
-						<span className="text-sm font-mono font-bold text-muted-foreground">
-							{plannedCount} <span className="text-xs">pozycje</span>
-						</span>
-					</div>
+					<ValueCard
+						className="text-portfolio-emerging"
+						value={plannedCount}
+						suffix="pozycje"
+						icon={CalendarClock}
+						label="Zaplanowane aktywa"
+					/>
 				</div>
 			</header>
 		</div>

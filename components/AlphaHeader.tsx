@@ -1,5 +1,7 @@
 import { FileText, History } from "lucide-react";
 
+import { ValueCard } from "./shared/ValueCard";
+
 interface AlphaHeaderProps {
 	totalTransactions: number;
 	currentPage: number;
@@ -28,27 +30,18 @@ export function AlphaHeader({
 
 				{/* EN: Quick stats matching the planner/portfolio style */}
 				<div className="flex flex-wrap gap-4 p-4 justify-end">
-					<div className="flex items-center gap-2  text-primary px-4 py-2 rounded-full border border-primary/20 shrink-0">
-						<span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold flex items-center gap-1.5">
-							<History className="h-3 w-3 text-blue-500" />
-							Liczba Operacji
-						</span>
-						<span className="text-xl font-mono font-bold">
-							{totalTransactions}{" "}
-						</span>
-					</div>
-					<div className="flex items-center gap-2 bg-muted px-4 py-2 rounded-full border border-border shrink-0">
-						<span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold flex items-center gap-1.5">
-							<FileText className="h-3 w-3 text-portfolio-emerging" />
-							Strona
-						</span>
-						<span className="text-xl font-mono font-bold">
-							{currentPage}{" "}
-							<span className="text-xs text-muted-foreground">
-								z {totalPages}
-							</span>
-						</span>
-					</div>
+					<ValueCard
+						label="Liczba operacji"
+						icon={History}
+						value={totalTransactions}
+					/>
+					<ValueCard
+						className="text-portfolio-emerging"
+						label="Strona"
+						icon={FileText}
+						value={currentPage}
+						suffix={`z ${totalPages}`}
+					/>
 				</div>
 			</div>
 		</div>

@@ -28,7 +28,7 @@ export default async function AddAssetPage({ params }: Props) {
 		<section className="w-full flex flex-col justify-start  md:px-0 overflow-x-hidden">
 			<div className=" mb-4">
 				<h2 className="text-xl font-bold tracking-tight  flex items-center gap-2">
-					<LibrarySquareIcon className="h-5 w-5 text-primary" /> Formularze
+					<LibrarySquareIcon className="h-4 w-4 text-primary" /> Formularze
 					dodawania aktywów
 				</h2>
 			</div>

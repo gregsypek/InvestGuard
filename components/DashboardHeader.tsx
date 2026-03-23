@@ -83,7 +83,7 @@ export const DashboardHeader = ({
 				{/* EN: Use custom breadcrumbs if provided, otherwise use our smart default */}
 				{customBreadcrumbs || defaultBreadcrumbs}
 				<div>
-					<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
+					<h1 className="text-4xl font-black tracking-tighter lowercase flex items-center gap-3">
 						{name}
 					</h1>
 					<p className="text-muted-foreground font-medium mt-1">

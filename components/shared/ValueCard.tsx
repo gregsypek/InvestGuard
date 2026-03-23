@@ -23,7 +23,7 @@ export function ValueCard({
 	return (
 		<div
 			className={cn(
-				"flex items-start flex-col text-primary p-2 rounded-xl border border-primary/20 shrink-0 bg-background/50",
+				"flex items-start flex-col text-primary py-2 px-4 rounded-xl border border-primary/20 shrink-0 bg-background/50",
 				className,
 			)}
 		>

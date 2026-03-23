@@ -1,20 +1,16 @@
-// app/(root)/planner/page.tsx
-import { db } from "@/lib/db";
+import { Card, CardContent } from "@/components/ui/card";
+import { PiggyBank, PlusSquare } from "lucide-react";
+
+import { CustomCardHeader } from "@/components/shared/CustomCardHeader";
 import PlannerForm from "./PlannerForm";
-import { PlannerList } from "@/components/planner/PlanenerList";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import { getActivePortfolioId } from "@/lib/session";
 import { PlannerHeader } from "@/components/PlanerHeader";
-import { PlusSquare } from "lucide-react";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import { PlannerList } from "@/components/planner/PlanenerList";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { getActivePortfolioId } from "@/lib/session";
+import { redirect } from "next/navigation";
 
 interface Props {
 	searchParams: Promise<{ portfolioId?: string }>;
@@ -69,24 +65,21 @@ export default async function PlannerPage({ searchParams }: Props) {
 			/>
 			<div className="grid gap-8 xl:grid-cols-7 items-start">
 				{/* LEWA KOLUMNA: Formularz (4 z 7) */}
-				<div className="lg:col-span-4 space-y-8">
+				<div className="lg:col-span-4 space-y-8 xl:border-r xl:border-border pe-4">
 					{/* EN: Unified section header style */}
+					<SectionHeader
+						title="Nowy plan
+						inwestycyjny"
+						icon={PlusSquare}
+					/>
 
-					<h2 className="h2-bold flex items-center gap-2">
-						<PlusSquare className="h-5 w-5 text-primary" /> Nowy plan
-						inwestycyjny
-					</h2>
-
-					<Card className="bg-card border-border2 shadow-lg rounded-2xl overflow-hidden col-span-2">
-						<CardHeader className="bg-muted/30 pb-6">
-							<CardTitle className="text-xl font-black tracking-tight">
-								Parametry zakupu
-							</CardTitle>
-							<CardDescription className="text-sm font-medium">
-								Zdefiniuj aktywo, które zamierzasz dodać do portfela w
-								najbliższym czasie.
-							</CardDescription>
-						</CardHeader>
+					<Card className="bg-background border-none shadow-none  overflow-hidden col-span-2">
+						<CustomCardHeader
+							icon={PiggyBank}
+							title="Parametry zakupu"
+							description="Zdefiniuj aktywo, które zamierzasz dodać do portfela w
+								najbliższym czasie."
+						/>
 						<CardContent className="pt-8">
 							<PlannerForm
 								portfolios={portfolios}

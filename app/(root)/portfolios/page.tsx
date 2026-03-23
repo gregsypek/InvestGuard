@@ -1,17 +1,19 @@
-// app/(root)/portfolios/page.tsx
-import { db } from "@/lib/db";
-import { Plus } from "lucide-react";
+import { Globe, Plus } from "lucide-react";
+
+import AddButton from "@/components/ui/AddButton";
+import { CategoryTable } from "@/components/CategoryTable";
 import Link from "next/link";
 import PortfolioCard from "@/components/PortfolioCard";
-import { PortfoliosHeader } from "@/components/PortfoliosHeader";
-import { getGlobalStats } from "@/lib/calculations";
-import { CategoryTable } from "@/components/CategoryTable";
-import AddButton from "@/components/ui/AddButton";
-import { cookies } from "next/headers";
-import { cn } from "@/lib/utils";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
+import { PortfoliosHeader } from "@/components/PortfoliosHeader";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { auth } from "@/auth";
+import { cn } from "@/lib/utils";
+import { cookies } from "next/headers";
+// app/(root)/portfolios/page.tsx
+import { db } from "@/lib/db";
+import { getGlobalStats } from "@/lib/calculations";
+import { redirect } from "next/navigation";
 
 interface Props {
 	searchParams: Promise<{ portfolioId?: string }>;
@@ -95,14 +97,9 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 			</div>
 
 			{/* EN: Global Asset Allocation Table (Aggregated View) */}
-			<div className="pt-10 border-t border-border2">
-				<div className="flex justify-between items-end mb-6">
-					<div>
-						<h2 className="text-2xl font-bold italic">Alokacja Globalna</h2>
-						<p className="text-muted-foreground text-sm">
-							Rozkład aktywów ze wszystkich Twoich portfeli (łącznie)
-						</p>
-					</div>
+			<div className="pt-8 border-t border-border">
+				<div className="flex justify-between ">
+					<SectionHeader icon={Globe} title="Alokacja Globalna" />
 
 					{/* EN: Only show add asset button if we have a portfolio context */}
 					{portfolioId && (

@@ -1,9 +1,9 @@
+import { ChevronLeft } from "lucide-react";
+import Link from "next/link";
 import PortfolioForm from "@/components/PortfolioForm";
+import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { db } from "@/lib/db";
 import { getGlobalStats } from "@/lib/calculations";
-import { PortfoliosHeader } from "@/components/PortfoliosHeader";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 
 export default async function NewPortfolioPage() {
 	// 1. Fetch all portfolios to provide global context in the header
@@ -21,7 +21,7 @@ export default async function NewPortfolioPage() {
           you already manage a certain amount of capital.
       */}
 			<PortfoliosHeader
-				title="Create New Portfolio"
+				title="Stwórz nowy portfel"
 				totalValue={totalValue}
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
@@ -34,7 +34,7 @@ export default async function NewPortfolioPage() {
 							<ChevronLeft className="h-4 w-4" />
 						</Link>
 						<nav className="text-sm text-muted-foreground">
-							Portfolios / <span className="text-primary">New</span>
+							Portfele / <span className="text-primary">Nowy</span>
 						</nav>
 					</div>
 				}

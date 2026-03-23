@@ -6,9 +6,7 @@ import {
 	ChevronDown,
 	ExternalLink,
 	HandCoins,
-	ListOrdered,
 	MoreHorizontal,
-	Plus,
 	Scale,
 	TrendingUp,
 } from "lucide-react";
@@ -34,9 +32,7 @@ import {
 	updateAssetValues,
 } from "@/lib/actions/asset-actions";
 
-import AddButton from "./ui/AddButton";
 import { AdjustAssetModal } from "./AdjustAssetModal";
-import BulbTip from "./shared/BulbTip";
 import { DeleteButton } from "./DeleteButton";
 import Link from "next/link";
 import PaginatedBar from "./shared/PaginatedBar";
@@ -185,33 +181,9 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 	};
 
 	return (
-		<section className="pt-8 border-t border-border">
-			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1 mb-8">
-				<div className="space-y-1">
-					<h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-						<ListOrdered className="h-6 w-6 text-primary" /> Szczegółowy Rejestr
-						Aktywów
-					</h2>
-					<div className="hidden sm:block">
-						<BulbTip
-							title="Zasada:"
-							content="Utrzymuj odchylenia poniżej 5%. Rebalansuj tylko gdy strategia tego wymaga."
-						/>
-					</div>
-				</div>
-				<AddButton>
-					<Link
-						href={`/dashboard/${portfolio.id}/add-asset`}
-						className="flex items-center gap-2"
-					>
-						<Plus className="h-4 w-4" /> Nowe Aktywo
-					</Link>
-				</AddButton>
-			</div>
-
+		<>
 			<div className="w-full">
 				<Table>
-					{/* ... Nagłówki tabeli bez zmian ... */}
 					<TableHeader className="">
 						<TableRow className="border-border">
 							<TableHead className="w-50 font-bold py-4">Aktywo</TableHead>
@@ -257,10 +229,6 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 													tx.ticker.split("_")[0] === asset.cleanTicker) ||
 												tx.assetName === asset.name,
 										);
-								console.log(
-									"🚀 ~ AssetLedgerTable ~ assetHistory:",
-									assetHistory,
-								);
 
 								const chartData = [...assetHistory]
 									.sort(
@@ -388,15 +356,17 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 
 											<TableCell>
 												{isAggregatedBond ? (
-													<span className="text-[10px] text-muted-foreground uppercase tracking-widest block text-center opacity-50">
+													<span className="text-[10px] text-muted-foreground uppercase tracking-widest block text-center opacity-50 ">
 														Auto-kalkulacja
 													</span>
 												) : (
-													<QuickAdjustCell
-														assetId={asset.id}
-														currentValue={asset.currentValue}
-														onUpdate={updateAssetValues}
-													/>
+													<div className="flex justify-center">
+														<QuickAdjustCell
+															assetId={asset.id}
+															currentValue={asset.currentValue}
+															onUpdate={updateAssetValues}
+														/>
+													</div>
 												)}
 											</TableCell>
 
@@ -719,7 +689,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 					/>
 				</div>
 			)}
-		</section>
+		</>
 	);
 };
 

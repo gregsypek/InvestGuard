@@ -8,6 +8,7 @@ import {
 
 import { BondStatCard } from "./shared/BondStatCard";
 import Link from "next/link";
+import { ValueCard } from "./shared/ValueCard";
 
 export interface BondHeaderStats {
 	totalInvested: string;
@@ -68,12 +69,7 @@ export function BondHeader({
 				</div>
 
 				<div className="flex flex-wrap gap-4 justify-end">
-					<div className="flex items-center gap-2 text-primary px-5 py-2.5 rounded-full border border-primary/20 bg-primary/5 shrink-0">
-						<span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-black flex items-center gap-2">
-							<History className="h-3.5 w-3.5 text-blue-500" /> Aktywne Serie
-						</span>
-						<span className="text-2xl font-mono font-black">{totalBonds}</span>
-					</div>
+					<ValueCard label="Aktywne serie" icon={History} value={totalBonds} />
 				</div>
 			</header>
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">

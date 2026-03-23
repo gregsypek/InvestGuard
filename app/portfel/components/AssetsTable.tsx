@@ -1,8 +1,8 @@
 // components/AssetsTable.tsx
 // This table shows individual instruments and their weight within the category
 
-import { calculateRebalance } from "@/lib/rebalance";
 import { Asset } from "@/lib/types";
+import { calculateRebalance } from "@/lib/rebalance";
 // Define a mapping object for category colors
 const categoryStyles: Record<string, string> = {
 	GOLD: "bg-portfolio-gold",
@@ -13,7 +13,7 @@ const categoryStyles: Record<string, string> = {
 };
 export default function AssetsTable({ assets }: { assets: Asset[] }) {
 	const rebalanceData = calculateRebalance(assets);
-	const totalValue = assets.reduce((sum, a) => sum + a.value, 0);
+	const totalValue = assets.reduce((sum, a) => sum + a.currentValue, 0);
 	return (
 		<div className="overflow-x-auto rounded-lg border border-border shadow-sm">
 			<table className="w-full text-left text-sm text-foreground">
@@ -30,7 +30,7 @@ export default function AssetsTable({ assets }: { assets: Asset[] }) {
 						const status = rebalanceData[index];
 						// Calculate the exact amount needed to reach target
 						const targetAmount = (asset.targetPercentage / 100) * totalValue;
-						console.log("🚀 ~ AssetsTable ~ targetAmount:", targetAmount);
+						// console.log("🚀 ~ AssetsTable ~ targetAmount:", targetAmount);
 						return (
 							<tr key={asset.id} className="hover:bg-slate-50">
 								<td className="px-6 py-4 font-medium text-foreground">

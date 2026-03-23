@@ -17,6 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { CategoryStatus } from "@/lib/types";
+import { CustomCardHeader } from "@/components/shared/CustomCardHeader";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -28,16 +29,11 @@ export default function StrategyHealthTable({ data }: Props) {
 
 	return (
 		<Card className="bg-muted/30 border-none shadow-none">
-			<CardHeader className="pb-2">
-				<div className="flex items-center justify-between">
-					<CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
-						<Activity className="h-5 w-5 text-primary" /> Kondycja i Rebalancing
-					</CardTitle>
-				</div>
-				<p className="text-xs text-muted-foreground mt-1">
-					Porównanie obecnej struktury portfela z Twoim celem inwestycyjnym.
-				</p>
-			</CardHeader>
+			<CustomCardHeader
+				title="Kondycja i Rebalancing"
+				description="Porównanie obecnej struktury portfela z Twoim celem inwestycyjnym."
+				icon={Activity}
+			/>
 			<CardContent>
 				<Table>
 					<TableHeader>

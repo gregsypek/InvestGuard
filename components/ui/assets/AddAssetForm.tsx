@@ -249,9 +249,18 @@ export default function AddAssetForm({
 												<SelectContent>
 													{filteredExistingAssets.map((asset) => (
 														<SelectItem key={asset.id} value={asset.id}>
-															<div className="flex items-center gap-2">
-																<Coins className="h-3.5 w-3.5 text-amber-500" />
-																{asset.name} ({asset.ticker?.split("_")[0]})
+															<div className="flex items-center gap-3">
+																<Coins className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+																<div className="flex flex-col items-start">
+																	<span className="text-xs font-bold">
+																		{asset.name} ({asset.ticker?.split("_")[0]})
+																	</span>
+																	<span className="text-[9px] uppercase tracking-tighter text-muted-foreground leading-none">
+																		Kategoria:{" "}
+																		{CATEGORY_LABELS[asset.category] ||
+																			asset.category}
+																	</span>
+																</div>
 															</div>
 														</SelectItem>
 													))}

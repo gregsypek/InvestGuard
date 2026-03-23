@@ -9,19 +9,19 @@ import {
 	Lightbulb,
 	Percent,
 } from "lucide-react";
-import { addBond, updateBondInterestRate } from "@/lib/actions/bond-actions";
 import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SubmitButton } from "../SubmitButton";
+import { addBond } from "@/lib/actions/bond-actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
-	console.log("🚀 ~ AddBondForm ~ portfolioId:", portfolioId);
+	// console.log("🚀 ~ AddBondForm ~ portfolioId:", portfolioId);
 
 	const router = useRouter();
 	const [specificName, setSpecificName] = useState(""); // EN: State for specific series code like EDO1035

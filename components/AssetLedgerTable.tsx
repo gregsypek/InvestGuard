@@ -69,7 +69,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 		// 1. Oddzielamy zwykłe aktywa od obligacji
 		const standardAssets = assets.filter((a) => a.category !== "BONDS");
 		const bondAssets = assets.filter((a) => a.category === "BONDS");
-		console.log("🚀 ~ AssetLedgerTable ~ bondAssets:", bondAssets);
+		// console.log("🚀 ~ AssetLedgerTable ~ bondAssets:", bondAssets);
 
 		// 2. Budujemy jeden wiersz agregujący wszystkie transze obligacji
 		let aggregatedBonds: any = null;
@@ -102,7 +102,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 			// EN: Clean the ticker (remove _1772815... hack) for display
 			const cleanTicker = asset.ticker ? asset.ticker.split("_")[0] : "ASSET";
 
-			console.log("🚀 ~ AssetLedgerTable ~ aggregatedBonds:", combined);
+			// console.log("🚀 ~ AssetLedgerTable ~ aggregatedBonds:", combined);
 			return {
 				...asset,
 				profitAmount,
@@ -111,7 +111,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 			};
 		});
 	}, [assets]);
-	console.log("🚀 ~ AssetLedgerTable ~ assetsWithPL:", assetsWithPL);
+	// console.log("🚀 ~ AssetLedgerTable ~ assetsWithPL:", assetsWithPL);
 
 	const paginatedAssets = assetsWithPL.slice(
 		(currentPage - 1) * PAGE_ITEMS,
@@ -217,19 +217,30 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 							paginatedAssets.map((asset) => {
 								const isAggregatedBond = asset.id === "bonds-summary-id";
 
-								// EN: Smart filtering: If it's the aggregated bond row, show ALL bond history.
-								// Otherwise, show specific asset history by clean ticker.
+								// // EN: Smart filtering: If it's the aggregated bond row, show ALL bond history.
+								// // Otherwise, show specific asset history by clean ticker.
+								// const assetHistory = isAggregatedBond
+								// 	? portfolio.transactionHistories.filter(
+								// 			(tx) => tx.category === "BONDS",
+								// 		)
+								// 	: portfolio.transactionHistories.filter(
+								// 			(tx) =>
+								// 				(tx.ticker &&
+								// 					tx.ticker.split("_")[0] === asset.cleanTicker) ||
+								// 				tx.assetName === asset.name,
+								// 		);
+								// EN: Smart filtering: Ensure history is isolated by technical ticker AND category
 								const assetHistory = isAggregatedBond
 									? portfolio.transactionHistories.filter(
 											(tx) => tx.category === "BONDS",
 										)
 									: portfolio.transactionHistories.filter(
 											(tx) =>
-												(tx.ticker &&
-													tx.ticker.split("_")[0] === asset.cleanTicker) ||
-												tx.assetName === asset.name,
+												// KLUCZ: Porównujemy pełny techniczny ticker (np. CASH_BOOSTER)
+												// oraz kategorię, aby uniknąć wycieku historii między wierszami
+												tx.ticker === asset.ticker &&
+												tx.category === asset.category,
 										);
-
 								const chartData = [...assetHistory]
 									.sort(
 										(a, b) =>

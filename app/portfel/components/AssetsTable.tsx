@@ -1,4 +1,3 @@
-// components/AssetsTable.tsx
 // This table shows individual instruments and their weight within the category
 
 import { Asset } from "@/lib/types";
@@ -30,7 +29,6 @@ export default function AssetsTable({ assets }: { assets: Asset[] }) {
 						const status = rebalanceData[index];
 						// Calculate the exact amount needed to reach target
 						const targetAmount = (asset.targetPercentage / 100) * totalValue;
-						// console.log("🚀 ~ AssetsTable ~ targetAmount:", targetAmount);
 						return (
 							<tr key={asset.id} className="hover:bg-slate-50">
 								<td className="px-6 py-4 font-medium text-foreground">

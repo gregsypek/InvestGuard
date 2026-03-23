@@ -7,7 +7,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "./ui/select";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
 import Menu from "./shared/Menu";
@@ -25,7 +25,6 @@ export default function Header({
 	userButton,
 	selectedPortfolioId,
 }: HeaderProps) {
-	const router = useRouter();
 	const searchParams = useSearchParams();
 	const pathname = usePathname();
 

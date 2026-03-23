@@ -94,17 +94,6 @@ export default function PortfolioForm({
 		0,
 	);
 
-	// useEffect(() => {
-	// 	if (effectivePortfolioId && !searchParams.get("portfolioId")) {
-	// 		const params = new URLSearchParams(searchParams.toString());
-	// 		params.set("portfolioId", effectivePortfolioId);
-	// 		router.replace(`${pathname}?${params.toString()}`);
-	// 	}
-	// }, [effectivePortfolioId, pathname, router, searchParams]);
-	// components/PortfolioForm.tsx
-
-	// components/PortfolioForm.tsx
-
 	useEffect(() => {
 		// Jeśli jesteśmy w edycji, NIE dopisujemy parametru do URL.
 		// Header i tak go teraz znajdzie dzięki poprawce powyżej.

@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HeartPlus, LayoutGrid } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -11,7 +12,7 @@ import {
 } from "@/components/ui/table";
 
 import { COLORS } from "@/lib/constants";
-import { LayoutGrid } from "lucide-react";
+import { CustomCardHeader } from "./shared/CustomCardHeader";
 import { Progress } from "@/components/ui/progress";
 
 // EN: Mapping technical IDs to Polish labels for display
@@ -55,11 +56,11 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 
 	return (
 		<Card className=" bg-background border-none shadow-none">
-			<CardHeader>
-				<CardTitle className="text-xl font-bold text-foreground">
-					Skład i Zdrowie Portfela
-				</CardTitle>
-			</CardHeader>
+			<CustomCardHeader
+				title="Skład i Zdrowie Portfela"
+				description="Rozkład aktywów ze wszystkich Twoich portfeli (łącznie)"
+				icon={HeartPlus}
+			/>
 			<CardContent>
 				<Table>
 					<TableHeader className="bg-muted/30">

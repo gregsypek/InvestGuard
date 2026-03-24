@@ -42,3 +42,7 @@ next-env.d.ts
 
 *.md
 .env*.local
+
+modul2.md
+modul3.md
+modul4.md

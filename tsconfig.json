@@ -30,7 +30,9 @@
 		".next/dev/types/**/*.ts",
 		"**/*.mts",
 		"middleware.ts",
-		"prisma.config.ts"
+		"prisma.config.ts",
+		"app/(root)/booster/Form.js",
+		"app/(root)/portfolios/pagetsx"
 	],
 	"exclude": ["node_modules"]
 }

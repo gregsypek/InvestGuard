@@ -1,10 +1,12 @@
+import { Circle, Star } from "lucide-react";
+
 import { Asset } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import React from "react";
-import { Star, Circle } from "lucide-react";
 import { COLORS } from "@/lib/constants";
 import { DeleteButton } from "@/components/DeleteButton";
+import React from "react";
+import { cn } from "@/lib/utils";
 import { deleteAsset } from "@/lib/actions/portfolio.actions";
+
 interface Props {
 	asset: Asset;
 	isHighlighted: boolean;
@@ -15,10 +17,8 @@ export default function AssetCard({ asset, isHighlighted }: Props) {
 		<div
 			key={asset.id}
 			className={cn(
-				"bg-card border p-3 rounded-lg flex justify-between items-center transition-all duration-500 relative group",
-				isHighlighted
-					? "border-blue-500 bg-blue-500/5 shadow-[0_0_15px_rgba(37,99,235,0.15)]"
-					: "border-border2",
+				"bg-background border border-blue-100 shadow-sm p-3 rounded-lg flex justify-between items-center transition-all duration-500 relative group",
+				isHighlighted ? "border-blue-500 bg-blue-500/5 " : "border-blue-300",
 			)}
 		>
 			{/* LEWA STRONA: Gwiazdka + Nazwa/Kategoria */}
@@ -28,8 +28,7 @@ export default function AssetCard({ asset, isHighlighted }: Props) {
 				)}
 				<div>
 					{/* FIX: text-portfolio-${asset.name} may break if asset.name has spaces or isn't a Tailwind class.
-                   Consider using text-foreground or a mapping if colors are specific to asset types.
-                */}
+            Consider using text-foreground or a mapping if colors are specific to asset types. */}
 					<p className="font-bold text-sm flex items-center gap-2">
 						{asset.name}
 					</p>

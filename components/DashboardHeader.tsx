@@ -62,19 +62,22 @@ export const DashboardHeader = ({
 	// EN: Define default breadcrumbs based on current route
 	const defaultBreadcrumbs = isAddAssetPage ? (
 		<div className="flex items-center gap-2 mb-2">
-			<Link href={`/dashboard/${portfolio.id}`}>
-				<ChevronLeft className="h-4 w-4 text-primary hover:scale-110 transition-transform" />
-			</Link>
+			{/* DODAJEMY portfolio?.id (pytajnik) oraz sprawdzenie czy portfolio istnieje */}
+			{portfolio ? (
+				<Link href={`/dashboard/${portfolio?.id}`}>
+					<ChevronLeft className="h-4 w-4 text-primary hover:scale-110 transition-transform" />
+				</Link>
+			) : (
+				// Fallback, gdy portfolio jeszcze się ładuje lub nie zostało znalezione
+				<Link href="/dashboard">
+					<ChevronLeft className="h-4 w-4 text-primary" />
+				</Link>
+			)}
 			<nav className="text-sm text-muted-foreground italic">
-				Panel Główny / {name} /{" "}
-				<span className="text-primary font-medium">Dodaj aktywo</span>
+				Panel Główny / {portfolio?.name || "Ładowanie..."} / Dodaj aktywo
 			</nav>
 		</div>
-	) : (
-		<nav className="text-sm text-muted-foreground mb-2 italic">
-			Panel Główny / <span className="text-primary font-medium">{name}</span>
-		</nav>
-	);
+	) : null;
 
 	return (
 		<header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

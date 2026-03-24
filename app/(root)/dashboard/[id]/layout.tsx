@@ -16,7 +16,10 @@ export default async function PortfolioLayout({
 	// 1. Pobieramy portfel z bazy
 	const portfolio = await db.portfolio.findUnique({
 		where: { id },
-		include: { assets: true },
+		include: {
+			assets: true,
+			transactionHistories: true,
+		},
 	});
 
 	// 2. Jeśli nie ma portfela, zwracamy notFound

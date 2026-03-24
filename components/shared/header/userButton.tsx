@@ -1,6 +1,3 @@
-// components/shared/header/UserButton.tsx
-import { auth, signOut } from "@/auth";
-import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -8,6 +5,9 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { auth, signOut } from "@/auth";
+
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 const UserButton = async () => {

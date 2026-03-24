@@ -1,14 +1,15 @@
 // components/ui/PortfolioEmptyState.tsx
 import {
-	Wallet,
-	SearchX,
-	PlusCircle,
 	CalendarDays,
 	LayoutDashboard,
 	ListOrdered,
+	PlusCircle,
+	SearchX,
+	Wallet,
 } from "lucide-react";
-import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 // EN: Added PLANNER to variants
 // UI: Dodaliśmy PLANNER do dostępnych wariantów
@@ -16,7 +17,8 @@ type EmptyStateVariant =
 	| "NOT_SELECTED"
 	| "NOT_FOUND"
 	| "PLANNER"
-	| "PORTFOLIOS";
+	| "PORTFOLIOS"
+	| "ACTIVITY";
 
 interface Props {
 	variant: EmptyStateVariant;
@@ -52,8 +54,8 @@ export default function PortfolioEmptyState({
 			icon: <CalendarDays className="h-12 w-12 text-emerald-500" />,
 			defaultTitle: "Zaprojektuj swój kolejny ruch",
 			defaultDescription:
-				"Twój portfel czeka na nowe aktywa. Zaplanuj zakupy  lub uzupełnij bazę, aby utrzymać strategię.",
-			showAddButton: true,
+				"Twój portfel czeka na nowe aktywa. Zaplanuj zakupy lub uzupełnij bazę, aby utrzymać strategię.",
+			showAddButton: false,
 		},
 		PORTFOLIOS: {
 			icon: <LayoutDashboard className="h-12 w-12 text-indigo-500" />,

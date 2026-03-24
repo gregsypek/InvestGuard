@@ -113,7 +113,10 @@ export default function PortfolioPieChart({
 								itemStyle={{
 									color: "var(--foreground)",
 								}}
-								formatter={(value: number) => `${value.toFixed(2)}%`}
+								// Poprawiony formatter z obsługą opcjonalną
+								formatter={(value: number | undefined) =>
+									value !== undefined ? `${value.toFixed(2)}%` : "0.00%"
+								}
 							/>
 							<Legend
 								content={renderCustomLegend}

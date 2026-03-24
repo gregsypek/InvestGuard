@@ -315,7 +315,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 											// Rozbijamy {...field}, aby nadpisać problematyczne właściwości
 											{...field}
 											// 1. Zabezpieczamy wartość przed null/undefined/unknown
-											value={field.value ?? ""}
+											value={(field.value as number | string) ?? ""}
 											// 2. Konwertujemy tekst z inputa na liczbę dla React Hook Form
 											onChange={(e) => field.onChange(Number(e.target.value))}
 										/>

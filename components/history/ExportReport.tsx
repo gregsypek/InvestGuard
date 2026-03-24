@@ -4,13 +4,23 @@ import { Button } from "@/components/ui/button";
 import { ClipboardCopy } from "lucide-react";
 import { toast } from "sonner";
 
-export function ExportReport({ data }: { data: any[] }) {
+// 1. Definiujemy kontrakt dla danych eksportu
+interface ExportTransaction {
+	assetName: string;
+	ticker: string | null;
+	executedAt: Date | string;
+	executedValue: number;
+	category: string;
+	rationale: string | null;
+}
+
+// 2. Podstawiamy typ zamiast any[]
+export function ExportReport({ data }: { data: ExportTransaction[] }) {
 	const generateMarkdown = () => {
 		const header = `# Dziennik Inwestycyjny - Stan na ${new Date().toLocaleDateString()}\n\n`;
 
 		const rows = data
 			.map((t) => {
-				// Rozdzielamy notatkę, jeśli użyliśmy separatora " | " w akcji executePlan
 				const notes = t.rationale ? t.rationale.split(" | ") : [];
 				const planNote =
 					notes.find((n) => n.startsWith("PLAN:"))?.replace("PLAN: ", "") ||
@@ -26,11 +36,14 @@ export function ExportReport({ data }: { data: any[] }) {
 - **Uzasadnienie planu:** ${planNote}
 ${execNote ? `- **Notatka z realizacji:** ${execNote}\n` : ""}`;
 			})
-			.join("\n---\n\n"); // Dodajemy linię oddzielającą rekordy
+			.join("\n---\n\n");
 
-		navigator.clipboard.writeText(header + rows);
-		toast.success("Raport z notatkami skopiowany do schowka!");
+		if (typeof window !== "undefined") {
+			navigator.clipboard.writeText(header + rows);
+			toast.success("Raport z notatkami skopiowany do schowka!");
+		}
 	};
+
 	return (
 		<Button
 			variant="outline"

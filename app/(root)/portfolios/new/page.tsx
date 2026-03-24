@@ -8,7 +8,7 @@ import { getGlobalStats } from "@/lib/calculations";
 export default async function NewPortfolioPage() {
 	// 1. Fetch all portfolios to provide global context in the header
 	const allPortfolios = await db.portfolio.findMany({
-		include: { assets: true },
+		include: { assets: true, transactionHistories: true },
 	});
 
 	// 2. Calculate global stats (Total Value, Counts)

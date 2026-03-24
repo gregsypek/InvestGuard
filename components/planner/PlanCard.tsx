@@ -107,7 +107,10 @@ export function PlanCard({
 				setIsOpen(false);
 				router.refresh();
 			} else {
-				toast.error("Błąd: " + result.error);
+				// Sprawdzamy, czy pole 'error' faktycznie istnieje w obiekcie
+				const errorMessage =
+					"error" in result ? result.error : "Wystąpił nieznany błąd";
+				toast.error("Błąd: " + errorMessage);
 			}
 		} catch {
 			toast.error("Błąd połączenia. Spróbuj ponownie.");

@@ -1,7 +1,5 @@
-import { ChevronLeft, LibrarySquareIcon, Pencil } from "lucide-react";
-
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
-// app/(root)/portfolios/edit/[id]/page.tsx
 import PortfolioForm from "@/components/PortfolioForm";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { db } from "@/lib/db";
@@ -22,7 +20,7 @@ export default async function EditPortfolioPage({ params }: Props) {
 
 	// 2. Fetch all portfolios to display global stats in the header
 	const allPortfolios = await db.portfolio.findMany({
-		include: { assets: true },
+		include: { assets: true, transactionHistories: true },
 	});
 
 	// 3. Handle 404 if portfolio doesn't exist

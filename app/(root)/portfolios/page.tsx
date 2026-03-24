@@ -29,7 +29,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 	}
 	const portfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
-		include: { assets: true },
+		include: { assets: true, transactionHistories: true },
 		orderBy: { createdAt: "desc" },
 	});
 

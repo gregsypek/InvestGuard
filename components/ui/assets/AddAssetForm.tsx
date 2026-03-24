@@ -42,7 +42,12 @@ export default function AddAssetForm({
 }: {
 	portfolioId: string;
 	allowedCategories?: string[];
-	existingAssets?: any[];
+	existingAssets?: Array<{
+		id: string;
+		name: string;
+		ticker: string | null;
+		category: string;
+	}>;
 }) {
 	const searchParams = useSearchParams();
 	const router = useRouter();

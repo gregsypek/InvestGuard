@@ -83,7 +83,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 						<CardContent className="pt-8">
 							<PlannerForm
 								portfolios={portfolios}
-								defaultPortfolioId={portfolioId}
+								defaultPortfolioId={portfolioId ?? undefined}
 							/>
 						</CardContent>
 					</Card>

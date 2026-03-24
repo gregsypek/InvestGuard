@@ -1,7 +1,7 @@
 "use server";
 
-import { db } from "@/lib/db";
 import { BoosterSchema } from "@/lib/validations/booster";
+import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import z from "zod";
 
@@ -15,19 +15,28 @@ export async function createBoosterAsset(
 		return { error: "Niepoprawne dane formularza" };
 	}
 
-	const { name, ticker, value, timeHorizon, rationale } = validatedFields.data;
+	// Wyciągamy portfolioId z walidacji (upewnij się, że jest w Zod Schema!)
+	const { name, ticker, value, timeHorizon, rationale, portfolioId } =
+		validatedFields.data;
 
 	try {
 		await db.asset.create({
 			data: {
 				name,
 				category: "BOOSTER",
-				value,
-				// If ticker is an empty string, we store null in the DB
+				// Mapujemy 'value' na pola z modelu Prisma
+				investedCapital: value,
+				currentValue: value,
+
+				// Pola wymagane przez Twój model, których brakowało:
+				portfolioId: portfolioId,
+				purchaseDate: new Date(), // Ustawiamy datę zakupu na "teraz"
+
 				ticker: ticker || null,
 				rationale,
 				timeHorizon,
 				targetPercentage: 0,
+				quantity: 1, // Domyślnie 1 jednostka, chyba że masz to w formularzu
 			},
 		});
 

@@ -8,6 +8,7 @@ export const TIME_HORIZONS = [
 ] as const;
 
 export const BoosterSchema = z.object({
+	portfolioId: z.string().min(1, "Portfolio ID jest wymagane"),
 	name: z.string().min(1, "Nazwa jest wymagana"),
 	ticker: z.string().optional().nullable(), // Pole opcjonalne
 	value: z.coerce.number().positive("Wartość musi być dodatnia"),

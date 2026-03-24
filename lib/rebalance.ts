@@ -36,7 +36,7 @@ export function calculateRebalance(assets: Asset[]): RebalanceResult[] {
 // lib/rebalance.ts
 
 export function getCategoryStats(assets: Asset[]) {
-	const totalValue = assets.reduce((sum, a) => sum + a.value, 0);
+	const totalValue = assets.reduce((sum, a) => sum + a.currentValue, 0);
 
 	return MODEL_ALLOCATION.map((modelItem) => {
 		// Filter assets by category matching the model name

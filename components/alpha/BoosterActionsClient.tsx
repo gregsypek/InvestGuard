@@ -22,6 +22,7 @@ import {
 	updateAlphaDetails,
 } from "@/lib/actions/asset-actions";
 
+import { Asset } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -29,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useState } from "react";
 
-export function BoosterActionsClient({ asset }: { asset: any }) {
+export function BoosterActionsClient({ asset }: { asset: Asset }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isPending, setIsPending] = useState(false);
 
@@ -97,7 +98,7 @@ export function BoosterActionsClient({ asset }: { asset: any }) {
 
 			{/* DIALOG EDYCJI */}
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent className="sm:max-w-[425px] rounded-3xl">
+				<DialogContent className="sm:max-w-106 rounded-3xl">
 					<DialogHeader>
 						<DialogTitle className="text-xl font-black uppercase tracking-tight">
 							Aktualizacja Tezy
@@ -127,7 +128,7 @@ export function BoosterActionsClient({ asset }: { asset: any }) {
 							<Textarea
 								value={newRationale}
 								onChange={(e) => setNewRationale(e.target.value)}
-								className="min-h-[120px] resize-none bg-muted/30"
+								className="min-h-30 resize-none bg-muted/30"
 								placeholder="Dlaczego nadal trzymasz tę pozycję?"
 							/>
 						</div>

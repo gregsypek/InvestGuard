@@ -5,9 +5,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Lightbulb, Target } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Lightbulb, Target } from "lucide-react";
 
 export default function BoosterCards() {
 	// Dane "na sztywno" - Twoje pomysły
@@ -87,7 +88,7 @@ export default function BoosterCards() {
 
 						<CardContent className="space-y-4">
 							<div className="bg-slate-50 p-3 rounded-md italic text-sm text-slate-700 border border-slate-100">
-								"{bet.thesis}"
+								&quot;{bet.thesis}&quot;
 							</div>
 
 							<div className="space-y-1">

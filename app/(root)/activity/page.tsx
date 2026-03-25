@@ -104,7 +104,6 @@ export default async function ActivityPage({
 
 								// ZMIANA 3: Koniec zgadywania po słowach i znakach. Używamy Enuma:
 								const isBuy = t.type === "BUY";
-								const isSell = t.type === "SELL";
 								const isCorrection = t.type === "UPDATE";
 
 								return (

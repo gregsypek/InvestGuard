@@ -4,7 +4,6 @@ import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
 import {
 	CalendarIcon,
 	CheckSquare,
-	Landmark,
 	Loader2,
 	RefreshCw,
 	Trash2,
@@ -29,16 +28,15 @@ import {
 	deleteInvestmentPlan,
 	executePlan,
 } from "@/lib/actions/planner.actions";
-import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { DeleteButton } from "../DeleteButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SimpleSwitch } from "../ui/SimpleSwitchProps";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 // EN: Extend the Plan type to include the related Portfolio name
 type PlanWithPortfolio = InvestmentPlan & {
@@ -211,7 +209,7 @@ export function PlanCard({
 
 				{plan.rationale && (
 					<div className="text-[11px] text-muted-foreground leading-relaxed italic border-l-2 border-primary/20 pl-3 py-1">
-						"{plan.rationale}"
+						&quot;{plan.rationale}&quot;
 					</div>
 				)}
 			</div>

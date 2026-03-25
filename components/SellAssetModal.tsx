@@ -1,12 +1,13 @@
 "use client";
 
 import { Loader2, X } from "lucide-react";
-import { useEffect, useState } from "react";
 
+import { Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface SellAssetModalProps {
-	asset: any;
+	asset: Asset;
 	portfoliosWithCash: { id: string; name: string }[];
 	currentPortfolioId: string;
 	onConfirm: (data: {
@@ -31,23 +32,16 @@ export function SellAssetModal({
 	const [unitPrice, setUnitPrice] = useState<number>(
 		asset.currentValue / asset.quantity || 0,
 	);
-	const [targetId, setTargetId] = useState<string>("");
-	const [note, setNote] = useState("");
-
-	// EN: Step 1: Logic for auto-selecting the target portfolio
-	useEffect(() => {
+	// ✅ POPRAWKA: Obliczamy wartość początkową bezpośrednio w useState
+	const [targetId, setTargetId] = useState<string>(() => {
 		const hasLocalCash = portfoliosWithCash.some(
 			(p) => p.id === currentPortfolioId,
 		);
-
-		if (hasLocalCash) {
-			setTargetId(currentPortfolioId);
-		} else if (portfoliosWithCash.length > 0) {
-			setTargetId(portfoliosWithCash[0].id);
-		} else {
-			setTargetId("none");
-		}
-	}, [portfoliosWithCash, currentPortfolioId]);
+		if (hasLocalCash) return currentPortfolioId;
+		if (portfoliosWithCash.length > 0) return portfoliosWithCash[0].id;
+		return "none";
+	});
+	const [note, setNote] = useState("");
 
 	// EN: Financial calculations
 	const totalValue = quantity * unitPrice;

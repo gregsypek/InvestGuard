@@ -12,7 +12,6 @@ import { CategoryStatus, PortfolioWithAssets } from "@/lib/types";
 
 import AddButton from "./AddButton";
 import AssetLedger from "../AssetLedgerTable";
-import { Button } from "./button";
 import Link from "next/link";
 import PortfolioCharts from "../PortfolioCharts";
 import React from "react";

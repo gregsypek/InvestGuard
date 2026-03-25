@@ -1,5 +1,4 @@
-// components/PortfoliosHeader.tsx
-import { Briefcase, LayoutGrid, Wallet2 } from "lucide-react";
+import { Briefcase, LayoutGrid } from "lucide-react";
 
 import { ValueCard } from "./shared/ValueCard";
 

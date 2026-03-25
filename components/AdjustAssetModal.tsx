@@ -2,11 +2,12 @@
 
 import { Loader2, X } from "lucide-react";
 
+import { Asset } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 interface AdjustAssetModalProps {
-	asset: any;
+	asset: Asset;
 	onConfirm: (data: {
 		newQuantity: number;
 		newInvestedCapital: number;

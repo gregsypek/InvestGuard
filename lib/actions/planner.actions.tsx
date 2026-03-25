@@ -234,9 +234,9 @@ export async function executePlan(
 			revalidatePath("/alpha");
 			return { success: true };
 		});
-	} catch (error: any) {
+	} catch (error) {
 		console.error("Execute Plan Error:", error);
-		return { success: false, error: error.message || "Błąd bazy danych" };
+		return { success: false, error: "Błąd bazy danych" };
 	}
 }
 

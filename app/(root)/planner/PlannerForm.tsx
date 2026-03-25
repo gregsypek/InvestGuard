@@ -23,6 +23,7 @@ import {
 import { useForm, useWatch } from "react-hook-form";
 import { useMemo, useState } from "react";
 
+import { Category } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label"; // EN: Fixed missing import
 import { PlannerSchema } from "@/lib/validations/planner";
@@ -81,7 +82,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 		setViewMode(mode);
 		form.reset({
 			...form.getValues(),
-			category: mode === "bond" ? "BONDS" : ("" as any),
+			category: (mode === "bond" ? "BONDS" : "") as Category,
 			ticker: mode === "bond" ? "EDO" : "",
 			name: mode === "bond" ? "Obligacje EDO" : "",
 		});
@@ -236,7 +237,9 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 																		backgroundColor: `var(--portfolio-${cat.toLowerCase()})`,
 																	}}
 																/>
-																{CATEGORY_LABELS[cat] || cat}
+																{CATEGORY_LABELS[
+																	cat as keyof typeof CATEGORY_LABELS
+																] || cat}
 															</div>
 														</SelectItem>
 													))}

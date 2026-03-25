@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+// 1. Define the type based on the config object
 export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 	// console.log("🚀 ~ AddBondForm ~ portfolioId:", portfolioId);
 
@@ -136,7 +137,7 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 							<button
 								key={key}
 								type="button"
-								onClick={() => setSeries(key as any)}
+								onClick={() => setSeries(key as keyof typeof BOND_CONFIG)}
 								className={cn(
 									"p-4 rounded-xl border border-dashed transition-all flex items-center justify-center gap-2 group w-40 h-8",
 									series === key

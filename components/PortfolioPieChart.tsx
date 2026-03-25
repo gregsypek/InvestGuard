@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Cell,
 	Legend,
+	LegendPayload,
 	Pie,
 	PieChart,
 	ResponsiveContainer,
@@ -19,7 +20,18 @@ interface PortfolioPieChartProps {
 	dataKey: string;
 	data: CategoryStatus[];
 }
-
+// 1. Definiujemy kształt pojedynczego elementu legendy
+// interface LegendPayloadItem {
+// 	value: string; // To będzie techniczna nazwa kategorii (np. "BONDS")
+// 	color: string; // Kolor z wykresu
+// 	// Możesz dodać inne pola jeśli ich potrzebujesz
+// }
+// 2. Typujemy propsy funkcji
+interface CustomLegendProps {
+	// Use 'readonly' to match Recharts' internal requirements
+	// payload?: readonly LegendPayloadItem[];
+	payload?: readonly LegendPayload[];
+}
 export default function PortfolioPieChart({
 	title,
 	dataKey,
@@ -35,22 +47,31 @@ export default function PortfolioPieChart({
 
 	// EN: Custom Legend to match the "Circle with border" requirement
 	// UI: Własna legenda z "kółkiem z borderem"
-	const renderCustomLegend = (props: any) => {
+
+	const renderCustomLegend = (props: CustomLegendProps) => {
 		const { payload } = props;
+		if (!payload) return null;
+
 		return (
-			<ul className="flex flex-wrap  justify-center gap-x-2 gap-y-2 mt-2">
-				{payload.map((entry: any, index: number) => (
-					<li key={`item-${index}`} className="flex items-center gap-2">
-						{/* EN: The circle with border matching your system style */}
-						<div
-							className="h-3 w-3 rounded-full border border-border2 shadow-xs"
-							style={{ backgroundColor: entry.color }}
-						/>
-						<span className="text-xs font-medium text-muted-foreground">
-							{CATEGORY_LABELS[entry.value]}
-						</span>
-					</li>
-				))}
+			<ul className="flex flex-wrap justify-center gap-x-2 gap-y-2 mt-2">
+				{payload.map((entry, index) => {
+					// EN: We cast 'entry.value' to the keys of CATEGORY_LABELS to satisfy TypeScript's index signature requirements.
+					const labelKey = entry.value as keyof typeof CATEGORY_LABELS;
+
+					return (
+						<li key={`item-${index}`} className="flex items-center gap-2">
+							{/* EN: The circle with border matching your system style */}
+							<div
+								className="h-3 w-3 rounded-full border border-border2 shadow-xs"
+								style={{ backgroundColor: entry.color }}
+							/>
+							<span className="text-xs font-medium text-muted-foreground">
+								{/* EN: Accessing the label with a typed key ensures safety and avoids the 'any' error. */}
+								{CATEGORY_LABELS[labelKey] || entry.value}
+							</span>
+						</li>
+					);
+				})}
 			</ul>
 		);
 	};

@@ -1,4 +1,4 @@
-import { Category, Prisma, TransactionHistory } from "@prisma/client";
+import { Category, TransactionHistory } from "@prisma/client";
 
 export type AssetCategory =
 	| "BONDS"

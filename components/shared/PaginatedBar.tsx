@@ -12,13 +12,19 @@ import { cn } from "@/lib/utils";
 
 // EN: Define correct type for state dispatcher
 // UI: Zdefiniuj poprawny typ dla dyspacza stanu
-interface PaginatedBarProps {
-	items: any[]; // EN: Generic items array
+interface PaginatedBarProps<T> {
+	items: T[]; // EN: Generic items array
 	currentPage: number;
 	onClick: React.Dispatch<React.SetStateAction<number>>; // EN: Correct React state type
 }
 
-const PaginatedBar = ({ items, currentPage, onClick }: PaginatedBarProps) => {
+// 2. Dodajemy <T,> przy definicji funkcji (przecinek jest ważny w plikach .tsx)
+const PaginatedBar = <T,>({
+	items,
+	currentPage,
+	onClick,
+}: PaginatedBarProps<T>) => {
+	console.log("🚀 ~ PaginatedBar ~ items:", items);
 	const totalPages = Math.ceil(items.length / PAGE_ITEMS);
 
 	return (

@@ -24,7 +24,6 @@ const PaginatedBar = <T,>({
 	currentPage,
 	onClick,
 }: PaginatedBarProps<T>) => {
-	console.log("🚀 ~ PaginatedBar ~ items:", items);
 	const totalPages = Math.ceil(items.length / PAGE_ITEMS);
 
 	return (

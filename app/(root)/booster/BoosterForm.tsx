@@ -1,20 +1,7 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
 import { BoosterSchema, TIME_HORIZONS } from "@/lib/validations/booster";
-import { createBoosterAsset } from "@/lib/actions/booster.actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import {
 	Form,
 	FormControl,
@@ -23,8 +10,22 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import z from "zod";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+
+import { Input } from "@/components/ui/input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Textarea } from "@/components/ui/textarea";
+import { createBoosterAsset } from "@/lib/actions/booster.actions";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 // Tworzymy typ na podstawie schematu
 type BoosterFormValues = z.infer<typeof BoosterSchema>;
@@ -39,7 +40,6 @@ export default function BoosterForm() {
 			rationale: "",
 		},
 	});
-	const { isSubmitting } = form.formState;
 
 	const onSubmit = async (data: BoosterFormValues) => {
 		const result = await createBoosterAsset(data);

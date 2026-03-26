@@ -24,7 +24,7 @@ export const CATEGORY_ASSETS: AssetCategory[] = [
 
 // EN: Mapping technical keys to Polish labels
 // UI: Mapowanie kluczy technicznych na polskie etykiety
-export const CATEGORY_LABELS: Record<string, string> = {
+export const CATEGORY_LABELS: Record<AssetCategory, string> = {
 	BONDS: "Obligacje",
 	DEVELOPED: "Rynki Rozwinięte",
 	EMERGING: "Rynki Wschodzące",

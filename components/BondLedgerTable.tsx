@@ -15,6 +15,7 @@ import {
 	updateBondValue,
 } from "@/lib/actions/bond-actions";
 
+import { Asset } from "@prisma/client";
 import { Bond } from "@/lib/types";
 import { DeleteButton } from "./DeleteButton";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
@@ -36,7 +37,8 @@ export default function BondLedgerTable({
 	allPortfolios,
 }: Props) {
 	const [openGroups, setOpenGroups] = useState<string[]>([]);
-	const [assetToSell, setAssetToSell] = useState<Bond | null>(null);
+	// const [assetToSell, setAssetToSell] = useState<Bond | null>(null);
+	const [assetToSell, setAssetToSell] = useState<Asset | null>(null);
 	const [isPending, startTransition] = useTransition(); // Do obsługi ładowania
 	// EN: Grouping bonds using useMemo for better performance
 
@@ -320,8 +322,33 @@ export default function BondLedgerTable({
 												<td className="px-6 py-4 text-right flex justify-end gap-2">
 													<button
 														onClick={(e) => {
-															e.stopPropagation(); // Żeby nie zwijać wiersza przy kliknięciu
-															setAssetToSell(bond); // To aktywuje modal
+															e.stopPropagation();
+
+															// EN: Create a full Asset object from the Bond data to satisfy TypeScript
+															const assetFromBond: Asset = {
+																...bond,
+																category: "BONDS", // Hardcoded because it's a Bond
+																portfolioId: portfolioId,
+																targetPercentage: 55, // Your model allocation for bonds
+																purchaseDate: new Date(bond.purchaseDate), // Converting string to Date object
+																createdAt: new Date(),
+																updatedAt: new Date(),
+
+																// EN: Set optional fields to null to match the Asset interface
+																nominalValue: bond.currentValue ?? null,
+																rationale: null,
+																timeHorizon: null,
+																expectedRoi: null,
+																conviction: null,
+																riskLevel: null,
+																rateType: null,
+																interestRate: bond.interestRate ?? null,
+																maturityDate: bond.maturityDate
+																	? new Date(bond.maturityDate)
+																	: null,
+															};
+
+															setAssetToSell(assetFromBond);
 														}}
 														className="p-2 hover:bg-emerald-500/10 text-emerald-600 rounded-full transition-colors"
 													>

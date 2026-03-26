@@ -49,11 +49,11 @@ export default async function AlphaSelectionPage({
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
 
-	const userPortfolio = await db.portfolio.findFirst({
-		where: { userId: session.user.id },
-	});
+	// const userPortfolio = await db.portfolio.findFirst({
+	// 	where: { userId: session.user.id },
+	// });
 
-	const targetPortfolioId = userPortfolio?.id || "default";
+	// const targetPortfolioId = userPortfolio?.id || "default";
 
 	// 1. FETCH DATA: Get only Booster assets for this user
 	const boosterAssets = await db.asset.findMany({

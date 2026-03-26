@@ -1,6 +1,7 @@
 "use client";
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Asset, TransactionHistory } from "@prisma/client";
 import { CATEGORY_LABELS, COLORS, PAGE_ITEMS } from "@/lib/constants";
 import {
 	ChevronDown,
@@ -52,6 +53,9 @@ interface Props {
 	allPortfoliosWithCash: { id: string; name: string }[];
 }
 
+// 1. Definiujemy prosty typ dla wykresu
+type ChartPoint = { date: string; amount: number };
+
 const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 	const router = useRouter();
 	const { assets } = portfolio;
@@ -60,8 +64,8 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 	const [showFullHistory, setShowFullHistory] = useState(false);
 	const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
-	const [assetToSell, setAssetToSell] = useState<any>(null);
-	const [assetToAdjust, setAssetToAdjust] = useState<any>(null);
+	const [assetToSell, setAssetToSell] = useState<Asset | null>(null);
+	const [assetToAdjust, setAssetToAdjust] = useState<Asset | null>(null);
 	const [isPending, startTransition] = useTransition();
 
 	// --- LOGIKA AGREGACJI (HUB & SPOKE) ---
@@ -72,14 +76,14 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 		// console.log("🚀 ~ AssetLedgerTable ~ bondAssets:", bondAssets);
 
 		// 2. Budujemy jeden wiersz agregujący wszystkie transze obligacji
-		let aggregatedBonds: any = null;
+		let aggregatedBonds: Asset | null = null;
 		if (bondAssets.length > 0) {
 			aggregatedBonds = {
 				id: "bonds-summary-id",
 				name: "Portfel Obligacji Skarbowych",
 				ticker: "OBLIGACJE",
 				category: "BONDS",
-				quantity: bondAssets.length, // EN: Quantity shows number of tranches
+				quantity: bondAssets.length,
 				investedCapital: bondAssets.reduce(
 					(sum, b) => sum + (b.investedCapital || 0),
 					0,
@@ -89,16 +93,38 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 					0,
 				),
 				targetPercentage: 55,
+
+				// --- POPRAWKA: Dodajemy brakujące pola techniczne ---
+				portfolioId: portfolio.id, // ID portfela, w którym jesteśmy
+				createdAt: new Date(), // Data utworzenia (wirtualna)
+				updatedAt: new Date(), // Data aktualizacji (wirtualna)
+
+				// Reszta pól opcjonalnych (może być null/0)
+				purchaseDate: new Date(),
+				nominalValue: null,
+				interestRate: null,
+				rateType: null,
+				timeHorizon: null,
+				expectedRoi: null,
+				maturityDate: null,
+				rationale: "Podsumowanie zbiorcze obligacji",
+				conviction: null,
+				riskLevel: null,
 			};
+			console.log("🚀 ~ AssetLedgerTable ~ aggregatedBonds:", aggregatedBonds);
 		}
 
 		// 3. Łączymy w jedną tablicę
 		const combined = aggregatedBonds
 			? [...standardAssets, aggregatedBonds]
 			: standardAssets;
+		console.log("🚀 ~ AssetLedgerTable ~ combined:", combined);
 
 		return combined.map((asset) => {
-			const { profitAmount, profitPercent } = calculateAssetPL(asset);
+			const { profitAmount, profitPercent } = calculateAssetPL({
+				investedCapital: asset.investedCapital ?? 0,
+				currentValue: asset.currentValue ?? 0,
+			});
 			// EN: Clean the ticker (remove _1772815... hack) for display
 			const cleanTicker = asset.ticker ? asset.ticker.split("_")[0] : "ASSET";
 
@@ -110,7 +136,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 				cleanTicker,
 			};
 		});
-	}, [assets]);
+	}, [assets, portfolio]);
 	// console.log("🚀 ~ AssetLedgerTable ~ assetsWithPL:", assetsWithPL);
 
 	const paginatedAssets = assetsWithPL.slice(
@@ -241,13 +267,14 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 												tx.ticker === asset.ticker &&
 												tx.category === asset.category,
 										);
+
 								const chartData = [...assetHistory]
 									.sort(
 										(a, b) =>
 											new Date(a.executedAt).getTime() -
 											new Date(b.executedAt).getTime(),
 									)
-									.reduce((acc: any[], tx) => {
+									.reduce((acc: ChartPoint[], tx) => {
 										// 🆕 ZMIANA LOGIKI WYKRESU:
 										let valueToAdd = 0;
 
@@ -284,12 +311,15 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 									? assetHistory
 									: assetHistory.slice(0, 3);
 
-								const currentUnitPrice =
-									asset.quantity > 0 && !isAggregatedBond
-										? asset.currentValue / asset.quantity
-										: 0;
+								// const currentUnitPrice =
+								// 	asset.quantity > 0 && !isAggregatedBond
+								// 		? asset.currentValue / asset.quantity
+								// 		: 0;
 								const share = Number(
-									((asset.currentValue / totalPortfolioValue) * 100).toFixed(1),
+									(
+										((asset.currentValue ?? 0) / totalPortfolioValue) *
+										100
+									).toFixed(1),
 								);
 								const categoryColor =
 									COLORS[asset.category as keyof typeof COLORS] || "#ccc";
@@ -308,7 +338,9 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 											)}
 											onClick={() => {
 												if (hasHistory) {
-													setExpandedAssetId(isExpanded ? null : asset.id);
+													setExpandedAssetId(
+														isExpanded ? null : (asset.id as string),
+													);
 													setShowFullHistory(false); // Resetujemy widok przy zmianie wiersza
 												}
 											}}
@@ -331,10 +363,13 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 													</span>
 													<span className="text-[10px] text-blue-500 font-bold">
 														{isAggregatedBond ||
-															`${asset.quantity.toLocaleString(undefined, {
-																minimumFractionDigits: 2,
-																maximumFractionDigits: 2,
-															})} szt`}
+															`${(asset.quantity ?? 0).toLocaleString(
+																undefined,
+																{
+																	minimumFractionDigits: 2,
+																	maximumFractionDigits: 2,
+																},
+															)} szt`}
 													</span>
 												</div>
 											</TableCell>
@@ -345,7 +380,9 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 														className="w-2 h-2 rounded-full"
 														style={{ backgroundColor: categoryColor }}
 													/>
-													{CATEGORY_LABELS[asset.category]}
+													{asset.category
+														? CATEGORY_LABELS[asset.category]
+														: ""}
 												</div>
 											</TableCell>
 
@@ -405,10 +442,12 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 											</TableCell>
 
 											<TableCell className="text-right font-bold font-mono text-sm tabular-nums">
-												{asset.currentValue.toLocaleString(undefined, {
-													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
-												})}{" "}
+												{asset.currentValue
+													? asset.currentValue.toLocaleString(undefined, {
+															minimumFractionDigits: 2,
+															maximumFractionDigits: 2,
+														})
+													: 0}{" "}
 												<span className="text-[10px] font-normal opacity-50">
 													PLN
 												</span>
@@ -437,7 +476,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 																className="cursor-pointer font-medium"
 																onClick={(e) => {
 																	e.stopPropagation();
-																	setAssetToSell(asset);
+																	setAssetToSell(asset as unknown as Asset); // 👈 Informujemy TS, że to nadal jest Asset
 																}}
 															>
 																<HandCoins className="mr-2 h-4 w-4 text-emerald-500" />{" "}
@@ -447,7 +486,9 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 																className="cursor-pointer font-medium"
 																onClick={(e) => {
 																	e.stopPropagation();
-																	setAssetToAdjust(asset);
+																	// Wyciągamy pola UI, zostawiając resztę (czysty Asset) w zmiennej baseAsset
+																	// setAssetToSell(asset as unknown as Asset);
+																	setAssetToAdjust(asset as unknown as Asset);
 																}}
 															>
 																<Scale className="mr-2 h-4 w-4 text-blue-500" />{" "}
@@ -554,100 +595,104 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 
 																<div className="max-h-96 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
 																	{/* EN: We map ONLY over visibleHistory to respect the toggle/slice logic */}
-																	{visibleHistory.map((t: any) => {
-																		// ZMIANA 1: Polegamy na typie z bazy (Enum)
-																		const isBuy = t.type === "BUY";
-																		const isSell = t.type === "SELL";
-																		const isCorrection = t.type === "UPDATE";
+																	{visibleHistory.map(
+																		(t: TransactionHistory) => {
+																			// ZMIANA 1: Polegamy na typie z bazy (Enum)
+																			const isBuy = t.type === "BUY";
+																			// const isSell = t.type === "SELL";
+																			const isCorrection = t.type === "UPDATE";
 
-																		// Obliczamy cenę jednostkową tylko dla kupna/sprzedaży
-																		const txUnitPrice =
-																			t.quantity !== 0
-																				? Math.abs(t.executedValue / t.quantity)
-																				: 0;
+																			// Obliczamy cenę jednostkową tylko dla kupna/sprzedaży
+																			const txUnitPrice =
+																				t.quantity !== 0
+																					? Math.abs(
+																							t.executedValue / t.quantity,
+																						)
+																					: 0;
 
-																		return (
-																			<div
-																				key={t.id}
-																				className="flex items-center justify-between text-[11px] bg-background/50 border border-border/40 p-3 rounded-lg hover:border-border transition-colors"
-																			>
-																				<div className="flex items-center gap-4">
-																					<span className="text-muted-foreground font-medium">
-																						{new Date(
-																							t.executedAt,
-																						).toLocaleDateString()}
-																					</span>
-																					<span
-																						className={cn(
-																							"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
-																							isCorrection
-																								? "bg-blue-500/10 text-blue-600" // Niebieski dla UPDATE
-																								: isBuy
-																									? "bg-emerald-500/10 text-emerald-600"
-																									: "bg-orange-500/10 text-orange-600",
-																						)}
-																					>
-																						{isCorrection
-																							? "Korekta"
-																							: isBuy
-																								? "Kupno"
-																								: "Sprzedaż"}
-																					</span>
-																					{isAggregatedBond && (
-																						<span className="font-bold text-[10px] text-slate-500 uppercase">
-																							{t.assetName || "Seria"}
+																			return (
+																				<div
+																					key={t.id}
+																					className="flex items-center justify-between text-[11px] bg-background/50 border border-border/40 p-3 rounded-lg hover:border-border transition-colors"
+																				>
+																					<div className="flex items-center gap-4">
+																						<span className="text-muted-foreground font-medium">
+																							{new Date(
+																								t.executedAt,
+																							).toLocaleDateString()}
 																						</span>
-																					)}
-																				</div>
-
-																				<div className="flex gap-6 font-mono text-right">
-																					<div className="flex flex-col">
 																						<span
 																							className={cn(
-																								"font-bold",
+																								"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
 																								isCorrection
-																									? t.executedValue >= 0
-																										? "text-blue-600"
-																										: "text-red-500" // Niebieski zysk, czerwona strata korekty
+																									? "bg-blue-500/10 text-blue-600" // Niebieski dla UPDATE
 																									: isBuy
-																										? "text-emerald-500"
-																										: "text-orange-600",
+																										? "bg-emerald-500/10 text-emerald-600"
+																										: "bg-orange-500/10 text-orange-600",
 																							)}
 																						>
-																							{/* ZMIANA 2: Pokazujemy +/- dla korekty na podstawie executedValue */}
 																							{isCorrection
-																								? t.executedValue > 0
-																									? "+"
-																									: ""
+																								? "Korekta"
 																								: isBuy
-																									? "+"
-																									: "-"}
-																							{Math.abs(
-																								t.executedValue,
-																							).toLocaleString(undefined, {
-																								minimumFractionDigits: 2,
-																								maximumFractionDigits: 2,
-																							})}{" "}
-																							PLN
+																									? "Kupno"
+																									: "Sprzedaż"}
 																						</span>
-																						{!isCorrection && (
-																							<span className="text-[9px] text-muted-foreground">
-																								@ {txUnitPrice.toFixed(2)} /
-																								szt.
+																						{isAggregatedBond && (
+																							<span className="font-bold text-[10px] text-slate-500 uppercase">
+																								{t.assetName || "Seria"}
 																							</span>
 																						)}
 																					</div>
-																					<span className="min-w-18 font-bold text-muted-foreground">
-																						{isCorrection
-																							? "0.0000"
-																							: (t.quantity > 0 ? "+" : "") +
-																								t.quantity.toFixed(4)}{" "}
-																						szt.
-																					</span>
+
+																					<div className="flex gap-6 font-mono text-right">
+																						<div className="flex flex-col">
+																							<span
+																								className={cn(
+																									"font-bold",
+																									isCorrection
+																										? t.executedValue >= 0
+																											? "text-blue-600"
+																											: "text-red-500" // Niebieski zysk, czerwona strata korekty
+																										: isBuy
+																											? "text-emerald-500"
+																											: "text-orange-600",
+																								)}
+																							>
+																								{/* ZMIANA 2: Pokazujemy +/- dla korekty na podstawie executedValue */}
+																								{isCorrection
+																									? t.executedValue > 0
+																										? "+"
+																										: ""
+																									: isBuy
+																										? "+"
+																										: "-"}
+																								{Math.abs(
+																									t.executedValue,
+																								).toLocaleString(undefined, {
+																									minimumFractionDigits: 2,
+																									maximumFractionDigits: 2,
+																								})}{" "}
+																								PLN
+																							</span>
+																							{!isCorrection && (
+																								<span className="text-[9px] text-muted-foreground">
+																									@ {txUnitPrice.toFixed(2)} /
+																									szt.
+																								</span>
+																							)}
+																						</div>
+																						<span className="min-w-18 font-bold text-muted-foreground">
+																							{isCorrection
+																								? "0.0000"
+																								: (t.quantity > 0 ? "+" : "") +
+																									t.quantity.toFixed(4)}{" "}
+																							szt.
+																						</span>
+																					</div>
 																				</div>
-																			</div>
-																		);
-																	})}
+																			);
+																		},
+																	)}
 
 																	{!showFullHistory &&
 																		assetHistory.length > 3 && (
@@ -672,7 +717,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 			</div>
 
 			<PaginatedBar
-				items={paginatedAssets}
+				items={assetsWithPL}
 				currentPage={currentPage}
 				onClick={setCurrentPage}
 			/>

@@ -24,6 +24,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { AddAssetSchema } from "@/lib/validations/asset";
 import AddBondForm from "./AddBondForm";
+import { AssetCategory } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { SubmitButton } from "../SubmitButton";
@@ -41,7 +42,7 @@ export default function AddAssetForm({
 	existingAssets = [],
 }: {
 	portfolioId: string;
-	allowedCategories?: string[];
+	allowedCategories?: AssetCategory[];
 	existingAssets?: Array<{
 		id: string;
 		name: string;
@@ -52,7 +53,7 @@ export default function AddAssetForm({
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const [isPending, setIsPending] = useState(false);
-	const [viewMode, setViewMode] = useState<"asset" | "bond">("asset");
+	// const [viewMode, setViewMode] = useState<"asset" | "bond">("asset");
 
 	// --- 1. FILTROWANIE DANYCH ---
 	const filteredCategories = useMemo(
@@ -67,7 +68,12 @@ export default function AddAssetForm({
 	// --- 2. INTELIGENTNA KATEGORIA POCZĄTKOWA ---
 	const initialCategory = useMemo(() => {
 		const catFromUrl = searchParams.get("cat");
-		if (catFromUrl && allowedCategories.includes(catFromUrl)) return catFromUrl;
+		console.log("🚀 ~ AddAssetForm ~ catFromUrl:", catFromUrl);
+		if (
+			catFromUrl &&
+			allowedCategories.includes(catFromUrl as keyof typeof CATEGORY_LABELS)
+		)
+			return catFromUrl;
 		if (filteredCategories.length === 1) return filteredCategories[0];
 		// Jeśli jest wiele kategorii, domyślnie wybierz pierwszą z listy zamiast pustki
 		return filteredCategories[0] || "";
@@ -108,16 +114,20 @@ export default function AddAssetForm({
 	const isBondOnly =
 		allowedCategories.includes("BONDS") && filteredCategories.length === 0;
 
-	// --- 4. OBSŁUGA ZMIANY WIDOKU (URL -> STATE) ---
-	useEffect(() => {
-		const view = searchParams.get("view");
+	// // --- 4. OBSŁUGA ZMIANY WIDOKU (URL -> STATE) ---
+	// useEffect(() => {
+	// 	const view = searchParams.get("view");
 
-		if (view === "bond" || isBondOnly) {
-			setViewMode("bond");
-		} else {
-			setViewMode("asset");
-		}
-	}, [searchParams, allowedCategories, filteredCategories, isBondOnly]);
+	// 	if (view === "bond" || isBondOnly) {
+	// 		setViewMode("bond");
+	// 	} else {
+	// 		setViewMode("asset");
+	// 	}
+	// }, [searchParams, allowedCategories, filteredCategories, isBondOnly]);
+
+	// ✅ To jest teraz  "stan" - obliczany w locie przy każdym renderze
+	const viewMode =
+		searchParams.get("view") === "bond" || isBondOnly ? "bond" : "asset";
 
 	// --- 5. EFEKTY SYNCHRONIZACJI ---
 	useEffect(() => {
@@ -176,7 +186,7 @@ export default function AddAssetForm({
 							router.push(window.location.pathname);
 							// Następnie ręcznie resetujemy tryb w formularzu
 							form.setValue("existingAssetId", "new");
-							setViewMode("asset");
+							// setViewMode("asset");
 						}}
 						className={cn(
 							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
@@ -195,7 +205,7 @@ export default function AddAssetForm({
 							router.push(window.location.pathname);
 							// Ustawiamy ID pierwszego dostępnego aktywa, co przełączy isAddingNew na false
 							form.setValue("existingAssetId", filteredExistingAssets[0].id);
-							setViewMode("asset");
+							// setViewMode("asset");
 						}}
 						className={cn(
 							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
@@ -262,8 +272,9 @@ export default function AddAssetForm({
 																	</span>
 																	<span className="text-[9px] uppercase tracking-tighter text-muted-foreground leading-none">
 																		Kategoria:{" "}
-																		{CATEGORY_LABELS[asset.category] ||
-																			asset.category}
+																		{CATEGORY_LABELS[
+																			asset.category as keyof typeof CATEGORY_LABELS
+																		] || asset.category}
 																	</span>
 																</div>
 															</div>

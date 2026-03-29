@@ -59,7 +59,7 @@ export default async function ActivityPage({
 	const { data: transactions, meta } = result;
 
 	return (
-		<div className="space-y-10 pb-20">
+		<div className="p-4 md:p-8 space-y-10 pb-20">
 			<ActivityHeader
 				totalTransactions={meta.totalCount}
 				currentPage={currentPage}

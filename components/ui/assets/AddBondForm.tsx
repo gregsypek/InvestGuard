@@ -292,7 +292,7 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 			</form>
 
 			{/* --- NOWA UNIWERSALNA LEGENDA (DYNAMICZNA) --- */}
-			<div className="mt-8 flex flex-col gap-6 px-6 py-6 bg-muted/10 rounded-2xl border border-border/40">
+			<div className="mt-8 flex flex-col gap-6  py-6 bg-muted/10 rounded-2xl border border-border/40">
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-2">
 						<Info className="h-4 w-4 text-primary" />

@@ -9,7 +9,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "./ui/select";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
 import Link from "next/link";
@@ -69,7 +69,7 @@ export default function Header({
 		<div className="sticky top-0 z-50 w-full flex flex-col">
 			<header
 				className={cn(
-					"flex justify-between items-center p-2 border-b transition-all duration-500",
+					"flex justify-between items-center p-2  transition-all duration-500",
 					isDemoMode
 						? "bg-emerald-600 border-emerald-500 text-white"
 						: "bg-background border-border text-foreground",
@@ -128,7 +128,7 @@ export default function Header({
 				</div>
 			</header>
 			{isDemoMode && (
-				<div className="bg-emerald-600 border-emerald-500 text-white text-[9px] text-center font-bold uppercase tracking-widest  py-1">
+				<div className="bg-emerald-600 text-white text-[9px] text-center font-bold uppercase tracking-widest  py-1">
 					<span className="">
 						Tryb Demo: Portfel Wzorcowy. Dane wyłącznie poglądowe a przyciski z
 						ikoną{" "}

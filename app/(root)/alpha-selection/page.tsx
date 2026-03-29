@@ -107,7 +107,7 @@ export default async function AlphaSelectionPage({
 	const totalPages = 5;
 
 	return (
-		<div className="space-y-10 ">
+		<div className="p-4 md:p-8 space-y-10 ">
 			<AlphaHeader
 				totalTransactions={2}
 				currentPage={currentPage}

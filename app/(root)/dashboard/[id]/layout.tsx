@@ -32,7 +32,7 @@ export default async function PortfolioLayout({
 		getPortfolioStats(portfolio);
 
 	return (
-		<div className="space-y-10 pb-20">
+		<div className="space-y-10 pb-20 p-4 md:p-8">
 			<DashboardHeader
 				key={id}
 				portfolio={portfolio}

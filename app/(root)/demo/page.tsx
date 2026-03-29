@@ -88,15 +88,14 @@ export default async function DemoPage({
 					selectedPortfolioId={selectedStrategy.data.id}
 				/>
 
-				<main className="flex-1">
+				<main className="flex-1 p-4 md:p-8">
 					{/* 2. Statystyki (DashboardHeader) - Wywołujemy je tutaj, 
           bo layout z [id] tu nie sięga! */}
-					<div className="bg-secondary/10 border-b">
+					<div className="bg-secondary/10 pb-2 border-b border-border  transition-colors">
 						<DashboardHeader
 							portfolio={selectedStrategy.data}
 							name={selectedStrategy.title}
 							totalValue={totalValue}
-							// isDemo={true}
 						/>
 					</div>
 

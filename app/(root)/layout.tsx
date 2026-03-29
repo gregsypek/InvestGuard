@@ -42,7 +42,7 @@ export default async function RootLayout({
 					userButton={userControl}
 				/>
 				{/* scrollable main part */}
-				<main className="flex-1 overflow-y-auto p-4 md:p-8">
+				<main className="flex-1 overflow-y-auto ">
 					<div className="max-w-7xl mx-auto">{children}</div>
 				</main>
 			</div>

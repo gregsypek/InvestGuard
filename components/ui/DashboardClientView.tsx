@@ -11,12 +11,14 @@ interface Props {
 	// EN: Add the new prop here to receive data from the Server Component
 	allPortfoliosWithCash: { id: string; name: string }[];
 	userName?: string | null;
+	isDemo?: boolean;
 }
 
 export default function DashboardClientView({
 	portfolio,
 	portfolioStatus,
 	allPortfoliosWithCash,
+	isDemo,
 }: Props) {
 	const [hasMounted, setHasMounted] = useState(false);
 
@@ -33,6 +35,7 @@ export default function DashboardClientView({
 				portfolio={portfolio}
 				portfolioStatus={portfolioStatus}
 				allPortfoliosWithCash={allPortfoliosWithCash}
+				isDemo={isDemo}
 			/>
 		</div>
 	);

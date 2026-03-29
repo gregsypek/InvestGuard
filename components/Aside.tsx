@@ -1,19 +1,20 @@
 // components/Aside.tsx
 "use client";
 
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 import {
-	LayoutDashboard,
-	Rocket,
 	FileText,
-	Wallet,
-	Settings,
-	Notebook,
 	History,
+	LayoutDashboard,
+	Notebook,
+	Rocket,
+	Settings,
+	Wallet,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { usePathname, useSearchParams } from "next/navigation";
+
 import { APP_NAME } from "@/lib/constants";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 // Navigation items for the main sidebar
 // Each item contains a Polish label and its corresponding English translation for future i18n
@@ -55,7 +56,7 @@ const Aside = () => {
 	const portfolioId = searchParams.get("portfolioId");
 
 	return (
-		<aside className="min-w-auto md:w-64 flex flex-col bg-sidebar text-sidebar-foreground border-r border-border">
+		<aside className="min-w-auto md:w-64 flex flex-col bg-sidebar text-sidebar-foreground">
 			{/* Logo Area */}
 			<div className="p-6">
 				<Link href="/" className="flex items-center gap-3 group">

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function HomePage() {
 	// TYMCZASOWY PRZEŁĄCZNIK WIDOKU
@@ -34,7 +35,7 @@ function GuestOnboarding() {
 		<div className="flex flex-col min-h-screen">
 			{/* Hero Section */}
 			<section className="py-20 px-6 text-center bg-linear-to-b from-background to-secondary/20">
-				<h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
+				<h1 className="text-4xl md:text-6xl font-black tracking-tighter  mb-6">
 					Witaj w <span className="text-primary">MyWallet</span>
 				</h1>
 				<p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
@@ -43,10 +44,14 @@ function GuestOnboarding() {
 				</p>
 				<div className="flex justify-center gap-4">
 					<Button size="lg" className="gap-2">
-						Stwórz pierwszy portfel <ArrowRight className="w-4 h-4" />
+						<Link href="/portfolios/new" className="gap-2 flex items-center">
+							Stwórz pierwszy portfel <ArrowRight className="w-4 h-4" />
+						</Link>
 					</Button>
-					<Button variant="outline" size="lg">
-						Zobacz demo
+					<Button variant="outline" size="lg" asChild>
+						<Link href="/demo" className="gap-2 flex items-center px-4">
+							Zobacz demo
+						</Link>
 					</Button>
 				</div>
 			</section>
@@ -102,7 +107,7 @@ function GuestOnboarding() {
 			</section>
 
 			{/* Footer CTA */}
-			<section className="py-20 text-center border-t">
+			<section className="py-20 text-center">
 				<h2 className="text-3xl font-bold mb-6">Gotowy na start?</h2>
 				<Button size="lg" className="px-8">
 					Zaczynamy

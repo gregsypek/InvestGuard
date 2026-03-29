@@ -1,17 +1,20 @@
-import { cn } from "@/lib/utils";
 import { Button } from "./button";
+import { cn } from "@/lib/utils";
 
 const AddButton = ({
 	children,
 	className,
+	disabled,
 }: {
 	children: React.ReactNode;
 	className?: string;
+	disabled?: boolean;
 }) => {
 	return (
 		<Button
 			size="sm"
 			variant="outline"
+			disabled={disabled}
 			className={cn(
 				className,
 				"h-8 gap-1.5 px-3 font-semibold text-xs uppercase tracking-wide",

@@ -1,4 +1,10 @@
+import { ArrowRight, CloudSun, GraduationCap, Scale } from "lucide-react";
 import { AssetCategory, CategoryConfig } from "./types";
+import {
+	allWeatherPortfolio,
+	classicPortfolio,
+	yalePortfolio,
+} from "@/lib/demoData";
 
 import { cn } from "./utils";
 
@@ -209,3 +215,40 @@ export const BOND_TEMPLATES = {
 	OTS: { label: "OTS (3-miesięczne)", duration: 0.25, rateType: "FIXED" },
 };
 //NOTE: FIXED (Stałe): Odsetki proste (np. OTS) lub proste z wypłatą. VARIABLE/INDEXED (Zmienne/Indeksowane): Kapitalizacja roczna (EDO, COI, ROD).
+
+export const STRATEGIES = {
+	classic: {
+		data: classicPortfolio,
+		title: "Klasyczny 60/40",
+		slogan: "Fundament zrównoważonego portfela",
+		description:
+			"Najprostszy sposób na balans między zyskiem a bezpieczeństwem.",
+		icon: Scale,
+		color: "text-blue-500",
+		bgColor: "bg-blue-500/10",
+		risk: "Średnie",
+		advantage: "Łatwy rebalancing",
+	},
+	dalio: {
+		data: allWeatherPortfolio,
+		title: "Ray Dalio - All Weather",
+		slogan: "Bezpieczeństwo w każdą pogodę",
+		description: "Zaprojektowany, by zarabiać niezależnie od stanu gospodarki.",
+		icon: CloudSun,
+		color: "text-emerald-500",
+		bgColor: "bg-emerald-500/10",
+		risk: "Niskie / Średnie",
+		advantage: "Odporność na kryzysy",
+	},
+	yale: {
+		data: yalePortfolio,
+		title: "Model Yale (Swensen)",
+		slogan: "Dywersyfikacja klasy premium",
+		description: "Wykorzystuje potencjał nieruchomości i rynków wschodzących.",
+		icon: GraduationCap,
+		color: "text-amber-500",
+		bgColor: "bg-amber-500/10",
+		risk: "Średnie / Wysokie",
+		advantage: "Wysoki potencjał wzrostu",
+	},
+};

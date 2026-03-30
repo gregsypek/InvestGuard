@@ -4,6 +4,7 @@ import {
 	Select,
 	SelectContent,
 	SelectItem,
+	SelectSeparator,
 	SelectTrigger,
 	SelectValue,
 } from "./ui/select";
@@ -107,6 +108,10 @@ export default function Header({
 					</SelectTrigger>
 
 					<SelectContent>
+						<div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+							Twoje Portfele
+						</div>
+						<SelectSeparator />
 						{portfolios.map((p) => (
 							<SelectItem
 								key={p.id}

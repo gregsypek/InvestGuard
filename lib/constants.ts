@@ -1,5 +1,5 @@
-import { ArrowRight, CloudSun, GraduationCap, Scale } from "lucide-react";
 import { AssetCategory, CategoryConfig } from "./types";
+import { CloudSun, GraduationCap, Scale } from "lucide-react";
 import {
 	allWeatherPortfolio,
 	classicPortfolio,

@@ -18,15 +18,21 @@ export const authConfig = {
 		authorized({ auth, request: { nextUrl } }) {
 			const isLoggedIn = !!auth?.user;
 
-			// 2. Definiujemy, co jest publiczne (np. strona główna '/')
-			const isPublicPage = nextUrl.pathname === "/";
+			// 1. Sprawdzamy, czy użytkownik próbuje wejść na ścieżkę demo
+			// Pozwalamy na /demo, /demo/portfolios, /demo/planning itp.
+			const isDemoRoute = nextUrl.pathname.startsWith("/demo");
 
-			// 3. Jeśli strona NIE jest publiczna i użytkownik NIE jest zalogowany -> blokuj
-			if (!isPublicPage && !isLoggedIn) {
-				return false; // To automatycznie przekieruje do logowania
+			// 2. Jeśli to ścieżka demo, wpuszczamy bez pytania
+			if (isDemoRoute) return true;
+
+			// 3. Jeśli to dashboard, a użytkownik nie jest zalogowany - przekieruj
+			const isDashboardRoute = nextUrl.pathname.startsWith("/dashboard");
+			if (isDashboardRoute) {
+				if (isLoggedIn) return true;
+				return false; // Przekieruje do /api/auth/signin (lub Twojego customowego)
 			}
 
-			return true; // W przeciwnym razie wpuść
+			return true; // Domyślnie pozwól na inne publiczne strony (np. strona główna)
 		},
 	},
 } satisfies NextAuthConfig;

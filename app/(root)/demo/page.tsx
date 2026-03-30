@@ -1,4 +1,3 @@
-import { ArrowRight, CloudSun, GraduationCap, Scale } from "lucide-react";
 import {
 	Card,
 	CardContent,
@@ -7,56 +6,16 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import {
-	allWeatherPortfolio,
-	classicPortfolio,
-	yalePortfolio,
-} from "@/lib/demoData";
 
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import DashboardClientView from "@/components/ui/DashboardClientView";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import Header from "@/components/HeaderDemo";
 import Link from "next/link";
+import { STRATEGIES } from "@/lib/constants";
 import { calculateGapAnalysis } from "@/lib/calculations";
-
-const STRATEGIES = {
-	classic: {
-		data: classicPortfolio,
-		title: "Klasyczny 60/40",
-		slogan: "Fundament zrównoważonego portfela",
-		description:
-			"Najprostszy sposób na balans między zyskiem a bezpieczeństwem.",
-		icon: Scale,
-		color: "text-blue-500",
-		bgColor: "bg-blue-500/10",
-		risk: "Średnie",
-		advantage: "Łatwy rebalancing",
-	},
-	dalio: {
-		data: allWeatherPortfolio,
-		title: "Ray Dalio - All Weather",
-		slogan: "Bezpieczeństwo w każdą pogodę",
-		description: "Zaprojektowany, by zarabiać niezależnie od stanu gospodarki.",
-		icon: CloudSun,
-		color: "text-emerald-500",
-		bgColor: "bg-emerald-500/10",
-		risk: "Niskie / Średnie",
-		advantage: "Odporność na kryzysy",
-	},
-	yale: {
-		data: yalePortfolio,
-		title: "Model Yale (Swensen)",
-		slogan: "Dywersyfikacja klasy premium",
-		description: "Wykorzystuje potencjał nieruchomości i rynków wschodzących.",
-		icon: GraduationCap,
-		color: "text-amber-500",
-		bgColor: "bg-amber-500/10",
-		risk: "Średnie / Wysokie",
-		advantage: "Wysoki potencjał wzrostu",
-	},
-};
 
 export default async function DemoPage({
 	searchParams,
@@ -80,15 +39,15 @@ export default async function DemoPage({
 		);
 
 		return (
-			<div className="flex flex-col w-full min-h-screen ">
+			<div className="flex flex-col  ">
 				{/* 1. Ręczne wywołanie Headera (Nawigacji) tylko dla Demo */}
 				<Header
 					portfolios={[]} // Tu możesz pobrać portfele użytkownika, jeśli chcesz
-					userButton={<div className="w-8 h-8 rounded-full bg-muted" />}
+					// userButton={<div className="w-8 h-8 rounded-full bg-muted" />}
 					selectedPortfolioId={selectedStrategy.data.id}
 				/>
 
-				<main className="flex-1 p-4 md:p-8">
+				<main className=" p-4 md:p-8 ">
 					{/* 2. Statystyki (DashboardHeader) - Wywołujemy je tutaj, 
           bo layout z [id] tu nie sięga! */}
 					<div className="bg-secondary/10 pb-2 border-b border-border  transition-colors">
@@ -100,7 +59,7 @@ export default async function DemoPage({
 					</div>
 
 					{/* 3. Główny widok dashboardu */}
-					<div className="p-4 md:p-8">
+					<div className="p-4 md:p-8 container mx-auto">
 						<DashboardClientView
 							portfolio={selectedStrategy.data}
 							isDemo={true}

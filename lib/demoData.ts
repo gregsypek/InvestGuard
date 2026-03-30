@@ -264,3 +264,69 @@ export const yalePortfolio: PortfolioWithAssets = {
 		...generateHistory("Treasury Bonds", "BONDS", 30000, 5),
 	],
 };
+
+const baseDemoPortfolio = {
+	id: "demo-portfolio-id",
+	userId: "demo-user",
+	createdAt: new Date(),
+	updatedAt: new Date(),
+	description: "Portfel modelowy do celów edukacyjnych",
+	goal: 100000,
+	// Domyślne wagi (zostaną nadpisane przez konkretne strategie)
+	targetDeveloped: 0,
+	targetEmerging: 0,
+	targetBonds: 0,
+	targetGold: 0,
+	targetBooster: 0,
+	targetCash: 0,
+	targetCrypto: 0,
+	targetCommodities: 0,
+};
+
+export const demoPlans = [
+	{
+		id: "plan-1",
+		name: "Bitcoin",
+		ticker: "BTC",
+		value: 1000,
+		plannedDate: "2026-04-15", // Musi mieć 10 znaków lub 7 (YYYY-MM), aby .length zadziałało
+		targetCategory: "CRYPTO" as Category,
+		conviction: 3,
+		isExecuted: false,
+		isRecurring: false,
+		rationale: "Akumulacja po korekcie - strategia Booster 5%",
+		portfolioId: "demo-dalio",
+		createdAt: new Date(),
+		updatedAt: new Date(),
+		// KLUCZOWE: Pełny obiekt portfela zamiast samej nazwy
+		portfolio: {
+			...baseDemoPortfolio,
+			name: "Ray Dalio - All Weather",
+			targetBonds: 55,
+			targetDeveloped: 30,
+			targetGold: 7.5,
+			targetCommodities: 7.5,
+		},
+	},
+	{
+		id: "plan-2",
+		name: "Złoto Fizyczne",
+		ticker: "GOLD",
+		value: 2500,
+		plannedDate: "2026-05-01",
+		targetCategory: "GOLD" as Category,
+		conviction: 5,
+		isExecuted: false,
+		isRecurring: false,
+		rationale: "Uzupełnienie wagi do 10% portfela",
+		portfolioId: "demo-classic",
+		createdAt: new Date(),
+		updatedAt: new Date(),
+		portfolio: {
+			...baseDemoPortfolio,
+			name: "Klasyczny 60/40",
+			targetBonds: 40,
+			targetDeveloped: 60,
+		},
+	},
+];

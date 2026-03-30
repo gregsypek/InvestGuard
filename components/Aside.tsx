@@ -75,7 +75,7 @@ export default function Aside() {
 					if (isDemoMode) {
 						if (item.href === "/dashboard") finalHref = "/demo";
 						if (item.href === "/portfolios") finalHref = "/demo/portfolios";
-						if (item.href === "/planner") finalHref = "/demo/planning";
+						if (item.href === "/planner") finalHref = "/demo/planner";
 						if (strategy) finalHref += `?s=${strategy}`;
 					} else if (portfolioId) {
 						finalHref += `?portfolioId=${portfolioId}`;

@@ -47,12 +47,14 @@ interface PlanCardProps {
 	plan: PlanWithPortfolio;
 	hasCashInPortfolio: boolean;
 	allPortfoliosWithCash: { id: string; name: string }[];
+	isDemo?: boolean;
 }
 
 export function PlanCard({
 	plan,
 	hasCashInPortfolio,
 	allPortfoliosWithCash,
+	isDemo,
 }: PlanCardProps) {
 	console.log("🚀 ~ PlanCard ~ plan:", plan);
 	const router = useRouter();
@@ -86,6 +88,13 @@ export function PlanCard({
 			return;
 		}
 
+		if (isDemo) {
+			toast.info("Tryb Edukacyjny", {
+				description:
+					"W wersji demo nie można realizować planów. Funkcja ta automatycznie księguje zakup i odejmuje gotówkę z wybranego portfela.",
+			});
+			return;
+		}
 		setIsPending(true);
 		try {
 			// EN: Passing all 8 arguments to the server action
@@ -121,6 +130,12 @@ export function PlanCard({
 		if (confirm("Usunąć plan?")) {
 			const res = await deleteInvestmentPlan(plan.id);
 			if (res.success) toast.success("Usunięto");
+		}
+		if (isDemo) {
+			toast.error("Akcja zablokowana", {
+				description: "Usuwanie planów jest wyłączone w trybie podglądu.",
+			});
+			return;
 		}
 	};
 

@@ -2,11 +2,10 @@
 
 import { Globe, Plus } from "lucide-react";
 
-import AddButton from "@/components/ui/AddButton";
 import { CategoryTable } from "@/components/CategoryTable";
-import Link from "next/link";
 import PortfolioCard from "@/components/PortfolioCard";
 import { PortfolioWithAssets } from "@/lib/types";
+import { SafeActionButton } from "./SafeActionButton";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { cn } from "@/lib/utils";
 
@@ -57,11 +56,13 @@ export default function PortfoliosClientView({
 				{/* EN: The "Dock" - Sticky action button that stays visible during scroll */}
 				{/* UI: "Dock" - Przyklejony przycisk dodawania, widoczny przy skrolowaniu */}
 				<div className="w-full lg:w-auto xl:sticky justify-end flex self-end  ">
-					<AddButton className="h-10 px-4 py-0">
-						<Link href="/portfolios/new" className="gap-2 flex items-center">
-							<Plus className="h-4 w-4" /> Dodaj Nowy Portfel
-						</Link>
-					</AddButton>
+					<SafeActionButton
+						label="Dodaj Nowy Portfel"
+						icon={Plus}
+						isDemo={isDemo}
+						variant="outline"
+						href="/portfolios/new"
+					/>
 				</div>
 			</div>
 
@@ -72,14 +73,13 @@ export default function PortfoliosClientView({
 
 					{/* EN: Only show add asset button if we have a portfolio context */}
 					{portfolioId && (
-						<AddButton className="h-10 px-4 py-0">
-							<Link
-								href={`/dashboard/${portfolioId}/add-asset`}
-								className="gap-2 flex items-center"
-							>
-								<Plus className="h-4 w-4" /> Dodaj Aktywo
-							</Link>
-						</AddButton>
+						<SafeActionButton
+							label="Dodaj Aktywo"
+							icon={Plus}
+							isDemo={isDemo}
+							variant="outline"
+							href={`/dashboard/${portfolioId}/add-asset`}
+						/>
 					)}
 				</div>
 

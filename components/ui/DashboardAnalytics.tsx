@@ -4,23 +4,21 @@ import {
 	ArrowRightCircle,
 	ChartArea,
 	ListOrdered,
-	Lock,
+	Pencil,
 	PieChart,
 	Plus,
 	TableProperties,
 } from "lucide-react";
 import { CategoryStatus, PortfolioWithAssets } from "@/lib/types";
 
-import AddButton from "./AddButton";
 import AssetLedger from "../AssetLedgerTable";
-import Link from "next/link";
 import PortfolioCharts from "../PortfolioCharts";
 import React from "react";
 import RecentActivityCard from "./assets/RecentActivityCard";
+import { SafeActionButton } from "./SafeActionButton";
 import { SectionHeader } from "../shared/SectionHeader";
 import StrategyHealthTable from "@/app/portfel/components/StrategyHealthTable";
 import { SubHeader } from "../shared/SubHeader";
-import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -41,7 +39,6 @@ const DashboardAnalytics = ({
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams.get("newAssetId");
-
 	// EN:  Reverse to get latest, then slice
 	// UI:  Odwracamy, by dostać najnowsze, potem tniemy
 	const recentAssets = useMemo(
@@ -79,32 +76,13 @@ const DashboardAnalytics = ({
 							Ostatnie aktywa
 						</h3>
 
-						<AddButton
-							// Poprawiona składnia cn - wszystkie klasy wewnątrz jednej funkcji
-							className={cn(
-								"h-8 px-3 text-xs transition-all ",
-								isDemo &&
-									"opacity-70 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-50 hover:cursor-not-allowed",
-							)}
-							disabled={isDemo}
-						>
-							{isDemo ? (
-								// W trybie demo renderujemy div, żeby Link nie był aktywny
-								<div className="flex items-center gap-1">
-									<Lock className="h-3.5 w-3.5 text-emerald-600" />
-									<span>Dodaj nowe</span>
-								</div>
-							) : (
-								// Normalny link dla zalogowanego użytkownika
-								<Link
-									href={`/dashboard/${portfolio.id}/add-asset`}
-									className="flex items-center gap-1 hover:cursor-pointer"
-								>
-									<Plus className="h-3.5 w-3.5" />
-									<span>Dodaj nowe</span>
-								</Link>
-							)}
-						</AddButton>
+						<SafeActionButton
+							label="Dodaj Aktywo"
+							icon={Plus}
+							isDemo={isDemo}
+							variant="outline"
+							href={`/dashboard/${portfolio.id}/add-asset`}
+						/>
 					</div>
 
 					<div className="space-y-3">
@@ -138,29 +116,13 @@ const DashboardAnalytics = ({
 			<section className="pt-8 border-t border-border">
 				<div className="flex justify-between">
 					<SectionHeader icon={ChartArea} title="Strategia Alokacji" />
-
-					<AddButton
-						className={cn(
-							isDemo &&
-								"opacity-70 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-50 hover:cursor-not-allowed",
-						)}
-						disabled={isDemo}
-					>
-						{isDemo ? (
-							// W trybie demo renderujemy div, żeby Link nie był aktywny
-							<div className="flex items-center gap-1">
-								<Lock className="h-3.5 w-3.5 text-emerald-600" />
-								<span>Edytuj cele</span>
-							</div>
-						) : (
-							<Link
-								href={`/portfolios/edit/${portfolio.id}`}
-								className={cn("flex items-center gap-2", isDemo && "")}
-							>
-								Edytuj cele
-							</Link>
-						)}
-					</AddButton>
+					<SafeActionButton
+						label="Edytuj Cele"
+						icon={Pencil}
+						variant="outline"
+						isDemo={isDemo}
+						href={`/portfolios/edit/${portfolio.id}`}
+					/>
 				</div>
 				<SubHeader
 					title="Wykresy kołowe"
@@ -181,30 +143,13 @@ const DashboardAnalytics = ({
 					Aktywów"
 					/>
 
-			
-						<AddButton
-							className={cn(
-								isDemo &&
-									"opacity-70 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-50 hover:cursor-not-allowed",
-							)}
-							disabled={isDemo}
-						>
-							{isDemo ? (
-								// W trybie demo renderujemy div, żeby Link nie był aktywny
-								<div className="flex items-center gap-1">
-									<Lock className="h-3.5 w-3.5 text-emerald-600" />
-									<span>Nowe Aktywo</span>
-								</div>
-							) : (
-								<Link
-									href={`/dashboard/${portfolio.id}/add-asset`}
-									className="flex items-center gap-2"
-								>
-									<Plus className="h-4 w-4" /> Nowe Aktywo
-								</Link>
-							)}
-						</AddButton>
-			
+					<SafeActionButton
+						label="Nowe Aktywo"
+						icon={Plus}
+						isDemo={isDemo}
+						variant="outline"
+						href={`/dashboard/${portfolio.id}/add-asset`}
+					/>
 				</div>
 				<SubHeader
 					title="Lista pozycji z portfela"

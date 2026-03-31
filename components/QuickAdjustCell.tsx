@@ -5,17 +5,19 @@ import { CheckCheck, Loader2, X } from "lucide-react";
 import { ActionResponse } from "@/lib/types";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner"; // Upewnij się, że importujesz swój system powiadomień!
+import { toast } from "sonner";
 import { useState } from "react";
 
 const QuickAdjustCell = ({
 	currentValue,
 	assetId,
+	isDemo,
 	onUpdate,
 	label = "Koryguj wycenę",
 }: {
 	currentValue: number;
 	assetId: string;
+	isDemo?: boolean;
 	onUpdate: (id: string, newValue: number) => Promise<ActionResponse>;
 	label?: string;
 }) => {
@@ -42,6 +44,14 @@ const QuickAdjustCell = ({
 	}
 
 	const handleSave = async () => {
+		if (isDemo) {
+			toast.info("Tryb Edukacyjny", {
+				description:
+					"W wersji demo korygowanie wyceny jest zablokowane. W prawdziwym portfelu ta funkcja pozwala ręcznie nadpisać wartość aktywa",
+			});
+			setIsEditing(false); // Zamykamy tryb edycji
+			return;
+		}
 		setIsPending(true);
 		try {
 			const result = await onUpdate(assetId, newValue);

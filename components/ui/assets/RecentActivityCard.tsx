@@ -10,9 +10,10 @@ import { deleteAsset } from "@/lib/actions/portfolio.actions";
 interface Props {
 	asset: Asset;
 	isHighlighted: boolean;
+	isDemo?: boolean;
 }
 
-export default function AssetCard({ asset, isHighlighted }: Props) {
+export default function AssetCard({ asset, isHighlighted, isDemo }: Props) {
 	return (
 		<div
 			key={asset.id}
@@ -52,7 +53,8 @@ export default function AssetCard({ asset, isHighlighted }: Props) {
 				<DeleteButton
 					id={asset.id}
 					onDelete={deleteAsset}
-					confirmMsg={`Delete ${asset.name}?`}
+					confirmMsg={`Usunąć ${asset.name}?`}
+					isDemo={isDemo}
 				/>
 			</div>
 		</div>

@@ -1,20 +1,22 @@
 "use client";
 
-import { Trash2, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, Trash2 } from "lucide-react";
 import { forwardRef, useTransition } from "react";
+
 import { ActionResponse } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface DeleteButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	id: string;
 	onDelete: (id: string) => Promise<ActionResponse>;
 	confirmMsg: string;
 	label?: string; // EN: Optional text label / UI: Opcjonalna etykieta tekstowa
+	isDemo?: boolean;
 }
 
 export const DeleteButton = forwardRef<HTMLButtonElement, DeleteButtonProps>(
-	({ id, onDelete, confirmMsg, label, className, ...props }, ref) => {
+	({ id, onDelete, confirmMsg, label, isDemo, className, ...props }, ref) => {
 		const [isPending, startTransition] = useTransition();
 
 		const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -25,13 +27,20 @@ export const DeleteButton = forwardRef<HTMLButtonElement, DeleteButtonProps>(
 			e.preventDefault();
 			e.stopPropagation();
 
+			if (isDemo) {
+				toast.error("Akcja zablokowana", {
+					description: "Usuwanie jest wyłączone w trybie demo.",
+				});
+				return;
+			}
+
 			if (confirm(confirmMsg)) {
 				startTransition(async () => {
 					const result = await onDelete(id);
 					if (result && result.success) {
-						toast.success("Deleted successfully");
+						toast.success("Usunięto!");
 					} else {
-						toast.error(result.error || "An error occurred");
+						toast.error(result.error || "Nie można usunąć");
 					}
 				});
 			}
@@ -56,6 +65,7 @@ export const DeleteButton = forwardRef<HTMLButtonElement, DeleteButtonProps>(
 				) : (
 					<Trash2 className="h-4 w-4 transition-colors group-hover:scale-110" />
 				)}
+
 				{label && <span>{label}</span>}
 			</button>
 		);

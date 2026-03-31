@@ -7,8 +7,10 @@ import {
 	ChevronDown,
 	ExternalLink,
 	HandCoins,
+	Lock,
 	MoreHorizontal,
 	Scale,
+	Trash2,
 	TrendingUp,
 } from "lucide-react";
 import {
@@ -50,13 +52,18 @@ import { useSearchParams } from "next/navigation";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
+	isDemo?: boolean;
 	allPortfoliosWithCash: { id: string; name: string }[];
 }
 
 // 1. Definiujemy prosty typ dla wykresu
 type ChartPoint = { date: string; amount: number };
 
-const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
+const AssetLedgerTable = ({
+	portfolio,
+	allPortfoliosWithCash,
+	isDemo,
+}: Props) => {
 	const router = useRouter();
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
@@ -413,6 +420,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 															assetId={asset.id}
 															currentValue={asset.currentValue}
 															onUpdate={updateAssetValues}
+															isDemo={isDemo}
 														/>
 													</div>
 												)}
@@ -458,12 +466,14 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 												onClick={(e) => e.stopPropagation()}
 											>
 												{isAggregatedBond ? (
-													<Link
-														href="/bond-reports"
-														className="flex items-center justify-end gap-1 text-[10px] font-bold uppercase text-primary hover:text-blue-600 transition-colors  px-2 py-1.5 rounded-md"
-													>
-														Szczegóły <ExternalLink size={12} />
-													</Link>
+													!isDemo && (
+														<Link
+															href="/bond-reports"
+															className="flex items-center justify-end gap-1 text-[10px] font-bold uppercase text-primary hover:text-blue-600 transition-colors  px-2 py-1.5 rounded-md"
+														>
+															Szczegóły <ExternalLink size={12} />
+														</Link>
+													)
 												) : (
 													<DropdownMenu>
 														<DropdownMenuTrigger asChild>
@@ -476,6 +486,16 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 																className="cursor-pointer font-medium"
 																onClick={(e) => {
 																	e.stopPropagation();
+
+																	// BLOKADA DEMO
+																	if (isDemo) {
+																		toast.error("Akcja zablokowana", {
+																			description:
+																				"Sprzedaż aktywów jest wyłączona w trybie demo.",
+																			icon: <Lock className="h-4 w-4" />,
+																		});
+																		return;
+																	}
 																	setAssetToSell(asset as unknown as Asset); // 👈 Informujemy TS, że to nadal jest Asset
 																}}
 															>
@@ -486,23 +506,34 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash }: Props) => {
 																className="cursor-pointer font-medium"
 																onClick={(e) => {
 																	e.stopPropagation();
+
+																	// BLOKADA DEMO
+																	if (isDemo) {
+																		toast.error("Akcja zablokowana", {
+																			description:
+																				"Korekta wyceny jest wyłączona w trybie demo.",
+																			icon: <Lock className="h-4 w-4" />,
+																		});
+																		return;
+																	}
+
 																	// Wyciągamy pola UI, zostawiając resztę (czysty Asset) w zmiennej baseAsset
-																	// setAssetToSell(asset as unknown as Asset);
 																	setAssetToAdjust(asset as unknown as Asset);
 																}}
 															>
 																<Scale className="mr-2 h-4 w-4 text-blue-500" />{" "}
 																Korekta
 															</DropdownMenuItem>
-															<DropdownMenuSeparator />
-															<div
-																className="flex w-full items-center px-2 py-1.5 text-sm"
-																onClick={(e) => e.stopPropagation()}
-															>
+															<DropdownMenuSeparator />													
+															<div onClick={(e) => e.stopPropagation()}>
 																<DeleteButton
 																	id={asset.id}
 																	onDelete={deleteAsset}
 																	confirmMsg={`Usunąć całkowicie ${asset.name}?`}
+																	isDemo={isDemo}
+
+																		className="flex w-full items-center gap-4 px-2 py-1.5 cursor-pointer font-medium text-sm text-destructive hover:bg-destructive/10 transition-colors"
+																		label="Usuń "
 																/>
 															</div>
 														</DropdownMenuContent>

@@ -106,6 +106,7 @@ const DashboardAnalytics = ({
 										asset={asset}
 										isHighlighted={isHighlighted}
 										key={asset.id}
+										isDemo={isDemo}
 									/>
 								);
 							})
@@ -160,6 +161,7 @@ const DashboardAnalytics = ({
 					<AssetLedger
 						portfolio={portfolio}
 						allPortfoliosWithCash={allPortfoliosWithCash}
+						isDemo={isDemo}
 					/>
 				</div>
 			</section>

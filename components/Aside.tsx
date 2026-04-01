@@ -31,10 +31,28 @@ export default function Aside() {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
-	// 1. Detekcja trybu
 	const isDemoMode = pathname.startsWith("/demo");
 	const strategy = searchParams.get("s");
-	const portfolioId = searchParams.get("portfolioId");
+
+	// 1. INTELIGENTNA DETEKCJA ID (Wielomodułowa)
+	const idFromParams = searchParams.get("portfolioId");
+	const segments = pathname.split("/");
+
+	// Szukamy ID po słowach kluczowych w URL
+	const getPathId = () => {
+		const keys = ["dashboard", "edit", "bond-reports", "portfolios"];
+		for (const key of keys) {
+			if (segments.includes(key)) {
+				const idx = segments.indexOf(key);
+				const possibleId = segments[idx + 1];
+				// Sprawdzamy czy to nie jest kolejna podstrona (np. /new)
+				if (possibleId && possibleId !== "new") return possibleId;
+			}
+		}
+		return "";
+	};
+
+	const activePortfolioId = idFromParams || getPathId();
 
 	return (
 		<aside className="w-20 md:w-64 bg-sidebar text-sidebar-foreground flex flex-col border-r border-slate-800 transition-all duration-300">
@@ -54,31 +72,32 @@ export default function Aside() {
 					</div>
 					<span className="text-xl font-black tracking-tighter text-white hidden md:inline-block">
 						{APP_NAME}
-						<span className={isDemoMode ? "text-emerald-500" : "text-blue-500"}>
-							.
-						</span>
+						<span className={isDemoMode ? "text-emerald-500" : "√"}>.</span>
 					</span>
 				</Link>
 			</div>
-
 			<nav className="flex-1 px-4 py-4 space-y-1">
 				{NAV_ITEMS.map((item) => {
-					// Logika aktywności
+					// Logika aktywności linku
 					const isActive = isDemoMode
 						? item.href === "/dashboard"
 							? pathname === "/demo"
 							: pathname.startsWith(`/demo${item.href}`)
 						: pathname.startsWith(item.href);
 
-					// Mapowanie linków
+					// 3. Budowanie inteligentnego linku
 					let finalHref = item.href;
+
 					if (isDemoMode) {
+						// Mapowanie na ścieżki demo
 						if (item.href === "/dashboard") finalHref = "/demo";
 						if (item.href === "/portfolios") finalHref = "/demo/portfolios";
 						if (item.href === "/planner") finalHref = "/demo/planner";
 						if (strategy) finalHref += `?s=${strategy}`;
-					} else if (portfolioId) {
-						finalHref += `?portfolioId=${portfolioId}`;
+					} else {
+						// Tryb Normalny: Jeśli mamy aktywne ID, doklejamy je do każdego linku!
+						if (activePortfolioId && !isDemoMode)
+							finalHref += `?portfolioId=${activePortfolioId}`;
 					}
 
 					return (
@@ -115,7 +134,6 @@ export default function Aside() {
 					);
 				})}
 			</nav>
-
 			{/* Footer Nav */}
 			<div className="p-4 border-t border-slate-800">
 				<Link

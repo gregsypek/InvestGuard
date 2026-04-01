@@ -1,5 +1,6 @@
 "use client";
 
+import { GraduationCap, Wallet2, WalletCards } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -8,11 +9,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "./ui/select";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
 import Menu from "./shared/Menu";
-import { WalletCards } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
@@ -22,85 +22,84 @@ interface HeaderProps {
 }
 
 export default function Header({
-	portfolios = [],
+	portfolios,
 	userButton,
 	selectedPortfolioId,
 }: HeaderProps) {
-	const searchParams = useSearchParams();
 	const pathname = usePathname();
+	const searchParams = useSearchParams();
+	const isDemoMode = pathname.startsWith("/demo");
+	const router = useRouter();
 
-	// 1. Pobieranie ID z parametrów lub ścieżki
-	const idFromParams = searchParams.get("portfolioId");
+	// 1. Pobieramy ID z URL (to jest nadrzędne nad ciasteczkiem!)
+	const urlPortfolioId = searchParams.get("portfolioId");
 
-	// Inteligentne wyciąganie ID ze ścieżki
+	// 2. Szukamy ID w ścieżce dla wszystkich modułów
 	const segments = pathname.split("/");
-	let idFromPath = "";
-
-	if (segments.includes("edit")) {
-		// Jeśli ścieżka to /portfolios/edit/[id], bierzemy segment po "edit"
-		const editIndex = segments.indexOf("edit");
-		idFromPath = segments[editIndex + 1];
-	} else if (segments.includes("dashboard")) {
-		// Jeśli ścieżka to /dashboard/[id], bierzemy segment po "dashboard"
-		const dashboardIndex = segments.indexOf("dashboard");
-		idFromPath = segments[dashboardIndex + 1];
-	}
-
-	// 2. Łączenie logiki (Parametr > Ścieżka > Ciasteczko)
-	const rawId = idFromParams || idFromPath || selectedPortfolioId || "";
-	const isValidId = portfolios.some((p) => p.id === rawId);
-	const displayValue = isValidId ? rawId : "";
-
-	// 3. Funkcja obsługi zmiany
-	const handlePortfolioChange = (id: string) => {
-		// 1. Zapisujemy wybór w ciastku
-		Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
-
-		// 2. Pobieramy aktualną ścieżkę
-		const segments = window.location.pathname.split("/");
-		const dashboardIndex = segments.indexOf("dashboard");
-
-		if (dashboardIndex !== -1 && segments[dashboardIndex + 1]) {
-			// Podmieniamy segment ID (zaraz po 'dashboard')
-			segments[dashboardIndex + 1] = id;
-			const newPath = segments.join("/");
-
-			// 3. Twarde przeładowanie na nowy adres bez pytajników
-			window.location.href = newPath;
-		} else {
-			// Jeśli jesteśmy na /dashboard, idziemy do konkretnego portfela
-			window.location.href = `/dashboard/${id}`;
-		}
+	const getPathId = () => {
+		const keys = ["dashboard", "edit", "bond-reports"];
+		const key = keys.find((k) => segments.includes(k));
+		if (key) return segments[segments.indexOf(key) + 1];
+		return null;
 	};
+
+	const idFromPath = getPathId();
+
+	// 3. Finalne ID do wyświetlenia
+	// Priorytet: 1. URL (?portfolioId) | 2. Ścieżka (/dashboard/ID) | 3. Prop z serwera/ciasteczka
+	const rawId = urlPortfolioId || idFromPath || selectedPortfolioId || "";
+	const displayValue = isDemoMode ? "" : rawId;
+	const handlePortfolioChange = (id: string) => {
+		// Obsługa nowej opcji wejścia w demo z listy
+		if (id === "enter-demo") {
+			router.push("/demo?s=dalio");
+			return;
+		}
+
+		Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
+		router.push(`/dashboard/${id}`);
+	};
+
 	return (
 		<header className="flex justify-between items-center p-2 border-b border-border bg-background text-foreground sticky top-0 z-50">
 			<div className="px-5 flex items-center gap-3">
 				<Select
+					// KLUCZOWE: Dodanie key opartego na displayValue wymusza
+					// przerysowanie Selecta, gdy zmieniasz portfel w URL.
+					key={isDemoMode ? "demo" : `real-${displayValue}`}
 					value={displayValue || undefined}
 					onValueChange={handlePortfolioChange}
-					disabled={portfolios.length === 0}
 				>
 					<SelectTrigger
 						className={cn(
-							"w-55 bg-muted/50 border-border2 font-bold text-[11px] uppercase tracking-widest h-9 transition-all",
-							!displayValue && portfolios.length > 0
+							"w-60 bg-muted/50 border-border2 font-bold text-[11px] uppercase tracking-widest h-9 transition-all",
+							!displayValue && portfolios.length > 0 && !isDemoMode
 								? "border-primary/50 animate-pulse"
 								: "border-border2",
+							// Wizualne wyróżnienie trybu demo w głównym nagłówku
+							isDemoMode &&
+								"border-emerald-500/50 bg-emerald-500/5 text-emerald-600 ring-emerald-500/20",
 						)}
 					>
 						<div className="flex items-center gap-2 overflow-hidden">
-							<WalletCards
-								className={cn(
-									"h-4 w-4 shrink-0",
-									displayValue ? "text-primary" : "text-muted-foreground",
-								)}
-							/>
-							<div className="truncate">
+							{isDemoMode ? (
+								<GraduationCap className="h-4 w-4 shrink-0 text-emerald-600" />
+							) : (
+								<WalletCards
+									className={cn(
+										"h-4 w-4 shrink-0",
+										displayValue ? "text-primary" : "text-muted-foreground",
+									)}
+								/>
+							)}
+							<div className="truncate text-left">
 								<SelectValue
 									placeholder={
-										portfolios.length === 0
-											? "Brak portfeli"
-											: "Wybierz portfel..."
+										isDemoMode
+											? "Tryb Edukacyjny"
+											: portfolios.length === 0
+												? "Brak portfeli"
+												: "Wybierz portfel..."
 									}
 								/>
 							</div>
@@ -108,10 +107,14 @@ export default function Header({
 					</SelectTrigger>
 
 					<SelectContent>
-						<div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-							Twoje Portfele
+						<div className="flex items-center gap-2 text-xs font-bold text-blue-500  focus:text-blue-600 cursor-pointer">
+							<div className="flex items-center gap-2 py-2">
+								<Wallet2 className="h-4 w-4 text-blue-500" />
+								TWOJE PORTFELE
+							</div>
 						</div>
 						<SelectSeparator />
+
 						{portfolios.map((p) => (
 							<SelectItem
 								key={p.id}
@@ -121,11 +124,24 @@ export default function Header({
 								{p.name}
 							</SelectItem>
 						))}
+
+						<SelectSeparator />
+
+						{/* 4. Stała opcja wejścia w demo dostępna zawsze w liście */}
+						<SelectItem
+							value="enter-demo"
+							className="text-xs font-bold text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700 cursor-pointer"
+						>
+							<div className="flex items-center gap-2">
+								<GraduationCap className="h-4 w-4" />
+								ZOBACZ DEMO
+							</div>
+						</SelectItem>
 					</SelectContent>
 				</Select>
 			</div>
 
-			<div className="px-5 flex items-center gap-4">
+			<div className="px-5">
 				<Menu userButton={userButton} />
 			</div>
 		</header>

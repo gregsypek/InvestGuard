@@ -56,8 +56,26 @@ export async function addAssetAction(formData: FormData) {
 	const isBond = category === "BONDS";
 	const purchaseDateRaw = formData.get("purchaseDate") as string;
 	const purchaseDate = purchaseDateRaw ? new Date(purchaseDateRaw) : executedAt;
-
+	const isNewAsset = !existingAssetId || existingAssetId === "new";
 	try {
+		// 1. Logika limitów dla użytkownika REGULAR
+		if (session.user.role === "REGULAR" && isNewAsset && !isBond) {
+			const assetCount = await db.asset.count({
+				where: {
+					portfolioId: portfolioId,
+					NOT: { category: "BONDS" }, // Liczymy tylko aktywa, które nie są obligacjami
+				},
+			});
+
+			if (assetCount >= 10) {
+				return {
+					success: false,
+					message:
+						"Osiągnąłeś limit 10 unikalnych akcji/ETF. Obligacje możesz dodawać bez limitu, ale by dodać nowe akcje, przejdź na Premium! 🚀",
+				};
+			}
+		}
+
 		let targetAssetId = existingAssetId;
 
 		// 1. INTELIGENTNE SZUKANIE (Unikanie P2002)

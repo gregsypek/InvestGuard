@@ -10,6 +10,8 @@ export type AssetCategory =
 	| "CRYPTO"
 	| "COMMODITIES";
 
+export type Role = "ADMIN" | "SUBSCRIBER" | "REGULAR";
+
 export const MODEL_ALLOCATION = [
 	{ name: "Bonds", weight: 55, color: "bg-portfolio-bonds" },
 	{ name: "Developed", weight: 15, color: "bg-portfolio-developed" },

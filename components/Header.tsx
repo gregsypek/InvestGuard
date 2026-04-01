@@ -37,7 +37,7 @@ export default function Header({
 	// 2. Szukamy ID w ścieżce dla wszystkich modułów
 	const segments = pathname.split("/");
 	const getPathId = () => {
-		const keys = ["dashboard", "edit", "bond-reports"];
+		const keys = ["dashboard", "edit", "planner", "bond-reports"];
 		const key = keys.find((k) => segments.includes(k));
 		if (key) return segments[segments.indexOf(key) + 1];
 		return null;

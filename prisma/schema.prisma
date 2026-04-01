@@ -9,6 +9,12 @@ datasource db {
   // We specify only the provider.
 }
 
+enum Role {
+  ADMIN
+  SUBSCRIBER
+  REGULAR
+}
+
 enum Category {
   BONDS
   DEVELOPED
@@ -145,6 +151,8 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  role Role @default(REGULAR)
 }
 
 model Account {

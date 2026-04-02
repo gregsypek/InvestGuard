@@ -13,18 +13,21 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
 import Menu from "./shared/Menu";
+import { RefreshButton } from "./RefreshButton";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
 	portfolios: { id: string; name: string }[];
 	userButton: React.ReactNode;
 	selectedPortfolioId: string;
+	userRole: string;
 }
 
 export default function Header({
 	portfolios,
 	userButton,
 	selectedPortfolioId,
+	userRole,
 }: HeaderProps) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -141,7 +144,8 @@ export default function Header({
 				</Select>
 			</div>
 
-			<div className="px-5">
+			<div className="px-5 flex items-center gap-3">
+				<RefreshButton portfolioId={displayValue} role={userRole} />
 				<Menu userButton={userButton} />
 			</div>
 		</header>

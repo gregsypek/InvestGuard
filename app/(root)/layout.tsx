@@ -11,6 +11,7 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }) {
 	const session = await auth();
+	const userRole = session?.user?.role || "REGULAR";
 
 	// EN: Get real userId from session or null
 	// PL: Pobieramy realne ID użytkownika z sesji
@@ -40,6 +41,7 @@ export default async function RootLayout({
 					selectedPortfolioId={selectedPortfolioId}
 					portfolios={portfolios}
 					userButton={userControl}
+					userRole={userRole}
 				/>
 				{/* scrollable main part */}
 				<main className="flex-1 overflow-y-auto ">

@@ -11,6 +11,7 @@ import {
 	ResponsiveContainer,
 	Tooltip,
 } from "recharts";
+import { useEffect, useState } from "react";
 
 import { CategoryStatus } from "@/lib/types";
 import { PieChart as PieChartIcon } from "lucide-react"; // EN: Icon for empty state
@@ -48,6 +49,19 @@ export default function PortfolioPieChart({
 	// EN: Custom Legend to match the "Circle with border" requirement
 	// UI: Własna legenda z "kółkiem z borderem"
 
+	const [hasMounted, setHasMounted] = useState(false);
+
+	useEffect(() => {
+		const t = setTimeout(() => setHasMounted(true), 0);
+		return () => clearTimeout(t);
+	}, []);
+
+	// if (!hasMounted) return null;
+
+	if (!hasMounted)
+		return (
+			<div className="aspect-video w-full bg-muted animate-pulse rounded-xl" />
+		);
 	const renderCustomLegend = (props: CustomLegendProps) => {
 		const { payload } = props;
 		if (!payload) return null;
@@ -84,7 +98,9 @@ export default function PortfolioPieChart({
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="h-full min-h-75 lg:min-h-60 w-full relative pt-0">
+				{/* <CardContent className="flex-1 pb-0"> */}
 				{isEmpty ? (
+					// <div className="h-[400px] w-full">
 					<div className="flex h-full w-full flex-col items-center justify-center space-y-3">
 						<div className="rounded-full border-2 border-dashed border-muted/50 p-6">
 							<PieChartIcon className="h-10 w-10 text-muted-foreground/30" />
@@ -99,7 +115,9 @@ export default function PortfolioPieChart({
 						</div>
 					</div>
 				) : (
-					<ResponsiveContainer width="100%" height="100%">
+					// </div>
+					// <div className="w-full aspect-square min-h-[300px] max-h-[400px]">
+					<ResponsiveContainer width="100%" height={300}>
 						<PieChart>
 							<Pie
 								data={data}
@@ -146,6 +164,7 @@ export default function PortfolioPieChart({
 							/>
 						</PieChart>
 					</ResponsiveContainer>
+					// </div>
 				)}
 			</CardContent>
 		</Card>

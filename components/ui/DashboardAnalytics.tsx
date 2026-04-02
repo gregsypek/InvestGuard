@@ -130,7 +130,6 @@ const DashboardAnalytics = ({
 					description="Wizualizacja modelowego portfela  w zestawieniu z rzeczywistym stanem posiadania."
 					icon={PieChart}
 				/>
-
 				<div className="mx-6 py-2">
 					<PortfolioCharts data={portfolioStatus} />
 				</div>

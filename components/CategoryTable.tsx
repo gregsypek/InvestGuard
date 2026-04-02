@@ -102,7 +102,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 										</div>
 									</TableCell>
 									<TableCell className="text-right font-mono text-sm">
-										{value.toLocaleString(undefined, {
+										{value.toLocaleString("pl-PL", {
 											maximumFractionDigits: 2,
 											minimumFractionDigits: 2,
 										})}

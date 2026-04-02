@@ -1,6 +1,7 @@
 import Aside from "@/components/Aside";
 import Header from "@/components/Header";
 import { LoginButton } from "@/components/shared/header/LoginButton";
+import { MarketTicker } from "@/components/MarketTicker";
 import UserButton from "@/components/shared/header/UserButton";
 import { auth } from "@/auth";
 import { cookies } from "next/headers"; // Importujemy narzędzie do ciasteczek
@@ -43,6 +44,7 @@ export default async function RootLayout({
 					userButton={userControl}
 					userRole={userRole}
 				/>
+				<MarketTicker />
 				{/* scrollable main part */}
 				<main className="flex-1 overflow-y-auto ">
 					<div className="max-w-7xl mx-auto">{children}</div>

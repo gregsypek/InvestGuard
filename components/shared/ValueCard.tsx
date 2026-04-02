@@ -38,7 +38,7 @@ export function ValueCard({
 					<span className="font-mono font-black">
 						{/* FIX: Bezpieczna obsługa undefined dla value */}
 						{formatString && typeof value === "number"
-							? value.toLocaleString(undefined, {
+							? value.toLocaleString("pl-PL", {
 									minimumFractionDigits: 2,
 									maximumFractionDigits: 2,
 								})

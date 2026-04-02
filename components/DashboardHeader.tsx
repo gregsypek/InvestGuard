@@ -141,7 +141,7 @@ export const DashboardHeader = ({
 							>
 								<span className="text-md tabular-nums">
 									{totalProfitAmount > 0 ? "+" : ""}
-									{totalProfitAmount.toLocaleString(undefined, {
+									{totalProfitAmount.toLocaleString("pl-PL", {
 										minimumFractionDigits: 2,
 									})}
 								</span>

@@ -192,7 +192,7 @@ export default function BondLedgerTable({
 										Podsumowanie grupy
 									</td>
 									<td className="px-4 py-4 font-mono font-bold text-foreground">
-										{totalVal.toLocaleString(undefined, {
+										{totalVal.toLocaleString("pl-PL", {
 											minimumFractionDigits: 2,
 											maximumFractionDigits: 2,
 										})}{" "}
@@ -276,7 +276,7 @@ export default function BondLedgerTable({
 														{/* Wkład własny (szary, mniejszy) */}
 														<span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
 															Wkład:{" "}
-															{bond.investedCapital?.toLocaleString(undefined, {
+															{bond.investedCapital?.toLocaleString("pl-PL", {
 																minimumFractionDigits: 2,
 																maximumFractionDigits: 2,
 															})}{" "}
@@ -303,7 +303,7 @@ export default function BondLedgerTable({
 																+
 																{(
 																	bond.currentValue - bond.investedCapital
-																).toLocaleString(undefined, {
+																).toLocaleString("pl-PL", {
 																	minimumFractionDigits: 2,
 																	maximumFractionDigits: 2,
 																})}{" "}

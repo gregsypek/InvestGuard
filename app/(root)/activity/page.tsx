@@ -187,7 +187,7 @@ export default async function ActivityPage({
 													: isBuy
 														? "+"
 														: "-"}
-												{Math.abs(t.executedValue).toLocaleString(undefined, {
+												{Math.abs(t.executedValue).toLocaleString("pl-PL", {
 													minimumFractionDigits: 2,
 												})}{" "}
 												PLN

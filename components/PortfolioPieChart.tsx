@@ -98,9 +98,7 @@ export default function PortfolioPieChart({
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="h-full min-h-75 lg:min-h-60 w-full relative pt-0">
-				{/* <CardContent className="flex-1 pb-0"> */}
 				{isEmpty ? (
-					// <div className="h-[400px] w-full">
 					<div className="flex h-full w-full flex-col items-center justify-center space-y-3">
 						<div className="rounded-full border-2 border-dashed border-muted/50 p-6">
 							<PieChartIcon className="h-10 w-10 text-muted-foreground/30" />
@@ -115,8 +113,6 @@ export default function PortfolioPieChart({
 						</div>
 					</div>
 				) : (
-					// </div>
-					// <div className="w-full aspect-square min-h-[300px] max-h-[400px]">
 					<ResponsiveContainer width="100%" height={300}>
 						<PieChart>
 							<Pie
@@ -164,7 +160,6 @@ export default function PortfolioPieChart({
 							/>
 						</PieChart>
 					</ResponsiveContainer>
-					// </div>
 				)}
 			</CardContent>
 		</Card>

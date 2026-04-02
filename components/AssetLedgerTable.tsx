@@ -10,7 +10,6 @@ import {
 	Lock,
 	MoreHorizontal,
 	Scale,
-	Trash2,
 	TrendingUp,
 } from "lucide-react";
 import {
@@ -451,7 +450,7 @@ const AssetLedgerTable = ({
 
 											<TableCell className="text-right font-bold font-mono text-sm tabular-nums">
 												{asset.currentValue
-													? asset.currentValue.toLocaleString(undefined, {
+													? asset.currentValue.toLocaleString("pl-PL", {
 															minimumFractionDigits: 2,
 															maximumFractionDigits: 2,
 														})
@@ -524,16 +523,15 @@ const AssetLedgerTable = ({
 																<Scale className="mr-2 h-4 w-4 text-blue-500" />{" "}
 																Korekta
 															</DropdownMenuItem>
-															<DropdownMenuSeparator />													
+															<DropdownMenuSeparator />
 															<div onClick={(e) => e.stopPropagation()}>
 																<DeleteButton
 																	id={asset.id}
 																	onDelete={deleteAsset}
 																	confirmMsg={`Usunąć całkowicie ${asset.name}?`}
 																	isDemo={isDemo}
-
-																		className="flex w-full items-center gap-4 px-2 py-1.5 cursor-pointer font-medium text-sm text-destructive hover:bg-destructive/10 transition-colors"
-																		label="Usuń "
+																	className="flex w-full items-center gap-4 px-2 py-1.5 cursor-pointer font-medium text-sm text-destructive hover:bg-destructive/10 transition-colors"
+																	label="Usuń "
 																/>
 															</div>
 														</DropdownMenuContent>

@@ -181,3 +181,11 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  code      String   @unique // np. "USDPLN", "EURPLN", "GBPPLN"
+  value     Float // aktualny kurs
+  change    Float // zmiana procentowa (dla paska Ticker)
+  updatedAt DateTime @updatedAt
+}

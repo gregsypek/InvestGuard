@@ -4,7 +4,9 @@
 import YahooFinance from "yahoo-finance2";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+// import { formatYahooTicker } from "../market-api copy";
 import { formatYahooTicker } from "@/lib/market-api";
+import { getLiveExchangeRate } from "../exchange-rates";
 import { revalidatePath } from "next/cache";
 
 const yahooFinance = new YahooFinance();
@@ -17,12 +19,13 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 	const now = new Date();
 	const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-	// Cache na kursy walut w ramach jednego wywołania
-	const exchangeRates = new Map<string, number>();
-
 	try {
+		// POBIERAMY WSZYSTKO PRÓCZ OBLIGACJI
 		const assets = await db.asset.findMany({
-			where: { portfolioId, NOT: { category: "BONDS" } },
+			where: {
+				portfolioId,
+				NOT: { category: "BONDS" },
+			},
 		});
 
 		let updatedCount = 0;
@@ -38,11 +41,6 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 					{},
 					{ validateResult: false },
 				);
-				console.log(
-					`[${symbol}] result:`,
-					JSON.stringify(result).slice(0, 200),
-				);
-
 				const quote = Array.isArray(result) ? result[0] : result;
 
 				if (quote?.regularMarketPrice != null) {
@@ -50,25 +48,14 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 					const currency = quote.currency || "PLN";
 					let priceInPLN = rawPrice;
 
-					// PRZELICZANIE WALUT
+					// Przeliczanie walut przez Twój bufor w bazie (ExchangeRate)
 					if (currency !== "PLN") {
-						// Obsługa pensów brytyjskich (GBp -> GBP)
-						const fxSymbol =
-							currency === "GBp" ? "GBPPLN=X" : `${currency}PLN=X`;
+						const searchCurrency = currency === "GBp" ? "GBP" : currency;
+						const fxData = await getLiveExchangeRate(searchCurrency);
 
-						if (!exchangeRates.has(fxSymbol)) {
-							const fxQuote = await yahooFinance.quote(fxSymbol);
-							const fxRate = (Array.isArray(fxQuote) ? fxQuote[0] : fxQuote)
-								?.regularMarketPrice;
-							if (fxRate) exchangeRates.set(fxSymbol, fxRate);
-						}
-
-						const rate = exchangeRates.get(fxSymbol);
-						console.log("🚀 ~ refreshPortfolioPrices ~ rate:", rate);
-						if (rate) {
-							// Jeśli to pensy, dzielimy cenę przez 100 przed pomnożeniem przez kurs GBP
+						if (fxData) {
 							const multiplier = currency === "GBp" ? 0.01 : 1;
-							priceInPLN = rawPrice * multiplier * rate;
+							priceInPLN = rawPrice * multiplier * fxData.value;
 						}
 					}
 
@@ -82,13 +69,13 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 					updatedCount++;
 				}
 			} catch (err) {
-				console.warn(`❌ Błąd dla symbolu: ${symbol}`, err);
+				console.error(`Błąd Yahoo dla ${symbol}:`, err);
 			}
 		}
 
 		revalidatePath("/dashboard");
-		return { success: `Zaktualizowano ${updatedCount} pozycji w PLN! 🇵🇱` };
+		return { success: `Zaktualizowano ${updatedCount} pozycji rynkowych!` };
 	} catch {
-		return { error: "Błąd serwera podczas odświeżania." };
+		return { error: "Błąd serwera." };
 	}
 }

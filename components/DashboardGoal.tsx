@@ -1,5 +1,5 @@
-import { Target } from "lucide-react";
 import { Progress } from "./ui/progress";
+import { Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -27,7 +27,11 @@ const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 							: "Cel zrealizowany! 🚀"}
 					</p>
 					<p className="text-xs font-medium text-muted-foreground">
-						Cel: {goal.toLocaleString()} PLN
+						Cel:{" "}
+						{goal.toLocaleString("pl-PL", {
+							minimumFractionDigits: 2,
+						})}{" "}
+						PLN
 					</p>
 				</div>
 			</div>

@@ -1,3 +1,4 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Table,
 	TableBody,
@@ -6,12 +7,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+
 import { Badge } from "@/components/ui/badge";
 import BoosterForm from "./BoosterForm";
-import { db } from "@/lib/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { DeleteButton } from "@/components/DeleteButton";
+import { db } from "@/lib/db";
 import { deleteBoosterAsset } from "@/lib/actions/booster.actions";
 
 /* Configuration for Time Horizons with colors and English descriptions */
@@ -108,7 +108,11 @@ export default async function BoosterPage() {
 											</p>
 										</TableCell>
 										<TableCell className="text-right font-mono font-semibold text-primary">
-											{asset.currentValue.toLocaleString()} PLN
+											{asset.currentValue.toLocaleString("pl-PL", {
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 2,
+											})}{" "}
+											PLN
 										</TableCell>
 										<TableCell className="py-4 text-right">
 											<DeleteButton

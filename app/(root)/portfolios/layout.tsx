@@ -18,5 +18,5 @@ export default async function PortfoliosLayout({
 	// but for now, the Header will be managed inside individual pages
 	// or right here if you want it constant.
 
-	return <div className="p-4 md:p-8 container mx-auto ">{children}</div>;
+	return <div className="p-4 md:p-8 -pt-4 container mx-auto ">{children}</div>;
 }

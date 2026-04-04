@@ -41,7 +41,7 @@ export default async function DemoPortfoliosPage({
 				selectedPortfolioId={strategy.data.id}
 				portfolios={demoPortfolios.map((p) => ({ id: p.id, name: p.name }))}
 			/>
-			<div className="container mx-auto space-y-10 pb-20 p-4 md:p-8">
+			<div className="container mx-auto space-y-10 pb-20 py-2 px-8">
 				<PortfoliosHeader
 					title="Portfele Demo"
 					totalValue={totalValue}

@@ -51,7 +51,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 	const plannedCount = investmentPlans.length;
 
 	return (
-		<div className="p-4 md:p-8 space-y-10 pb-20">
+		<div className="py-2 px-8 space-y-10 pb-20">
 			{" "}
 			{/* EN: Consistent vertical spacing with PortfoliosPage */}
 			<PlannerHeader

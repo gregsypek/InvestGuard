@@ -47,7 +47,7 @@ export default async function DemoPage({
 					selectedPortfolioId={selectedStrategy.data.id}
 				/>
 
-				<main className=" p-4 md:p-8 ">
+				<main className=" py-2 px-8">
 					{/* 2. Statystyki (DashboardHeader) - Wywołujemy je tutaj, 
           bo layout z [id] tu nie sięga! */}
 					<div className="bg-secondary/10 pb-2 border-b border-border  transition-colors">
@@ -59,7 +59,7 @@ export default async function DemoPage({
 					</div>
 
 					{/* 3. Główny widok dashboardu */}
-					<div className="p-4 md:p-8 container mx-auto">
+					<div className="p-4 md:p-8 -pt-4 container mx-auto">
 						<DashboardClientView
 							portfolio={selectedStrategy.data}
 							isDemo={true}

@@ -59,7 +59,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 	const isEmpty = bonds.length === 0;
 
 	return (
-		<div className="p-4 md:p-8 space-y-10 pb-20">
+		<div className="py-2 px-8 space-y-10 pb-20">
 			<BondHeader
 				title="Moje Obligacje"
 				totalBonds={bonds.length}

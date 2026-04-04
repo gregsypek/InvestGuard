@@ -107,7 +107,7 @@ export default async function AlphaSelectionPage({
 	const totalPages = 5;
 
 	return (
-		<div className="p-4 md:p-8 space-y-10 ">
+		<div className="py-2 px-8 space-y-10 ">
 			<AlphaHeader
 				totalTransactions={2}
 				currentPage={currentPage}
@@ -262,13 +262,13 @@ export default async function AlphaSelectionPage({
 										{/* 5. NOWA KOMÓRKA: WARTOŚĆ (Wyrównana z Header 5) */}
 										<TableCell className="text-right">
 											<div className="text-sm font-bold font-mono">
-												{asset.currentValue.toLocaleString()}{" "}
+												{asset.currentValue}{" "}
 												<span className="text-[10px] text-muted-foreground">
 													PLN
 												</span>
 											</div>
 											<div className="text-[9px] text-muted-foreground font-medium uppercase tracking-tighter">
-												Wkład: {asset.investedCapital.toLocaleString()}
+												Wkład: {asset.investedCapital}
 											</div>
 										</TableCell>
 

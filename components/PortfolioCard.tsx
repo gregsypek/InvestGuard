@@ -94,7 +94,9 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 							Wartość Całkowita
 						</p>
 						<p className="text-xl font-black text-foreground">
-							{totalValue.toLocaleString()}{" "}
+							{totalValue.toLocaleString("pl-PL", {
+								minimumFractionDigits: 2,
+							})}{" "}
 							<span className="text-xs font-normal text-muted-foreground">
 								PLN
 							</span>
@@ -109,7 +111,11 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 					<div className="space-y-2 mt-auto">
 						<div className="flex justify-between text-[10px] uppercase tracking-wide font-bold">
 							<span className="text-muted-foreground">
-								Cel: {goal.toLocaleString()} PLN
+								Cel:{" "}
+								{goal.toLocaleString("pl-PL", {
+									minimumFractionDigits: 2,
+								})}{" "}
+								PLN
 							</span>
 							<span className={isDemo ? "text-emerald-600" : "text-primary"}>
 								{progress.toFixed(1)}%

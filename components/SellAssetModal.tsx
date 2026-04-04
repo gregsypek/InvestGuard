@@ -143,7 +143,12 @@ export function SellAssetModal({
 					>
 						<div className="flex justify-between text-xs font-bold">
 							<span className="opacity-60 uppercase">Łączna kwota:</span>
-							<span>{totalValue.toLocaleString()} PLN</span>
+							<span>
+								{totalValue.toLocaleString("pl-PL", {
+									minimumFractionDigits: 2,
+								})}{" "}
+								PLN
+							</span>
 						</div>
 						<div className="flex justify-between text-[10px] mt-1">
 							<span className="opacity-60 uppercase">

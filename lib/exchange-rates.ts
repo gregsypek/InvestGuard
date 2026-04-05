@@ -1,5 +1,7 @@
+import YahooFinance from "yahoo-finance2";
 import { db } from "@/lib/db";
-import yahooFinance from "yahoo-finance2";
+
+const yahooFinance = new YahooFinance();
 
 // 1. Definiujemy prosty interfejs dla danych, których potrzebujemy
 interface YahooExchangeQuote {

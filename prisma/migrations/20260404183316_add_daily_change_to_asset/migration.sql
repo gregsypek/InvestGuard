@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Asset" ADD COLUMN     "dailyChange" DOUBLE PRECISION DEFAULT 0;

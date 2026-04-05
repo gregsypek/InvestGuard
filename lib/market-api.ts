@@ -15,7 +15,7 @@ export function formatYahooTicker(xtbTicker: string): string {
 	for (const [xtbExt, yahooExt] of Object.entries(mapping)) {
 		if (t.endsWith(xtbExt)) {
 			t = t.slice(0, -xtbExt.length) + yahooExt; // bezpieczniejsze niż replace
-			break; // <- ważne! zatrzymaj po pierwszym dopasowaniu
+			break; // <- ważne! zatrzymaj po pierwszym dopasowaniu - nie ma sensu sprawdzać dalej  i ryzykowac błednych kolejnych dopasowań
 		}
 	}
 

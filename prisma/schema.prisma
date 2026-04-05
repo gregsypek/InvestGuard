@@ -73,6 +73,8 @@ model Asset {
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
+  dailyChange Float? @default(0) // EN: Percentage change in the last 24h | PL: Zmiana procentowa w 24h
+
   @@unique([portfolioId, ticker]) //unikalny klucz złożony, który uniemożliwi stworzenie dwóch rekordów w tym samym portfelu
 }
 

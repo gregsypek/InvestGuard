@@ -1,10 +1,8 @@
-// actions/refresh-prices.ts
 "use server";
 
 import YahooFinance from "yahoo-finance2";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-// import { formatYahooTicker } from "../market-api copy";
 import { formatYahooTicker } from "@/lib/market-api";
 import { getLiveExchangeRate } from "../exchange-rates";
 import { revalidatePath } from "next/cache";
@@ -20,7 +18,6 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 	const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
 	try {
-		// POBIERAMY WSZYSTKO PRÓCZ OBLIGACJI
 		const assets = await db.asset.findMany({
 			where: {
 				portfolioId,
@@ -31,6 +28,7 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 		let updatedCount = 0;
 
 		for (const asset of assets) {
+			// Limit odświeżania dla darmowych kont (raz na 24h)
 			if (role === "REGULAR" && asset.updatedAt > oneDayAgo) continue;
 
 			const symbol = formatYahooTicker(asset.ticker || asset.name);
@@ -45,10 +43,12 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 
 				if (quote?.regularMarketPrice != null) {
 					const rawPrice = quote.regularMarketPrice as number;
+					// POBIERAMY ZMIANĘ 24H Z API YAHOO
+					const dailyChange = quote.regularMarketChangePercent || 0;
 					const currency = quote.currency || "PLN";
 					let priceInPLN = rawPrice;
 
-					// Przeliczanie walut przez Twój bufor w bazie (ExchangeRate)
+					// Przeliczanie walut przez Twój bufor (ExchangeRate)
 					if (currency !== "PLN") {
 						const searchCurrency = currency === "GBp" ? "GBP" : currency;
 						const fxData = await getLiveExchangeRate(searchCurrency);
@@ -59,10 +59,12 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 						}
 					}
 
+					// AKTUALIZACJA W BAZIE (Zapisujemy cenę i zmianę dobową)
 					await db.asset.update({
 						where: { id: asset.id },
 						data: {
 							currentValue: priceInPLN * asset.quantity,
+							dailyChange: dailyChange, // To pole zasila Twój pasek
 							updatedAt: new Date(),
 						},
 					});
@@ -75,7 +77,8 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 
 		revalidatePath("/dashboard");
 		return { success: `Zaktualizowano ${updatedCount} pozycji rynkowych!` };
-	} catch {
+	} catch (error) {
+		console.error("Błąd ogólny refreshPrices:", error);
 		return { error: "Błąd serwera." };
 	}
 }

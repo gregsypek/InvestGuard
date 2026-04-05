@@ -52,7 +52,7 @@ export interface Asset {
 	maturityDate?: Date | null; // Prisma zwraca obiekty Date
 	interestRate?: number | null;
 	rateType?: string | null; // "FIXED" | "VARIABLE" (opcjonalne, bo nie każde aktywo to obligacja)
-
+	dailyChange?: number | null;
 	targetPercentage: number;
 }
 

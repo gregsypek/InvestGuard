@@ -62,12 +62,16 @@ export default async function RootLayout({
 		...marketAssets.map((asset) => {
 			const currentPrice =
 				asset.quantity > 0 ? asset.currentValue / asset.quantity : 0;
-			const changePct =
-				asset.investedCapital > 0
-					? ((asset.currentValue - asset.investedCapital) /
-							asset.investedCapital) *
-						100
-					: 0;
+
+			// EN: Use the stored daily change for the ticker instead of total P&L
+			// PL: Używamy zapisanej zmiany dziennej dla paska zamiast całkowitego zysku
+			const displayChange = asset.dailyChange || 0;
+			// const changePct =
+			// 	asset.investedCapital > 0
+			// 		? ((asset.currentValue - asset.investedCapital) /
+			// 				asset.investedCapital) *
+			// 			100
+			// 		: 0;
 
 			return {
 				label: (asset.name || asset.ticker || "").slice(0, 25),
@@ -76,8 +80,11 @@ export default async function RootLayout({
 						minimumFractionDigits: 2,
 						maximumFractionDigits: 2,
 					}) + " PLN",
-				change: (changePct >= 0 ? "+" : "") + changePct.toFixed(2) + "%",
-				logo: getStockLogo(asset.ticker), // Upewnij się, że funkcja zwraca link Google
+				// EN: Show the 24h change with a plus/minus sign
+				// PL: Pokazujemy zmianę 24h z plusem lub minusem
+				change:
+					(displayChange >= 0 ? "+" : "") + displayChange.toFixed(2) + "%",
+				logo: getStockLogo(asset.ticker),
 			};
 		}),
 	];
@@ -100,3 +107,9 @@ export default async function RootLayout({
 		</div>
 	);
 }
+
+//NOTE: Baza Danych jako Buffer Layout (Odświeżenie strony): Kiedy user wchodzi na stronę lub ją odświerza, kod w layout.tsx wykonuje zapytania db.exchangeRate.findMany() oraz db.asset.findMany(). Są to bardzo szybkie operacje czytania z  bazy danych. Na tym etapie nie następuje połączenie z Yahoo Finance. User widzi to, co zostało zapisane podczas ostatniej aktualizacji.
+
+//HandleRefresh (Przycisk): Dopiero kliknięcie przycisku uruchamia funkcję refreshPortfolioPrices. To ona jest "silnikiem", który łączy się z zewnętrznym API, pobiera świeże kursy i nadpisuje dane w  bazie.
+
+//Dzięki temu strona główna ładuje się błyskawicznie (w milisekundach), a limity Yahoo zuzywane są tylko wtedy, gdy faktycznie user wywoła zapytanie.

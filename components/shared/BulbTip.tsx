@@ -14,7 +14,7 @@ import {
 	Wallet,
 	X,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import { APP_NAME } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -206,20 +206,16 @@ const TIPS_CONFIG: Record<
 };
 const BulbTip = () => {
 	const [isOpen, setIsOpen] = useState(false);
-	const [mounted, setMounted] = useState(false);
 	const [activeStep, setActiveStep] = useState(0);
 	const pathname = usePathname();
+	const [prevPath, setPrevPath] = useState(pathname);
 
-	useEffect(() => {
+	if (pathname !== prevPath) {
+		setPrevPath(pathname);
 		setIsOpen(false);
 		setActiveStep(0);
-	}, [pathname]);
+	}
 
-	useEffect(() => {
-		setMounted(true);
-	}, []);
-
-	if (!mounted) return null;
 	// Ta funkcja znajdzie odpowiedni klucz, nawet jeśli ścieżka ma na końcu ID
 	const getPageTips = (path: string) => {
 		// Szukamy klucza, od którego zaczyna się aktualna ścieżka
@@ -249,10 +245,15 @@ const BulbTip = () => {
 
 	return (
 		// Zmiana: Usunięto pointer-events-none, kontener ma minimalną szerokość
-		<div className="fixed bottom-6 right-6 z-9999 flex flex-col items-end gap-4 w-auto h-auto">
+		<div className="fixed bottom-6 right-6 z-9999 flex flex-col items-end gap-4 ">
 			{isOpen && (
-				<Card className="w-[320px] sm:w-88 shadow-2xl border-amber-500/30 animate-in slide-in-from-bottom-5 fade-in duration-300">
-					<CardHeader className="bg-amber-500/5 pb-3 relative">
+				<Card
+					style={{ width: "400px", minWidth: "400px" }}
+					className={cn(
+						"shadow-2xl py-4 animate-in slide-in-from-bottom-5 fade-in duration-300 bg-sidebar text-sidebar-foreground",
+					)}
+				>
+					<CardHeader className=" pb-3 relative ">
 						<Button
 							variant="ghost"
 							size="icon"
@@ -290,10 +291,10 @@ const BulbTip = () => {
 								Wskazówka
 							</h4>
 							<p className="font-bold italic mt-1 text-sm">
-								"{currentTip.tipTitle}"
+								&quot;{currentTip.tipTitle}&quot;
 							</p>
 							<p className="text-xs mt-2 leading-relaxed italic">
-								"{currentTip.tipDesc}"
+								&quot;{currentTip.tipDesc}&quot;
 							</p>
 						</div>
 
@@ -302,9 +303,9 @@ const BulbTip = () => {
 								<span className="text-[10px] font-bold text-muted-foreground uppercase">
 									Wskazówka {activeStep + 1} z {pageTips.length}
 								</span>
-								<div className="flex gap-1">
+								<div className="flex gap-1 ">
 									<Button
-										variant="outline"
+										variant="default"
 										size="icon"
 										type="button" // Safari fix
 										className="h-6 w-6 cursor-pointer"
@@ -319,7 +320,7 @@ const BulbTip = () => {
 										<ChevronLeft className="h-3 w-3" />
 									</Button>
 									<Button
-										variant="outline"
+										variant="default"
 										size="icon"
 										type="button" // Safari fix
 										className="h-6 w-6 cursor-pointer"
@@ -339,23 +340,24 @@ const BulbTip = () => {
 				onClick={toggleOpen}
 				className={cn(
 					"p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 group relative cursor-pointer", // cursor-pointer dla Safari
-					isOpen ? "bg-amber-600 rotate-12" : "bg-amber-500",
+					isOpen ? " rotate-12 border border2" : "bg-amber-500",
 				)}
 			>
-				<div className="absolute inset-0 bg-amber-400 rounded-full blur-md opacity-0 group-hover:opacity-40 transition-opacity" />
+				<div className="absolute inset-0 bg-amber-400 rounded-full blur-md opacity-0 group-hover:opacity-40 transition-opacity " />
 				<Lightbulb
 					className={cn(
-						"w-6 h-6 text-white relative transition-transform",
-						isOpen && "fill-white",
+						"w-5 h-5 text-amber-950/70 dark:text-amber-950/70 relative transition-transform",
+						"shrink", // Zapewnia, że Safari nie ściśnie ikony
+						isOpen && "rotate-12 fill-amber-300", // Opcjonalna animacja rotacji wewnątrz
 					)}
 				/>
 
-				{!isOpen && (
-					<span className="absolute top-0 right-0 flex h-3 w-3">
+				{/* {!isOpen && (
+					<span className="absolute top-0 right-0 flex h-3 w-3 ">
 						<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
-						<span className="relative inline-flex rounded-full h-3 w-3 bg-amber-400 border-2 border-white"></span>
+						<span className="relative inline-flex rounded-full h-3 w-3 bg-amber-400 "></span>
 					</span>
-				)}
+				)} */}
 			</button>
 		</div>
 	);

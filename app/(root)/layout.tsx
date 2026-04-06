@@ -15,9 +15,9 @@ export default async function RootLayout({
 	const session = await auth();
 	const userRole = session?.user?.role || "REGULAR";
 
-	const marketRates = await db.exchangeRate.findMany();
+	// const marketRates = await db.exchangeRate.findMany();
 
-	console.log("🚀 ~ RootLayout ~ marketRates:", marketRates);
+	// console.log("🚀 ~ RootLayout ~ marketRates:", marketRates);
 
 	// EN: Get real userId from session or null
 	// PL: Pobieramy realne ID użytkownika z sesji

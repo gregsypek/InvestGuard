@@ -152,12 +152,7 @@ export default async function AlphaSelectionPage({
 						{/* <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
 							<Target className="h-5 w-5 text-primary" /> Aktywne Pozycje
 						</h2> */}
-						<div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
-							<BulbTip
-								title="Zasada:"
-								content="Weryfikuj kwartalnie. Brak aktualności = wyjście."
-							/>
-						</div>
+						<div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wider"></div>
 						<SectionHeader title="Aktywne Pozycje" icon={Target} />
 						<SubHeader
 							title="Analiza ryzykownych aktywów"

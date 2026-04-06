@@ -1,7 +1,10 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
+
 import { APP_DESCRIPTION, APP_NAME, SERVER_URL } from "@/lib/constants";
+
+import BulbTip from "@/components/shared/BulbTip";
+import { Inter } from "next/font/google";
+import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 
@@ -27,7 +30,10 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning className="overflow-y-hidden">
-			<body className={`${inter.className} antialiased overflow-x-hidden`}>
+			<body
+				className={`${inter.className} antialiased overflow-x-hidden`}
+				suppressHydrationWarning
+			>
 				<ThemeProvider
 					attribute="class"
 					defaultTheme="light"
@@ -36,6 +42,7 @@ export default function RootLayout({
 				>
 					{children}
 					<Toaster position="bottom-right" richColors />
+					<BulbTip />
 				</ThemeProvider>
 			</body>
 		</html>

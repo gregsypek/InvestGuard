@@ -69,7 +69,7 @@ export const SafeActionButton = ({
 				"h-9 px-4 text-xs font-bold uppercase tracking-wide transition-all group",
 				// STYL NORMALNY (Niebieski)
 				!isDemo &&
-					"border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700",
+					"border-blue-200 text-blue-200 bg-blue-500 hover:bg-blue-900 hover:text-blue-200",
 				// STYL DEMO (Szmaragdowy)
 				isDemo &&
 					"border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100/80 cursor-help",

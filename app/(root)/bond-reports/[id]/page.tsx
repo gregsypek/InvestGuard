@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import AddButton from "@/components/ui/AddButton";
 import { BondHeader } from "@/components/BondHeader";
 import BondLedgerTable from "@/components/BondLedgerTable";
-import BulbTip from "@/components/shared/BulbTip";
 import Link from "next/link";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SectionHeader } from "@/components/shared/SectionHeader";
@@ -69,10 +68,6 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 			{/* PASEK AKCJI (Dodaj Serię) */}
 			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
 				<div className="space-y-1">
-					<BulbTip
-						title="Pamiętaj:"
-						content="Wcześniejszy wykup to koszt ok. 0.70-3.00 PLN za sztukę."
-					/>
 					<SectionHeader title="Portfel Obligacji" icon={Landmark} />
 					<SubHeader
 						title="Analiza bezpiecznych aktywów"

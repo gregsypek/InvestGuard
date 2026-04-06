@@ -209,7 +209,7 @@ export function PlanCard({
 							Planowana kwota
 						</p>
 						<p className="text-xs font-mono tracking-tighter">
-							{plan.value.toLocaleString()}{" "}
+							{plan.value.toLocaleString("pl-PL")}
 							<span className="text-[10px]">PLN</span>
 						</p>
 					</div>

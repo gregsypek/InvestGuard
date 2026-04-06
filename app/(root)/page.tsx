@@ -109,8 +109,10 @@ function GuestOnboarding() {
 			{/* Footer CTA */}
 			<section className="py-20 text-center">
 				<h2 className="text-3xl font-bold mb-6">Gotowy na start?</h2>
-				<Button size="lg" className="px-8">
-					Zaczynamy
+				<Button size="lg" className="px-8" asChild>
+					<Link href="/dashboard" className="gap-2 flex items-center px-4">
+						Zaczynamy
+					</Link>
 				</Button>
 			</section>
 		</div>

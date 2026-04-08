@@ -19,7 +19,6 @@ import AddButton from "@/components/ui/AddButton";
 import { AlphaHeader } from "@/components/AlphaHeader";
 import { BondStatCard } from "@/components/shared/BondStatCard";
 import { BoosterActionsClient } from "@/components/alpha/BoosterActionsClient";
-import BulbTip from "@/components/shared/BulbTip";
 import { Category } from "@prisma/client";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
@@ -107,14 +106,15 @@ export default async function AlphaSelectionPage({
 	const totalPages = 5;
 
 	return (
-		<div className="py-2 px-8 space-y-10 ">
+		<div className="p-6 px-8 space-y-10 ">
 			<AlphaHeader
 				totalTransactions={2}
 				currentPage={currentPage}
 				totalPages={totalPages}
 				customBreadcrumbs={
-					<nav className="text-sm text-muted-foreground mb-2 italic">
-						Narzędzia / <span className="text-primary font-medium">Alpha</span>
+					<nav className="text-sm text-muted-foreground italic">
+						Narzędzia /{" "}
+						<span className="text-primary font-medium lowercase">Alpha</span>
 					</nav>
 				}
 			/>

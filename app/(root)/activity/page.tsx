@@ -59,11 +59,17 @@ export default async function ActivityPage({
 	const { data: transactions, meta } = result;
 
 	return (
-		<div className="py-2 px-8 space-y-10 pb-20">
+		<div className="p-6 px-8 space-y-10 pb-20">
 			<ActivityHeader
 				totalTransactions={meta.totalCount}
 				currentPage={currentPage}
 				totalPages={meta.totalPages}
+				customBreadcrumbs={
+					<nav className="text-sm text-muted-foreground italic">
+						Historia /{" "}
+						<span className="text-primary font-medium lowercase">wszystko</span>
+					</nav>
+				}
 			/>
 
 			<div className="flex flex-col min-h-[calc(100vh-200px)] space-y-10">

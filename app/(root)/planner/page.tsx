@@ -51,15 +51,15 @@ export default async function PlannerPage({ searchParams }: Props) {
 	const plannedCount = investmentPlans.length;
 
 	return (
-		<div className="py-2 px-8 space-y-10 pb-20">
-			{" "}
+		<div className="p-6 space-y-10 pb-20">
 			{/* EN: Consistent vertical spacing with PortfoliosPage */}
 			<PlannerHeader
 				totalPlannedValue={totalPlannedValue}
 				plannedCount={plannedCount}
 				customBreadcrumbs={
-					<nav className="text-sm text-muted-foreground mb-2 italic">
-						Narzędzia / <span className="text-primary font-medium">Planer</span>
+					<nav className="text-sm text-muted-foreground italic">
+						Narzędzia /{" "}
+						<span className="text-primary font-medium lowercase">Planer</span>
 					</nav>
 				}
 			/>

@@ -18,12 +18,12 @@ export const DashboardBreadcrumbs = ({
 	const isAddAssetPage = pathname.includes("/add-asset");
 
 	return (
-		<div className="flex flex-col gap-1 mb-2">
-			<nav className="text-sm text-muted-foreground flex items-center gap-2">
+		<div className="mb-2">
+			<nav className="text-sm text-muted-foreground flex items-center gap-2 italic">
 				<Link
 					href={`/dashboard/${id}`}
 					className={cn(
-						"inline-flex items-center transition-all h-5", // Fixed height helps vertical alignment
+						"inline-flex items-center transition-all h-5 italic", // Fixed height helps vertical alignment
 						isAddAssetPage
 							? "text-amber-600  decoration-amber-600/40  cursor-pointer font-medium"
 							: "text-muted-foreground no-underline cursor-default pointer-events-none",
@@ -42,7 +42,7 @@ export const DashboardBreadcrumbs = ({
 
 				<span
 					className={cn(
-						"transition-colors",
+						"transition-colors italic",
 						isAddAssetPage ? "" : "text-primary font-medium lowercase",
 					)}
 				>
@@ -51,7 +51,7 @@ export const DashboardBreadcrumbs = ({
 
 				{isAddAssetPage && (
 					<>
-						<span className="text-muted-foreground/40">/</span>
+						<span className="text-muted-foreground">/</span>
 						<span className="text-primary font-medium lowercase">
 							dodaj aktywo
 						</span>

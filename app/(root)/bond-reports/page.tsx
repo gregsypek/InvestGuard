@@ -18,7 +18,7 @@ export default async function BondReportsLanding({ searchParams }: Props) {
 	// 3. Jeśli użytkownik naprawdę nie ma żadnego wybranego portfela, prosimy o wybór
 	return (
 		<main className="container mx-auto py-10">
-			<div className="mt-12">
+			<div>
 				<PortfolioEmptyState variant="NOT_SELECTED" />
 			</div>
 		</main>

@@ -48,10 +48,10 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
 				customBreadcrumbs={
-					<nav className="text-sm text-muted-foreground flex items-center gap-2">
+					<nav className="text-sm text-muted-foreground flex items-center gap-2 italic">
 						Portfele
 						<span className="text-muted-foreground">/</span>
-						<span className="text-primary font-medium lowercase">
+						<span className="text-primary font-medium lowercase italic">
 							Wszystkie
 						</span>
 					</nav>

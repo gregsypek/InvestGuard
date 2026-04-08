@@ -26,7 +26,7 @@ export default async function NewPortfolioPage() {
 						<Link
 							href="/portfolios"
 							className={cn(
-								"inline-flex items-center transition-all h-5 text-amber-600 underline decoration-amber-600/40 underline-offset-4 cursor-pointer font-medium",
+								"inline-flex items-center transition-all h-5 italic text-amber-600 underline decoration-amber-600/40 underline-offset-4 cursor-pointer font-medium",
 							)}
 						>
 							<ChevronLeft
@@ -36,7 +36,9 @@ export default async function NewPortfolioPage() {
 							<span>Portfele</span>
 						</Link>
 						<span className="text-muted-foreground">/</span>
-						<span className="text-primary font-medium lowercase">Nowy</span>
+						<span className="text-primary font-medium lowercase italic">
+							Nowy
+						</span>
 					</nav>
 				}
 			/>

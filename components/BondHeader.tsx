@@ -40,24 +40,26 @@ export function BondHeader({
 					{/* Renderowanie nawigacji (Breadcrumbs) */}
 					{customBreadcrumbs}
 					<div>
-						<div className="flex items-center gap-2 mb-2">
+						<div className="flex items-center gap-2 text-sm">
 							{backHref && (
 								<Link
 									href={backHref}
-									className="text-muted-foreground hover:text-primary transition-colors mb-2"
+									className=" inline-flex items-center transition-all h-5 italic mb-2 text-amber-600  decoration-amber-600/40  cursor-pointer font-medium"
 								>
 									<ChevronLeft className="h-4 w-4" />
+									<span>Obligacje</span>
 								</Link>
 							)}
 							<nav className="text-sm text-muted-foreground mb-2 italic">
-								Obligacje /
+								{!backHref && <span>Obligacje</span>}
+								<span className="text-muted-foreground"> / </span>
 								<span className="text-primary font-medium">
 									{portfolioName}
 								</span>
 							</nav>
 						</div>
 						<div>
-							<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
+							<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3 lowercase">
 								{title}
 							</h1>
 							<p className="text-muted-foreground font-medium mt-1 flex items-center">

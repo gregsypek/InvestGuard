@@ -38,7 +38,7 @@ export const DashboardBreadcrumbs = ({
 					<span>Panel Główny</span>
 				</Link>
 
-				<span className="text-muted-foreground/40">/</span>
+				<span className="text-muted-foreground">/</span>
 
 				<span
 					className={cn(

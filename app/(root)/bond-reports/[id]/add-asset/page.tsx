@@ -13,7 +13,7 @@ export default async function AddBondPage({ params }: Props) {
 	if (!data) return notFound();
 
 	return (
-		<div className="py-2 px-8 space-y-10 pb-20">
+		<div className="p-6 px-8 space-y-10 pb-20">
 			<BondHeader
 				title="Moje Obligacje"
 				portfolioName={data.portfolioName}

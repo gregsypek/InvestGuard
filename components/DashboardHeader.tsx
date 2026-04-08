@@ -57,7 +57,7 @@ export const DashboardHeader = ({
 	// --- LOGIKA RENDEROWANIA ---
 
 	// Zmienna pomocnicza, by sprawdzić czy mamy już dane do statystyk
-	const isLoading = !portfolio || !portfolio.assets;
+	// const isLoading = !portfolio || !portfolio.assets;
 
 	// EN: Define default breadcrumbs based on current route
 	const defaultBreadcrumbs = isAddAssetPage ? (
@@ -74,13 +74,14 @@ export const DashboardHeader = ({
 				</Link>
 			)}
 			<nav className="text-sm text-muted-foreground italic">
-				Panel Główny / {portfolio?.name || "Ładowanie..."} / Dodaj aktywo
+				Panel Główny / {portfolio?.name.toLocaleLowerCase() || "Ładowanie..."} /
+				Dodaj aktywo
 			</nav>
 		</div>
 	) : null;
 
 	return (
-		<header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+		<header className="flex flex-col md:flex-row justify-between items-start md:items-start gap-6">
 			{/* LEWA STRONA: Zawsze widoczna (Breadcrumbs i Tytuł) */}
 			<div>
 				{/* EN: Use custom breadcrumbs if provided, otherwise use our smart default */}
@@ -98,8 +99,8 @@ export const DashboardHeader = ({
 			</div>
 
 			{/* PRAWA STRONA: Statystyki */}
-			<div className="flex items-center justify-end flex-wrap gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-				{isLoading ? (
+			<div className="flex self-start sm:justify-end flex-wrap gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+				{/* {isLoading ? (
 					// SZKIELET STATYSTYK
 					<>
 						<div className="h-12 w-32 bg-muted animate-pulse rounded-xl" />
@@ -108,51 +109,51 @@ export const DashboardHeader = ({
 					</>
 				) : (
 					// REALNE DANE
-					<>
-						{/* Całkowita Wartość */}
-						<ValueCard
-							label="Całkowita Wartość"
-							icon={Wallet2}
-							value={totalPortfolioValue}
-							formatString
-							suffix="PLN"
-						/>
+					<> */}
+				{/* Całkowita Wartość */}
+				<ValueCard
+					label="Całkowita Wartość"
+					icon={Wallet2}
+					value={totalPortfolioValue}
+					formatString
+					suffix="PLN"
+				/>
 
-						{/* Kapitał */}
-						<ValueCard
-							label="Zainwestowany kapitał"
-							icon={Container}
-							value={totalInvestedCapital}
-							formatString
-							suffix="PLN"
-						/>
+				{/* Kapitał */}
+				<ValueCard
+					label="Zainwestowany kapitał"
+					icon={Container}
+					value={totalInvestedCapital}
+					formatString
+					suffix="PLN"
+				/>
 
-						{/* P&L */}
-						<ValueCard label="Całkowity Wynik (P&L)">
-							<div
-								className={cn(
-									"flex items-baseline gap-2 font-mono font-black",
-									totalProfitAmount > 0
-										? "text-emerald-500"
-										: totalProfitAmount < 0
-											? "text-red-500"
-											: "text-muted-foreground",
-								)}
-							>
-								<span className="text-md tabular-nums">
-									{totalProfitAmount > 0 ? "+" : ""}
-									{totalProfitAmount.toLocaleString("pl-PL", {
-										minimumFractionDigits: 2,
-									})}
-								</span>
-								<span className="text-[10px] font-bold">
-									({totalProfitPercent > 0 ? "+" : ""}
-									{totalProfitPercent.toFixed(2)}%)
-								</span>
-							</div>
-						</ValueCard>
-					</>
-				)}
+				{/* P&L */}
+				<ValueCard label="Całkowity Wynik (P&L)">
+					<div
+						className={cn(
+							"flex items-baseline gap-2 font-mono font-black",
+							totalProfitAmount > 0
+								? "text-emerald-500"
+								: totalProfitAmount < 0
+									? "text-red-500"
+									: "text-muted-foreground",
+						)}
+					>
+						<span className="text-md tabular-nums">
+							{totalProfitAmount > 0 ? "+" : ""}
+							{totalProfitAmount.toLocaleString("pl-PL", {
+								minimumFractionDigits: 2,
+							})}
+						</span>
+						<span className="text-[10px] font-bold">
+							({totalProfitPercent > 0 ? "+" : ""}
+							{totalProfitPercent.toFixed(2)}%)
+						</span>
+					</div>
+				</ValueCard>
+				{/* </> */}
+				{/* )} */}
 			</div>
 		</header>
 	);

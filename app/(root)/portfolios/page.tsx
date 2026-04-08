@@ -34,23 +34,26 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 	}
 
 	if (!portfolioId) {
-		return <PortfolioEmptyState variant="NOT_SELECTED"/>
+		return <PortfolioEmptyState variant="NOT_SELECTED" />;
 	}
 
 	const { totalValue, portfoliosCount, assetsCount, categoryTotals } =
 		getGlobalStats(portfolios);
 
 	return (
-		<div className="space-y-10 pb-20">
+		<div className="space-y-10 pb-20 mb-2">
 			<PortfoliosHeader
 				title="Moje Portfele"
 				totalValue={totalValue}
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
 				customBreadcrumbs={
-					<nav className="text-sm text-muted-foreground mb-2">
-						Portfele /{" "}
-						<span className="text-primary font-medium ">Wszystkie</span>
+					<nav className="text-sm text-muted-foreground flex items-center gap-2">
+						Portfele
+						<span className="text-muted-foreground">/</span>
+						<span className="text-primary font-medium lowercase">
+							Wszystkie
+						</span>
 					</nav>
 				}
 			/>

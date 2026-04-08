@@ -1,3 +1,4 @@
+import { DashboardBreadcrumbs } from "@/components/DashboardBreadcrumbs";
 import DashboardGoal from "@/components/DashboardGoal";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { db } from "@/lib/db";
@@ -32,12 +33,14 @@ export default async function PortfolioLayout({
 		getPortfolioStats(portfolio);
 
 	return (
-		<div className="space-y-10 pb-20 py-2 px-8 ">
+		<div className="space-y-10 p-6">
 			<DashboardHeader
 				key={id}
 				portfolio={portfolio}
 				name={name}
 				totalValue={totalValue}
+				// Tutaj wstrzykujemy dynamiczne breadcrumbs z przyciskiem powrotu
+				customBreadcrumbs={<DashboardBreadcrumbs name={name} id={id} />}
 			/>
 			{goal > 0 && (
 				<DashboardGoal progress={progress} remaining={remaining} goal={goal} />

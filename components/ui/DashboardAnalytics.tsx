@@ -56,7 +56,7 @@ const DashboardAnalytics = ({
 		);
 	}
 	return (
-		<div className="space-y-12 pb-20">
+		<div className="space-y-10 pb-20">
 			{/* --- TOP SECTION: CHARTS & SIDEBAR --- */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 				<div className="lg:col-span-2 space-y-10">

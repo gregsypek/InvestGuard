@@ -18,11 +18,11 @@ export const PortfoliosHeader = ({
 	customBreadcrumbs,
 }: PortfoliosHeaderProps) => {
 	return (
-		<header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 ">
+		<header className="flex flex-col md:flex-row justify-between items-start md:items-start gap-6 ">
 			<div>
 				{/* Render navigation if passed from the page */}
 				{customBreadcrumbs}
-				<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
+				<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3 lowercase pt-2">
 					{title}
 				</h1>
 				<p className="text-muted-foreground font-medium mt-1">
@@ -31,7 +31,7 @@ export const PortfoliosHeader = ({
 			</div>
 
 			{/* Stats container with horizontal scroll on mobile */}
-			<div className="flex self-start justify-end flex-wrap gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar ">
+			<div className="flex self-start sm:justify-end flex-wrap gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar ">
 				{/* Total global value across all portfolios */}
 
 				<ValueCard

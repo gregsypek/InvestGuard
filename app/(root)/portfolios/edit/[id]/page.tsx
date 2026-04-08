@@ -2,6 +2,7 @@ import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import PortfolioForm from "@/components/PortfolioForm";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
+import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getGlobalStats } from "@/lib/calculations";
 import { notFound } from "next/navigation";
@@ -27,36 +28,42 @@ export default async function EditPortfolioPage({ params }: Props) {
 	if (!portfolio) {
 		notFound();
 	}
-
 	// 4. Calculate global context stats
 	const { totalValue, portfoliosCount, assetsCount } =
 		getGlobalStats(allPortfolios);
 
 	return (
 		<div className="space-y-8">
-			{/* Reusable header with global stats and custom back navigation */}
 			<PortfoliosHeader
 				title="Edytuj portfel"
 				totalValue={totalValue}
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
 				customBreadcrumbs={
-					<div className="flex items-center gap-2 mb-2">
+					<nav className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
 						<Link
 							href="/portfolios"
-							className="text-muted-foreground hover:text-primary transition-colors"
+							className={cn(
+								"inline-flex items-center transition-all h-5 text-amber-600 underline decoration-amber-600/40 underline-offset-4 cursor-pointer font-medium",
+							)}
 						>
-							<ChevronLeft className="h-4 w-4" />
+							<ChevronLeft
+								className="w-4 h-4 mr-0.5 no-underline"
+								strokeWidth={2.5}
+							/>
+							<span>Portfele</span>
 						</Link>
-						<nav className="text-sm text-muted-foreground">
-							Portfele / Edycja /
-							<span className="text-primary">{portfolio.name}</span>
-						</nav>
-					</div>
+						<span className="text-muted-foreground/40">/</span>
+						<span className="lowercase">edycja</span>
+						<span className="text-muted-foreground/40">/</span>
+						<span className="text-primary font-medium lowercase">
+							{portfolio.name}
+						</span>
+					</nav>
 				}
 			/>
 
-			<section className="w-full flex flex-col justify-start  md:px-0 overflow-x-hidden">
+			<section className="w-full flex flex-col justify-start md:px-0 overflow-x-hidden">
 				<PortfolioForm initialData={portfolio} portfolioId={id} />
 			</section>
 		</div>

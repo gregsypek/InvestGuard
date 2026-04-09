@@ -17,7 +17,7 @@ export function AlphaHeader({
 }: AlphaHeaderProps) {
 	return (
 		<div className="mb-8">
-			<div className="flex  md:flex-1 flex-col md:flex-row justify-between items-start md:items-end gap-6 ">
+			<div className="flex  md:flex-1 flex-col md:flex-row justify-between items-start md:items-start gap-6 ">
 				<div>
 					{customBreadcrumbs}
 					<h1 className="text-4xl font-black tracking-tighter flex items-center gap-3 mt-2 lowercase">

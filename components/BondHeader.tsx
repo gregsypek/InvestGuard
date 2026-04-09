@@ -74,7 +74,7 @@ export function BondHeader({
 					<ValueCard label="Aktywne serie" icon={History} value={totalBonds} />
 				</div>
 			</header>
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+			<div className="flex flex-wrap gap-6">
 				<BondStatCard
 					title="Zainwestowany Kapitał"
 					value={`${stats.totalInvested} PLN`}

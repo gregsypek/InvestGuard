@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+	Info,
+	LineChart,
+	LucideIcon,
 	ShieldCheck,
 	TrendingUp,
-	LineChart,
-	Info,
-	LucideIcon,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 // EN: Define available variants
@@ -79,8 +80,8 @@ export function BondStatCard({
 	const finalDescColor = descColor || config.descColor;
 
 	return (
-		<Card className=" shadow-sm bg-card/50 border-border2 ">
-			<CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+		<Card className=" shadow-sm bg-background border-border2 flex flex-col  justify-between gap-2 min-w-62 flex-wrap">
+			<CardHeader className="flex flex-row items-center justify-between  ">
 				<CardTitle className={cn("text-sm font-medium", titleColor)}>
 					{title}
 				</CardTitle>
@@ -90,10 +91,15 @@ export function BondStatCard({
 				)}
 			</CardHeader>
 			<CardContent>
-				<div className={cn("text-2xl font-bold tracking-tight", valueColor)}>
+				<div
+					className={cn(
+						"text-xl md:text-2xl font-bold tracking-tight px-4",
+						valueColor,
+					)}
+				>
 					{value}
 				</div>
-				<p className={cn("text-xs mt-1 transition-colors", finalDescColor)}>
+				<p className={cn("text-xs transition-colors", finalDescColor)}>
 					{description}
 				</p>
 			</CardContent>

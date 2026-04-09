@@ -120,7 +120,7 @@ export default async function AlphaSelectionPage({
 			/>
 
 			{/* EN: KPI Section */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+			<div className="flex flex-wrap flex-col md:flex-row gap-4 md:gap-6">
 				<BondStatCard
 					title="Udział w Portfelu"
 					value={`${sharePercentage.toFixed(1)}%`}

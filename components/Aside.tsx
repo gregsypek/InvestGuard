@@ -14,6 +14,7 @@ import {
 import { usePathname, useSearchParams } from "next/navigation";
 
 import { APP_NAME } from "@/lib/constants";
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -59,20 +60,25 @@ export default function Aside() {
 			<div className="p-6">
 				<Link href="/" className="flex items-center gap-3">
 					<div
+						className={
+							"w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+						}
+					>
+						<Image
+							src="/logo-light.svg"
+							width={32}
+							height={32}
+							alt="Invest Guard logo"
+						/>
+					</div>
+					<span
 						className={cn(
-							"w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-							isDemoMode ? "bg-emerald-600" : "bg-blue-600",
+							"text-xl font-black tracking-tighter text-white hidden md:inline-block",
+							isDemoMode ? "text-emerald-500" : "text-blue-200",
 						)}
 					>
-						{isDemoMode ? (
-							<GraduationCap className="text-white w-5 h-5" />
-						) : (
-							<Wallet className="text-white w-5 h-5" />
-						)}
-					</div>
-					<span className="text-xl font-black tracking-tighter text-white hidden md:inline-block">
 						{APP_NAME}
-						<span className={isDemoMode ? "text-emerald-500" : "√"}>.</span>
+						<span className={isDemoMode ? "text-emerald-500" : ""}>.</span>
 					</span>
 				</Link>
 			</div>

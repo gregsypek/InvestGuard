@@ -15,9 +15,20 @@ export const metadata: Metadata = {
 		template: `%s | Invest Guard`,
 		default: APP_NAME,
 	},
-	icons: {
-		icon: "/favicon.ico",
-		apple: "/apple-touch-icon.png",
+	// icons: {
+	// 	icon: [
+	// 		{ url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+	// 		{ url: "/favicon.svg", type: "image/svg+xml" },
+	// 	],
+	// 	shortcut: "/favicon.ico",
+	// 	apple: "/apple-touch-icon.png",
+	// },
+	manifest: "/site.webmanifest",
+	// Odpowiednik <meta name="apple-mobile-web-app-title" ... />
+	appleWebApp: {
+		title: "InvestGuard",
+		statusBarStyle: "default",
+		capable: true,
 	},
 	description: APP_DESCRIPTION,
 	metadataBase: new URL(SERVER_URL),

@@ -41,6 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 *.md
+# Dodaj wyjątek dla README.md (musi być PONIŻEJ *.md)
+!README.md
+
 .env*.local
 
 modul2.md

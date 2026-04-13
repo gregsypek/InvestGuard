@@ -98,6 +98,10 @@ const AssetLedgerTable = ({
 					(sum, b) => sum + (b.currentValue || 0),
 					0,
 				),
+				dailyChange: bondAssets.reduce(
+					(sum, b) => sum + (b.dailyChange || 0),
+					0,
+				),
 				targetPercentage: 55,
 
 				// --- POPRAWKA: Dodajemy brakujące pola techniczne ---

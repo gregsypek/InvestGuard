@@ -12,9 +12,9 @@ export default async function PortfolioLayout({
 	children: React.ReactNode;
 	params: Promise<{ id: string }>;
 }) {
-	const { id } = await params; // To ID zawsze będzie poprawne dla ścieżki /dashboard/[id]
+	const { id } = await params;
 
-	// 1. Pobieramy portfel z bazy
+	// 1. Fetch the portfolio from the database
 	const portfolio = await db.portfolio.findUnique({
 		where: { id },
 		include: {
@@ -23,30 +23,32 @@ export default async function PortfolioLayout({
 		},
 	});
 
-	// 2. Jeśli nie ma portfela, zwracamy notFound
+	// 2. Return notFound if the portfolio does not exist
 	if (!portfolio) {
 		notFound();
 	}
 
-	// 3. Obliczamy statystyki za pomocą naszej nowej funkcji
+	// 3. Calculate portfolio statistics
 	const { name, totalValue, progress, remaining, goal } =
 		getPortfolioStats(portfolio);
 
 	return (
 		<div className="space-y-10 p-6">
 			<DashboardHeader
-				key={id}
+				key={id} // Ensure the header resets its internal state when the portfolio changes
 				portfolio={portfolio}
 				name={name}
 				totalValue={totalValue}
-				// Tutaj wstrzykujemy dynamiczne breadcrumbs z przyciskiem powrotu
-				customBreadcrumbs={<DashboardBreadcrumbs name={name} id={id} />}
+				// Fix: Added a unique key to the JSX element passed as a prop to avoid reconciliation warnings
+				customBreadcrumbs={
+					<DashboardBreadcrumbs key={`bread-${id}`} name={name} id={id} />
+				}
 			/>
 			{goal > 0 && (
 				<DashboardGoal progress={progress} remaining={remaining} goal={goal} />
 			)}
 
-			{/* Tutaj wskoczy zawartość podstron */}
+			{/* Main content of the subpages */}
 			<main>{children}</main>
 		</div>
 	);

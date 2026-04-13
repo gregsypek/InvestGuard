@@ -1,3 +1,4 @@
+import { APP_NAME, STRATEGIES } from "@/lib/constants";
 import {
 	Card,
 	CardContent,
@@ -14,7 +15,6 @@ import DashboardClientView from "@/components/ui/DashboardClientView";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import Header from "@/components/HeaderDemo";
 import Link from "next/link";
-import { STRATEGIES } from "@/lib/constants";
 import { calculateGapAnalysis } from "@/lib/calculations";
 
 export default async function DemoPage({
@@ -82,7 +82,7 @@ export default async function DemoPage({
 					Wybierz swoją <span className="text-primary">strategię</span>
 				</h1>
 				<p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-					Zobacz, jak MyWallet pomaga zarządzać różnymi podejściami do
+					Zobacz, jak {APP_NAME} pomaga zarządzać różnymi podejściami do
 					inwestowania. Wybierz model, aby przetestować aplikację.
 				</p>
 			</div>

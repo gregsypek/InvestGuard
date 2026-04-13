@@ -149,8 +149,8 @@ export default function PortfolioPieChart({
 									color: "var(--foreground)",
 								}}
 								// Poprawiony formatter z obsługą opcjonalną
-								formatter={(value: number | undefined) =>
-									value !== undefined ? `${value.toFixed(2)}%` : "0.00%"
+								formatter={(value) =>
+									typeof value === "number" ? `${value.toFixed(2)}%` : "0.00%"
 								}
 							/>
 							<Legend

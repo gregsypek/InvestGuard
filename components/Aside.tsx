@@ -3,7 +3,6 @@
 
 import {
 	FileText,
-	GraduationCap,
 	History,
 	LayoutDashboard,
 	Notebook,
@@ -69,6 +68,8 @@ export default function Aside() {
 							width={32}
 							height={32}
 							alt="Invest Guard logo"
+							// EN: Added h-auto to maintain aspect ratio as required by Next.js
+							className="h-auto"
 						/>
 					</div>
 					<span

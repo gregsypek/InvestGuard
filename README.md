@@ -93,6 +93,4 @@ Unlike generic portfolio trackers, InvestGuard features a dedicated engine for g
 
 ---
 
-
-
 Made with [@gregsypek](https://twitter.com/@gregsypek) 2026

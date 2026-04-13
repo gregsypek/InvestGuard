@@ -333,6 +333,9 @@ export default function BondLedgerTable({
 																purchaseDate: new Date(bond.purchaseDate), // Converting string to Date object
 																createdAt: new Date(),
 																updatedAt: new Date(),
+																dailyChange:  0,
+																	
+																
 
 																// EN: Set optional fields to null to match the Asset interface
 																nominalValue: bond.currentValue ?? null,

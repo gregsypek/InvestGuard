@@ -35,6 +35,7 @@ const createDemoAsset = (data: {
 		ticker: data.ticker ?? null,
 		quantity: data.quantity,
 		nominalValue: null,
+		dailyChange: 0,
 
 		// Dane finansowe
 		investedCapital: data.investedCapital,

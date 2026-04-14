@@ -51,7 +51,7 @@ const TIPS_CONFIG: Record<
 			indicatorDesc: "System monitoruje odchylenia od wag np.15/15/10/55.",
 			tipTitle: "Kiedy reagować?",
 			tipDesc:
-				"Jeśli udział obligacji spadnie poniżej 50% (cel to 55%), system podświetli pole na czerwono – to sygnał do dokupienia EDO/DOS.",
+				"Jeśli udział obligacji spadnie poniżej 50% (cel to 55%), system podświetli pole na czerwono – to sygnał do dokupienia EDO/DOR.",
 		},
 		{
 			title: "ANALIZA BAZY",

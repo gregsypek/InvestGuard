@@ -104,12 +104,12 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 	return (
 		<div className="space-y-6 ">
 			{/* SELEKTOR TRYBÓW */}
-			<div className="flex bg-muted/50 p-1 gap-3  items-center">
+			<div className="flex bg-muted/50  gap-3  items-center">
 				<button
 					type="button"
 					onClick={() => handleModeChange("asset")}
 					className={cn(
-						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ml-1",
+						"flex items-center gap-2 px-4 flex-1 py-2 rounded-lg text-xs font-bold transition-all ml-1",
 						viewMode === "asset"
 							? "bg-background shadow-sm text-primary border border2"
 							: "text-muted-foreground border hover:text-foreground",
@@ -123,9 +123,9 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 					type="button"
 					onClick={() => handleModeChange("bond")}
 					className={cn(
-						"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ml-1",
+						"flex items-center gap-2 flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ml-1",
 						viewMode === "bond"
-							? "bg-background shadow-sm text-primary border border2"
+							? "bg-background shadow-sm text-primary "
 							: "text-muted-foreground border hover:text-foreground",
 					)}
 				>

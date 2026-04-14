@@ -132,7 +132,7 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 					<Label className="font-bold text-foreground pt-2">
 						Wybierz Serię
 					</Label>
-					<div className="flex flex-wrap justify-between gap-4">
+					<div className="flex flex-wrap justify-start gap-4">
 						{Object.entries(BOND_CONFIG).map(([key, config]) => (
 							<button
 								key={key}
@@ -151,7 +151,7 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 										series === key ? "bg-white" : config.color,
 									)}
 								/>
-								<span className="font-bold text-sm">{key}</span>
+								<span className="font-bold text-sm">{config.label}</span>
 							</button>
 						))}
 					</div>
@@ -308,11 +308,11 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 					</div>
 				</div>
 
-				<div className="flex flex-nowrap gap-6">
+				<div className="flex flex-col flex-nowrap gap-6">
 					{Object.entries(BOND_CONFIG).map(([key, config]) => {
-						const duration =
-							BOND_TEMPLATES[key as keyof typeof BOND_TEMPLATES]?.duration;
-						const isYears = duration >= 1;
+						// const duration =
+						// 	BOND_TEMPLATES[key as keyof typeof BOND_TEMPLATES]?.duration;
+						// const isYears = duration >= 1;
 
 						return (
 							<div key={key} className="flex gap-2 group">
@@ -322,13 +322,15 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 										config.color,
 									)}
 								/>
-								<div className="flex leading-tight items-center gap-2">
+								<div className="flex leading-tight  items-center gap-2">
 									<span className="text-[12px] text-foreground tracking-tight">
-										{BOND_TEMPLATES[key as keyof typeof BOND_TEMPLATES]?.label}
+										{BOND_TEMPLATES[key as keyof typeof BOND_TEMPLATES]?.label}{" "}
+										{config.desc}
 									</span>
-									<span className="text-[9px] text-muted-foreground font-medium uppercase truncate">
+
+									{/* <span className="text-[9px] text-muted-foreground font-medium uppercase truncate">
 										{isYears ? `${duration} Lat` : "3 Mies."}
-									</span>
+									</span> */}
 								</div>
 							</div>
 						);

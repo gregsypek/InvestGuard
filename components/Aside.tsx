@@ -112,7 +112,7 @@ export default function Aside() {
 							key={item.href}
 							href={finalHref}
 							className={cn(
-								"flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all group",
+								"flex items-center gap-3 px-2 md:px-4 py-3 rounded-lg text-sm font-medium transition-all group",
 								isActive
 									? isDemoMode
 										? "bg-emerald-600/10 text-emerald-500 border border-emerald-600/20" // Styl DEMO (Zielony)

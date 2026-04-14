@@ -164,9 +164,13 @@ export const PORTFOLIO_STRATEGY_MAP = {
 } as const;
 
 export const BOND_TYPES = {
+	ROD: { label: "ROD (12-letnie)", duration: 12, category: "OBLIGACJE" },
 	EDO: { label: "EDO (10-letnie)", duration: 10, category: "OBLIGACJE" },
+	ROS: { label: "OTS (6-letnie)", duration: 6, category: "OBLIGACJE" },
 	COI: { label: "COI (4-letnie)", duration: 4, category: "OBLIGACJE" },
-	DOS: { label: "DOS (2-letnie)", duration: 2, category: "OBLIGACJE" },
+	DOR: { label: "DOR (2-letnie)", duration: 2, category: "OBLIGACJE" },
+	TOS: { label: "OTS (3-letnie)", duration: 3, category: "OBLIGACJE" },
+	ROR: { label: "ROR (roczne)", duration: 0.25, category: "OBLIGACJE" },
 	OTS: { label: "OTS (3-miesięczne)", duration: 0.25, category: "OBLIGACJE" },
 };
 
@@ -175,31 +179,49 @@ export const BOND_CONFIG = {
 		label: "ROD (12-letnie)",
 		color: "bg-purple-400", // Fioletowy dla wyróżnienia serii rodzinnej
 		border: "border-purple-200",
+		desc: "Rodzinne dwunastoletnie oszczędnościowe obligacje skarbowe",
 	},
 	EDO: {
 		label: "EDO (10-letnie)",
 		color: "bg-orange-300",
 		border: "border-orange-200",
+		desc: "Emerytalne dziesięcioletnie oszczędnościowe obligacje skarbowe",
 	},
 	ROS: {
 		label: "ROS (6-letnie)",
 		color: "bg-pink-400", // Różowy/Karmazynowy dla ROS
 		border: "border-pink-200",
+		desc: "Rodzinne sześcioletnie oszczędnościowe obligacje skarbowe",
 	},
 	COI: {
 		label: "COI (4-letnie)",
 		color: "bg-emerald-300",
 		border: "border-emerald-200",
+		desc: "Czteroletnie indeksowane oszczędnościowe obligacje skarbowe",
 	},
-	DOS: {
-		label: "DOS (2-letnie)",
+	DOR: {
+		label: "DOR (2-letnie)",
 		color: "bg-blue-300",
 		border: "border-blue-200",
+		desc: "Dwuletnie oszczędnościowe obligacje skarbowe o oprocentowaniu zmiennym",
 	},
 	OTS: {
 		label: "OTS (3-miesięczne)",
 		color: "bg-slate-300",
 		border: "border-slate-200",
+		desc: "Trzymiesięczne oszczędnościowe obligacje skarbowe o oprocentowaniu stałym",
+	},
+	ROR: {
+		label: "ROR (roczne)",
+		color: "bg-yellow-300",
+		border: "border-yellow-200",
+		desc: "Roczne oszczędnościowe obligacje skarbowe o oprocentowaniu zmiennym",
+	},
+	TOS: {
+		label: "TOS (3-letnie)",
+		color: "bg-gray-300",
+		border: "border-gray-200",
+		desc: "Trzyletnie oszczędnościowe obligacje skarbowe o oprocentowaniu stałym",
 	},
 };
 export const BOND_TEMPLATES = {
@@ -209,10 +231,12 @@ export const BOND_TEMPLATES = {
 		rateType: "VARIABLE",
 	},
 	EDO: { label: "EDO (10-letnie)", duration: 10, rateType: "VARIABLE" },
-	ROS: { label: "ROS (6-letnie Rodzinne)", duration: 6, rateType: "VARIABLE" },
+	ROS: { label: "ROS (6-letnie)", duration: 6, rateType: "VARIABLE" },
 	COI: { label: "COI (4-letnie)", duration: 4, rateType: "VARIABLE" },
-	DOS: { label: "DOS (2-letnie)", duration: 2, rateType: "FIXED" },
+	TOS: { label: "TOS (3-letnie)", duration: 3, rateType: "FIXED" },
+	DOR: { label: "DOR (2-letnie)", duration: 2, rateType: "FIXED" },
 	OTS: { label: "OTS (3-miesięczne)", duration: 0.25, rateType: "FIXED" },
+	ROR: { label: "ROR (roczne)", duration: 1, rateType: "VARIABLE" },
 };
 //NOTE: FIXED (Stałe): Odsetki proste (np. OTS) lub proste z wypłatą. VARIABLE/INDEXED (Zmienne/Indeksowane): Kapitalizacja roczna (EDO, COI, ROD).
 

@@ -30,12 +30,13 @@ export async function getBonds(portfolioId?: string) {
 			},
 			OR: [
 				{ ticker: { contains: "EDO" } },
-				{ ticker: { contains: "DOS" } },
+				{ ticker: { contains: "DOR" } },
 				{ ticker: { contains: "COI" } },
-				{ ticker: { contains: "TOZ" } },
 				{ ticker: { contains: "ROD" } },
 				{ ticker: { contains: "OTS" } },
 				{ ticker: { contains: "ROS" } },
+				{ ticker: { contains: "ROR" } },
+				{ ticker: { contains: "TOS" } },
 			],
 		},
 		orderBy: {
@@ -231,7 +232,7 @@ export async function addBond(formData: FormData, portfolioId: string) {
 			);
 			const r = interestRate / 100;
 
-			if (rateType === "FIXED" || rawTicker === "OTS" || rawTicker === "DOS") {
+			if (rateType === "FIXED" || rawTicker === "OTS" || rawTicker === "DOR") {
 				startingCurrentValue = investedCapital * (1 + r * diffYears); // EN: Simple interest
 			} else {
 				startingCurrentValue = investedCapital * Math.pow(1 + r, diffYears); // EN: Compound interest
@@ -343,7 +344,7 @@ export async function updateBondInterestRate(id: string, newRate: number) {
 		if (
 			bond.rateType === "FIXED" ||
 			cleanTicker === "OTS" ||
-			cleanTicker === "DOS"
+			cleanTicker === "DOR"
 		) {
 			simulatedValue = capital * (1 + r * diffYears);
 		} else {

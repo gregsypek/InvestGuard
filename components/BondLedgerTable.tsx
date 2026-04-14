@@ -92,7 +92,9 @@ export default function BondLedgerTable({
 			ROS: 6,
 			COI: 4,
 			TOZ: 3,
-			DOS: 2,
+			DOR: 2,
+			ROR: 1,
+			OTS: 0.25,
 		};
 
 		const cleanTicker = bond.ticker?.split("_")[0].toUpperCase() || "";
@@ -333,9 +335,7 @@ export default function BondLedgerTable({
 																purchaseDate: new Date(bond.purchaseDate), // Converting string to Date object
 																createdAt: new Date(),
 																updatedAt: new Date(),
-																dailyChange:  0,
-																	
-																
+																dailyChange: 0,
 
 																// EN: Set optional fields to null to match the Asset interface
 																nominalValue: bond.currentValue ?? null,

@@ -73,7 +73,6 @@ export function PlanCard({
 		if (plan.plannedDate.length === 10) return plan.plannedDate;
 		return `${plan.plannedDate}-01`;
 	});
-
 	const [executionNote, setExecutionNote] = useState("");
 	const [isBooked, setIsBooked] = useState(hasCashInPortfolio);
 	const [sourcePortfolioId, setSourcePortfolioId] = useState("");

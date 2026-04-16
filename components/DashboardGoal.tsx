@@ -9,7 +9,7 @@ type Props = {
 };
 const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 	return (
-		<section className="bg-card dark:bg-background border border-blue-200 p-4 rounded-2xl shadow-sm">
+		<section className="bg-card dark:bg-background  p-4 ">
 			<div className="flex justify-between items-end mb-4">
 				<div>
 					<div className="flex items-center gap-2 text-primary mb-1">

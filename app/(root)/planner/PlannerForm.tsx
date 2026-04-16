@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 
-import { CATEGORY_LABELS, inputStyles } from "@/lib/constants";
+import { BOND_CONFIG, CATEGORY_LABELS, inputStyles } from "@/lib/constants";
 import {
 	Form,
 	FormControl,
@@ -48,7 +48,8 @@ interface Props {
 export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 	const router = useRouter();
 	const [viewMode, setViewMode] = useState<"asset" | "bond">("asset");
-
+	const today = new Date();
+	const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 	// EN: Restored generic type for useForm
 	const form = useForm({
 		resolver: zodResolver(PlannerSchema),
@@ -56,7 +57,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 			name: "",
 			ticker: "",
 			value: 0,
-			plannedDate: new Date().toISOString().slice(0, 7),
+			plannedDate: currentMonth,
 			portfolioId: defaultPortfolioId || "",
 			category: undefined,
 			rationale: "",
@@ -264,46 +265,97 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 							name="name"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>
+									<FormLabel className="text-sm font-bold uppercase tracking-tighter">
 										{isCash
 											? "Opis wpłaty"
-											: viewMode === "bond"
-												? "Typ"
-												: "Nazwa"}
+											: selectedCategory === "BONDS"
+												? "Wybierz typ obligacji"
+												: "Nazwa aktywa"}
 									</FormLabel>
-									<FormControl>
-										{/* EN: Using ?? "" to prevent null-to-controlled-input error */}
-										<Input
-											className={inputStyles}
-											{...field}
-											value={field.value ?? ""}
-										/>
-									</FormControl>
+
+									{selectedCategory === "BONDS" ? (
+										<Select
+											onValueChange={(value) => {
+												// 'value' to tutaj klucz, np. "EDO"
+												field.onChange(
+													BOND_CONFIG[value as keyof typeof BOND_CONFIG].label,
+												);
+												form.setValue("ticker", value); // Automatycznie ustawia ticker (EDO, COI itd.)
+											}}
+											defaultValue={field.value}
+										>
+											<FormControl>
+												<SelectTrigger className={cn(inputStyles, "h-11")}>
+													<SelectValue placeholder="Wybierz serię..." />
+												</SelectTrigger>
+											</FormControl>
+											<SelectContent>
+												{Object.entries(BOND_CONFIG).map(([key, config]) => (
+													<SelectItem
+														key={key}
+														value={key}
+														className="cursor-pointer"
+													>
+														<div className="flex items-center gap-2">
+															<div
+																className={cn(
+																	"w-2 h-2 rounded-full",
+																	config.color,
+																)}
+															/>
+															<span className="font-medium">
+																{config.label}
+															</span>
+														</div>
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									) : (
+										<FormControl>
+											<Input
+												placeholder="Np. iShares Physical Gold"
+												className={inputStyles}
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+									)}
 									<FormMessage />
 								</FormItem>
 							)}
 						/>
 
+						{/* POLE: TICKER (ZABLOKOWANE DLA OBLIGACJI) */}
 						<FormField
 							control={form.control}
 							name="ticker"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>{isCash ? "Identyfikator" : "Ticker"}</FormLabel>
+									<FormLabel className="text-sm font-bold uppercase tracking-tighter text-muted-foreground">
+										Ticker / Symbol
+									</FormLabel>
 									<FormControl>
 										<Input
-											className={inputStyles}
+											placeholder={
+												selectedCategory === "BONDS"
+													? "Automatyczny"
+													: "Np. IGLN.L"
+											}
+											className={cn(
+												inputStyles,
+												selectedCategory === "BONDS" &&
+													"bg-muted opacity-70 cursor-not-allowed font-mono text-amber-600",
+											)}
 											{...field}
 											value={field.value ?? ""}
-											disabled={isCash}
+											readOnly={selectedCategory === "BONDS"} // Uniemożliwia ręczną zmianę dla obligacji
 										/>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
 							)}
 						/>
-
-						{/* ... reszta pól (value, plannedDate, isRecurring) analogicznie ... */}
 						<FormField
 							control={form.control}
 							name="value"

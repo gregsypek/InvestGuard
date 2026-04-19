@@ -1,6 +1,11 @@
 "use client";
 
-import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
+import {
+	BOND_CONFIG,
+	CATEGORY_LABELS,
+	COLORS,
+	inputStyles,
+} from "@/lib/constants";
 import {
 	CalendarIcon,
 	CheckSquare,
@@ -71,7 +76,23 @@ export function PlanCard({
 	const [purchaseDate, setPurchaseDate] = useState(
 		new Date().toISOString().split("T")[0],
 	);
-	console.log("🚀 ~ PlanCard ~ purchaseDate:", purchaseDate)
+
+	// // NOWE: Musimy trzymać ticker, który user wybrał w modalu
+	// const [finalTicker, setFinalTicker] = useState(plan.ticker || "");
+
+	// // Aktualizacja przy wyborze szablonu
+	// const handleTemplateSelect = (ticker: string) => {
+	// 	const config = BOND_CONFIG[ticker as keyof typeof BOND_CONFIG];
+	// 	if (config) {
+	// 		setFinalTicker(ticker); // Zapisujemy ticker (np. ROD)
+	// 		// Generujemy nazwę serii (np. ROD0438)
+	// 		const autoName = generateBondName(ticker, purchaseDate);
+	// 		setFinalName(autoName);
+	// 		// Opcjonalnie: możemy tu ustawić domyślny procent, jeśli go masz w configu
+	// 	}
+	// };
+
+	console.log("🚀 ~ PlanCard ~ purchaseDate:", purchaseDate);
 	// console.log("🚀 ~ PlanCard ~ purchaseDate:", purchaseDate);
 	// const [interestRate, setInterestRate] = useState(0);
 	// EN: Initialize as string to support "typing" dots and commas
@@ -108,15 +129,16 @@ export function PlanCard({
 		try {
 			// EN: Passing all 8 arguments to the server action
 			const result = await executePlan(
-				plan.id,
-				finalValue,
-				purchasePrice,
-				isBooked,
-				sourcePortfolioId,
-				executionNote,
-				finalName, // ARG 7: finalNameParam
-				purchaseDate, // ARG 8: purchaseDate (string YYYY-MM-DD)
-				rateAsFloat, // ARG 9: interestRate (number)
+				plan.id, // 1
+				finalValue, // 2
+				purchasePrice, // 3
+				isBooked, // 4
+				sourcePortfolioId, // 5
+				executionNote, // 6
+				finalName, // 7
+				purchaseDate, // 8: purchaseDate (String)
+				rateAsFloat, // 9: interestRate (Number)
+				// finalTicker, // <--- DODAJEMY TEN ARGUMENT (np. "ROD")
 			);
 
 			if (result.success) {
@@ -289,7 +311,7 @@ export function PlanCard({
 								className={inputStyles}
 							/> */}
 
-								<Input
+								{/* <Input
 									type="text" // EN: Change to text for better float handling on Safari/Chrome
 									inputMode="decimal" // EN: Mobile-friendly decimal keyboard
 									value={interestRate}
@@ -303,14 +325,59 @@ export function PlanCard({
 									}}
 									placeholder="0.00"
 									className={inputStyles}
+								/> */}
+								<Input
+									type="text"
+									inputMode="decimal"
+									value={interestRate}
+									onChange={(e) =>
+										setInterestRate(e.target.value.replace(",", "."))
+									}
+									className={cn(
+										inputStyles,
+										plan.targetCategory !== "BONDS" &&
+											"opacity-50 cursor-not-allowed",
+									)}
+									disabled={plan.targetCategory !== "BONDS"}
 								/>
 							</div>
 						)}
 						{/* SEKCJA: NAZWA (Domyślnie wyliczona, ale edytowalna) */}
 						<div className="md:col-span-2 space-y-2">
-							<Label className="text-xs font-bold uppercase opacity-70">
-								Nazwa aktywa w portfelu
-							</Label>
+							<div className="flex items-center justify-between">
+								<Label className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+									Nazwa aktywa (seria)
+								</Label>
+
+								{/* EN: Template picker visible only for Bonds category */}
+								{/* UI: Wybór szablonu widoczny tylko dla kategorii obligacji */}
+								{/* {plan.targetCategory === "BONDS" && (
+									<Select onValueChange={handleTemplateSelect}>
+										<SelectTrigger className="h-7 w-auto border-none bg-amber-500/10 text-amber-700 text-[10px] font-bold px-2 hover:bg-amber-500/20 transition-colors">
+											<SelectValue placeholder="⚡ SZABLONY OBLIGACJI" />
+										</SelectTrigger>
+										<SelectContent>
+											{Object.entries(BOND_CONFIG).map(([key, config]) => (
+												<SelectItem
+													key={key}
+													value={key}
+													className="text-xs cursor-pointer"
+												>
+													<div className="flex items-center gap-2">
+														<div
+															className={cn(
+																"w-2 h-2 rounded-full",
+																config.color,
+															)}
+														/>
+														{config.label}
+													</div>
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)} */}
+							</div>
 							<Input
 								value={finalName}
 								onChange={(e) => setFinalName(e.target.value)}

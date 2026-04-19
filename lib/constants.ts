@@ -276,3 +276,13 @@ export const STRATEGIES = {
 		advantage: "Wysoki potencjał wzrostu",
 	},
 };
+export const BOND_DURATIONS: Record<string, number> = {
+	ROD: 12,
+	EDO: 10,
+	ROS: 6,
+	COI: 4,
+	TOS: 3,
+	DOR: 2,
+	ROR: 1,
+	OTS: 0.25, // 3 miesiące
+};

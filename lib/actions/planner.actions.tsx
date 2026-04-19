@@ -1,11 +1,16 @@
-// lib/actions/planner.actions.tsx
 "use server";
 
+import { BOND_DURATIONS } from "../constants";
 import { Category } from "@prisma/client";
 import { PlannerSchema } from "@/lib/validations/planner";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+
+/**
+ * EN: Durations for bonds in years to calculate maturity date
+ * UI: Czas trwania obligacji w latach do obliczenia daty wykupu
+ */
 
 export async function createInvestmentPlan(
 	values: z.infer<typeof PlannerSchema>,
@@ -48,29 +53,25 @@ export async function createInvestmentPlan(
 	}
 }
 
-/**
- * Helper to add exactly one month to a YYYY-MM or YYYY-MM-DD string
- */
-function getNextMonth(dateStr: string): string {
-	const parts = dateStr.split("-");
-	const year = parseInt(parts[0]);
-	const month = parseInt(parts[1]);
-	const day = parts[2] ? parseInt(parts[2]) : null;
+// Funkcja pomocnicza do obliczania narosłych odsetek
+function calculateAccruedValue(
+	principal: number,
+	rate: number,
+	purchaseDate: Date,
+) {
+	const now = new Date();
+	const diffTime = now.getTime() - purchaseDate.getTime();
+	if (diffTime <= 0) return principal;
 
-	// Date(year, month, day) - month is 0-indexed in JS, but here 'month'
-	// is already the next month relative to 0-indexing.
-	const date = new Date(year, month, day || 1);
-
-	const nextYear = date.getFullYear();
-	const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
-
-	if (day) {
-		const nextDay = String(date.getDate()).padStart(2, "0");
-		return `${nextYear}-${nextMonth}-${nextDay}`;
-	}
-	return `${nextYear}-${nextMonth}`;
+	const yearsPassed = diffTime / (1000 * 60 * 60 * 24 * 365.25);
+	// Proste naliczanie odsetek (możesz tu wstawić bardziej złożony wzór dla EDO/COI)
+	return principal * (1 + (rate / 100) * yearsPassed);
 }
 
+/**
+ * EN: Execute a plan, creating an asset and potentially withdrawing cash
+ * UI: Realizacja planu - tworzenie aktywa i opcjonalne pobranie gotówki
+ */
 export async function executePlan(
 	planId: string,
 	finalValue: number,
@@ -78,9 +79,10 @@ export async function executePlan(
 	isBooked: boolean,
 	sourcePortfolioId?: string,
 	executionNote?: string,
-	finalNameParam?: string, // EN: Renamed parameter to avoid shadowing
-	purchaseDate?: string, // EN: New parameter for bonds to set purchase date,
-	interestRate?: number,
+	finalNameParam?: string,
+	purchaseDate?: string, // ARG 8: purchaseDate (String YYYY-MM-DD)
+	interestRate?: number, // ARG 9: interestRate (Float)
+	// finalTickerParam?: string, // <--- NOWY 10. ARGUMENT
 ) {
 	try {
 		return await db.$transaction(async (tx) => {
@@ -97,19 +99,47 @@ export async function executePlan(
 
 			const effectivePrice = isCash ? 1 : purchasePrice || 1;
 			const calculatedQuantity = finalValue / effectivePrice;
-			// PARSOWANIE DATY: purchaseDate to string z modala (YYYY-MM-DD)
-			// Ustalenie daty - jeśli user podał w modalu, używamy jej, inaczej dzisiejsza
+
+			// Ustalamy Ticker: priorytet ma ten z modalu, potem ten z planu
+			// const currentTicker = finalTickerParam || plan.ticker || "";
+			const currentTicker = plan.ticker || "";
+			const baseTickerForDuration = currentTicker.split("_")[0];
+
+			// EN: Handle dates correctly
+			// UI: Poprawne ustawienie daty zakupu i wyliczenie daty wykupu
 			const executionDate = purchaseDate ? new Date(purchaseDate) : new Date();
+			const rate = interestRate || 0;
+
+			// OBLICZAMY WARTOŚĆ POCZĄTKOWĄ Z UWZGLĘDNIENIEM CZASU
+			// Dzięki temu jeśli kupiłeś obligację rok temu, od razu zobaczysz zysk
+			const initialCurrentValue = isBond
+				? calculateAccruedValue(finalValue, rate, executionDate)
+				: finalValue;
+			let maturityDate = null;
+
+			if (isBond && baseTickerForDuration) {
+				const duration = BOND_DURATIONS[baseTickerForDuration] || 0;
+				if (duration > 0) {
+					maturityDate = new Date(executionDate);
+					if (duration < 1) {
+						maturityDate.setMonth(maturityDate.getMonth() + 3);
+					} else {
+						maturityDate.setFullYear(
+							maturityDate.getFullYear() + Math.floor(duration),
+						);
+					}
+				}
+			}
 
 			const resolvedName = finalNameParam || plan.name || "Nowe Aktywo";
 
-			// Dla obligacji generujemy unikalny ticker, aby nie łączyły się w jeden wiersz
+			// EN: Unique ticker for bonds to prevent merging entries
 			const resolvedTicker =
 				isBond && plan.ticker
 					? `${plan.ticker}_${Date.now()}`
 					: plan.ticker || (isCash ? "CASH" : "UNIT");
 
-			// 2. WYPŁATA (ŹRÓDŁO)
+			// 1. WYPŁATA (ŹRÓDŁO)
 			if (isBooked && sourcePortfolioId) {
 				const sourceCash = await tx.asset.findFirst({
 					where: { portfolioId: sourcePortfolioId, ticker: "CASH" },
@@ -143,8 +173,13 @@ export async function executePlan(
 				});
 			}
 
-			// 2. Tworzenie aktywa (WPŁATA)
-			// Uwaga: Obligacje (isBond) zawsze tworzymy jako NOWE aktywo (nie szukamy istniejących)
+			// Ticker do bazy (z timestampem, by uniknąć duplikatów w ID)
+			// const dbTicker = isBond
+			// 	? `${baseTickerForDuration}_${Date.now()}`
+			// 	: currentTicker;
+
+			// 2. WPŁATA (CEL)
+			// EN: Bonds are always created as new assets, others can be updated
 			const existingAsset = !isBond
 				? await tx.asset.findFirst({
 						where: {
@@ -171,18 +206,20 @@ export async function executePlan(
 						category: targetCategory,
 						quantity: calculatedQuantity,
 						investedCapital: finalValue,
-						currentValue: finalValue,
+						currentValue: initialCurrentValue, // <--- TUTAJ WPADA WYLICZONA WARTOŚĆ
 						portfolioId: plan.portfolioId,
-						purchaseDate: executionDate, // Ustawiamy datę z modala
+						purchaseDate: executionDate,
+						maturityDate: maturityDate,
 						nominalValue: isBond ? 100 : 0,
-						interestRate: interestRate || 0, // Zapisujemy oprocentowanie
+						interestRate: Number(interestRate) || 0,
+						targetPercentage: 0,
 						conviction: plan.conviction,
 						rationale: plan.rationale,
 					},
 				});
 			}
 
-			// 4. HISTORIA WPŁATY
+			// 3. HISTORIA WPŁATY
 			await tx.transactionHistory.create({
 				data: {
 					type: "BUY",
@@ -197,7 +234,7 @@ export async function executePlan(
 				},
 			});
 
-			// 5. CYKLICZNOŚĆ
+			// 4. CYKLICZNOŚĆ
 			if (plan.isRecurring) {
 				await tx.investmentPlan.create({
 					data: {
@@ -218,7 +255,7 @@ export async function executePlan(
 			revalidatePath("/dashboard");
 			revalidatePath("/planner");
 			revalidatePath("/activity");
-			revalidatePath("/alpha");
+			revalidatePath("/bond-reports");
 			return { success: true };
 		});
 	} catch (error) {
@@ -227,12 +264,24 @@ export async function executePlan(
 	}
 }
 
-export async function deleteInvestmentPlan(planId: string) {
+export async function deleteInvestmentPlan(id: string) {
 	try {
-		await db.investmentPlan.delete({ where: { id: planId } });
+		await db.investmentPlan.delete({ where: { id } });
 		revalidatePath("/planner");
 		return { success: true };
-	} catch {
-		return { success: false, error: "Błąd usuwania" };
+	} catch (error) {
+		console.error("Delete Plan Error:", error);
+		return { success: false, error: "Błąd usuwania planu" };
 	}
+}
+
+function getNextMonth(dateStr: string): string {
+	const parts = dateStr.split("-");
+	const year = parseInt(parts[0]);
+	const month = parseInt(parts[1]);
+
+	const date = new Date(year, month - 1);
+	date.setMonth(date.getMonth() + 1);
+
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }

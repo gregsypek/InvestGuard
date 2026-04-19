@@ -79,7 +79,8 @@ export async function executePlan(
 	sourcePortfolioId?: string,
 	executionNote?: string,
 	finalNameParam?: string, // EN: Renamed parameter to avoid shadowing
-	customDate?: string, // EN: New parameter for exact purchase date
+	purchaseDate?: string, // EN: New parameter for bonds to set purchase date,
+	interestRate?: number,
 ) {
 	try {
 		return await db.$transaction(async (tx) => {
@@ -88,27 +89,25 @@ export async function executePlan(
 				include: { portfolio: true },
 			});
 
-			if (!plan) throw new Error("Plan not found");
+			if (!plan) throw new Error("Plan nie znaleziony");
 
-			// 1. PRZYGOTOWANIE DANYCH
 			const targetCategory = (plan.targetCategory as Category) || "CASH";
-			const isCash = targetCategory === "CASH";
 			const isBond = targetCategory === "BONDS";
+			const isCash = targetCategory === "CASH";
 
 			const effectivePrice = isCash ? 1 : purchasePrice || 1;
 			const calculatedQuantity = finalValue / effectivePrice;
+			// PARSOWANIE DATY: purchaseDate to string z modala (YYYY-MM-DD)
+			// Ustalenie daty - jeśli user podał w modalu, używamy jej, inaczej dzisiejsza
+			const executionDate = purchaseDate ? new Date(purchaseDate) : new Date();
 
-			// EN: Use the name from the UI if provided, otherwise the plan name
-			const resolvedName =
-				finalNameParam || plan.name || (isCash ? "Gotówka" : "Nowe Aktywo");
+			const resolvedName = finalNameParam || plan.name || "Nowe Aktywo";
 
+			// Dla obligacji generujemy unikalny ticker, aby nie łączyły się w jeden wiersz
 			const resolvedTicker =
 				isBond && plan.ticker
 					? `${plan.ticker}_${Date.now()}`
 					: plan.ticker || (isCash ? "CASH" : "UNIT");
-
-			// EN: Parse the exact date if provided by the user
-			const executionDate = customDate ? new Date(customDate) : new Date();
 
 			// 2. WYPŁATA (ŹRÓDŁO)
 			if (isBooked && sourcePortfolioId) {
@@ -144,19 +143,13 @@ export async function executePlan(
 				});
 			}
 
-			// 3. WPŁATA (CEL)
+			// 2. Tworzenie aktywa (WPŁATA)
+			// Uwaga: Obligacje (isBond) zawsze tworzymy jako NOWE aktywo (nie szukamy istniejących)
 			const existingAsset = !isBond
 				? await tx.asset.findFirst({
 						where: {
 							portfolioId: plan.portfolioId,
-							OR: [
-								{
-									ticker:
-										plan.ticker && plan.ticker !== "" ? plan.ticker : undefined,
-								},
-								{ name: plan.name },
-								{ category: isCash ? "CASH" : undefined },
-							],
+							ticker: plan.ticker || undefined,
 						},
 					})
 				: null;
@@ -168,7 +161,6 @@ export async function executePlan(
 						quantity: { increment: calculatedQuantity },
 						investedCapital: { increment: finalValue },
 						currentValue: { increment: finalValue },
-						conviction: plan.conviction || undefined,
 					},
 				});
 			} else {
@@ -181,16 +173,11 @@ export async function executePlan(
 						investedCapital: finalValue,
 						currentValue: finalValue,
 						portfolioId: plan.portfolioId,
-						purchaseDate: executionDate,
-						// ✅ FIX: Nominał 100 PLN dla obligacji (ważne dla tabeli)
+						purchaseDate: executionDate, // Ustawiamy datę z modala
 						nominalValue: isBond ? 100 : 0,
-
+						interestRate: interestRate || 0, // Zapisujemy oprocentowanie
 						conviction: plan.conviction,
 						rationale: plan.rationale,
-
-						interestRate: 0,
-						targetPercentage: 0,
-						// ✅ PRZEPISYWANIE DANYCH ANALITYCZNYCH
 					},
 				});
 			}

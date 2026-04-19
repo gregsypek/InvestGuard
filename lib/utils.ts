@@ -2,6 +2,7 @@
 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { BOND_TEMPLATES } from "./constants";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -119,3 +120,17 @@ export function getStockLogo(ticker: string | null): string | null {
 
 	return null;
 }
+
+export const generateBondName = (ticker: string, dateStr: string) => {
+	// Sprawdzamy czy to obligacja z naszych szablonów
+	const template = BOND_TEMPLATES[ticker as keyof typeof BOND_TEMPLATES];
+	if (!template) return ticker;
+
+	const date = new Date(dateStr);
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const year = date.getFullYear();
+	// Wyliczamy rok zapadalności (rok zakupu + czas trwania z szablonu)
+	const maturityYearShort = String(year + template.duration).slice(-2);
+
+	return `${ticker}${month}${maturityYearShort}`;
+};

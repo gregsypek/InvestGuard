@@ -24,19 +24,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../ui/select";
+import { cn, generateBondName } from "@/lib/utils";
 import {
 	deleteInvestmentPlan,
 	executePlan,
 } from "@/lib/actions/planner.actions";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SimpleSwitch } from "../ui/SimpleSwitchProps";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 // EN: Extend the Plan type to include the related Portfolio name
 type PlanWithPortfolio = InvestmentPlan & {
@@ -67,21 +67,31 @@ export function PlanCard({
 	const [purchasePrice, setPurchasePrice] = useState<number>(
 		plan.targetCategory === "BONDS" ? 100 : 0,
 	);
-
-	// EN: Initialize date as YYYY-MM-DD for the date input
-	const [finalDate, setFinalDate] = useState(() => {
-		if (plan.plannedDate.length === 10) return plan.plannedDate;
-		return `${plan.plannedDate}-01`;
-	});
+	// --- NOWE STANY ---
+	const [purchaseDate, setPurchaseDate] = useState(
+		new Date().toISOString().split("T")[0],
+	);
+	console.log("🚀 ~ PlanCard ~ purchaseDate:", purchaseDate)
+	// console.log("🚀 ~ PlanCard ~ purchaseDate:", purchaseDate);
+	// const [interestRate, setInterestRate] = useState(0);
+	// EN: Initialize as string to support "typing" dots and commas
+	// UI: Inicjujemy jako string, aby wspierać wpisywanie kropek i przecinków
+	const [interestRate, setInterestRate] = useState<string>("0");
+	// // EN: Initialize date as YYYY-MM-DD for the date input
+	// const [finalDate, setFinalDate] = useState(() => {
+	// 	if (plan.plannedDate.length === 10) return plan.plannedDate;
+	// 	return `${plan.plannedDate}-01`;
+	// });
 	const [executionNote, setExecutionNote] = useState("");
 	const [isBooked, setIsBooked] = useState(hasCashInPortfolio);
 	const [sourcePortfolioId, setSourcePortfolioId] = useState("");
 
 	const isCash = plan.targetCategory === "CASH";
+	const isBond = plan.targetCategory === "BONDS";
 
 	const handleExecute = async () => {
 		const effectivePrice = isCash ? 1 : Number(purchasePrice);
-
+		const rateAsFloat = parseFloat(String(interestRate).replace(",", "."));
 		if (effectivePrice <= 0) {
 			toast.error("Kurs zakupu musi być większy niż 0");
 			return;
@@ -99,13 +109,14 @@ export function PlanCard({
 			// EN: Passing all 8 arguments to the server action
 			const result = await executePlan(
 				plan.id,
-				Number(finalValue),
-				effectivePrice,
+				finalValue,
+				purchasePrice,
 				isBooked,
 				sourcePortfolioId,
 				executionNote,
-				finalName, // Parametr 7: Nazwa
-				finalDate, // Parametr 8: Precyzyjna data
+				finalName, // ARG 7: finalNameParam
+				purchaseDate, // ARG 8: purchaseDate (string YYYY-MM-DD)
+				rateAsFloat, // ARG 9: interestRate (number)
 			);
 
 			if (result.success) {
@@ -137,6 +148,15 @@ export function PlanCard({
 			return;
 		}
 	};
+
+	// 3. LOGIKA AUTOMATYCZNEJ NAZWY (tylko dla obligacji)
+	useEffect(() => {
+		if (plan.targetCategory === "BONDS" && plan.ticker) {
+			const autoName = generateBondName(plan.ticker, purchaseDate);
+			console.log("🚀 ~ PlanCard ~ generateBondName:", generateBondName);
+			setFinalName(autoName);
+		}
+	}, [purchaseDate, plan.ticker, plan.targetCategory]);
 
 	return (
 		<div className="group relative bg-card border  border-primary/50 rounded-2xl p-3 transition-all duration-300 shadow-sm hover:shadow-md overflow-hidden">
@@ -242,9 +262,72 @@ export function PlanCard({
 						</DialogDescription>
 					</DialogHeader>
 
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
-						{/* EDYCJA NAZWY I DATY */}
-						<div className="space-y-2">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6 ">
+						{/* DATA ZAKUPU */}
+						<div className={cn(!isBond && "col-span-2", "space-y-2 ")}>
+							<Label className="text-[10px] font-bold uppercase opacity-60">
+								Data zakupu
+							</Label>
+							<Input
+								type="date"
+								value={purchaseDate}
+								onChange={(e) => setPurchaseDate(e.target.value)}
+								className={inputStyles}
+							/>
+						</div>
+						{/* OPROCENTOWANIE */}
+						{isBond && (
+							<div className="space-y-2">
+								<Label className="text-[10px] font-bold uppercase opacity-60">
+									Oprocentowanie (%)
+								</Label>
+								{/* <Input
+								type="number"
+								step="0.01"
+								value={interestRate}
+								onChange={(e) => setInterestRate(Number(e.target.value))}
+								className={inputStyles}
+							/> */}
+
+								<Input
+									type="text" // EN: Change to text for better float handling on Safari/Chrome
+									inputMode="decimal" // EN: Mobile-friendly decimal keyboard
+									value={interestRate}
+									// disabled={plan.targetCategory !== "BONDS"}
+									onChange={(e) => {
+										// EN: Allow only numbers and one decimal separator (dot or comma)
+										const val = e.target.value.replace(",", ".");
+										if (/^-?\d*\.?\d*$/.test(val)) {
+											setInterestRate(val);
+										}
+									}}
+									placeholder="0.00"
+									className={inputStyles}
+								/>
+							</div>
+						)}
+						{/* SEKCJA: NAZWA (Domyślnie wyliczona, ale edytowalna) */}
+						<div className="md:col-span-2 space-y-2">
+							<Label className="text-xs font-bold uppercase opacity-70">
+								Nazwa aktywa w portfelu
+							</Label>
+							<Input
+								value={finalName}
+								onChange={(e) => setFinalName(e.target.value)}
+								className={cn(
+									inputStyles,
+									"font-black text-amber-600 uppercase",
+								)}
+								placeholder="Np. ROD0438"
+							/>
+							{plan.targetCategory === "BONDS" && (
+								<p className="text-[10px] text-muted-foreground italic">
+									* Nazwa wygenerowana automatycznie (Ticker + Miesiąc + Rok
+									Zapadalności)
+								</p>
+							)}
+						</div>
+						{/* <div className="space-y-2">
 							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
 								Nazwa aktywa
 							</Label>
@@ -253,9 +336,9 @@ export function PlanCard({
 								onChange={(e) => setFinalName(e.target.value)}
 								className={inputStyles}
 							/>
-						</div>
+						</div> */}
 
-						<div className="space-y-2">
+						{/* <div className="space-y-2">
 							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
 								Dokładna data zakupu
 							</Label>
@@ -265,7 +348,7 @@ export function PlanCard({
 								onChange={(e) => setFinalDate(e.target.value)}
 								className={inputStyles}
 							/>
-						</div>
+						</div> */}
 
 						{/* OSTATECZNA KWOTA */}
 						<div className="space-y-2">

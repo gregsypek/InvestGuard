@@ -48,6 +48,7 @@ interface Props {
 export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 	const router = useRouter();
 	const [viewMode, setViewMode] = useState<"asset" | "bond">("asset");
+
 	const today = new Date();
 	const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 	// EN: Restored generic type for useForm
@@ -218,10 +219,22 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 									name="category"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel>Kategoria</FormLabel>
+											<FormLabel className="text-sm font-bold">
+												Kategoria
+											</FormLabel>
 											<Select
-												onValueChange={field.onChange}
-												value={field.value}
+												onValueChange={(value) => {
+													field.onChange(value);
+													// EN: Auto-fill for CASH category
+													if (value === "CASH") {
+														form.setValue("name", "Gotówka");
+														form.setValue("ticker", "CASH");
+													} else if (value === "BONDS") {
+														// EN: Clear ticker if switching from cash back to bonds for template logic
+														form.setValue("ticker", "");
+													}
+												}}
+												defaultValue={field.value}
 											>
 												<FormControl>
 													<SelectTrigger className={inputStyles}>
@@ -346,10 +359,17 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 												inputStyles,
 												selectedCategory === "BONDS" &&
 													"bg-muted opacity-70 cursor-not-allowed font-mono text-amber-600",
+												selectedCategory === "CASH" &&
+													"bg-muted opacity-70 cursor-not-allowed font-mono text-blue-600",
 											)}
 											{...field}
 											value={field.value ?? ""}
-											readOnly={selectedCategory === "BONDS"} // Uniemożliwia ręczną zmianę dla obligacji
+											// EN: Lock field if category is CASH
+
+											readOnly={
+												selectedCategory === "BONDS" ||
+												selectedCategory === "CASH"
+											} // Uniemożliwia ręczną zmianę dla obligacji
 										/>
 									</FormControl>
 									<FormMessage />
@@ -434,7 +454,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 											<FormControl>
 												<Textarea
 													placeholder="Np. Spółka jest niedowartościowana o 20% względem sektora, czekam na wyniki kwartalne..."
-													className="resize-none min-h-[100px] bg-background"
+													className="resize-none min-h-25 bg-background"
 													{...field}
 													value={field.value ?? ""}
 												/>

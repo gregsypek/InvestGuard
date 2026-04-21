@@ -63,7 +63,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 			category: undefined,
 			rationale: "",
 			isRecurring: false,
-			conviction: 50,
+			conviction: null,
 		},
 	});
 

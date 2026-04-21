@@ -1,14 +1,10 @@
 "use client";
 
-import {
-	BOND_CONFIG,
-	CATEGORY_LABELS,
-	COLORS,
-	inputStyles,
-} from "@/lib/constants";
+import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
 import {
 	CalendarIcon,
 	CheckSquare,
+	Clock,
 	Loader2,
 	RefreshCw,
 	Trash2,
@@ -50,6 +46,7 @@ type PlanWithPortfolio = InvestmentPlan & {
 
 interface PlanCardProps {
 	plan: PlanWithPortfolio;
+	isLocked: boolean;
 	hasCashInPortfolio: boolean;
 	allPortfoliosWithCash: { id: string; name: string }[];
 	isDemo?: boolean;
@@ -57,6 +54,7 @@ interface PlanCardProps {
 
 export function PlanCard({
 	plan,
+	isLocked,
 	hasCashInPortfolio,
 	allPortfoliosWithCash,
 	isDemo,
@@ -104,7 +102,7 @@ export function PlanCard({
 	// 	return `${plan.plannedDate}-01`;
 	// });
 	const [executionNote, setExecutionNote] = useState("");
-	const [isBooked, setIsBooked] = useState(hasCashInPortfolio);
+	const [isBooked, setIsBooked] = useState(false);
 	const [sourcePortfolioId, setSourcePortfolioId] = useState("");
 
 	const isCash = plan.targetCategory === "CASH";
@@ -181,8 +179,13 @@ export function PlanCard({
 	}, [purchaseDate, plan.ticker, plan.targetCategory]);
 
 	return (
-		<div className="group relative bg-card border  border-primary/50 rounded-2xl p-3 transition-all duration-300 shadow-sm hover:shadow-md overflow-hidden">
-			<div className="flex flex-col gap-4">
+		<div
+			className={cn(
+				"group relative bg-card border  border-primary/50 rounded-2xl p-3 transition-all duration-300 shadow-sm hover:shadow-md overflow-hidden",
+				isLocked && " backdrop-blur-[1px]",
+			)}
+		>
+			<div className="flex flex-col gap-4 ">
 				<div className="flex justify-between items-start">
 					<div className="space-y-1">
 						<div className="flex items-center gap-2">
@@ -207,6 +210,28 @@ export function PlanCard({
 								<span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
 									{plan.conviction}% - pewność
 								</span>
+							)}
+							{/* {isLocked && (
+								<div className=" flex items-center text-white gap-2 px-3 py-1 rounded-md bg-slate-800">
+									<Clock className="w-3 h-3  animate-pulse" />
+									<span className="text-[10px]    uppercase tracking-widest">
+										{`Dostępny od (${plan.plannedDate})`}
+									</span>
+								</div>
+							)} */}
+							{isLocked && (
+								<div className=" flex items-center justify-end bg-background/10 text-center ">
+									<div className="flex items-center gap-3 bg-slate-700 text-white px-3 py-1 rounded-xl shadow-2xl border border-white/10 scale-90 transition-transform duration-500">
+										<div className="flex flex-col">
+											<span className="text-[10px] font-black uppercase  tracking-[0.2em] text-amber-500">
+												Oczekiwanie
+											</span>
+											<span className="text-xs font-bold whitespace-nowrap">
+												{`Dostępny od (${plan.plannedDate})`}
+											</span>
+										</div>
+									</div>
+								</div>
 							)}
 						</div>
 						<p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
@@ -261,6 +286,22 @@ export function PlanCard({
 							{plan.plannedDate}
 						</p>
 					</div>
+					{/* OVERLAY DLA ZABLOKOWANYCH
+					{isLocked && (
+						<div className="absolute inset-0 z-20 flex items-center justify-center bg-background/10 backdrop-blur-[0.6px]">
+							<div className="flex items-center gap-3 bg-sidebar text-white px-3 py-2 rounded-2xl shadow-2xl border border-white/10">
+								<Clock className="w-4 h-4 text-amber-500 animate-pulse" />
+								<div className="flex flex-col">
+									<span className="text-[10px] font-black uppercase tracking-widest text-amber-500">
+										Oczekiwanie
+									</span>
+									<span className="text-xs font-bold whitespace-nowrap">
+										Dostępne od {plan.plannedDate}
+									</span>
+								</div>
+							</div>
+						</div>
+					)} */}
 				</div>
 
 				{plan.rationale && (
@@ -271,7 +312,7 @@ export function PlanCard({
 			</div>
 
 			<Dialog open={isOpen} onOpenChange={setIsOpen}>
-				<DialogContent className="max-w-2xl bg-card border-border shadow-2xl rounded-3xl p-8">
+				<DialogContent className="  max-w-2xl bg-card border-border shadow-2xl rounded-3xl p-8">
 					<DialogHeader className="space-y-3">
 						<div className="h-12 w-12 rounded-2xl bg-green-500/10 flex items-center justify-center mb-2">
 							<RefreshCw className="h-6 w-6 text-green-600" />
@@ -284,7 +325,7 @@ export function PlanCard({
 						</DialogDescription>
 					</DialogHeader>
 
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6 ">
+					<div className=" grid grid-cols-1 md:grid-cols-2 gap-6 py-6 ">
 						{/* DATA ZAKUPU */}
 						<div className={cn(!isBond && "col-span-2", "space-y-2 ")}>
 							<Label className="text-[10px] font-bold uppercase opacity-60">
@@ -444,6 +485,7 @@ export function PlanCard({
 								className={cn(inputStyles, isCash && "bg-muted opacity-50")}
 							/>
 						</div>
+						{/* DODATEK: Nakładka informacyjna dla zablokowanego planu */}
 
 						{/* SEKCJA KSIĘGOWANIA */}
 						<div className="md:col-span-2 space-y-4 rounded-2xl border border-border p-5 bg-muted/20">
@@ -495,17 +537,39 @@ export function PlanCard({
 							/>
 						</div>
 					</div>
+					{/* {isLocked && (
+						<div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 shadow-xl">
+							<Clock className="w-3 h-3 text-amber-400 animate-pulse" />
+							<span className="text-[10px] font-black text-white uppercase tracking-widest">
+								Dostępne wkrótce (patrz miesiąc realizacji)
+							</span>
+						</div>
+					)} */}
+					{/* DODATEK: Nakładka informacyjna dla zablokowanego planu */}
 
 					<DialogFooter>
 						<Button
 							onClick={handleExecute}
-							disabled={isPending || (isBooked && !sourcePortfolioId)}
-							className="w-full h-14 bg-green-600 hover:bg-green-700 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-green-500/20 transition-all active:scale-95"
+							// Zablokowanie przycisku, jeśli plan jest na przyszłość
+							disabled={
+								isPending || (isBooked && !sourcePortfolioId) || isLocked
+							}
+							className={cn(
+								"w-full h-14 font-black uppercase tracking-widest text-xs rounded-2xl transition-all",
+								isLocked
+									? "bg-slate-900 text-white px-3 py-2 rounded-2xl shadow-2xl border  cursor-not-allowed"
+									: "bg-green-600 hover:bg-green-700 text-white shadow-xl shadow-green-500/20",
+							)}
 						>
 							{isPending ? (
 								<Loader2 className="h-5 w-5 animate-spin" />
+							) : isLocked ? (
+								<div className="h-8 w-8 rounded-xl bg-slate-900 flex items-center gap-4 justify-center cursor-not-allowed">
+									<Clock className="w-4 h-4 text-amber-500 animate-pulse" />
+									{`Dostępny wkrótce (${plan.plannedDate})`}
+								</div>
 							) : (
-								"Zatwierdź i Kupuję"
+								"Zatwierdź realizację"
 							)}
 						</Button>
 					</DialogFooter>

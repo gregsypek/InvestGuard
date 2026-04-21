@@ -12,7 +12,7 @@ export async function PlannerList() {
 		where: {
 			portfolio: { userId: session.user.id },
 		},
-		orderBy: { createdAt: "desc" },
+		orderBy: [{ plannedDate: "asc" }, { createdAt: "desc" }],
 		include: { portfolio: true },
 	});
 
@@ -59,18 +59,41 @@ export async function PlannerList() {
 			</div>
 		);
 	}
+	// --- LOGIKA DATY DO BLOKADY ---
+	const now = new Date();
+	const currentYear = now.getFullYear();
+	const currentMonth = now.getMonth() + 1;
+
+	if (plans.length === 0) {
+		return (
+			<div className="flex h-50 flex-col items-center justify-center rounded-md border border-dashed bg-card text-center">
+				<p className="text-muted-foreground text-sm">
+					Brak zaplanowanych inwestycji.
+				</p>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-col gap-4">
-			{plans.map((plan) => (
-				<PlanCard
-					key={plan.id}
-					plan={plan}
-					// 3. Sprawdzamy czy portfolioId tego konkretnego planu jest na liście portfeli z gotówką
-					hasCashInPortfolio={cashPortfolioIds.has(plan.portfolioId)}
-					allPortfoliosWithCash={allPortfoliosWithCash}
-				/>
-			))}
+			{plans.map((plan) => {
+				// EN: Calculate lock status based on plannedDate vs current month
+				// UI: Obliczanie statusu blokady na podstawie daty planu względem obecnego miesiąca
+				const [pYear, pMonth] = plan.plannedDate.split("-").map(Number);
+				const isLocked =
+					pYear > currentYear ||
+					(pYear === currentYear && pMonth > currentMonth);
+
+				return (
+					<PlanCard
+						key={plan.id}
+						plan={plan}
+						isLocked={isLocked} // Przekazujemy stan blokady
+						hasCashInPortfolio={cashPortfolioIds.has(plan.portfolioId)}
+						allPortfoliosWithCash={allPortfoliosWithCash}
+					/>
+				);
+			})}
 		</div>
 	);
 }

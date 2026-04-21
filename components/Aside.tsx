@@ -56,17 +56,17 @@ export default function Aside() {
 
 	return (
 		<aside className="w-20 md:w-64 bg-sidebar text-sidebar-foreground flex flex-col border-r border-slate-800 transition-all duration-300">
-			<div className="p-6">
-				<Link href="/" className="flex items-center gap-3">
+			<div className=" p-3 md:p-6">
+				<Link href="/" className="flex items-center justify-center gap-3">
 					<div
 						className={
-							"w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+							"w-12 h-12 rounded-lg flex items-center  transition-colors"
 						}
 					>
 						<Image
 							src="/logo-light.svg"
-							width={32}
-							height={32}
+							width={40}
+							height={40}
 							alt="Invest Guard logo"
 							// EN: Added h-auto to maintain aspect ratio as required by Next.js
 							className="h-auto"
@@ -83,7 +83,7 @@ export default function Aside() {
 					</span>
 				</Link>
 			</div>
-			<nav className="flex-1 px-4 py-4 space-y-1">
+			<nav className="flex-1 flex-col flex self-center px-4 py-4 space-y-1">
 				{NAV_ITEMS.map((item) => {
 					// Logika aktywności linku
 					const isActive = isDemoMode
@@ -128,7 +128,7 @@ export default function Aside() {
 						>
 							<item.icon
 								className={cn(
-									"w-5 h-5 transition-colors",
+									" w-5 h-5 md:w-6 md:h-6 transition-colors",
 									isActive
 										? isDemoMode
 											? "text-emerald-500"

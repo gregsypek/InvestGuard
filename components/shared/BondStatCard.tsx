@@ -80,20 +80,20 @@ export function BondStatCard({
 	const finalDescColor = descColor || config.descColor;
 
 	return (
-		<Card className=" shadow-sm bg-background border-border2 flex flex-col  justify-between gap-2 min-w-62 flex-wrap">
-			<CardHeader className="flex flex-row items-center justify-between  ">
+		<Card className=" shadow-sm bg-background border-border2 flex flex-row md:flex-col  flex-1 justify-between gap-2 min-w-62 flex-wrap">
+			<CardHeader className="flex flex-row items-center flex-1 gap-4">
+				{Icon && (
+					<Icon className={cn("h-4 w-4 transition-colors", finalIconColor)} />
+				)}
 				<CardTitle className={cn("text-sm font-medium", titleColor)}>
 					{title}
 				</CardTitle>
 				{/* EN: Only renders if Icon exists and hideIcon is false */}
-				{Icon && (
-					<Icon className={cn("h-4 w-4 transition-colors", finalIconColor)} />
-				)}
 			</CardHeader>
 			<CardContent>
 				<div
 					className={cn(
-						"text-xl md:text-2xl font-bold tracking-tight px-4",
+						"text-xl md:text-2xl font-bold tracking-tight ",
 						valueColor,
 					)}
 				>

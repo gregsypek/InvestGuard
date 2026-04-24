@@ -24,7 +24,8 @@ export function AlphaHeader({
 						Selekcja Alpha
 					</h1>
 					<p className="text-muted-foreground font-medium mt-1">
-						Aktywne zarządzanie i selekcja aktywów.
+						Aktywne zarządzanie i selekcja aktywów o podniesionym ryzyku które
+						kategoryzujemy jako BOOSTER.
 					</p>
 				</div>
 

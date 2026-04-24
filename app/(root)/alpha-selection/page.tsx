@@ -14,13 +14,19 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import {
+	getPortfolioAssets,
+	getPortfolioCategories,
+} from "@/lib/actions/portfolio.actions";
 
 import AddButton from "@/components/ui/AddButton";
+import { AlphaChart } from "@/components/alpha/AreaChart";
 import { AlphaHeader } from "@/components/AlphaHeader";
 import { BondStatCard } from "@/components/shared/BondStatCard";
 import { BoosterActionsClient } from "@/components/alpha/BoosterActionsClient";
 import { Category } from "@prisma/client";
 import Link from "next/link";
+import { MigrationTool } from "@/components/alpha/MigrationTool";
 import { Progress } from "@/components/ui/progress";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { SubHeader } from "@/components/shared/SubHeader";
@@ -37,8 +43,9 @@ export default async function AlphaSelectionPage({
 }: {
 	searchParams: Promise<{ portfolioId?: string }>;
 }) {
-	// Pobieramy ID aktywnego portfela
 	const activeId = await getActivePortfolioId(searchParams);
+	if (!activeId) redirect("/dashboard");
+	// Pobieramy ID aktywnego portfela
 
 	// Jeśli nie ma żadnego portfela, kierujemy do domyślnego dashboardu,
 	// ale zakładamy, że użytkownik Alpha ma już portfel.
@@ -53,7 +60,6 @@ export default async function AlphaSelectionPage({
 	// });
 
 	// const targetPortfolioId = userPortfolio?.id || "default";
-
 	// 1. FETCH DATA: Get only Booster assets for this user
 	const boosterAssets = await db.asset.findMany({
 		where: {
@@ -65,45 +71,130 @@ export default async function AlphaSelectionPage({
 	});
 	// console.log("🚀 ~ AlphaSelectionPage ~ boosterAssets:", boosterAssets);
 
-	// 2. FETCH TOTAL PORTFOLIO VALUE: For the "Share" KPI
-	const allAssets = await db.asset.findMany({
-		where: { portfolio: { userId: session.user.id } },
-		select: { currentValue: true },
-	});
-
-	const totalPortfolioValue = allAssets.reduce(
-		(sum, a) => sum + a.currentValue,
-		0,
-	);
-	const totalBoosterValue = boosterAssets.reduce(
-		(sum, a) => sum + a.currentValue,
-		0,
-	);
-
-	// 3. CALCULATE KPIs
-	// EN: Portfolio share calculation
-	const sharePercentage =
-		totalPortfolioValue > 0
-			? (totalBoosterValue / totalPortfolioValue) * 100
-			: 0;
-
-	// EN: Aggregate ROI for the Booster segment
-	const totalInvested = boosterAssets.reduce(
-		(sum, a) => sum + a.investedCapital,
-		0,
-	);
-	const totalCurrent = boosterAssets.reduce(
-		(sum, a) => sum + a.currentValue,
-		0,
-	);
-	const boosterRoi =
-		totalInvested > 0
-			? ((totalCurrent - totalInvested) / totalInvested) * 100
-			: 0;
-
 	// EN: Mock variables for pagination
 	const currentPage = 1;
 	const totalPages = 5;
+
+	// 1. SUMA CAŁEGO PORTFELA (Mianownik: Obligacje + Gotówka + Alpha)
+	const globalTotalResult = await db.asset.aggregate({
+		where: { portfolioId: activeId },
+		_sum: { currentValue: true },
+	});
+	const globalTotalValue = globalTotalResult._sum.currentValue || 1;
+
+	// 2. AKTYWA ALPHA (Licznik: Tylko wybrane kategorie w tym portfelu)
+	const alphaCategories = ["BOOSTER"];
+	// console.log("🚀 ~ AlphaSelectionPage ~ alphaCategories:", alphaCategories);
+	const alphaAssets = await db.asset.findMany({
+		where: {
+			portfolioId: activeId,
+			category: { in: alphaCategories as Category[] },
+		},
+		orderBy: { currentValue: "desc" },
+	});
+
+	// 3. OBLICZENIA KPI DLA ALPHA
+	const alphaTotalValue = alphaAssets.reduce(
+		(sum, a) => sum + a.currentValue,
+		0,
+	);
+	const alphaTotalInvested = alphaAssets.reduce(
+		(sum, a) => sum + a.investedCapital,
+		0,
+	);
+
+	// REALNY UDZIAŁ: Ile % całego portfela (np. emerytalnego) stanowią "Boostery"
+	const realAlphaShare = (alphaTotalValue / globalTotalValue) * 100;
+
+	const alphaRoi =
+		alphaTotalInvested > 0
+			? ((alphaTotalValue - alphaTotalInvested) / alphaTotalInvested) * 100
+			: 0;
+
+	/// 1. Pobieramy historię (to już masz)
+	const transactions = await db.transactionHistory.findMany({
+		where: {
+			portfolioId: activeId,
+			category: {
+				in: ["BOOSTER"],
+				// in: ["BOOSTER", "CRYPTO", "COMMODITIES", "DEVELOPED", "EMERGING"],
+			},
+		},
+		orderBy: { executedAt: "asc" },
+	});
+	// console.log("🚀 ~ AlphaSelectionPage ~ transactions:", transactions);
+
+	// 2. AGREGACJA DANYCH (Poprawka: używamy DD.MM, aby uniknąć nakładania się dat)
+	const aggregatedData: Record<string, { name: string; wklad: number }> = {};
+	let cumulative = 0;
+
+	transactions.forEach((t) => {
+		// Używamy dnia i miesiąca, aby każdy dzień był osobnym punktem na wykresie
+		const dateKey = new Date(t.executedAt).toLocaleDateString("pl-PL", {
+			day: "2-digit",
+			month: "2-digit",
+		});
+
+		cumulative += Number(t.executedValue);
+
+		// Zapisujemy skumulowaną wartość dla danego dnia
+		aggregatedData[dateKey] = {
+			name: dateKey,
+			wklad: cumulative,
+		};
+	});
+
+	// 3. Formujemy tablicę punktów
+	const chartPoints = Object.values(aggregatedData);
+
+	// DEFINICJA roiFactor (Upewnij się, że te zmienne są zdefiniowane powyżej)
+	const roiFactor =
+		alphaTotalInvested > 0 ? alphaTotalValue / alphaTotalInvested : 1;
+
+	// PRZYGOTOWANIE preparedChartData
+	const preparedChartData = chartPoints.map((point) => ({
+		name: point.name,
+		Wkład: point.wklad,
+		// Liczymy wycenę na podstawie aktualnego ROI, aby pokazać trend zysku
+		Wycena: Math.round(point.wklad * roiFactor),
+	}));
+
+	// Jeśli mamy tylko jeden punkt danych, dodajemy punkt "0" na start,
+	// aby Recharts mógł narysować linię zamiast jednej kropki
+	if (preparedChartData.length === 1 && transactions.length > 0) {
+		const startDate = new Date(transactions[0].executedAt);
+		startDate.setDate(startDate.getDate() - 1);
+
+		preparedChartData.unshift({
+			name: startDate.toLocaleDateString("pl-PL", {
+				day: "2-digit",
+				month: "2-digit",
+			}),
+			Wkład: 0,
+			Wycena: 0,
+		});
+	}
+	// console.log(
+	// 	"🚀 ~ AlphaSelectionPage ~ preparedChartData:",
+	// 	preparedChartData,
+	// );
+
+	const [categoriesResult, assetsResult] = await Promise.all([
+		getPortfolioCategories(activeId),
+		getPortfolioAssets(activeId), // Pobieramy aktywa: { id, name, ticker, category }
+	]);
+	// 1. Filtrujemy aktywa: wykluczamy obligacje i gotówkę z narzędzia migracji
+	const filteredAssets = assetsResult.success
+		? assetsResult.data.filter(
+				(asset) => asset.category !== "BONDS" && asset.category !== "CASH",
+			)
+		: [];
+
+	const filteredCategories = categoriesResult.success
+		? categoriesResult.categories.filter(
+				(asset) => asset !== "BONDS" && asset !== "CASH",
+			)
+		: [];
 
 	return (
 		<div className="p-6 px-8 space-y-10 ">
@@ -122,28 +213,33 @@ export default async function AlphaSelectionPage({
 			{/* EN: KPI Section */}
 			<div className="flex flex-wrap flex-col md:flex-row gap-4 md:gap-6">
 				<BondStatCard
-					title="Udział w Portfelu"
-					value={`${sharePercentage.toFixed(1)}%`}
-					description="Sugerowany limit: 10%"
-					variant={sharePercentage > 10 ? "orange" : "neutral"}
-					iconColor="text-orange-600"
+					title="Wycena Portfela (Total)"
+					value={`${globalTotalValue.toLocaleString()} PLN`}
+					icon={Rocket}
+					description="Wartość całkowita portfela"
 				/>
 				<BondStatCard
-					title="Wynik Selekcji (ROI)"
-					value={`${boosterRoi >= 0 ? "+" : ""}${boosterRoi.toFixed(2)}%`}
-					description="Całkowity zwrot segmentu"
-					valueColor={boosterRoi >= 0 ? "green" : "red"}
-					icon={TrendingUp}
+					title="Wycena Sekcji Alpha"
+					value={`${alphaTotalValue.toLocaleString()} PLN`}
+					icon={Target}
+					valueColor="amber"
+					description="Wartość samych Boosterów"
 				/>
 				<BondStatCard
-					title="Liczba Pozycji"
-					value={boosterAssets.length.toString()}
-					description="Aktywne tezy inwestycyjne"
-					variant="neutral"
+					title="Udział Alpha w Całości"
+					value={`${realAlphaShare.toFixed(2)}%`}
+					description="Twoja ekspozycja na ryzyko"
+					variant={realAlphaShare > 10 ? "orange" : "neutral"}
 					icon={Target}
 				/>
+				<BondStatCard
+					title="Wynik Alpha (ROI)"
+					value={`${alphaRoi >= 0 ? "+" : ""}${alphaRoi.toFixed(2)}%`}
+					description="Zysk/Strata sekcji ryzykownych"
+					valueColor={alphaRoi >= 0 ? "green" : "red"}
+					icon={TrendingUp}
+				/>
 			</div>
-
 			{/* EN: Main Table Section */}
 			<div className="flex flex-col min-h-[calc(100vh-350px)] space-y-6 justify-between pt-4">
 				{/* EN: Toolbar with integrated inline BulbTip */}
@@ -168,7 +264,22 @@ export default async function AlphaSelectionPage({
 						</Link>
 					</AddButton>
 				</div>
+				<div className="bg-card p-6 rounded-3xl border border-border shadow-sm">
+					<div className="mb-6">
+						<h3 className="text-sm font-black uppercase tracking-widest text-primary">
+							Dynamika Wzrostu Alpha
+						</h3>
+					</div>
 
+					{/* EN: Parent MUST have a defined height for Recharts to work */}
+					<div className="h-87 w-full">
+						<AlphaChart data={preparedChartData} />
+					</div>
+				</div>
+				<MigrationTool
+					assets={filteredAssets}
+					categories={filteredCategories}
+				/>
 				{/* EN: Table Container - Poprawiono wyrównanie kolumn i dodano menu Akcji */}
 				<div className="w-full ps-6">
 					<Table>
@@ -257,8 +368,12 @@ export default async function AlphaSelectionPage({
 										{/* 5. NOWA KOMÓRKA: WARTOŚĆ (Wyrównana z Header 5) */}
 										<TableCell className="text-right">
 											<div className="text-sm font-bold font-mono">
-												{asset.currentValue}{" "}
+												{asset.currentValue.toLocaleString("pl-PL", {
+													minimumFractionDigits: 2,
+													maximumFractionDigits: 2,
+												})}
 												<span className="text-[10px] text-muted-foreground">
+													{" "}
 													PLN
 												</span>
 											</div>
@@ -288,7 +403,6 @@ export default async function AlphaSelectionPage({
 						</TableBody>
 					</Table>
 				</div>
-
 				{/* EN: Pagination - pushed to bottom via mt-auto */}
 				{totalPages > 1 && (
 					<div className="mt-auto pt-8 flex justify-center">

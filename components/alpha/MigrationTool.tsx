@@ -48,15 +48,15 @@ export function MigrationTool({ assets, categories }: MigrationToolProps) {
 	};
 
 	return (
-		<div className="p-5 bg-amber-500/[0.03] border border-amber-500/20 rounded-3xl mb-8">
+		<div className="p-5 bg-amber-500/8 border border-amber-500/20 rounded-3xl mb-8">
 			<div className="flex items-center gap-2 mb-4 text-amber-600 font-black text-[10px] uppercase tracking-[0.2em]">
 				<Wrench size={14} className="text-amber-500" />
 				Narzędzie porządkowania kategorii
 			</div>
 
-			<div className="flex flex-col md:flex-row items-center gap-4">
+			<div className="flex flex-col md:flex-row items-center gap-4 w-full flex-wrap">
 				{/* SELECT 1: WYBÓR AKTYWA */}
-				<div className="w-full md:flex-1">
+				<div className="flex-1 min-w-75 w-full">
 					<Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
 						<SelectTrigger className="h-12 rounded-2xl bg-background border-border/50">
 							<SelectValue placeholder="Wybierz aktywo, które chcesz zmienić" />
@@ -95,7 +95,7 @@ export function MigrationTool({ assets, categories }: MigrationToolProps) {
 				/>
 
 				{/* SELECT 2: WYBÓR DOCELOWEJ KATEGORII */}
-				<div className="w-full md:w-56">
+				<div className="">
 					<Select
 						value={targetCat}
 						onValueChange={(v) => setTargetCat(v as Category)}
@@ -123,18 +123,19 @@ export function MigrationTool({ assets, categories }: MigrationToolProps) {
 						</SelectContent>
 					</Select>
 				</div>
-
-				<Button
-					onClick={handleMigrate}
-					disabled={loading || !selectedAssetId}
-					className="w-full md:w-auto h-12 px-8 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-amber-600 hover:bg-amber-700 text-white transition-all shadow-lg shadow-amber-600/20"
-				>
-					{loading ? (
-						<Loader2 className="w-4 h-4 animate-spin" />
-					) : (
-						"Zmień kategorię"
-					)}
-				</Button>
+				<div>
+					<Button
+						onClick={handleMigrate}
+						disabled={loading || !selectedAssetId}
+						className="w-full md:w-auto h-10 px-8 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-amber-600 hover:bg-amber-700 text-white transition-all shadow-lg shadow-amber-600/20"
+					>
+						{loading ? (
+							<Loader2 className="w-4 h-4 animate-spin" />
+						) : (
+							"Zmień kategorię"
+						)}
+					</Button>
+				</div>
 			</div>
 			<p className="mt-3 text-[11px] text-muted-foreground font-medium px-1 italic">
 				* To narzędzie zaktualizuje kategorię wybranego aktywa oraz wszystkich

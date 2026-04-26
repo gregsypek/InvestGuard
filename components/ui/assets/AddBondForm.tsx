@@ -300,12 +300,12 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 							Legenda Oznaczeń Serii i Zapadalności
 						</span>
 					</div>
-					<div className="flex items-center gap-1.5 italic opacity-60 bg-yellow-500/10 px-3 py-1 rounded-full">
+					{/* <div className="flex items-center gap-1.5 italic opacity-60 bg-yellow-500/10 px-3 py-1 rounded-full">
 						<Lightbulb className="h-3.5 w-3.5 text-yellow-600" />
 						<span className="text-[10px] text-muted-foreground font-bold uppercase">
 							Pasek postępu = czas do wykupu transzy
 						</span>
-					</div>
+					</div> */}
 				</div>
 
 				<div className="flex flex-col flex-nowrap gap-6">

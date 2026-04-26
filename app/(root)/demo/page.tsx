@@ -67,6 +67,7 @@ export default async function DemoPage({
 							allPortfoliosWithCash={[
 								{ id: "demo-cash", name: "Gotówka Demo" },
 							]}
+							transactions={selectedStrategy.data.transactionHistories}
 						/>
 					</div>
 				</main>

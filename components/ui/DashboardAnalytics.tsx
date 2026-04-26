@@ -163,10 +163,7 @@ const DashboardAnalytics = ({
 				</div> */}
 
 				<section className="pt-8 border-t border-border">
-					<SectionHeader
-						icon={ChartArea}
-						title="Dynamika Portfela (bez obligacji)"
-					/>
+					<SectionHeader icon={ChartArea} title="Dynamika Portfela" />
 					<div className="mx-6 py-4">
 						<InteractiveChartSection
 							transactions={transactions}

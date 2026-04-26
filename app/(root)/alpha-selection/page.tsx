@@ -27,6 +27,7 @@ import { BoosterActionsClient } from "@/components/alpha/BoosterActionsClient";
 import { Category } from "@prisma/client";
 import Link from "next/link";
 import { MigrationTool } from "@/components/alpha/MigrationTool";
+import { MonthlyDepositsChart } from "@/components/alpha/MonthlyDepositChart";
 import { Progress } from "@/components/ui/progress";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { SubHeader } from "@/components/shared/SubHeader";
@@ -122,7 +123,7 @@ export default async function AlphaSelectionPage({
 		},
 		orderBy: { executedAt: "asc" },
 	});
-	// console.log("🚀 ~ AlphaSelectionPage ~ transactions:", transactions);
+	console.log("🚀 ~ AlphaSelectionPage ~ transactions:", transactions);
 
 	// 2. AGREGACJA DANYCH (Poprawka: używamy DD.MM, aby uniknąć nakładania się dat)
 	const aggregatedData: Record<string, { name: string; wklad: number }> = {};
@@ -154,9 +155,9 @@ export default async function AlphaSelectionPage({
 	// PRZYGOTOWANIE preparedChartData
 	const preparedChartData = chartPoints.map((point) => ({
 		name: point.name,
-		Wkład: point.wklad,
+		wkład: point.wklad,
 		// Liczymy wycenę na podstawie aktualnego ROI, aby pokazać trend zysku
-		Wycena: Math.round(point.wklad * roiFactor),
+		wycena: Math.round(point.wklad * roiFactor),
 	}));
 
 	// Jeśli mamy tylko jeden punkt danych, dodajemy punkt "0" na start,
@@ -170,8 +171,8 @@ export default async function AlphaSelectionPage({
 				day: "2-digit",
 				month: "2-digit",
 			}),
-			Wkład: 0,
-			Wycena: 0,
+			wkład: 0,
+			wycena: 0,
 		});
 	}
 	// console.log(
@@ -183,6 +184,7 @@ export default async function AlphaSelectionPage({
 		getPortfolioCategories(activeId),
 		getPortfolioAssets(activeId), // Pobieramy aktywa: { id, name, ticker, category }
 	]);
+
 	// 1. Filtrujemy aktywa: wykluczamy obligacje i gotówkę z narzędzia migracji
 	const filteredAssets = assetsResult.success
 		? assetsResult.data.filter(
@@ -195,6 +197,27 @@ export default async function AlphaSelectionPage({
 				(asset) => asset !== "BONDS" && asset !== "CASH",
 			)
 		: [];
+
+	// 4. AGREGACJA WPŁAT MIESIĘCZNYCH (Nie-kumulatywna dla BarChart)
+	const monthlyDeposits: Record<string, { month: string; amount: number }> = {};
+
+	transactions.forEach((t) => {
+		const monthKey = new Date(t.executedAt).toLocaleDateString("pl-PL", {
+			month: "short",
+			year: "2-digit",
+		});
+
+		if (!monthlyDeposits[monthKey]) {
+			monthlyDeposits[monthKey] = { month: monthKey, amount: 0 };
+		}
+		monthlyDeposits[monthKey].amount += Number(t.executedValue);
+	});
+
+	const depositChartData = Object.values(monthlyDeposits).map((item) => ({
+		...item,
+		// toFixed(2) zmienia liczbę w stringa, więc Number() zamienia go z powrotem na czystą liczbę 2-cyfrową
+		amount: Number(item.amount.toFixed(2)),
+	}));
 
 	return (
 		<div className="p-6 px-8 space-y-10 ">
@@ -259,27 +282,22 @@ export default async function AlphaSelectionPage({
 
 					<AddButton className="gap-2 shadow-sm h-9">
 						<Link href={targetUrl} className="gap-2 flex items-center">
-							<Plus className="h-4 w-4" />
+							{/* <Plus className="h-4 w-4" /> */}
 							Nowa Teza
 						</Link>
 					</AddButton>
 				</div>
-				<div className="bg-card p-6 rounded-3xl border border-border shadow-sm">
+				{/* <div className="bg-card p-6 rounded-3xl border border-border shadow-sm">
 					<div className="mb-6">
 						<h3 className="text-sm font-black uppercase tracking-widest text-primary">
 							Dynamika Wzrostu Alpha
 						</h3>
 					</div>
 
-					{/* EN: Parent MUST have a defined height for Recharts to work */}
 					<div className="h-87 w-full">
 						<AlphaChart data={preparedChartData} />
 					</div>
-				</div>
-				<MigrationTool
-					assets={filteredAssets}
-					categories={filteredCategories}
-				/>
+				</div> */}
 				{/* EN: Table Container - Poprawiono wyrównanie kolumn i dodano menu Akcji */}
 				<div className="w-full ps-6">
 					<Table>
@@ -403,8 +421,53 @@ export default async function AlphaSelectionPage({
 						</TableBody>
 					</Table>
 				</div>
+
+				{/* SEKCJA NARZĘDZIA */}
+				<MigrationTool
+					assets={filteredAssets}
+					categories={filteredCategories}
+				/>
+
+				{/* SEKCJA WYKRESÓW - GRID 1:2 dla Safari */}
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+					{/* Wykres 1: Dynamika Wzrostu (AreaChart) */}
+					<div className="lg:col-span-2 bg-card p-6 rounded-3xl border border-border shadow-sm overflow-hidden isolate">
+						<div className="mb-6">
+							<h3 className="text-sm font-black uppercase tracking-widest">
+								Dynamika Wzrostu Alpha
+							</h3>
+							<p className="text-[10px] text-muted-foreground uppercase tracking-widest italic">
+								Wartość portfela vs realny wkład
+							</p>
+						</div>
+						<div className="h-80 w-full">
+							<AlphaChart data={preparedChartData} />
+						</div>
+					</div>
+
+					{/* Wykres 2: Nowy Wykres Wpłat (BarChart) */}
+					<div className="bg-card p-6 rounded-3xl border border-border shadow-sm overflow-hidden isolate">
+						<div className="mb-6">
+							<h3 className="text-sm font-black uppercase tracking-widest">
+								Wpłaty Miesięczne
+							</h3>
+							<p className="text-[10px] text-muted-foreground uppercase tracking-widest italic">
+								Suma nowych inwestycji na osi czasu
+							</p>
+						</div>
+						<div className="h-80 w-full">
+							<MonthlyDepositsChart data={depositChartData} />
+						</div>
+					</div>
+				</div>
+				{/* TABELA - Poprawka dla Safari (w-full + table-auto) */}
+				<div className="w-full overflow-x-auto rounded-3xl border border-border bg-card isolate">
+					<Table className="w-full table-auto">
+						{/* ... (reszta tabeli bez zmian) */}
+					</Table>
+				</div>
 				{/* EN: Pagination - pushed to bottom via mt-auto */}
-				{totalPages > 1 && (
+				{/* {totalPages > 1 && (
 					<div className="mt-auto pt-8 flex justify-center">
 						<Pagination>
 							<PaginationContent className="bg-card/50 border border-border rounded-full px-2 shadow-sm">
@@ -436,7 +499,7 @@ export default async function AlphaSelectionPage({
 							</PaginationContent>
 						</Pagination>
 					</div>
-				)}
+				)} */}
 			</div>
 		</div>
 	);

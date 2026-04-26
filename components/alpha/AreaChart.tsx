@@ -28,17 +28,16 @@ export function AlphaChart({ data }: { data: AlphaChartProps[] }) {
 		return () => cancelAnimationFrame(frame);
 	}, []);
 
-	if (!isMounted)
-		return <div className="h-87 w-full bg-muted/5 animate-pulse rounded-3xl" />;
-
 	// EN: While mounting, show a placeholder with the same height
 	if (!isMounted) {
-		return <div className="h-87 w-full bg-muted/5 animate-pulse rounded-2xl" />;
+		return (
+			<div className="h-[350px] w-full bg-muted/5 animate-pulse rounded-2xl" />
+		);
 	}
 
 	if (!data || data.length === 0) {
 		return (
-			<div className="flex h-87 items-center justify-center text-xs text-muted-foreground italic">
+			<div className="flex h-[350px] items-center justify-center text-xs text-muted-foreground italic">
 				Brak danych do wyświetlenia
 			</div>
 		);
@@ -89,7 +88,7 @@ export function AlphaChart({ data }: { data: AlphaChartProps[] }) {
 					{/* EN: Invested capital line (dashed) */}
 					<Area
 						type="monotone"
-						dataKey="Wkład"
+						dataKey="wkład"
 						stroke="#64748b"
 						fill="transparent"
 						strokeWidth={2}
@@ -98,7 +97,7 @@ export function AlphaChart({ data }: { data: AlphaChartProps[] }) {
 					{/* EN: Current valuation line (solid with gradient) */}
 					<Area
 						type="monotone"
-						dataKey="Wycena"
+						dataKey="wycena"
 						stroke="#10b981"
 						fillOpacity={1}
 						fill="url(#colorWycena)"

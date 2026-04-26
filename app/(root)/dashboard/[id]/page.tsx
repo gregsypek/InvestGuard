@@ -95,6 +95,7 @@ export default async function DashboardPage({ searchParams }: Props) {
 			portfolio={portfolio}
 			portfolioStatus={portfolioStatus}
 			allPortfoliosWithCash={allPortfoliosWithCash}
+			transactions={portfolio.transactionHistories}
 		/>
 	);
 }

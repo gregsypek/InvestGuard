@@ -138,3 +138,22 @@ export interface Bond {
 	interestRate: number | null;
 	quantity: number;
 }
+
+// EN: Corrected Transaction interface matching your DB schema
+// PL: Skorygowany interfejs transakcji pasujący do schematu bazy
+export interface Transaction {
+	id: string;
+	executedAt: Date | string;
+	executedValue: number;
+	category: string;
+	ticker?: string | null; // Dodano '?' aby obsłużyć undefined
+	assetName: string;
+}
+
+export interface DashboardAsset {
+	id: string;
+	ticker?: string | null; // Dodano '?' aby obsłużyć undefined
+	category: string;
+	investedCapital: number; // Zmieniono z any na number
+	currentValue: number; // Zmieniono z any na number
+}

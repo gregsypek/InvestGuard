@@ -9,11 +9,11 @@ import {
 	Plus,
 	TableProperties,
 } from "lucide-react";
-import { CategoryStatus, PortfolioWithAssets } from "@/lib/types";
+import { CategoryStatus, PortfolioWithAssets, Transaction } from "@/lib/types";
 
 import AssetLedger from "../AssetLedgerTable";
+import { InteractiveChartSection } from "../InteractiveChartSection";
 import PortfolioCharts from "../PortfolioCharts";
-import React from "react";
 import RecentActivityCard from "./assets/RecentActivityCard";
 import { SafeActionButton } from "./SafeActionButton";
 import { SectionHeader } from "../shared/SectionHeader";
@@ -25,6 +25,7 @@ import { useSearchParams } from "next/navigation";
 interface Props {
 	portfolio: PortfolioWithAssets;
 	portfolioStatus: CategoryStatus[];
+	transactions: Transaction[]; // Dodaj to
 	// EN: Add the new prop to the interface
 	allPortfoliosWithCash: { id: string; name: string }[];
 	isDemo?: boolean;
@@ -33,6 +34,7 @@ interface Props {
 const DashboardAnalytics = ({
 	portfolio,
 	portfolioStatus,
+	transactions,
 	allPortfoliosWithCash,
 	isDemo,
 }: Props) => {
@@ -133,6 +135,45 @@ const DashboardAnalytics = ({
 				<div className="mx-6 py-2">
 					<PortfolioCharts data={portfolioStatus} />
 				</div>
+			</section>
+			<section className="pt-8 border-t border-border">
+				{/* <SectionHeader title="Analiza Wyników" icon={ChartArea} /> */}
+
+				{/* Filtry - Chipy do zaznaczania */}
+				{/* <div className="flex flex-wrap gap-2 mb-6 px-1">
+					{assets.map((asset) => (
+						<button
+							key={asset.id}
+							onClick={() => {
+								setSelectedAssets((prev) =>
+									prev.includes(asset.id)
+										? prev.filter((id) => id !== asset.id)
+										: [...prev, asset.id],
+								);
+							}}
+							className={`px-3 py-1 rounded-full text-xs transition-colors ${
+								selectedAssets.includes(asset.id)
+									? "bg-primary text-primary-foreground"
+									: "bg-muted text-muted-foreground hover:bg-muted/80"
+							}`}
+						>
+							{asset.ticker}
+						</button>
+					))}
+				</div> */}
+
+				<section className="pt-8 border-t border-border">
+					<SectionHeader
+						icon={ChartArea}
+						title="Dynamika Portfela (bez obligacji)"
+					/>
+					<div className="mx-6 py-4">
+						<InteractiveChartSection
+							transactions={transactions}
+							assets={portfolio.assets}
+						/>
+					</div>
+				</section>
 			</section>
 			{/* --- BOTTOM SECTION: RICH ASSET TABLE --- */}
 			<section className="pt-8 border-t border-border">

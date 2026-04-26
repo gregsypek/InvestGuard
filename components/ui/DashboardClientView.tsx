@@ -1,6 +1,6 @@
 "use client";
 
-import { CategoryStatus, PortfolioWithAssets } from "@/lib/types";
+import { CategoryStatus, PortfolioWithAssets, Transaction } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 import DashboardAnalytics from "./DashboardAnalytics";
@@ -10,6 +10,8 @@ interface Props {
 	portfolioStatus: CategoryStatus[];
 	// EN: Add the new prop here to receive data from the Server Component
 	allPortfoliosWithCash: { id: string; name: string }[];
+	transactions: Transaction[]; // Dodaj to
+
 	userName?: string | null;
 	isDemo?: boolean;
 }
@@ -18,6 +20,7 @@ export default function DashboardClientView({
 	portfolio,
 	portfolioStatus,
 	allPortfoliosWithCash,
+	transactions,
 	isDemo,
 }: Props) {
 	const [hasMounted, setHasMounted] = useState(false);
@@ -36,6 +39,7 @@ export default function DashboardClientView({
 				portfolioStatus={portfolioStatus}
 				allPortfoliosWithCash={allPortfoliosWithCash}
 				isDemo={isDemo}
+				transactions={transactions} // EN: Pass transactions to the analytics component
 			/>
 		</div>
 	);

@@ -31,6 +31,10 @@ export default async function DemoPlannerPage({
 	const strategy = STRATEGIES[strategyKey];
 
 	const demoPortfolios = [classicPortfolio, allWeatherPortfolio, yalePortfolio];
+	// --- LOGIKA DATY DO BLOKADY ---
+	const now = new Date();
+	const currentYear = now.getFullYear();
+	const currentMonth = now.getMonth() + 1;
 
 	return (
 		<div className="flex flex-col min-h-screen">
@@ -67,15 +71,22 @@ export default async function DemoPlannerPage({
 					<div className="lg:col-span-3 space-y-8">
 						<h2 className="text-xl font-bold px-1">Oczekujące Realizacje</h2>
 						<div className="space-y-4">
-							{demoPlans.map((plan) => (
-								<PlanCard
-									key={plan.id}
-									plan={plan}
-									isDemo={true}
-									hasCashInPortfolio={true}
-									allPortfoliosWithCash={demoPortfolios}
-								/>
-							))}
+							{demoPlans.map((plan) => {
+								const [pYear, pMonth] = plan.plannedDate.split("-").map(Number);
+								const isLocked =
+									pYear > currentYear ||
+									(pYear === currentYear && pMonth > currentMonth);
+								return (
+									<PlanCard
+										key={plan.id}
+										isLocked={isLocked}
+										plan={plan}
+										isDemo={true}
+										hasCashInPortfolio={true}
+										allPortfoliosWithCash={demoPortfolios}
+									/>
+								);
+							})}
 						</div>
 					</div>
 				</div>

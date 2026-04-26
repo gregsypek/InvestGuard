@@ -16,9 +16,18 @@ import { migrateAssetCategory } from "@/lib/actions/cleanup.actions";
 import { toast } from "sonner";
 import { useState } from "react";
 
+// EN: Define a simplified type to match what we actually fetch from the DB
+// UI: Definiujemy uproszczony typ, aby uniknąć błędów TypeScript
+interface SimpleAsset {
+	id: string;
+	name: string;
+	category: Category;
+	ticker: string | null;
+}
+
 interface MigrationToolProps {
-	assets: Asset[];
-	categories: string[];
+	assets: SimpleAsset[];
+	categories: Category[];
 }
 
 export function MigrationTool({ assets, categories }: MigrationToolProps) {

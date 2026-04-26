@@ -13,15 +13,10 @@ const AddButton = ({
 	return (
 		<Button
 			size="sm"
-			variant="outline"
 			disabled={disabled}
 			className={cn(
 				className,
-				"h-8 gap-1.5 px-3 font-semibold text-xs uppercase tracking-wide",
-				"transition-all duration-200",
-				"border-blue-200 dark:border-blue-900/50 text-blue-600 dark:text-blue-400",
-				"bg-blue-50 hover:bg-blue-100 dark:hover:bg-blue-900/30 dark:bg-background border-blue-300 dark:border-blue-400",
-				"shadow-sm active:scale-95",
+				" md:w-auto h-10 px-8 rounded-2xl font-bold uppercase text-[10px] tracking-widest bg-blue-400  text-xs shadow-blue-600/20 ",
 			)}
 			asChild
 		>

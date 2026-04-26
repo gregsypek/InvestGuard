@@ -66,11 +66,10 @@ export const SafeActionButton = ({
 			variant={variant}
 			onClick={handleInteraction}
 			className={cn(
-				"h-9 px-4 text-xs font-bold uppercase tracking-wide transition-all group",
+				"h-10 px-8 text-xs font-bold uppercase tracking-wide transition-all group rounded-2xl",
 				// STYL NORMALNY (Niebieski)
 				!isDemo &&
-					"border-blue-200 text-blue-200 bg-blue-500 hover:bg-blue-900 hover:text-blue-200",
-				// STYL DEMO (Szmaragdowy)
+					"     border-slate-800   text-blue-200 bg-slate-700 hover:text-blue-400 border ",
 				isDemo &&
 					"border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100/80 cursor-help",
 				className,

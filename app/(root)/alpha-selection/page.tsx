@@ -123,7 +123,7 @@ export default async function AlphaSelectionPage({
 		},
 		orderBy: { executedAt: "asc" },
 	});
-	console.log("🚀 ~ AlphaSelectionPage ~ transactions:", transactions);
+	// console.log("🚀 ~ AlphaSelectionPage ~ transactions:", transactions);
 
 	// 2. AGREGACJA DANYCH (Poprawka: używamy DD.MM, aby uniknąć nakładania się dat)
 	const aggregatedData: Record<string, { name: string; wklad: number }> = {};

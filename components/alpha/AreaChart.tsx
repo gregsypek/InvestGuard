@@ -30,14 +30,12 @@ export function AlphaChart({ data }: { data: AlphaChartProps[] }) {
 
 	// EN: While mounting, show a placeholder with the same height
 	if (!isMounted) {
-		return (
-			<div className="h-[350px] w-full bg-muted/5 animate-pulse rounded-2xl" />
-		);
+		return <div className="h-88 w-full bg-muted/5 animate-pulse rounded-2xl" />;
 	}
 
 	if (!data || data.length === 0) {
 		return (
-			<div className="flex h-[350px] items-center justify-center text-xs text-muted-foreground italic">
+			<div className="flex h-88 items-center justify-center text-xs text-muted-foreground italic">
 				Brak danych do wyświetlenia
 			</div>
 		);

@@ -47,7 +47,7 @@ export default function PortfolioForm({
 	const searchParams = useSearchParams();
 	const isEditMode = !!initialData?.id;
 
-	console.log("Dane wejściowe:", initialData);
+	// console.log("Dane wejściowe:", initialData);
 
 	const effectivePortfolioId =
 		initialPortfolioId || Cookies.get("selectedPortfolioId");

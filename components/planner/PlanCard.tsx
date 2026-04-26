@@ -55,7 +55,6 @@ interface PlanCardProps {
 export function PlanCard({
 	plan,
 	isLocked,
-	hasCashInPortfolio,
 	allPortfoliosWithCash,
 	isDemo,
 }: PlanCardProps) {

@@ -121,14 +121,14 @@ const AssetLedgerTable = ({
 				conviction: null,
 				riskLevel: null,
 			};
-			console.log("🚀 ~ AssetLedgerTable ~ aggregatedBonds:", aggregatedBonds);
+			// console.log("🚀 ~ AssetLedgerTable ~ aggregatedBonds:", aggregatedBonds);
 		}
 
 		// 3. Łączymy w jedną tablicę
 		const combined = aggregatedBonds
 			? [...standardAssets, aggregatedBonds]
 			: standardAssets;
-		console.log("🚀 ~ AssetLedgerTable ~ combined:", combined);
+		// console.log("🚀 ~ AssetLedgerTable ~ combined:", combined);
 
 		return combined.map((asset) => {
 			const { profitAmount, profitPercent } = calculateAssetPL({

@@ -1,6 +1,6 @@
-import { FileText, History } from "lucide-react";
+// import { FileText, History } from "lucide-react";
 
-import { ValueCard } from "./shared/ValueCard";
+// import { ValueCard } from "./shared/ValueCard";
 
 interface AlphaHeaderProps {
 	totalTransactions: number;
@@ -10,9 +10,9 @@ interface AlphaHeaderProps {
 }
 
 export function AlphaHeader({
-	totalTransactions,
-	currentPage,
-	totalPages,
+	// totalTransactions,
+	// currentPage,
+	// totalPages,
 	customBreadcrumbs,
 }: AlphaHeaderProps) {
 	return (
@@ -30,7 +30,7 @@ export function AlphaHeader({
 				</div>
 
 				{/* EN: Quick stats matching the planner/portfolio style */}
-				<div className="flex flex-wrap gap-4 p-4 justify-end">
+				{/* <div className="flex flex-wrap gap-4 p-4 justify-end">
 					<ValueCard
 						label="Liczba operacji"
 						icon={History}
@@ -43,7 +43,7 @@ export function AlphaHeader({
 						value={currentPage}
 						suffix={`z ${totalPages}`}
 					/>
-				</div>
+				</div> */}
 			</div>
 		</div>
 	);

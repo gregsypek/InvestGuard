@@ -1,20 +1,11 @@
-// import { FileText, History } from "lucide-react";
-
-// import { ValueCard } from "./shared/ValueCard";
-
 interface AlphaHeaderProps {
-	totalTransactions: number;
-	currentPage: number;
-	totalPages: number;
+	// totalTransactions: number;
+	// currentPage: number;
+	// totalPages: number;
 	customBreadcrumbs?: React.ReactNode;
 }
 
-export function AlphaHeader({
-	// totalTransactions,
-	// currentPage,
-	// totalPages,
-	customBreadcrumbs,
-}: AlphaHeaderProps) {
+export function AlphaHeader({ customBreadcrumbs }: AlphaHeaderProps) {
 	return (
 		<div className="mb-8">
 			<div className="flex  md:flex-1 flex-col md:flex-row justify-between items-start md:items-start gap-6 ">
@@ -28,22 +19,6 @@ export function AlphaHeader({
 						kategoryzujemy jako BOOSTER.
 					</p>
 				</div>
-
-				{/* EN: Quick stats matching the planner/portfolio style */}
-				{/* <div className="flex flex-wrap gap-4 p-4 justify-end">
-					<ValueCard
-						label="Liczba operacji"
-						icon={History}
-						value={totalTransactions}
-					/>
-					<ValueCard
-						className="text-portfolio-emerging"
-						label="Strona"
-						icon={FileText}
-						value={currentPage}
-						suffix={`z ${totalPages}`}
-					/>
-				</div> */}
 			</div>
 		</div>
 	);

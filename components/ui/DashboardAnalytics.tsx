@@ -8,6 +8,7 @@ import {
 	PieChart,
 	Plus,
 	TableProperties,
+	TrendingUp,
 } from "lucide-react";
 import { CategoryStatus, PortfolioWithAssets, Transaction } from "@/lib/types";
 
@@ -136,41 +137,27 @@ const DashboardAnalytics = ({
 					<PortfolioCharts data={portfolioStatus} />
 				</div>
 			</section>
-			<section className="pt-8 border-t border-border">
-				{/* <SectionHeader title="Analiza Wyników" icon={ChartArea} /> */}
 
-				{/* Filtry - Chipy do zaznaczania */}
-				{/* <div className="flex flex-wrap gap-2 mb-6 px-1">
-					{assets.map((asset) => (
-						<button
-							key={asset.id}
-							onClick={() => {
-								setSelectedAssets((prev) =>
-									prev.includes(asset.id)
-										? prev.filter((id) => id !== asset.id)
-										: [...prev, asset.id],
-								);
-							}}
-							className={`px-3 py-1 rounded-full text-xs transition-colors ${
-								selectedAssets.includes(asset.id)
-									? "bg-primary text-primary-foreground"
-									: "bg-muted text-muted-foreground hover:bg-muted/80"
-							}`}
-						>
-							{asset.ticker}
-						</button>
-					))}
-				</div> */}
-
-				<section className="pt-8 border-t border-border">
-					<SectionHeader icon={ChartArea} title="Dynamika Portfela" />
-					<div className="mx-6 py-4">
-						<InteractiveChartSection
-							transactions={transactions}
-							assets={portfolio.assets}
+			<section className="pt-8 border-t border-border pb-6">
+				<div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+					<div>
+						<SectionHeader
+							icon={ChartArea}
+							title="Analiza Wzrostu i Depozytów"
+						/>
+						<SubHeader
+							title="Wydajność kapitału"
+							description="Porównanie skumulowanego wkładu z bieżącą wyceną rynkową oraz historia miesięcznych dopłat."
+							icon={TrendingUp}
 						/>
 					</div>
-				</section>
+				</div>
+				<div className="mx-6 py-4">
+					<InteractiveChartSection
+						transactions={transactions}
+						assets={portfolio.assets}
+					/>
+				</div>
 			</section>
 			{/* --- BOTTOM SECTION: RICH ASSET TABLE --- */}
 			<section className="pt-8 border-t border-border">

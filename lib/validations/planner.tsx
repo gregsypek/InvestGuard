@@ -13,6 +13,7 @@ export const PlannerSchema = z.object({
 	// EN: Use nativeEnum for Prisma Enums to avoid "Invalid option" errors
 	// UI: Używamy nativeEnum dla Enumów Prismy, aby uniknąć błędów walidacji
 	category: z.enum(Category),
+	// interestRate: z.coerce.number().optional().default(0), // NOWE POLE
 
 	conviction: z.number().min(1).max(100).optional().nullable(),
 	rationale: z.string().optional().nullable(),

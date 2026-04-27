@@ -99,8 +99,8 @@ export default async function RootLayout({
 					userButton={userControl}
 					userRole={userRole}
 				/>
-				<MarketTicker data={tickerData} /> {/* scrollable main part */}
 				<main className="flex-1 overflow-y-auto ">
+					<MarketTicker data={tickerData} /> {/* scrollable main part */}
 					<div className="max-w-7xl mx-auto">{children}</div>
 				</main>
 			</div>

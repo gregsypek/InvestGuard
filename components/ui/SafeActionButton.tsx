@@ -66,7 +66,7 @@ export const SafeActionButton = ({
 			variant={variant}
 			onClick={handleInteraction}
 			className={cn(
-				"h-10 px-8 text-xs font-bold uppercase tracking-wide transition-all group rounded-2xl",
+				"h-10 px-6 text-xs font-bold uppercase tracking-wide transition-all group rounded-2xl",
 				// STYL NORMALNY (Niebieski)
 				!isDemo &&
 					"     border-slate-800   text-blue-200 bg-slate-700 hover:text-blue-400 border ",

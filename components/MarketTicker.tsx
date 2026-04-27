@@ -14,9 +14,11 @@ interface TickerItem {
 	change: string | number;
 	logo?: string | null;
 }
+
 interface MarketTickerProps {
 	data: TickerItem[];
 }
+
 export function MarketTicker({ data }: MarketTickerProps) {
 	const [speed, setSpeed] = useState(200);
 	const [isVisible, setIsVisible] = useState(true);
@@ -45,7 +47,6 @@ export function MarketTicker({ data }: MarketTickerProps) {
 							key={idx}
 							className="flex items-center px-10 gap-3 border-r border-border/50"
 						>
-							{/* LOGO LUB LITERA (Fallback) */}
 							{item.logo ? (
 								<TickerIcon ticker={item.label} logoUrl={item.logo} />
 							) : (

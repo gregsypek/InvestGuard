@@ -1,7 +1,7 @@
 "use server";
 
 import { ActionResponse } from "../types";
-import { Category } from "@prisma/client";
+import type { Category } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";

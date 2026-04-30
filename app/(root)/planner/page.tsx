@@ -153,12 +153,15 @@ export default async function PlannerPage({ searchParams }: Props) {
 					description="Wizualizacja pokazuje, jak Twoje obecne oszczędności i plany inwestycyjne mogą przyczynić się do osiągnięcia wyznaczonego celu finansowego. Symulacja zakłada średnioroczne zwroty na poziomie 7%, co jest historycznym średnim wynikiem dla zdywersyfikowanego portfela akcji. Pamiętaj, że rzeczywiste wyniki mogą się różnić w zależności od warunków rynkowych."
 					icon={TrendingUp}
 				/>
-				<div className="pt-6 px-8">
-					<GoalProjectionChart
-						currentValue={currentPortfolioValue}
-						targetValue={goalValue}
-						monthlyDeposit={monthlyPlanned}
-					/>
+				<div className="pt-6 px-8 w-full">
+					{/* Kontener wewnętrzny daje sztywną wysokość dla wykresu[cite: 1] */}
+					<div className="h-110 w-full">
+						<GoalProjectionChart
+							currentValue={currentPortfolioValue}
+							targetValue={goalValue}
+							monthlyDeposit={monthlyPlanned}
+						/>
+					</div>
 				</div>
 			</section>
 		</div>

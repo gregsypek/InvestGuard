@@ -42,7 +42,7 @@ export function AlphaChart({ data }: { data: AlphaChartProps[] }) {
 	}
 
 	return (
-		<div className="h-87 w-full">
+		<div className="h-[350px] w-full min-h-75">
 			{" "}
 			{/* EN: Fixed height is mandatory for ResponsiveContainer */}
 			<ResponsiveContainer width="100%" height="100%">

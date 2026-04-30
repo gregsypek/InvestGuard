@@ -1,7 +1,7 @@
 // lib/actions/cleanup.actions.ts
 "use server";
 
-import { Category } from "@prisma/client";
+import type { Category } from "@prisma/client";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 

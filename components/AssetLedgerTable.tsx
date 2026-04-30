@@ -556,46 +556,51 @@ const AssetLedgerTable = ({
 																	<TrendingUp className="h-3 w-3" /> Wzrost
 																	kapitału
 																</p>
-																<ResponsiveContainer width="100%" height="80%">
-																	<AreaChart data={chartData}>
-																		<defs>
-																			<linearGradient
-																				id="colorAmount"
-																				x1="0"
-																				y1="0"
-																				x2="0"
-																				y2="1"
-																			>
-																				<stop
-																					offset="5%"
-																					stopColor={categoryColor}
-																					stopOpacity={0.3}
-																				/>
-																				<stop
-																					offset="95%"
-																					stopColor={categoryColor}
-																					stopOpacity={0}
-																				/>
-																			</linearGradient>
-																		</defs>
-																		<Tooltip
-																			contentStyle={{
-																				fontSize: "10px",
-																				borderRadius: "8px",
-																				backgroundColor: "#fff",
-																			}}
-																		/>
-																		<Area
-																			type="stepAfter"
-																			dataKey="amount"
-																			stroke={categoryColor}
-																			fillOpacity={1}
-																			fill="url(#colorAmount)"
-																			strokeWidth={2}
-																			dot={{ r: 2, fill: categoryColor }}
-																		/>
-																	</AreaChart>
-																</ResponsiveContainer>
+																<div className="h-[450px] w-full min-h-75">
+																	<ResponsiveContainer
+																		width="100%"
+																		height="80%"
+																	>
+																		<AreaChart data={chartData}>
+																			<defs>
+																				<linearGradient
+																					id="colorAmount"
+																					x1="0"
+																					y1="0"
+																					x2="0"
+																					y2="1"
+																				>
+																					<stop
+																						offset="5%"
+																						stopColor={categoryColor}
+																						stopOpacity={0.3}
+																					/>
+																					<stop
+																						offset="95%"
+																						stopColor={categoryColor}
+																						stopOpacity={0}
+																					/>
+																				</linearGradient>
+																			</defs>
+																			<Tooltip
+																				contentStyle={{
+																					fontSize: "10px",
+																					borderRadius: "8px",
+																					backgroundColor: "#fff",
+																				}}
+																			/>
+																			<Area
+																				type="stepAfter"
+																				dataKey="amount"
+																				stroke={categoryColor}
+																				fillOpacity={1}
+																				fill="url(#colorAmount)"
+																				strokeWidth={2}
+																				dot={{ r: 2, fill: categoryColor }}
+																			/>
+																		</AreaChart>
+																	</ResponsiveContainer>
+																</div>
 															</div>
 
 															{/* PRAWA STRONA: Lista transakcji (9/12) */}

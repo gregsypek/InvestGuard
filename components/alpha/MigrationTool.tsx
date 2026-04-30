@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, Loader2, Wrench } from "lucide-react";
-import { Asset, Category } from "@prisma/client";
+import type { Asset, Category } from "@prisma/client";
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import {
 	Select,

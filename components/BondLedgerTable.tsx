@@ -15,7 +15,7 @@ import {
 	updateBondValue,
 } from "@/lib/actions/bond-actions";
 
-import { Asset } from "@prisma/client";
+import type { Asset } from "@prisma/client";
 import { Bond } from "@/lib/types";
 import { DeleteButton } from "./DeleteButton";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";

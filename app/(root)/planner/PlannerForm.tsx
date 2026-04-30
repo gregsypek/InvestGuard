@@ -23,7 +23,7 @@ import {
 import { useForm, useWatch } from "react-hook-form";
 import { useMemo, useState } from "react";
 
-import { Category } from "@prisma/client";
+import type { Category } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label"; // EN: Fixed missing import
 import { PlannerSchema } from "@/lib/validations/planner";

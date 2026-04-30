@@ -57,7 +57,7 @@ export function GoalProjectionChart({
 	);
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-4 h-full flex flex-col ">
 			<div className="flex justify-between items-baseline px-1">
 				<div className="text-right">
 					<span className="text-2xl font-bold text-primary">
@@ -69,7 +69,7 @@ export function GoalProjectionChart({
 				</div>
 			</div>
 
-			<div className="h-[350px] w-full">
+			<div className="flex-1 w-full min-h-50">
 				<ResponsiveContainer width="100%" height="100%">
 					<AreaChart
 						data={data}

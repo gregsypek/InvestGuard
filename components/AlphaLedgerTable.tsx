@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 
 import { BoosterActionsClient } from "./alpha/BoosterActionsClient";
-import { Category } from "@prisma/client";
+import type { Category } from "@prisma/client";
 import { Progress } from "./ui/progress";
 import React from "react";
 import { auth } from "@/auth";

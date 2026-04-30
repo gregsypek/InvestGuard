@@ -1,7 +1,21 @@
 import * as z from "zod";
 
 // lib/validations/planner.ts
-import { Category } from "@prisma/client";
+// import type { Category } from "@prisma/client";
+
+// EN: Define categories as a constant array to avoid runtime dependency on Prisma Client in the browser
+// PL: Definiujemy kategorie jako stałą, aby uniknąć zależności od Prisma Client w przeglądarce
+export const CATEGORY_VALUES = [
+	"BONDS",
+	"DEVELOPED",
+	"EMERGING",
+	"GOLD",
+	"BOOSTER",
+	"CASH",
+	"CRYPTO",
+	"CRYPTO",
+	"COMMODITIES",
+] as const;
 
 export const PlannerSchema = z.object({
 	name: z.string().min(1, "Nazwa jest wymagana"),
@@ -12,7 +26,7 @@ export const PlannerSchema = z.object({
 
 	// EN: Use nativeEnum for Prisma Enums to avoid "Invalid option" errors
 	// UI: Używamy nativeEnum dla Enumów Prismy, aby uniknąć błędów walidacji
-	category: z.enum(Category),
+	category: z.enum(CATEGORY_VALUES),
 	// interestRate: z.coerce.number().optional().default(0), // NOWE POLE
 
 	conviction: z.number().min(1).max(100).optional().nullable(),

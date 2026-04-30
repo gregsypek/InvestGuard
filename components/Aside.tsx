@@ -69,7 +69,7 @@ export default function Aside() {
 							height={40}
 							alt="Invest Guard logo"
 							// EN: Added h-auto to maintain aspect ratio as required by Next.js
-							className="h-auto"
+							className="h-auto w-auto"
 						/>
 					</div>
 					<span

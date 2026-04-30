@@ -1,7 +1,7 @@
 "use server";
 
 import { BOND_DURATIONS } from "../constants";
-import { Category } from "@prisma/client";
+import type { Category } from "@prisma/client";
 import { PlannerSchema } from "@/lib/validations/planner";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";

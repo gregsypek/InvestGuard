@@ -22,7 +22,7 @@ import {
 	updateAlphaDetails,
 } from "@/lib/actions/asset-actions";
 
-import { Asset } from "@prisma/client";
+import type { Asset } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";

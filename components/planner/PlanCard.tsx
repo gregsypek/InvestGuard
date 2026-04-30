@@ -17,7 +17,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { InvestmentPlan, Portfolio } from "@prisma/client";
+import type { InvestmentPlan, Portfolio } from "@prisma/client";
 import {
 	Select,
 	SelectContent,

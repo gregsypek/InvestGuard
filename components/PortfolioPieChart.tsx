@@ -113,53 +113,55 @@ export default function PortfolioPieChart({
 						</div>
 					</div>
 				) : (
-					<ResponsiveContainer width="100%" height={300}>
-						<PieChart>
-							<Pie
-								data={data}
-								dataKey={dataKey}
-								nameKey="category"
-								cx="50%"
-								cy="50%" // Przesunięte lekko do góry, by zrobić miejsce na legendę
-								innerRadius={65}
-								outerRadius={85}
-								paddingAngle={5}
-								stroke="var(--card)" // Stroke w kolorze tła karty daje efekt "pustych przerw"
-								strokeWidth={3}
-							>
-								{data.map((entry) => (
-									<Cell
-										key={entry.category}
-										fill={COLORS[entry.category as keyof typeof COLORS]}
-										className="outline-none hover:opacity-80 transition-opacity"
-									/>
-								))}
-							</Pie>
-							<Tooltip
-								cursor={false}
-								contentStyle={{
-									backgroundColor: "var(--card)",
-									border: "1px solid var(--border)",
-									borderRadius: "12px",
-									fontSize: "12px",
-									fontWeight: "600",
-									boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-								}}
-								itemStyle={{
-									color: "var(--foreground)",
-								}}
-								// Poprawiony formatter z obsługą opcjonalną
-								formatter={(value) =>
-									typeof value === "number" ? `${value.toFixed(2)}%` : "0.00%"
-								}
-							/>
-							<Legend
-								content={renderCustomLegend}
-								verticalAlign="bottom"
-								// wrapperStyle={{ paddingTop: "20px" }}
-							/>
-						</PieChart>
-					</ResponsiveContainer>
+					<div className="h-[350px] w-full min-h-[300px]">
+						<ResponsiveContainer width="100%" height="100%">
+							<PieChart>
+								<Pie
+									data={data}
+									dataKey={dataKey}
+									nameKey="category"
+									cx="50%"
+									cy="50%" // Przesunięte lekko do góry, by zrobić miejsce na legendę
+									innerRadius={65}
+									outerRadius={85}
+									paddingAngle={5}
+									stroke="var(--card)" // Stroke w kolorze tła karty daje efekt "pustych przerw"
+									strokeWidth={3}
+								>
+									{data.map((entry) => (
+										<Cell
+											key={entry.category}
+											fill={COLORS[entry.category as keyof typeof COLORS]}
+											className="outline-none hover:opacity-80 transition-opacity"
+										/>
+									))}
+								</Pie>
+								<Tooltip
+									cursor={false}
+									contentStyle={{
+										backgroundColor: "var(--card)",
+										border: "1px solid var(--border)",
+										borderRadius: "12px",
+										fontSize: "12px",
+										fontWeight: "600",
+										boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+									}}
+									itemStyle={{
+										color: "var(--foreground)",
+									}}
+									// Poprawiony formatter z obsługą opcjonalną
+									formatter={(value) =>
+										typeof value === "number" ? `${value.toFixed(2)}%` : "0.00%"
+									}
+								/>
+								<Legend
+									content={renderCustomLegend}
+									verticalAlign="bottom"
+									// wrapperStyle={{ paddingTop: "20px" }}
+								/>
+							</PieChart>
+						</ResponsiveContainer>
+					</div>
 				)}
 			</CardContent>
 		</Card>

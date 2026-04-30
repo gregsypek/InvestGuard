@@ -157,3 +157,17 @@ export interface DashboardAsset {
 	investedCapital: number; // Zmieniono z any na number
 	currentValue: number; // Zmieniono z any na number
 }
+// EN: Interface for a single point on the projection chart
+// PL: Interfejs dla pojedynczego punktu na wykresie projekcji
+export interface ProjectionPoint {
+	name: string;
+	value: number;
+}
+
+// EN: Props for the GoalProjectionChart component
+// PL: Propsy dla komponentu GoalProjectionChart
+export interface GoalProjectionProps {
+	currentValue: number;
+	targetValue: number;
+	monthlyDeposit: number;
+}

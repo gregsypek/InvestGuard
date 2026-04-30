@@ -6,6 +6,8 @@ import { PORTFOLIO_STRATEGY_MAP } from "../constants";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export async function createPortfolio(values: PortfolioFormValues) {
 	const session = await auth();
@@ -78,16 +80,23 @@ export async function updatePortfolio(id: string, values: PortfolioFormValues) {
 
 export async function deletePortfolio(id: string) {
 	try {
-		await db.portfolio.delete({
-			where: { id },
-		});
+		await db.portfolio.delete({ where: { id } });
+
+		// 1. Pobierz sklep ciasteczek (w Next 15+ użyj await)
+		const cookieStore = await cookies();
+
+		// 2. Jeśli usuwany portfel jest tym wybranym, usuń go z ciastek
+		if (cookieStore.get("selectedPortfolioId")?.value === id) {
+			cookieStore.delete("selectedPortfolioId");
+		}
 
 		revalidatePath("/portfolios");
-		return { success: true };
-	} catch (error) {
-		console.error("Delete error:", error);
-		return { error: "Failed to remove the portfolio." };
+	} catch {
+		return { error: "Błąd usuwania" };
 	}
+
+	// 3. KLUCZOWE: Przekieruj na listę bez parametrów w URL
+	redirect("/portfolios");
 }
 
 // EN: Performs a hard delete of an asset and its entire transaction history

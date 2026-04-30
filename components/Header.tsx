@@ -15,6 +15,7 @@ import Cookies from "js-cookie";
 import Menu from "./shared/Menu";
 import { RefreshButton } from "./RefreshButton";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 interface HeaderProps {
 	portfolios: { id: string; name: string }[];
@@ -40,17 +41,34 @@ export default function Header({
 	// 2. Szukamy ID w ścieżce dla wszystkich modułów
 	const segments = pathname.split("/");
 	const getPathId = () => {
-		const keys = ["dashboard", "edit", "planner", "bond-reports"];
-		const key = keys.find((k) => segments.includes(k));
-		if (key) return segments[segments.indexOf(key) + 1];
+		const keys = [
+			"dashboard",
+			"edit",
+			"planner",
+			"bond-reports",
+			"portfolios",
+			"alpha-selection",
+		];
+		const keyIndex = segments.findIndex((s) => keys.includes(s));
+		if (keyIndex !== -1 && segments[keyIndex + 1]) {
+			return segments[keyIndex + 1];
+		}
 		return null;
 	};
 
 	const idFromPath = getPathId();
 
-	// 3. Finalne ID do wyświetlenia
-	// Priorytet: 1. URL (?portfolioId) | 2. Ścieżka (/dashboard/ID) | 3. Prop z serwera/ciasteczka
-	const rawId = urlPortfolioId || idFromPath || selectedPortfolioId || "";
+	// EN: Extract ID from the environment (URL or Path) and verify its existence
+	// PL: Wyciągamy ID ze środowiska (URL lub ścieżka) i sprawdzamy, czy istnieje w bazie
+	const currentEnvId = urlPortfolioId || idFromPath;
+	const isCurrentValid = portfolios.some((p) => p.id === currentEnvId);
+
+	// EN: Consolidated logic: Priority: Valid URL ID > Cookie/Server Prop > Empty string
+	// PL: Połączona logika: Priorytet: Poprawne ID z adresu > Ciasteczko/Serwer > Pusty string
+	const rawId = isCurrentValid
+		? (currentEnvId ?? "")
+		: (selectedPortfolioId ?? "");
+
 	const displayValue = isDemoMode ? "" : rawId;
 	const handlePortfolioChange = (id: string) => {
 		// Obsługa nowej opcji wejścia w demo z listy
@@ -63,6 +81,26 @@ export default function Header({
 		router.push(`/dashboard/${id}`);
 	};
 
+	// EN: Sync cookie with URL/Path to prevent "lost" selection
+	// PL: Synchronizacja ciasteczka z URL, aby nie "gubić" wyboru po wyjściu z demo
+	useEffect(() => {
+		if (pathname.startsWith("/demo")) return;
+
+		const currentId = urlPortfolioId || idFromPath;
+
+		if (currentId && currentId !== Cookies.get("selectedPortfolioId")) {
+			Cookies.set("selectedPortfolioId", currentId, { expires: 30, path: "/" });
+		}
+	}, [urlPortfolioId, idFromPath, pathname]);
+
+	// EN: Auto-redirect if we have a saved ID but no ID in URL on main pages
+	// PL: Auto-przekierowanie, jeśli mamy zapisane ID, ale brak go w URL na stronach głównych
+	useEffect(() => {
+		const isMainPage = pathname === "/dashboard" || pathname === "/planner";
+		if (isMainPage && selectedPortfolioId && !urlPortfolioId && !idFromPath) {
+			router.replace(`${pathname}/${selectedPortfolioId}`);
+		}
+	}, [selectedPortfolioId, pathname, urlPortfolioId, idFromPath, router]);
 	return (
 		<header className="flex justify-between items-center p-2 border-b border-border bg-background text-foreground sticky top-0 z-50">
 			<div className="px-5 flex items-center gap-3">

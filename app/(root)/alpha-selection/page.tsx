@@ -15,6 +15,7 @@ import { AlphaHeader } from "@/components/AlphaHeader";
 import AlphaLedgerTable from "@/components/AlphaLedgerTable";
 import { BondStatCard } from "@/components/shared/BondStatCard";
 import { Category } from "@prisma/client";
+// import type { Category } from "@prisma/client";
 import { InteractiveChartSection } from "@/components/InteractiveChartSection";
 import Link from "next/link";
 import { MigrationTool } from "@/components/alpha/MigrationTool";
@@ -24,6 +25,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getActivePortfolioId } from "@/lib/session";
 import { redirect } from "next/navigation";
+import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 
 export default async function AlphaSelectionPage({
 	searchParams,
@@ -31,7 +33,10 @@ export default async function AlphaSelectionPage({
 	searchParams: Promise<{ portfolioId?: string }>;
 }) {
 	const activeId = await getActivePortfolioId(searchParams);
-	if (!activeId) redirect("/dashboard");
+	// if (!activeId) redirect("/dashboard");
+	if (!activeId) {
+		return <PortfolioEmptyState variant="PORTFOLIOS" />;
+	}
 
 	// Jeśli nie ma żadnego portfela, kierujemy do domyślnego dashboardu,
 	// ale zakładamy, że użytkownik Alpha ma już portfel.
@@ -127,7 +132,15 @@ export default async function AlphaSelectionPage({
 		: [];
 
 	const portfolioId = await getActivePortfolioId(searchParams);
-	if (!portfolioId) redirect("/dashboard");
+
+	// if (portfolioId) {
+	// 	return (
+	// 		<PortfolioEmptyState variant="NOT_SELECTED" portfolioId={portfolioId} />
+	// 	);
+	// }
+	if (!portfolioId) {
+		return <PortfolioEmptyState variant="NOT_FOUND" />;
+	}
 
 	const portfolio = await db.portfolio.findUnique({
 		where: {
@@ -143,8 +156,10 @@ export default async function AlphaSelectionPage({
 			},
 		},
 	});
-
-	if (!portfolio) redirect("/dashboard");
+	if (!portfolio) {
+		return <PortfolioEmptyState variant="PORTFOLIOS" />;
+	}
+	// if (!portfolio) redirect("/dashboard");
 
 	// Przygotowanie danych (rzutowanie Decimal -> Number) dla TS i builda
 	const formattedAssets = portfolio.assets.map((asset) => ({

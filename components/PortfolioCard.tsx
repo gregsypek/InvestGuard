@@ -79,7 +79,8 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 								<DeleteButton
 									id={id}
 									onDelete={deletePortfolio}
-									confirmMsg="Are you sure you want to delete this portfolio?"
+									// confirmMsg="Are you sure you want to delete this portfolio?"
+									confirmMsg="Czy na pewno chcesz usunąć ten portfel?"
 								/>
 							</>
 						)}

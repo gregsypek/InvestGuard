@@ -27,6 +27,11 @@ export default async function DashboardRootPage({
 			<PortfolioEmptyState variant="PORTFOLIOS" userName={session.user.name} />
 		);
 	}
+	// if (firstPortfolio) {
+	// 	return (
+	// 		<PortfolioEmptyState variant="PLANNER" portfolioId={firstPortfolio.id} />
+	// 	);
+	// }
 
 	// 4. Spróbuj pobrać ID z parametrów lub ciasteczek
 	const portfolioId = await getActivePortfolioId(searchParams);

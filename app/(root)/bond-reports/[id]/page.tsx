@@ -93,6 +93,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 						variant="PLANNER"
 						title="Brak obligacji w tym portfelu"
 						description="Nie dodałeś jeszcze żadnych obligacji skarbowych. Kliknij 'Dodaj Serię', aby rozpocząć."
+						portfolioId={activeId}
 					/>
 				</div>
 			) : (

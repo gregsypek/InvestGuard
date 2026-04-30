@@ -35,7 +35,7 @@ export function AlphaChart({ data }: { data: AlphaChartProps[] }) {
 
 	if (!data || data.length === 0) {
 		return (
-			<div className="flex h-88 items-center justify-center text-xs text-muted-foreground italic">
+			<div className="flex h-full items-center justify-center text-xs text-muted-foreground italic">
 				Brak danych do wyświetlenia
 			</div>
 		);

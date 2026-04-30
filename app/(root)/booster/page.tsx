@@ -117,7 +117,8 @@ export default async function BoosterPage() {
 										<TableCell className="py-4 text-right">
 											<DeleteButton
 												id={asset.id}
-												confirmMsg="Are you sure you want to remove this opportunity?"
+												confirmMsg="Czy na pewno chcesz usunąć to aktywo?"
+												// confirmMsg="Are you sure you want to remove this opportunity?"
 												onDelete={deleteBoosterAsset}
 											/>
 										</TableCell>

@@ -25,6 +25,7 @@ interface Props {
 	title?: string;
 	description?: string;
 	userName?: string | null;
+	portfolioId?: string;
 }
 
 export default function PortfolioEmptyState({
@@ -32,6 +33,7 @@ export default function PortfolioEmptyState({
 	title,
 	description,
 	userName,
+	portfolioId,
 }: Props) {
 	// EN: Configuration map for different application areas
 	// UI: Mapa konfiguracji dla różnych obszarów aplikacji
@@ -103,13 +105,39 @@ export default function PortfolioEmptyState({
 			<div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto pt-4">
 				{/* EN: Only show the "Manage" button if we are NOT already on the Portfolios page */}
 				{/* UI: Pokaż przycisk "Zarządzaj", tylko jeśli NIE jesteśmy na stronie listującej portfele */}
-				{variant !== "PORTFOLIOS" && (
+				{/* {variant !== "PORTFOLIOS" && (
 					<Button
 						asChild
 						variant={variant === "NOT_FOUND" ? "outline" : "default"}
 						className="gap-2 shadow-lg hover:shadow-xl transition-all"
 					>
-						<Link href="/portfolios">
+						<Link
+							href={
+								portfolioId
+									? `/portfolios?portfolioId=${portfolioId}`
+									: "/portfolios"
+							}
+						>
+							<Wallet className="h-4 w-4" />
+							Zarządzaj portfelami
+						</Link>
+					</Button>
+				)} */}
+				{(variant == "NOT_SELECTED" ||
+					variant == "NOT_FOUND" ||
+					variant == "PLANNER") && (
+					<Button
+						asChild
+						variant={"default"}
+						className="gap-2 shadow-lg hover:shadow-xl transition-all"
+					>
+						<Link
+							href={
+								portfolioId
+									? `/portfolios?portfolioId=${portfolioId}`
+									: "/portfolios"
+							}
+						>
 							<Wallet className="h-4 w-4" />
 							Zarządzaj portfelami
 						</Link>

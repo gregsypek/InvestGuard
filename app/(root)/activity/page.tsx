@@ -24,6 +24,7 @@ import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { getTransactionHistory } from "@/lib/actions/history.actions";
 import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
 
 export default async function ActivityPage({
 	searchParams,
@@ -32,6 +33,12 @@ export default async function ActivityPage({
 }) {
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
+
+	const portfolios = await db.portfolio.findMany({
+		where: { userId: session.user.id },
+		include: { assets: true, transactionHistories: true },
+		orderBy: { createdAt: "desc" },
+	});
 
 	const resolvedParams = await searchParams;
 	const currentPage = Number(resolvedParams.page) || 1;
@@ -51,6 +58,10 @@ export default async function ActivityPage({
 			</div>
 		);
 	}
+	if (portfolios.length === 0) {
+		return <PortfolioEmptyState variant="PORTFOLIOS" />;
+	}
+
 	// OBSŁUGA PUSTEGO STANU
 	if (result.meta.totalCount === 0) {
 		return <PortfolioEmptyState variant="ACTIVITY" />;

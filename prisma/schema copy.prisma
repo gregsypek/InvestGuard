@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "client"
 }
 
 datasource db {
   provider = "postgresql"
-  // BRAK URL - Prisma 7 pobierze go z prisma.config.ts podczas migracji
+  // In Prisma 7, we no longer put env() here. 
+  // We specify only the provider.
 }
 
 enum Role {
@@ -22,7 +24,6 @@ enum Category {
   CASH
   CRYPTO
   COMMODITIES
-  UNKNOWN
 }
 
 enum TimeHorizon {
@@ -32,11 +33,9 @@ enum TimeHorizon {
 }
 
 enum TransactionType {
-  BUY // Standardowy zakup aktywów 🛒
-  SELL // Sprzedaż aktywów 💸
-  UPDATE // Ręczne korekty wyceny 🛠️
-  DEPOSIT // Twoje wpłaty zewnętrzne (np. IKE deposit) 🏦
-  INTEREST // Odsetki od wolnych środków (np. Free funds interest) 💵
+  BUY
+  SELL
+  UPDATE
 }
 
 model Asset {
@@ -128,30 +127,18 @@ model InvestmentPlan {
 }
 
 model TransactionHistory {
-  id         String          @id @default(cuid())
-  externalId String?         @unique
-  type       TransactionType @default(BUY)
-  assetName  String
-  ticker     String? // EN: Optional for cash operations
-
-  // EN: Multi-currency support fields
-  // PL: Pola wspierające wiele walut
-  originalPrice    Float? // EN: Price in EUR/USD from comments
-  originalCurrency String? // EN: EUR, USD, PLN
-  exchangeRate     Float   @default(1.0)
-
-  executedValue Float // EN: The actual amount spent in PLN
-  category      Category
-  executedAt    DateTime @default(now())
-  rationale     String?
-  quantity      Float    @default(0)
-
-  portfolioId String
-  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
-
-  // EN: Composite index for uniqueness if externalId is missing
-  // PL: Indeks kompozytowy dla unikalności, gdy brakuje externalId
-  @@index([executedAt, executedValue])
+  id            String          @id @default(cuid())
+  type          TransactionType @default(BUY) // 🆕 Określamy typ ruchu
+  assetName     String // e.g., "ETF MSCI World"
+  ticker        String? // e.g., "EUNL.DE"
+  executedValue Float // The actual amount spent
+  category      Category // e.g., BONDS, GOLD
+  executedAt    DateTime        @default(now())
+  rationale     String? // Why did you buy this? (Copied from plan)
+  quantity      Float           @default(0) // 🧱 Ile sztuk kupiliśmy w tej transakcji
+  // Reference to the portfolio
+  portfolioId   String
+  portfolio     Portfolio       @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 }
 
 model User {

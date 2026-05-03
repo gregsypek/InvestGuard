@@ -24,6 +24,7 @@ enum Category {
   CASH
   CRYPTO
   COMMODITIES
+  UNKNOWN
 }
 
 enum TimeHorizon {
@@ -36,6 +37,8 @@ enum TransactionType {
   BUY
   SELL
   UPDATE
+  DEPOSIT
+  INTEREST
 }
 
 model Asset {
@@ -143,6 +146,7 @@ model TransactionHistory {
   category      Category
   executedAt    DateTime @default(now())
   rationale     String?
+  comment       String?
   quantity      Float    @default(0)
 
   portfolioId String

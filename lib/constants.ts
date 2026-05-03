@@ -26,6 +26,7 @@ export const CATEGORY_ASSETS: AssetCategory[] = [
 	"CASH",
 	"CRYPTO",
 	"COMMODITIES",
+	"UNKNOWN",
 ];
 
 // EN: Mapping technical keys to Polish labels
@@ -39,6 +40,7 @@ export const CATEGORY_LABELS: Record<AssetCategory, string> = {
 	CASH: "Gotówka",
 	CRYPTO: "Kryptowaluty",
 	COMMODITIES: "Surowce",
+	UNKNOWN: "Nieznane (Wymaga akcji!)", // 👈 Nowa etykieta
 };
 
 // Your master plan: 15/15/10/55/5

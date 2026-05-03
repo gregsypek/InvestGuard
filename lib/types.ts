@@ -8,7 +8,8 @@ export type AssetCategory =
 	| "BOOSTER"
 	| "CASH"
 	| "CRYPTO"
-	| "COMMODITIES";
+	| "COMMODITIES"
+	| "UNKNOWN";
 
 export type Role = "ADMIN" | "SUBSCRIBER" | "REGULAR";
 

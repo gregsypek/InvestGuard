@@ -127,18 +127,29 @@ model InvestmentPlan {
 }
 
 model TransactionHistory {
-  id            String          @id @default(cuid())
-  type          TransactionType @default(BUY) // 🆕 Określamy typ ruchu
-  assetName     String // e.g., "ETF MSCI World"
-  ticker        String? // e.g., "EUNL.DE"
-  executedValue Float // The actual amount spent
-  category      Category // e.g., BONDS, GOLD
-  executedAt    DateTime        @default(now())
-  rationale     String? // Why did you buy this? (Copied from plan)
-  quantity      Float           @default(0) // 🧱 Ile sztuk kupiliśmy w tej transakcji
-  // Reference to the portfolio
-  portfolioId   String
-  portfolio     Portfolio       @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  id         String          @id @default(cuid())
+  externalId String?         @unique
+  type       TransactionType @default(BUY)
+  assetName  String
+  ticker     String? // EN: Optional for cash operations
+
+  // EN: Multi-currency support fields
+  // PL: Pola wspierające wiele walut
+  originalPrice    Float? // Cena w EUR/USD wyciągnięta z komentarza XTB
+  originalCurrency String? // EUR, USD, PLN
+  exchangeRate     Float   @default(1.0)
+
+  executedValue Float // Kwota w PLN (z kolumny Amount w Excelu)
+  category      Category
+  executedAt    DateTime @default(now())
+  rationale     String?
+  quantity      Float    @default(0)
+
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  // Indeks dla wydajności przy filtrowaniu po dacie i kwocie
+  @@index([executedAt, executedValue])
 }
 
 model User {

@@ -2,15 +2,7 @@
 
 import { Category, TransactionType } from "@prisma/client";
 
-// PL: Surowa struktura wiersza z eksportu Excel XTB
-interface XtbExcelRow {
-	ID: string | number;
-	Time: string;
-	Type: string;
-	Symbol: string;
-	Comment: string;
-	Amount: number;
-}
+import { XtbExcelRow } from "../types";
 
 export interface ParsedXtbTransaction {
 	type: TransactionType;

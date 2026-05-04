@@ -39,7 +39,7 @@ export default async function BoosterPage() {
 		where: { category: "BOOSTER" },
 		orderBy: { createdAt: "desc" },
 	});
-	console.log("🚀 ~ BoosterPage ~ boosterAssets:", boosterAssets);
+	// console.log("🚀 ~ BoosterPage ~ boosterAssets:", boosterAssets);
 
 	return (
 		<div className="space-y-8">

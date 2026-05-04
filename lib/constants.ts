@@ -26,6 +26,7 @@ export const CATEGORY_ASSETS: AssetCategory[] = [
 	"CASH",
 	"CRYPTO",
 	"COMMODITIES",
+	"UNKNOWN",
 ];
 
 // EN: Mapping technical keys to Polish labels
@@ -39,6 +40,7 @@ export const CATEGORY_LABELS: Record<AssetCategory, string> = {
 	CASH: "Gotówka",
 	CRYPTO: "Kryptowaluty",
 	COMMODITIES: "Surowce",
+	UNKNOWN: "Nieznana",
 };
 
 // Your master plan: 15/15/10/55/5
@@ -141,6 +143,7 @@ export const CATEGORY_DETAILS: Record<
 	CASH: { label: "Gotówka", color: "bg-slate-400", icon: "💵" },
 	CRYPTO: { label: "Kryptowaluty", color: "bg-blue-600", icon: "🪙" },
 	COMMODITIES: { label: "Surowce", color: "bg-brown-600", icon: "🛢️" },
+	UNKNOWN: { label: "Nieznana", color: "bg-gray-500", icon: "❓" },
 };
 
 // EN: Shared focus styles to remove thick ring and use subtle border instead

@@ -61,7 +61,7 @@ export default async function DashboardPage({ searchParams }: Props) {
 			},
 		},
 	});
-	console.log("🚀 ~ DashboardPage ~ portfolio:", portfolio);
+	// console.log("🚀 ~ DashboardPage ~ portfolio:", portfolio);
 	// console.log("🚀 ~ DashboardPage ~ portfolio:", portfolio);
 
 	// Handle case where the portfolio doesn't exist or belongs to someone else

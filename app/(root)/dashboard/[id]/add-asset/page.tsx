@@ -5,6 +5,7 @@ import {
 
 import AddAssetForm from "@/components/ui/assets/AddAssetForm";
 import { LibrarySquareIcon } from "lucide-react";
+import { XtbImporter } from "@/components/ui/XtbImporter";
 
 interface Props {
 	params: Promise<{ id: string }>;
@@ -38,6 +39,8 @@ export default async function AddAssetPage({ params }: Props) {
 				existingAssets={assets}
 				key={id}
 			/>
+
+			<XtbImporter portfolioId={id} />
 		</section>
 	);
 }

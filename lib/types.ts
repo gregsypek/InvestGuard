@@ -8,7 +8,8 @@ export type AssetCategory =
 	| "BOOSTER"
 	| "CASH"
 	| "CRYPTO"
-	| "COMMODITIES";
+	| "COMMODITIES"
+	| "UNKNOWN";
 
 export type Role = "ADMIN" | "SUBSCRIBER" | "REGULAR";
 
@@ -170,4 +171,14 @@ export interface GoalProjectionProps {
 	currentValue: number;
 	targetValue: number;
 	monthlyDeposit: number;
+}
+
+// PL: Surowa struktura wiersza z eksportu Excel XTB
+export interface XtbExcelRow {
+	ID: string | number;
+	Time: string;
+	Type: string;
+	Symbol: string;
+	Comment: string;
+	Amount: number;
 }

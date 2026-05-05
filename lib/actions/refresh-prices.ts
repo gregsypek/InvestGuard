@@ -28,6 +28,8 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 		let updatedCount = 0;
 
 		for (const asset of assets) {
+			// 🚀 DODAJ TO: Pomiń gotówkę, bo Yahoo nie ma dla niej symbolu
+			if (asset.ticker === "CASH" || asset.category === "CASH") continue;
 			// Limit odświeżania dla darmowych kont (raz na 24h)
 			if (role === "REGULAR" && asset.updatedAt > oneDayAgo) continue;
 
@@ -40,12 +42,19 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 					{ validateResult: false },
 				);
 				const quote = Array.isArray(result) ? result[0] : result;
+				console.log("🚀 ~ refreshPortfolioPrices ~ quote:", quote);
 
 				if (quote?.regularMarketPrice != null) {
 					const rawPrice = quote.regularMarketPrice as number;
 					// POBIERAMY ZMIANĘ 24H Z API YAHOO
 					const dailyChange = quote.regularMarketChangePercent || 0;
 					const currency = quote.currency || "PLN";
+
+					// EN: Extract the official name from Yahoo Finance
+					// PL: Wyciągamy oficjalną nazwę z Yahoo Finance
+					const officialName =
+						quote.longName || quote.shortName || quote.displayName;
+
 					let priceInPLN = rawPrice;
 
 					// Przeliczanie walut przez Twój bufor (ExchangeRate)
@@ -65,6 +74,9 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 						data: {
 							currentValue: priceInPLN * asset.quantity,
 							dailyChange: dailyChange, // To pole zasila Twój pasek
+							// EN: Update the name if we found a better one from the API
+							// PL: Aktualizujemy nazwę, jeśli API zwróciło oficjalną nazwę rynkową
+							name: officialName || asset.name,
 							updatedAt: new Date(),
 						},
 					});

@@ -366,3 +366,73 @@ export async function updateAlphaDetails(
 		return { success: false, error: "Błąd podczas aktualizacji" };
 	}
 }
+
+export async function syncPortfolioAssets(portfolioId: string) {
+	const transactions = await db.transactionHistory.findMany({
+		where: { portfolioId },
+		orderBy: { executedAt: "asc" },
+	});
+
+	const assetMap = new Map();
+
+	for (const tx of transactions) {
+		if (!tx.ticker) continue;
+
+		if (!assetMap.has(tx.ticker)) {
+			assetMap.set(tx.ticker, {
+				ticker: tx.ticker,
+				name: tx.assetName,
+				totalQuantity: 0,
+				totalInvested: 0,
+				firstPurchase: tx.executedAt, // Pierwsza data dla purchaseDate
+				category: tx.category,
+			});
+		}
+
+		const asset = assetMap.get(tx.ticker);
+
+		if (tx.type === "BUY" || tx.type === "DEPOSIT" || tx.type === "INTEREST") {
+			asset.totalQuantity += tx.quantity;
+			asset.totalInvested += tx.executedValue;
+		} else if (tx.type === "SELL") {
+			// Proporcjonalne zmniejszenie ilości
+			asset.totalQuantity -= tx.quantity;
+			// Przy sprzedaży zazwyczaj wyliczamy zysk,
+			// tutaj upraszczamy bazę kosztową dla widoku portfela:
+			const ratio = tx.quantity / (asset.totalQuantity + tx.quantity);
+			asset.totalInvested -= asset.totalInvested * ratio;
+		}
+	}
+
+	for (const [ticker, data] of assetMap) {
+		if (data.totalQuantity <= 0 && ticker !== "CASH") continue;
+
+		await db.asset.upsert({
+			where: {
+				portfolioId_ticker: {
+					portfolioId,
+					ticker,
+				},
+			},
+			update: {
+				name: data.name, // 🚀 DODAJ TO POLE TUTAJ!
+				quantity: data.totalQuantity,
+				investedCapital: data.totalInvested,
+				currentValue: data.totalInvested,
+				category: data.category,
+			},
+			create: {
+				portfolioId,
+				ticker,
+				name: data.name,
+				quantity: data.totalQuantity,
+				investedCapital: data.totalInvested,
+				currentValue: data.totalInvested,
+				category: data.category,
+				purchaseDate: data.firstPurchase || new Date(),
+			},
+		});
+	}
+
+	return { success: true };
+}

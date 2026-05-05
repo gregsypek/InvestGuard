@@ -35,6 +35,7 @@ import {
 } from "@/lib/actions/asset-actions";
 
 import { AdjustAssetModal } from "./AdjustAssetModal";
+import { AssetLogo } from "./shared/AssetLogo";
 import { DeleteButton } from "./DeleteButton";
 import Link from "next/link";
 import PaginatedBar from "./shared/PaginatedBar";
@@ -365,6 +366,11 @@ const AssetLedgerTable = ({
 															)}
 														/>
 													)}
+													{/* EN: Using our optimized component | PL: Użycie zoptymalizowanego komponentu */}
+													<AssetLogo
+														ticker={asset.ticker || ""}
+														className="w-4 h-4"
+													/>
 													<div className="font-bold text-sm">{asset.name}</div>
 												</div>
 												<div className="flex items-center gap-2 mt-1">

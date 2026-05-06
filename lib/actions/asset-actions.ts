@@ -367,6 +367,8 @@ export async function updateAlphaDetails(
 	}
 }
 
+// lib/actions/asset-actions.ts
+
 export async function syncPortfolioAssets(portfolioId: string) {
 	const transactions = await db.transactionHistory.findMany({
 		where: { portfolioId },
@@ -375,37 +377,87 @@ export async function syncPortfolioAssets(portfolioId: string) {
 
 	const assetMap = new Map();
 
-	for (const tx of transactions) {
-		if (!tx.ticker) continue;
+	// 1. Zawsze na starcie tworzymy kubełek "Gotówka"
+	assetMap.set("CASH", {
+		ticker: "CASH",
+		name: "Wolna Gotówka PLN",
+		totalQuantity: 0,
+		totalInvested: 0,
+		firstPurchase: new Date(),
+		category: "CASH",
+	});
 
-		if (!assetMap.has(tx.ticker)) {
+	for (const tx of transactions) {
+		const isCashTx = tx.ticker === "CASH" || tx.category === "CASH";
+		const cashAsset = assetMap.get("CASH");
+
+		if (isCashTx) {
+			// EN: Cash inflows: Deposits, Interest, Dividends (often marked as BUY in your parser)
+			// PL: Wpływy gotówki: Depozyty, Odsetki, Dywidendy (często BUY w Twoim parserze)
+			if (
+				tx.type === "DEPOSIT" ||
+				tx.type === "INTEREST" ||
+				tx.type === "BUY"
+			) {
+				cashAsset.totalQuantity += tx.executedValue;
+				cashAsset.totalInvested += tx.executedValue;
+			}
+			// EN: Cash outflows: Selling cash (Withdrawal)
+			// PL: Wypływy gotówki: Sprzedaż gotówki (Wypłata środków)
+			else if (tx.type === "SELL") {
+				cashAsset.totalQuantity -= tx.executedValue;
+				cashAsset.totalInvested -= tx.executedValue;
+			}
+			// EN: Manual corrections (Korekta) - adding the executed value (can be positive or negative)
+			// PL: Ręczne korekty - dodajemy wartość (może być dodatnia lub ujemna)
+			else if (tx.type === "UPDATE") {
+				cashAsset.totalQuantity += tx.executedValue;
+				cashAsset.totalInvested += tx.executedValue;
+			}
+			continue; // Idziemy do następnej transakcji
+		}
+
+		// 2. Inicjalizacja aktywa (jeśli kupujemy coś po raz pierwszy)
+		if (tx.ticker && !assetMap.has(tx.ticker)) {
 			assetMap.set(tx.ticker, {
 				ticker: tx.ticker,
 				name: tx.assetName,
 				totalQuantity: 0,
 				totalInvested: 0,
-				firstPurchase: tx.executedAt, // Pierwsza data dla purchaseDate
+				firstPurchase: tx.executedAt,
 				category: tx.category,
 			});
 		}
 
-		const asset = assetMap.get(tx.ticker);
+		const asset = tx.ticker ? assetMap.get(tx.ticker) : null;
 
-		if (tx.type === "BUY" || tx.type === "DEPOSIT" || tx.type === "INTEREST") {
+		if (asset && tx.type === "BUY") {
+			// A. Kupujemy akcje: rośnie ilość aktywa...
 			asset.totalQuantity += tx.quantity;
 			asset.totalInvested += tx.executedValue;
-		} else if (tx.type === "SELL") {
-			// Proporcjonalne zmniejszenie ilości
-			asset.totalQuantity -= tx.quantity;
-			// Przy sprzedaży zazwyczaj wyliczamy zysk,
-			// tutaj upraszczamy bazę kosztową dla widoku portfela:
+
+			// ...B. ale PŁACIMY za to naszą gotówką (CASH spada)
+			cashAsset.totalQuantity -= tx.executedValue;
+			cashAsset.totalInvested -= tx.executedValue;
+		} else if (asset && tx.type === "SELL") {
+			// A. Sprzedajemy akcje: maleje ilość aktywa...
 			const ratio = tx.quantity / (asset.totalQuantity + tx.quantity);
+			asset.totalQuantity -= tx.quantity;
 			asset.totalInvested -= asset.totalInvested * ratio;
+
+			// ...B. ale gotówka z transakcji wraca na nasze konto (CASH rośnie)
+			cashAsset.totalQuantity += tx.executedValue;
+			cashAsset.totalInvested += tx.executedValue;
 		}
 	}
 
+	// 3. Zapis do bazy danych
 	for (const [ticker, data] of assetMap) {
-		if (data.totalQuantity <= 0 && ticker !== "CASH") continue;
+		// Jeśli sprzedaliśmy wszystkie sztuki, po prostu wpisujemy 0, żeby mieć czystą historię
+		if (data.totalQuantity <= 0 && ticker !== "CASH") {
+			data.totalQuantity = 0;
+			data.totalInvested = 0;
+		}
 
 		await db.asset.upsert({
 			where: {
@@ -415,10 +467,11 @@ export async function syncPortfolioAssets(portfolioId: string) {
 				},
 			},
 			update: {
-				name: data.name, // 🚀 DODAJ TO POLE TUTAJ!
+				name: data.name,
 				quantity: data.totalQuantity,
 				investedCapital: data.totalInvested,
-				currentValue: data.totalInvested,
+				// Aktualizujemy currentValue TYLKO dla gotówki, akcje odświeża Yahoo!
+				...(ticker === "CASH" && { currentValue: data.totalInvested }),
 				category: data.category,
 			},
 			create: {
@@ -427,7 +480,7 @@ export async function syncPortfolioAssets(portfolioId: string) {
 				name: data.name,
 				quantity: data.totalQuantity,
 				investedCapital: data.totalInvested,
-				currentValue: data.totalInvested,
+				currentValue: data.totalInvested, // Cena startowa
 				category: data.category,
 				purchaseDate: data.firstPurchase || new Date(),
 			},

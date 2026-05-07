@@ -19,7 +19,12 @@ export function InteractiveChartSection({
 }: Props) {
 	const availableCategories = useMemo(() => {
 		const cats = assets
-			.filter((a) => a.category !== "BOND" && a.category !== "OBLIGACJE")
+			.filter(
+				(a) =>
+					a.category !== "BOND" &&
+					a.category !== "OBLIGACJE" &&
+					a.category !== "CASH", // 🚀 Ignorujemy gotówkę w trendzie
+			)
 			.map((a) => a.category);
 		return Array.from(new Set(cats));
 	}, [assets]);
@@ -34,7 +39,8 @@ export function InteractiveChartSection({
 			(t) =>
 				selectedCats.includes(t.category) &&
 				t.category !== "BOND" &&
-				t.category !== "OBLIGACJE",
+				t.category !== "OBLIGACJE" &&
+				t.category !== "CASH", // 🚀  Nie licz wpłat gotówkowych do trendu aktywów
 		);
 
 		const selectedAssets = assets.filter((a) =>

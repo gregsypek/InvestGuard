@@ -19,13 +19,13 @@ import { Category } from "@prisma/client";
 import { InteractiveChartSection } from "@/components/InteractiveChartSection";
 import Link from "next/link";
 import { MigrationTool } from "@/components/alpha/MigrationTool";
+import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { SubHeader } from "@/components/shared/SubHeader";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getActivePortfolioId } from "@/lib/session";
 import { redirect } from "next/navigation";
-import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 
 export default async function AlphaSelectionPage({
 	searchParams,
@@ -251,6 +251,7 @@ export default async function AlphaSelectionPage({
 				<MigrationTool
 					assets={filteredAssets}
 					categories={filteredCategories}
+					portfolioId={portfolioId}
 				/>
 			</section>
 			{/* SEKCJA TABELA */}

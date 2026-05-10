@@ -3,7 +3,7 @@
 import { DashboardAsset, Transaction } from "@/lib/types";
 import { useMemo, useState } from "react";
 
-import { AlphaChart } from "./alpha/AreaChart";
+import { AlphaChart } from "./alpha/AlphaChart";
 import { COLORS } from "@/lib/constants";
 import { MonthlyDepositsChart } from "./alpha/MonthlyDepositChart";
 import { prepareChartAnalytics } from "@/lib/chart-helpers";
@@ -35,17 +35,22 @@ export function InteractiveChartSection({
 	const { areaPoints, barPoints } = useMemo(() => {
 		if (!Array.isArray(transactions)) return { areaPoints: [], barPoints: [] };
 
+		// 1. Filtrujemy historię dla wykresu TRENDU (AreaChart)
+		// Chcemy tu widzieć tylko pracujące aktywa (bez gotówki i obligacji)
 		const filteredTx = transactions.filter(
 			(t) =>
 				selectedCats.includes(t.category) &&
 				t.category !== "BOND" &&
 				t.category !== "OBLIGACJE" &&
-				t.category !== "CASH", // 🚀  Nie licz wpłat gotówkowych do trendu aktywów
+				t.category !== "CASH", // Gotówka nie buduje "wartości aktywów"
 		);
 
+		// 2. Pobieramy tylko te aktywa, które mają kategorię wybraną w filtrach
 		const selectedAssets = assets.filter((a) =>
 			selectedCats.includes(a.category),
 		);
+
+		// 3. Obliczamy ROI tylko dla aktywnych/wybranych aktywów
 		const totalInvoiced = selectedAssets.reduce(
 			(sum, a) => sum + Number(a.investedCapital),
 			0,
@@ -54,11 +59,12 @@ export function InteractiveChartSection({
 			(sum, a) => sum + Number(a.currentValue),
 			0,
 		);
+
 		const currentRoiFactor = totalInvoiced > 0 ? totalValue / totalInvoiced : 1;
 
+		// 4. Generujemy dane do obu wykresów
 		return prepareChartAnalytics(filteredTx, currentRoiFactor);
 	}, [transactions, selectedCats, assets]);
-
 	const toggleCategory = (cat: string) => {
 		setSelectedCats((prev) =>
 			prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],

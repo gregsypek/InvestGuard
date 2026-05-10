@@ -15,17 +15,18 @@ interface MonthlyDepositProps {
 	month: string;
 	amount: number;
 }
-export function MonthlyDepositsChart({ data }: { data: MonthlyDepositProps[] }) {
-	console.log("🚀 ~ MonthlyDepositsChart ~ data:", data);
-	const [isMounted, setIsMounted] = useState(false);
-useEffect(() => {
-	// setTimeout(..., 0) jest bardziej "cierpliwy" niż rAF dla Recharts
-	const timer = setTimeout(() => {
-		setIsMounted(true);
-	}, 0);
 
-	return () => clearTimeout(timer);
-}, []);
+export function MonthlyDepositsChart({
+	data,
+}: {
+	data: MonthlyDepositProps[];
+}) {
+	const [isMounted, setIsMounted] = useState(false);
+
+	useEffect(() => {
+		const timer = setTimeout(() => setIsMounted(true), 0);
+		return () => clearTimeout(timer);
+	}, []);
 
 	if (!isMounted)
 		return (
@@ -55,22 +56,39 @@ useEffect(() => {
 					tickLine={false}
 					axisLine={false}
 					tick={{ fill: "#94a3b8" }}
-					tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+					tickFormatter={(v: number) =>
+						v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()
+					}
 				/>
 				<Tooltip
 					cursor={{ fill: "rgba(255,255,255,0.05)" }}
-					// formatter={(value: number) => [`${value.toFixed(2)} PLN`, "Wpłata"]}
 					contentStyle={{
+						backgroundColor: "#ffffff",
 						borderRadius: "12px",
 						border: "none",
-						backgroundColor: "#1e1e1e",
-						boxShadow: "0 10px 15px -3px rgba(0,0,0,0.5)",
-						fontSize: "12px",
+						boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+						padding: "8px 12px",
+					}}
+					itemStyle={{
+						color: "#0f172a",
+						fontSize: "11px",
+						fontWeight: "bold",
+						textTransform: "uppercase",
+					}}
+					labelStyle={{
+						color: "#64748b",
+						fontSize: "10px",
+						marginBottom: "4px",
+					}}
+					formatter={(value) => {
+						// ✅ Fix: ValueType może być undefined lub string
+						const num = typeof value === "number" ? value : Number(value ?? 0);
+						return [`${num.toLocaleString("pl-PL")} PLN`, "Wpłata"];
 					}}
 				/>
 				<Bar
 					dataKey="amount"
-					fill="#f59e0b" // Bursztynowy pasujący do Twojego UI
+					fill="#f59e0b"
 					radius={[4, 4, 0, 0]}
 					barSize={32}
 				/>

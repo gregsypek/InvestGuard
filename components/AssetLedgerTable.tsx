@@ -77,7 +77,7 @@ const AssetLedgerTable = ({
 
 	// --- LOGIKA AGREGACJI (HUB & SPOKE) ---
 	const assetsWithPL = useMemo(() => {
-		console.log("🚀 ~ AssetLedgerTable ~ assets:", assets);
+		// console.log("🚀 ~ AssetLedgerTable ~ assets:", assets);
 		// 1. Oddzielamy zwykłe aktywa od obligacji
 		const standardAssets = assets.filter((a) => a.category !== "BONDS");
 		const bondAssets = assets.filter((a) => a.category === "BONDS");

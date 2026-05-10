@@ -30,6 +30,8 @@ export default async function AlphaLedgerTable({}) {
 		orderBy: { conviction: "desc" },
 	});
 
+	const activeBoosterAssets = boosterAssets.filter((a) => a.quantity > 0);
+
 	return (
 		<Table>
 			<TableHeader className="bg-muted/30">
@@ -47,7 +49,7 @@ export default async function AlphaLedgerTable({}) {
 				</TableRow>
 			</TableHeader>
 			<TableBody>
-				{boosterAssets.map((asset) => {
+				{activeBoosterAssets.map((asset) => {
 					const individualRoi =
 						asset.investedCapital > 0
 							? ((asset.currentValue - asset.investedCapital) /

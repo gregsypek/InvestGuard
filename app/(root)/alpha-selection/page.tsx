@@ -159,6 +159,7 @@ export default async function AlphaSelectionPage({
 	if (!portfolio) {
 		return <PortfolioEmptyState variant="PORTFOLIOS" />;
 	}
+
 	// if (!portfolio) redirect("/dashboard");
 
 	// Przygotowanie danych (rzutowanie Decimal -> Number) dla TS i builda
@@ -171,6 +172,7 @@ export default async function AlphaSelectionPage({
 
 	const formattedTransactions = portfolio.transactionHistories.map((tx) => ({
 		...tx,
+		type: tx.type,
 		executedValue: Number(tx.executedValue),
 		ticker: tx.ticker || null,
 	}));

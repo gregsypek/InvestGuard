@@ -370,7 +370,7 @@ export async function updateAlphaDetails(
 // lib/actions/asset-actions.ts
 
 export async function syncPortfolioAssets(portfolioId: string) {
-	// 🚀 DODAJ TO: Natychmiastowe sprawdzenie
+	// Natychmiastowe sprawdzenie
 	if (!portfolioId || typeof portfolioId !== "string") {
 		console.error("❌ syncPortfolioAssets: portfolioId is missing or invalid!");
 		return { success: false, error: "Missing portfolio ID" };
@@ -428,7 +428,7 @@ export async function syncPortfolioAssets(portfolioId: string) {
 				cashAsset.totalQuantity += tx.executedValue;
 			}
 
-			continue; // Przejdź do następnej transakcji
+			continue; // Idziemy do następnej transakcji
 		}
 
 		// 2. Inicjalizacja aktywa (jeśli kupujemy coś po raz pierwszy)

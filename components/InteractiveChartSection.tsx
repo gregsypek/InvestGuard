@@ -65,6 +65,8 @@ export function InteractiveChartSection({
 		// 4. Generujemy dane do obu wykresów
 		return prepareChartAnalytics(filteredTx, currentRoiFactor);
 	}, [transactions, selectedCats, assets]);
+	console.log("🚀 ~ InteractiveChartSection ~ areaPoints:", areaPoints);
+
 	const toggleCategory = (cat: string) => {
 		setSelectedCats((prev) =>
 			prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],

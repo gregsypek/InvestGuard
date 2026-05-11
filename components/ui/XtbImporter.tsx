@@ -14,7 +14,7 @@ import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const [previewData, setPreviewData] = useState<ParsedXtbTransaction[]>([]);
 	const [isImporting, setIsImporting] = useState(false);
-
+	const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 	// 1. Logika wczytywania i parowania danych
 	// 1. Logika wczytywania i parowania danych
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,7 +34,7 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 				// PL: Używamy type: "array" bezpośrednio na ArrayBuffer - najstabilniejsza metoda
 				const workbook = XLSX.read(data, {
 					// type: "array",
-					type: "binary", // 🚀 ZMIANA NA BINARY
+					type: "array",
 					cellDates: true,
 				});
 
@@ -108,6 +108,7 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 				// EN: Update state to show the preview table
 				// PL: Aktualizujemy stan, by wyświetlić tabelę podglądu
 				setPreviewData(groupedData);
+				setSelectedIndices(parsed.map((_, i) => i));
 			} catch (error) {
 				console.error("Błąd podczas odczytu pliku Excel:", error);
 				alert(
@@ -117,8 +118,8 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 		};
 
 		// 🚀 KLUCZOWE: Uruchomienie czytnika w formacie ArrayBuffer
-		// reader.readAsArrayBuffer(file);
-		reader.readAsBinaryString(file); // 🚀 ZMIANA NA BINARY STRING
+		reader.readAsArrayBuffer(file);
+		// reader.readAsBinaryString(file); // 🚀 ZMIANA NA BINARY STRING
 	};
 
 	// 2. Funkcje zarządzania podglądem
@@ -159,6 +160,20 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 		}
 	};
 
+	const toggleRow = (idx: number) => {
+		setSelectedIndices((prev) =>
+			prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx],
+		);
+	};
+
+	const toggleAll = () => {
+		if (selectedIndices.length === previewData.length) {
+			setSelectedIndices([]);
+		} else {
+			setSelectedIndices(previewData.map((_, i) => i));
+		}
+	};
+
 	// 3. Renderowanie interfejsu
 	return (
 		<div className="space-y-4 p-4 border rounded-xl bg-background shadow-sm">
@@ -177,81 +192,119 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 			/>
 
 			{previewData.length > 0 && (
-				<div className="mt-6 overflow-x-auto border rounded-lg bg-card">
+				<div className="mt-6 overflow-x-auto border rounded-2xl bg-card shadow-xl overflow-hidden">
 					<table className="w-full text-sm text-left">
-						<thead className="bg-muted/50">
+						<thead className="bg-muted/50 border-b">
 							<tr>
-								<th className="p-3 font-bold uppercase text-[10px]">Data</th>
-								<th className="p-3 font-bold uppercase text-[10px]">Aktywo</th>
-								<th className="p-3 font-bold uppercase text-[10px]">
+								<th className="p-4 w-10">
+									<input
+										type="checkbox"
+										checked={selectedIndices.length === previewData.length}
+										onChange={toggleAll}
+										className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+									/>
+								</th>
+								<th className="p-4 font-bold uppercase text-[10px] tracking-wider opacity-60">
+									Data
+								</th>
+								<th className="p-4 font-bold uppercase text-[10px] tracking-wider opacity-60">
+									Aktywo
+								</th>
+								<th className="p-4 font-bold uppercase text-[10px] tracking-wider opacity-60">
 									Kategoria
 								</th>
-								<th className="p-3 font-bold uppercase text-[10px]">Kwota</th>
-								<th className="p-3 w-10"></th>
+								<th className="p-4 font-bold uppercase text-[10px] tracking-wider opacity-60">
+									Kwota
+								</th>
+								<th className="p-4 w-10"></th>
 							</tr>
 						</thead>
 						<tbody>
-							{previewData.map((tx, idx) => (
-								<tr
-									key={idx}
-									className="border-t border-border/50 hover:bg-muted/30 transition-colors"
-								>
-									<td className="p-3 text-muted-foreground">
-										{new Date(tx.date).toLocaleDateString("pl-PL")}
-									</td>
-									<td className="p-3">
-										<div className="font-bold">{tx.assetName}</div>
-										<div className="text-[10px] text-muted-foreground font-mono">
-											{tx.ticker}
-										</div>
-									</td>
-									<td className="p-3">
-										<select
-											value={tx.category}
-											onChange={(e) =>
-												handleChangeCategory(idx, e.target.value as Category)
-											}
-											className="bg-background border border-border rounded px-2 py-1 text-xs focus:ring-1 focus:ring-primary outline-none"
+							{previewData.map((tx, idx) => {
+								const isSelected = selectedIndices.includes(idx);
+								return (
+									<tr
+										key={idx}
+										className={`border-t border-border/50 transition-colors ${
+											isSelected ? "bg-primary/5" : "opacity-50 grayscale-[0.5]"
+										}`}
+									>
+										<td className="p-4">
+											<input
+												type="checkbox"
+												checked={isSelected}
+												onChange={() => toggleRow(idx)}
+												className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+											/>
+										</td>
+										<td className="p-4 text-muted-foreground font-medium">
+											{new Date(tx.date).toLocaleDateString("pl-PL")}
+										</td>
+										<td className="p-4">
+											<div
+												className={`font-bold transition-all ${isSelected ? "text-foreground" : "text-muted-foreground"}`}
+											>
+												{tx.assetName}
+											</div>
+											<div className="text-[10px] text-muted-foreground font-mono opacity-70">
+												{tx.ticker}
+											</div>
+										</td>
+										<td className="p-4">
+											<select
+												disabled={!isSelected}
+												value={tx.category}
+												onChange={(e) =>
+													handleChangeCategory(idx, e.target.value as Category)
+												}
+												className="bg-background border border-border/50 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-50"
+											>
+												{Object.values(Category).map((c) => (
+													<option key={c} value={c}>
+														{c}
+													</option>
+												))}
+											</select>
+										</td>
+										<td
+											className={`p-4 font-mono font-bold ${isSelected ? "text-foreground" : "text-muted-foreground"}`}
 										>
-											{Object.values(Category).map((c) => (
-												<option key={c} value={c}>
-													{c}
-												</option>
-											))}
-										</select>
-									</td>
-									<td className="p-3 font-mono font-medium">
-										{tx.amountPLN.toLocaleString("pl-PL", {
-											minimumFractionDigits: 2,
-										})}{" "}
-										PLN
-									</td>
-									<td className="p-3">
-										<button
-											onClick={() => handleRemoveRow(idx)}
-											className="text-destructive/70 hover:text-destructive hover:scale-110 transition-all"
-										>
-											<Trash2 className="h-4 w-4" />
-										</button>
-									</td>
-								</tr>
-							))}
+											{tx.amountPLN.toLocaleString("pl-PL", {
+												minimumFractionDigits: 2,
+											})}{" "}
+											PLN
+										</td>
+										<td className="p-4">
+											<button
+												onClick={() => handleRemoveRow(idx)}
+												className="text-destructive/50 hover:text-destructive transition-all hover:scale-110"
+											>
+												<Trash2 className="h-4 w-4" />
+											</button>
+										</td>
+									</tr>
+								);
+							})}
 						</tbody>
 					</table>
 
-					<div className="p-4 bg-muted/20 flex justify-between items-center border-t">
-						<p className="text-xs text-muted-foreground italic">
-							Zweryfikuj poprawność kategorii przed zatwierdzeniem.
-						</p>
+					<div className="p-4 bg-muted/10 flex justify-between items-center border-t border-border/50">
+						<div className="flex flex-col">
+							<p className="text-[11px] font-bold uppercase tracking-widest text-primary">
+								Wybrano: {selectedIndices.length} z {previewData.length}
+							</p>
+							<p className="text-[10px] text-muted-foreground italic mt-0.5">
+								Tylko zaznaczone transakcje zostaną zapisane w bazie.
+							</p>
+						</div>
+
 						<button
 							onClick={handleFinalImport}
-							disabled={isImporting}
-							className="flex items-center gap-2 bg-primary text-white px-8 py-2.5 rounded-lg font-bold hover:bg-primary/90 disabled:opacity-50 shadow-lg shadow-primary/20 transition-all active:scale-95"
+							disabled={isImporting || selectedIndices.length === 0}
+							className="flex items-center gap-2 bg-primary text-white px-10 py-3 rounded-xl font-bold hover:bg-primary/90 disabled:opacity-30 disabled:grayscale shadow-lg shadow-primary/20 transition-all active:scale-95"
 						>
 							<CheckCircle className="h-4 w-4" />
-							{isImporting
-								? "Przetwarzanie..."
-								: `Zatwierdź i Synchronizuj (${previewData.length})`}
+							{isImporting ? "Importowanie..." : `Zatwierdź Wybrane`}
 						</button>
 					</div>
 				</div>

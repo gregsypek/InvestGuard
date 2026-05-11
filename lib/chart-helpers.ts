@@ -1,3 +1,5 @@
+import { Transaction } from "./types";
+
 // EN: Interfaces for chart data points
 // PL: Interfejsy dla punktów danych na wykresach
 export interface AreaChartPoint {
@@ -15,30 +17,44 @@ export interface BarChartPoint {
  * EN: Prepares data for AlphaChart and MonthlyDepositsChart based on transactions
  * PL: Przygotowuje dane dla AlphaChart i MonthlyDepositsChart na podstawie transakcji
  */
-import { Transaction } from "./types";
 
 export const prepareChartAnalytics = (
 	transactions: Transaction[],
 	roiFactor: number,
 ) => {
-	// 1. Logika dla AreaChart (Trend skumulowany)
 	const sortedTx = [...transactions].sort(
 		(a, b) =>
 			new Date(a.executedAt).getTime() - new Date(b.executedAt).getTime(),
 	);
 
+	// 1. Grupujemy transakcje po miesiącach (RRRR-MM) → jeden punkt = jeden miesiąc
+	const monthlyArea: Record<
+		string,
+		{ label: string; cumulative: number; sortKey: number }
+	> = {};
+
 	let cumulative = 0;
-	const areaPoints = sortedTx.map((t) => {
+	sortedTx.forEach((t) => {
+		const date = new Date(t.executedAt);
+		const sortKey = date.getFullYear() * 100 + date.getMonth();
+		const label = date.toLocaleDateString("pl-PL", {
+			month: "2-digit",
+			year: "2-digit",
+		});
+
 		cumulative += Number(t.executedValue);
-		return {
-			name: new Date(t.executedAt).toLocaleDateString("pl-PL", {
-				day: "2-digit",
-				month: "2-digit",
-			}),
+
+		// Nadpisujemy — interesuje nas skumulowana wartość NA KONIEC każdego miesiąca
+		monthlyArea[sortKey] = { label, cumulative, sortKey };
+	});
+
+	const areaPoints = Object.values(monthlyArea)
+		.sort((a, b) => a.sortKey - b.sortKey)
+		.map(({ label, cumulative }) => ({
+			name: label,
 			wkład: Math.round(cumulative),
 			wycena: Math.round(cumulative * roiFactor),
-		};
-	});
+		}));
 
 	// 2. Logika dla MonthlyDeposits (Słupki - chronologicznie)
 	const monthlyMap: Record<
@@ -52,7 +68,7 @@ export const prepareChartAnalytics = (
 			month: "short",
 			year: "2-digit",
 		});
-		const sortKey = date.getFullYear() * 100 + date.getMonth(); // RRRRMM dla sortowania
+		const sortKey = date.getFullYear() * 100 + date.getMonth();
 
 		if (!monthlyMap[monthKey]) {
 			monthlyMap[monthKey] = { month: monthKey, amount: 0, sortKey };
@@ -63,7 +79,6 @@ export const prepareChartAnalytics = (
 	const barPoints = Object.values(monthlyMap)
 		.sort((a, b) => a.sortKey - b.sortKey)
 		.map(({ month, amount }) => ({ month, amount: Number(amount.toFixed(2)) }));
-	console.log("🚀 ~ prepareChartAnalytics ~ barPoints:", barPoints);
 
 	return { areaPoints, barPoints };
 };

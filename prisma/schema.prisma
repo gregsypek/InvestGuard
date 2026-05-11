@@ -131,7 +131,7 @@ model InvestmentPlan {
 
 model TransactionHistory {
   id         String          @id @default(cuid())
-  externalId String?         @unique
+  externalId String?
   type       TransactionType @default(BUY)
   assetName  String
   ticker     String? // EN: Optional for cash operations
@@ -152,6 +152,7 @@ model TransactionHistory {
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
+  @@unique([portfolioId, externalId])
   // Indeks dla wydajności przy filtrowaniu po dacie i kwocie
   @@index([executedAt, executedValue])
 }

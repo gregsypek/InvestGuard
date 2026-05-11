@@ -370,6 +370,11 @@ export async function updateAlphaDetails(
 // lib/actions/asset-actions.ts
 
 export async function syncPortfolioAssets(portfolioId: string) {
+	// 🚀 DODAJ TO: Natychmiastowe sprawdzenie
+	if (!portfolioId || typeof portfolioId !== "string") {
+		console.error("❌ syncPortfolioAssets: portfolioId is missing or invalid!");
+		return { success: false, error: "Missing portfolio ID" };
+	}
 	const transactions = await db.transactionHistory.findMany({
 		where: { portfolioId },
 		orderBy: { executedAt: "asc" },
@@ -392,29 +397,38 @@ export async function syncPortfolioAssets(portfolioId: string) {
 		const cashAsset = assetMap.get("CASH");
 
 		if (isCashTx) {
-			// EN: Cash inflows: Deposits, Interest, Dividends (often marked as BUY in your parser)
-			// PL: Wpływy gotówki: Depozyty, Odsetki, Dywidendy (często BUY w Twoim parserze)
-			if (
-				tx.type === "DEPOSIT" ||
-				tx.type === "INTEREST" ||
-				tx.type === "BUY"
-			) {
+			// 1. WPŁATY I PRZEWALUTOWANIA (Twoje realne pieniądze z zewnątrz)
+			if (tx.type === "DEPOSIT" || tx.type === "BUY") {
+				// EN: Funds from bank account or currency exchange - increases both spendable cash and capital base
+				// PL: Środki z konta lub wymiana - zwiększa gotówkę i bazę zainwestowanego kapitału
 				cashAsset.totalQuantity += tx.executedValue;
 				cashAsset.totalInvested += tx.executedValue;
 			}
-			// EN: Cash outflows: Selling cash (Withdrawal)
-			// PL: Wypływy gotówki: Sprzedaż gotówki (Wypłata środków)
+
+			// 2. ODSETKI I DYWIDENDY (Pieniądze wypracowane przez rynek)
+			else if (tx.type === "INTEREST") {
+				// EN: Interest/Dividends increase spendable cash, but are NOT part of user's personal investment base
+				// PL: Odsetki zwiększają ilość gotówki, ale NIE są Twoją dopłatą (nie zwiększają bazy inwestycji)
+				cashAsset.totalQuantity += tx.executedValue;
+				// Nie dotykamy totalInvested, dzięki czemu Twój zysk % będzie liczony od realnie wpłaconych kwot
+			}
+
+			// 3. WYPŁATY ŚRODKÓW (Zmniejszenie kapitału)
 			else if (tx.type === "SELL") {
+				// EN: Withdrawal to bank account - decreases both spendable cash and capital base
+				// PL: Wypłata na konto bankowe - zmniejsza gotówkę i bazę kapitałową
 				cashAsset.totalQuantity -= tx.executedValue;
 				cashAsset.totalInvested -= tx.executedValue;
 			}
-			// EN: Manual corrections (Korekta) - adding the executed value (can be positive or negative)
-			// PL: Ręczne korekty - dodajemy wartość (może być dodatnia lub ujemna)
+
+			// 4. KOREKTY RĘCZNE (Np. wyrównanie salda)
 			else if (tx.type === "UPDATE") {
+				// EN: Manual corrections usually only adjust the current balance
+				// PL: Ręczne korekty zazwyczaj zmieniają tylko aktualny stan konta
 				cashAsset.totalQuantity += tx.executedValue;
-				cashAsset.totalInvested += tx.executedValue;
 			}
-			continue; // Idziemy do następnej transakcji
+
+			continue; // Przejdź do następnej transakcji
 		}
 
 		// 2. Inicjalizacja aktywa (jeśli kupujemy coś po raz pierwszy)

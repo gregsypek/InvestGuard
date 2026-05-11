@@ -4,10 +4,10 @@ import { PortfolioFormValues, PortfolioSchema } from "../validations/portfolio";
 
 import { PORTFOLIO_STRATEGY_MAP } from "../constants";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 export async function createPortfolio(values: PortfolioFormValues) {
 	const session = await auth();
@@ -115,10 +115,19 @@ export async function deleteAsset(assetId: string) {
 		await db.$transaction(async (tx) => {
 			// EN: Delete the transaction history linked to this specific asset in this portfolio
 			await tx.transactionHistory.deleteMany({
+				// where: {
+				// 	portfolioId: asset.portfolioId,
+				// 	assetName: asset.name,
+				// 	...(asset.ticker ? { ticker: asset.ticker } : {}),
+				// },
 				where: {
 					portfolioId: asset.portfolioId,
-					assetName: asset.name,
-					...(asset.ticker ? { ticker: asset.ticker } : {}),
+					OR: [
+						// Opcja A: Ticker się zgadza (najważniejsze dla CASH)
+						{ ticker: asset.ticker },
+						// Opcja B: Nazwa się zgadza (dla aktywów bez tickera)
+						{ assetName: asset.name },
+					],
 				},
 			});
 
@@ -129,6 +138,7 @@ export async function deleteAsset(assetId: string) {
 		});
 
 		// EN: Force refresh the client side to immediately reflect the deletion
+		revalidatePath(`/dashboard/${asset.portfolioId}`);
 		revalidatePath("/dashboard");
 		return { success: true };
 	} catch (error) {

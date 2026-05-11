@@ -1,4 +1,4 @@
-import { Category, TransactionHistory } from "@prisma/client";
+import { Category, TransactionHistory, TransactionType } from "@prisma/client";
 
 export type AssetCategory =
 	| "BONDS"
@@ -144,6 +144,7 @@ export interface Bond {
 // PL: Skorygowany interfejs transakcji pasujący do schematu bazy
 export interface Transaction {
 	id: string;
+	type: TransactionType;
 	executedAt: Date | string;
 	executedValue: number;
 	category: string;

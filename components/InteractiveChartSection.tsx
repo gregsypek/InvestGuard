@@ -88,8 +88,8 @@ export function InteractiveChartSection({
 							onClick={() => toggleCategory(cat)}
 							className={`group flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all border ${
 								isActive
-									? "shadow-md scale-105 opacity-100"
-									: "border-transparent opacity-40 hover:opacity-60 bg-muted/10"
+									? "shadow-sm scale-105 opacity-100"
+									: "border-gray-600 opacity-60 hover:opacity-80 bg-muted/10"
 							}`}
 							style={
 								isActive
@@ -105,7 +105,7 @@ export function InteractiveChartSection({
 						>
 							<div
 								className={`w-2 h-2 rounded-full shrink-0 transition-transform ${
-									isActive ? "scale-110" : "scale-100 grayscale-[0.5]"
+									isActive ? "scale-110" : "scale-100 grayscale-[1]"
 								}`}
 								style={{ backgroundColor: catColor }}
 							/>

@@ -48,16 +48,14 @@ export default function BondLedgerTable({
 		name: p.name,
 	}));
 	const groupedBonds = useMemo(() => {
-		return initialBonds.reduce(
-			(acc, b) => {
-				// EN: Fallback for missing tickers to prevent disappearing rows
-				const key = b.ticker || "NIEZNANE";
-				acc[key] ??= [];
-				acc[key].push(b);
-				return acc;
-			},
-			{} as Record<string, Bond[]>,
-		);
+		const groups: Record<string, Bond[]> = {};
+		initialBonds.forEach((bond) => {
+			const ticker = bond.ticker ?? "NIEZNANE";
+			const prefix = ticker.match(/^[A-Z]+/)?.[0] || "INNE";
+			if (!groups[prefix]) groups[prefix] = [];
+			groups[prefix].push(bond);
+		});
+		return groups;
 	}, [initialBonds]);
 
 	const toggleGroup = (ticker: string) => {

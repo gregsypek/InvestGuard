@@ -5,14 +5,9 @@ import * as XLSX from "xlsx";
 import { AlertTriangle, CheckCircle, FileUp, TrendingUp } from "lucide-react";
 import { ParsedBond, parseBondRow } from "@/lib/utils/bond-parser";
 import React, { useState } from "react";
-import {
-	syncPortfolioAssets,
-	updateAssetValues,
-} from "@/lib/actions/asset-actions";
 
 import { BOND_DURATIONS } from "@/lib/constants";
 import { importBondsAction } from "@/lib/actions/bond-actions";
-import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 

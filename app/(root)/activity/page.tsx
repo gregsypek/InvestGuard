@@ -69,6 +69,7 @@ export default async function ActivityPage({
 
 	const { data: transactions, meta } = result;
 
+	console.log("🚀 ~ ActivityPage ~ transactions:", transactions);
 	return (
 		<div className="p-6 px-8 space-y-10 pb-20">
 			<ActivityHeader

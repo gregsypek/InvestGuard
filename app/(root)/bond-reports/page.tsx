@@ -1,6 +1,5 @@
-import { auth } from "@/auth";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
-import { db } from "@/lib/db";
+import { auth } from "@/auth";
 import { getActivePortfolioId } from "@/lib/session";
 import { redirect } from "next/navigation";
 
@@ -18,13 +17,6 @@ export default async function BondReportsLanding({ searchParams }: Props) {
 	if (!session?.user?.id) {
 		redirect("/sign-in");
 	}
-
-	const portfolios = await db.portfolio.findMany({
-		where: { userId: session.user.id },
-		include: { assets: true, transactionHistories: true },
-		orderBy: { createdAt: "desc" },
-	});
-	console.log("🚀 ~ BondReportsLanding ~ portfolios:", portfolios);
 
 	if (!portfolioId) {
 		return <PortfolioEmptyState variant="PORTFOLIOS" />;

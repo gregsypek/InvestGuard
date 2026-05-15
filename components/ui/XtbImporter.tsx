@@ -10,11 +10,14 @@ import React, { useState } from "react";
 import { Category } from "@prisma/client";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const [previewData, setPreviewData] = useState<ParsedXtbTransaction[]>([]);
 	const [isImporting, setIsImporting] = useState(false);
 	const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+	const router = useRouter();
 	// 1. Logika wczytywania i parowania danych
 	// 1. Logika wczytywania i parowania danych
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,31 +138,57 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 		});
 	};
 
+	// const handleFinalImport = async () => {
+	// 	setIsImporting(true);
+	// 	let count = 0;
+	// 	try {
+	// 		// EN: Save each transaction to history
+	// 		// PL: Zapisujemy każdą transakcję do historii
+	// 		for (const tx of previewData) {
+	// 			await saveXtbTransaction(tx, portfolioId);
+	// 			count++;
+	// 		}
+
+	// 		// EN: Sync assets table with history to update Dashboard
+	// 		// PL: Synchronizujemy tabelę Asset z historią, by odświeżyć Dashboard
+	// 		await syncPortfolioAssets(portfolioId);
+
+	// 		alert(`Sukces! Zaimportowano i zsynchronizowano ${count} transakcji. ✨`);
+	// 		setPreviewData([]);
+	// 	} catch (error) {
+	// 		console.error("Błąd podczas importu:", error);
+	// 		alert("Wystąpił błąd podczas zapisywania transakcji.");
+	// 	} finally {
+	// 		setIsImporting(false);
+	// 	}
+	// };
 	const handleFinalImport = async () => {
+		if (selectedIndices.length === 0) return; // EN: Don't import if nothing selected
+
 		setIsImporting(true);
 		let count = 0;
 		try {
-			// EN: Save each transaction to history
-			// PL: Zapisujemy każdą transakcję do historii
-			for (const tx of previewData) {
+			// 🚀 FILTR: Bierzemy tylko te wiersze, których indeksy są w selectedIndices
+			const dataToSave = previewData.filter((_, i) =>
+				selectedIndices.includes(i),
+			);
+
+			for (const tx of dataToSave) {
 				await saveXtbTransaction(tx, portfolioId);
 				count++;
 			}
 
-			// EN: Sync assets table with history to update Dashboard
-			// PL: Synchronizujemy tabelę Asset z historią, by odświeżyć Dashboard
 			await syncPortfolioAssets(portfolioId);
-
-			alert(`Sukces! Zaimportowano i zsynchronizowano ${count} transakcji. ✨`);
+			toast.success(`Sukces! Zaimportowano ${count} transakcji.`); // EN: Better than alert
 			setPreviewData([]);
-		} catch (error) {
-			console.error("Błąd podczas importu:", error);
-			alert("Wystąpił błąd podczas zapisywania transakcji.");
+			setSelectedIndices([]); // EN: Clear selection after success
+			router.refresh();
+		} catch {
+			toast.error("Wystąpił błąd podczas zapisywania.");
 		} finally {
 			setIsImporting(false);
 		}
 	};
-
 	const toggleRow = (idx: number) => {
 		setSelectedIndices((prev) =>
 			prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx],

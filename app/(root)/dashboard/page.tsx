@@ -9,38 +9,40 @@ export default async function DashboardRootPage({
 }: {
 	searchParams: Promise<{ portfolioId?: string }>;
 }) {
-	// 1. Sprawdź sesję
 	const session = await auth();
+
+	// 1. Zabezpieczenie sesji
 	if (!session?.user?.id) {
 		redirect("/sign-in");
 	}
 
-	// 2. Sprawdź, czy użytkownik ma jakiekolwiek portfele
-	const firstPortfolio = await db.portfolio.findFirst({
+	// 2. Pobieramy ID z ciasteczka/URL
+	const rawPortfolioId = await getActivePortfolioId(searchParams);
+
+	// 3. POBIERAMY LISTĘ PORTFELI UŻYTKOWNIKA
+	// To jest kluczowe, by sprawdzić czy ID jest poprawne
+	const userPortfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
 		select: { id: true },
 	});
 
-	// 3. Jeśli nie ma portfeli, pokaż stan pusty
-	if (!firstPortfolio) {
+	// 4. WALIDACJA: Czy portfolioId z ciasteczka faktycznie istnieje w bazie?
+	const portfolioExists = userPortfolios.some((p) => p.id === rawPortfolioId);
+	const validPortfolioId = portfolioExists ? rawPortfolioId : null;
+	console.log("🚀 ~ DashboardRootPage ~ validPortfolioId:", validPortfolioId);
+
+	// 5. SCENARIUSZ: Brak jakichkolwiek portfeli
+	if (userPortfolios.length === 0) {
 		return (
-			<PortfolioEmptyState variant="PORTFOLIOS" userName={session.user.name} />
+			<main className="container mx-auto py-10">
+				<PortfolioEmptyState variant="PORTFOLIOS" />
+			</main>
 		);
 	}
-	// if (firstPortfolio) {
-	// 	return (
-	// 		<PortfolioEmptyState variant="PLANNER" portfolioId={firstPortfolio.id} />
-	// 	);
-	// }
 
-	// 4. Spróbuj pobrać ID z parametrów lub ciasteczek
-	const portfolioId = await getActivePortfolioId(searchParams);
-
-	// 5. PRZEKIEROWANIE: Wyślij użytkownika na stronę konkretnego portfela
-	// To naprawi błąd 404 dla adresu /dashboard
-	if (portfolioId) {
-		redirect(`/dashboard/${portfolioId}`);
-	} else {
-		redirect(`/dashboard/${firstPortfolio.id}`);
+	// 7. Dopiero gdy mamy PEWNOŚĆ, że ID istnieje w bazie danych, robimy redirect
+	if (validPortfolioId) {
+		redirect(`/dashboard/${validPortfolioId}`);
 	}
+	return null;
 }

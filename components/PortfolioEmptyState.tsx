@@ -1,4 +1,3 @@
-// components/ui/PortfolioEmptyState.tsx
 import {
 	CalendarDays,
 	LayoutDashboard,
@@ -61,52 +60,49 @@ export default function PortfolioEmptyState({
 	userName,
 	portfolioId,
 }: Props) {
-	if (!portfolioId) return <PortfolioEmptyState variant="NOT_FOUND" />;
-
-	// EN: Configuration map for different application areas
-	// UI: Mapa konfiguracji dla różnych obszarów aplikacji
 	const contentConfig = {
 		NOT_SELECTED: {
 			icon: <Wallet className="h-12 w-12 text-blue-500" />,
 			defaultTitle: "Wybierz portfel",
 			defaultDescription:
 				"Aby zobaczyć analizę i aktywa, musisz najpierw wybrać jeden ze swoich portfeli.",
-			showButton: <AddButton />,
+			// showButton: <AddButton />,
+			showButton: null,
 		},
 		NOT_FOUND: {
 			icon: <SearchX className="h-12 w-12 text-destructive" />,
 			defaultTitle: "Nie znaleziono portfela",
 			defaultDescription:
 				"Wygląda na to, że portfel o tym identyfikatorze nie istnieje lub został usunięty.",
-			showButton: "",
+			showButton: null,
 		},
 		PLANNER: {
 			icon: <CalendarDays className="h-12 w-12 text-emerald-500" />,
 			defaultTitle: "Zaprojektuj swój kolejny ruch",
-			defaultDescription:
-				"Twój portfel czeka na nowe aktywa. Zaplanuj zakupy lub uzupełnij bazę, aby utrzymać strategię.",
-			showButton: "",
+			defaultDescription: "Twój portfel czeka na nowe aktywa...",
+			showButton: null,
 		},
 		PORTFOLIOS: {
 			icon: <LayoutDashboard className="h-12 w-12 text-indigo-500" />,
 			defaultTitle: "Twoja lista portfeli jest pusta",
 			defaultDescription:
-				"Nie stworzyłeś jeszcze żadnego portfela inwestycyjnego. Dodaj go teraz, aby zacząć grupować swoje aktywa.",
+				"Nie stworzyłeś jeszcze żadnego portfela inwestycyjnego...",
 			showButton: <AddButton />,
 		},
 		BONDS: {
 			icon: <LayoutDashboard className="h-12 w-12 text-indigo-500" />,
 			defaultTitle: "Twoja lista obligacji jest pusta",
-			defaultDescription:
-				"Nie dodałeś jeszcze żadnej obligacji. Dodaj ją teraz, aby zacząć grupować swoje aktywa.",
-			showButton: <AddBondButton portfolioId={portfolioId} />,
+			defaultDescription: "Nie dodałeś jeszcze żadnej obligacji...",
+			// Renderuj przycisk tylko gdy portfolioId istnieje
+			showButton: portfolioId ? (
+				<AddBondButton portfolioId={portfolioId} />
+			) : null,
 		},
 		ACTIVITY: {
 			icon: <ListOrdered className="h-12 w-12 text-orange-500" />,
 			defaultTitle: "Historia jest pusta",
-			defaultDescription:
-				"Nie zarejestrowałeś jeszcze żadnych transakcji. Twoja aktywność pojawi się tutaj po zrealizowaniu planów lub dodaniu aktywów.",
-			showButton: "",
+			defaultDescription: "Nie zarejestrowałeś jeszcze żadnych transakcji...",
+			showButton: null,
 		},
 	};
 
@@ -114,9 +110,13 @@ export default function PortfolioEmptyState({
 	const displayTitle = title ?? config.defaultTitle;
 	const displayDescription = description ?? config.defaultDescription;
 
+	// Link do portfeli — bezpieczny bez portfolioId
+	const portfoliosHref = portfolioId
+		? `/portfolios?portfolioId=${portfolioId}`
+		: "/portfolios";
+
 	return (
 		<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 max-w-md mx-auto p-6">
-			{/* EN: Personal greeting / UI: Personalizowane powitanie */}
 			{userName && variant !== "NOT_FOUND" && (
 				<div className="animate-in fade-in slide-in-from-top-4 duration-700">
 					<p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">
@@ -125,7 +125,6 @@ export default function PortfolioEmptyState({
 				</div>
 			)}
 
-			{/* EN: Icon container / UI: Kontener ikony */}
 			<div className="p-5 bg-muted/50 rounded-full animate-in fade-in zoom-in duration-500 shadow-inner">
 				{config.icon}
 			</div>
@@ -138,27 +137,21 @@ export default function PortfolioEmptyState({
 			</div>
 
 			<div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto pt-4">
-				{(variant == "NOT_SELECTED" ||
-					variant == "NOT_FOUND" ||
-					variant == "PLANNER") && (
+				{(variant === "NOT_SELECTED" ||
+					variant === "NOT_FOUND" ||
+					variant === "PLANNER") && (
 					<Button
 						asChild
-						variant={"default"}
+						variant="default"
 						className="gap-2 shadow-lg hover:shadow-xl transition-all"
 					>
-						<Link
-							href={
-								portfolioId
-									? `/portfolios?portfolioId=${portfolioId}`
-									: "/portfolios"
-							}
-						>
+						<Link href={portfoliosHref}>
 							<Wallet className="h-4 w-4" />
 							Zarządzaj portfelami
 						</Link>
 					</Button>
 				)}
-				{config.showButton && config.showButton}
+				{config.showButton}
 			</div>
 		</div>
 	);

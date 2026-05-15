@@ -1,5 +1,8 @@
+// app/(root)/bond-reports/page.tsx
+
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { auth } from "@/auth";
+import { db } from "@/lib/db"; // Importuj dostęp do bazy danych
 import { getActivePortfolioId } from "@/lib/session";
 import { redirect } from "next/navigation";
 
@@ -8,39 +11,49 @@ interface Props {
 }
 
 export default async function BondReportsLanding({ searchParams }: Props) {
-	// 1. Próbujemy znaleźć aktywne ID portfela (z ciasteczek lub URL)
-	const portfolioId = await getActivePortfolioId(searchParams);
-
 	const session = await auth();
 
-	// Redirect to sign-in if the user is not authenticated
+	// 1. Zabezpieczenie sesji
 	if (!session?.user?.id) {
 		redirect("/sign-in");
 	}
 
-	if (!portfolioId) {
-		return <PortfolioEmptyState variant="PORTFOLIOS" />;
+	// 2. Pobieramy ID z ciasteczka/URL
+	const rawPortfolioId = await getActivePortfolioId(searchParams);
+
+	// 3. POBIERAMY LISTĘ PORTFELI UŻYTKOWNIKA
+	// To jest kluczowe, by sprawdzić czy ID jest poprawne
+	const userPortfolios = await db.portfolio.findMany({
+		where: { userId: session.user.id },
+		select: { id: true },
+	});
+
+	// 4. WALIDACJA: Czy portfolioId z ciasteczka faktycznie istnieje w bazie?
+	const portfolioExists = userPortfolios.some((p) => p.id === rawPortfolioId);
+	const validPortfolioId = portfolioExists ? rawPortfolioId : null;
+
+	// 5. SCENARIUSZ: Brak jakichkolwiek portfeli
+	if (userPortfolios.length === 0) {
+		return (
+			<main className="container mx-auto py-10">
+				<PortfolioEmptyState variant="PORTFOLIOS" />
+			</main>
+		);
 	}
 
-	// if (portfolios.length === 0) {
-	// 	return <PortfolioEmptyState variant="PORTFOLIOS" />;
-	// }
-
-	// if (portfolios.length !== 0) {
-	// 	return <PortfolioEmptyState variant="PLANNER" portfolioId={portfolioId} />;
-	// }
-
-	// 2. Jeśli mamy ID, AUTOMATYCZNIE przekierowujemy do folderu [id]
-	if (portfolioId) {
-		redirect(`/bond-reports/${portfolioId}`);
-	}
-
-	// 3. Jeśli użytkownik naprawdę nie ma żadnego wybranego portfela, prosimy o wybór
-	return (
-		<main className="container mx-auto py-10">
-			<div>
+	// 6. SCENARIUSZ: ID z ciasteczka jest nieprawidłowe (np. usunięte) lub go brak
+	if (!validPortfolioId) {
+		return (
+			<main className="container mx-auto py-10">
 				<PortfolioEmptyState variant="NOT_SELECTED" />
-			</div>
-		</main>
-	);
+			</main>
+		);
+	}
+
+	// 7. Dopiero gdy mamy PEWNOŚĆ, że ID istnieje w bazie danych, robimy redirect
+	if (validPortfolioId) {
+		redirect(`/bond-reports/${validPortfolioId}`);
+	}
+
+	return null;
 }

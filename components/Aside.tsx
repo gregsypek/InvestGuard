@@ -67,6 +67,7 @@ export default function Aside() {
 							src="/logo-light.svg"
 							width={40}
 							height={40}
+							loading="lazy"
 							alt="Invest Guard logo"
 							// EN: Added h-auto to maintain aspect ratio as required by Next.js
 							className="h-auto w-auto"

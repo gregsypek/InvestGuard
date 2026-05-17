@@ -57,9 +57,8 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 	if (!portfolioId) {
 		return <PortfolioEmptyState variant="PORTFOLIOS" />;
 	}
-
 	return (
-		<div className=" p-6 px-8 space-y-10 pb-20">
+		<div className="space-y-10">
 			<BondHeader
 				title="Moje Obligacje"
 				totalBonds={bonds.length}
@@ -87,16 +86,13 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 					</Link>
 				</AddButton>
 			</div>
-
 			{isEmpty ? (
-				<div className="mt-12">
-					<PortfolioEmptyState
-						variant="BONDS"
-						// title="Brak obligacji w tym portfelu"
-						// description="Nie dodałeś jeszcze żadnych obligacji skarbowych. Kliknij 'Dodaj Serię', aby rozpocząć."
-						portfolioId={activeId}
-					/>
-				</div>
+				<PortfolioEmptyState
+					variant="BONDS"
+					// title="Brak obligacji w tym portfelu"
+					// description="Nie dodałeś jeszcze żadnych obligacji skarbowych. Kliknij 'Dodaj Serię', aby rozpocząć."
+					portfolioId={activeId}
+				/>
 			) : (
 				<BondLedgerTable
 					initialBonds={bonds}

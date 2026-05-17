@@ -178,7 +178,7 @@ export default async function AlphaSelectionPage({
 	}));
 
 	return (
-		<div className="p-6 px-8 space-y-10 ">
+		<div className="space-y-10">
 			<AlphaHeader
 				// totalTransactions={2}
 				customBreadcrumbs={

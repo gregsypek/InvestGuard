@@ -37,13 +37,13 @@ export default async function DemoPlannerPage({
 	const currentMonth = now.getMonth() + 1;
 
 	return (
-		<div className="flex flex-col min-h-screen">
+		<div className="flex flex-col">
 			<HeaderDemo
 				selectedPortfolioId={strategy.id}
 				portfolios={demoPortfolios.map((p) => ({ id: p.id, name: p.name }))}
 			/>
 
-			<main className="py-2 px-8 space-y-10 container mx-auto">
+			<main className="container mx-auto">
 				<div className="grid gap-8 xl:grid-cols-7 items-start">
 					{/* LEWA KOLUMNA: Formularz */}
 					<div className="lg:col-span-4 space-y-8 xl:border-r xl:border-border pe-4">

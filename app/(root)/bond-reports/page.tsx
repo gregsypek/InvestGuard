@@ -35,7 +35,7 @@ export default async function BondReportsLanding({ searchParams }: Props) {
 	// 5. SCENARIUSZ: Brak jakichkolwiek portfeli
 	if (userPortfolios.length === 0) {
 		return (
-			<main className="container mx-auto py-10">
+			<main className="container mx-auto ">
 				<PortfolioEmptyState variant="PORTFOLIOS" />
 			</main>
 		);
@@ -44,7 +44,7 @@ export default async function BondReportsLanding({ searchParams }: Props) {
 	// 6. SCENARIUSZ: ID z ciasteczka jest nieprawidłowe (np. usunięte) lub go brak
 	if (!validPortfolioId) {
 		return (
-			<main className="container mx-auto py-10">
+			<main className="container mx-auto ">
 				<PortfolioEmptyState variant="NOT_SELECTED" />
 			</main>
 		);

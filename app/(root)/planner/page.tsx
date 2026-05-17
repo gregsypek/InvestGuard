@@ -80,7 +80,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 	);
 
 	return (
-		<div className="p-6 space-y-10 pb-20">
+		<div className="space-y-10">
 			{/* EN: Consistent vertical spacing with PortfoliosPage */}
 			<PlannerHeader
 				totalPlannedValue={totalPlannedValue}

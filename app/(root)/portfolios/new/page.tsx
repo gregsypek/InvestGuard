@@ -15,7 +15,7 @@ export default async function NewPortfolioPage() {
 		getGlobalStats(allPortfolios);
 
 	return (
-		<div className="space-y-8">
+		<div>
 			<PortfoliosHeader
 				title="Stwórz nowy portfel"
 				totalValue={totalValue}

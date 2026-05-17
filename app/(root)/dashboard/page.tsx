@@ -29,12 +29,11 @@ export default async function DashboardRootPage({
 	// 4. WALIDACJA: Czy portfolioId z ciasteczka faktycznie istnieje w bazie?
 	const portfolioExists = userPortfolios.some((p) => p.id === rawPortfolioId);
 	const validPortfolioId = portfolioExists ? rawPortfolioId : null;
-	console.log("🚀 ~ DashboardRootPage ~ validPortfolioId:", validPortfolioId);
 
 	// 5. SCENARIUSZ: Brak jakichkolwiek portfeli
 	if (userPortfolios.length === 0) {
 		return (
-			<main className="container mx-auto py-10">
+			<main className="container mx-auto">
 				<PortfolioEmptyState variant="PORTFOLIOS" />
 			</main>
 		);

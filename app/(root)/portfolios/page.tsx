@@ -47,7 +47,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 		getGlobalStats(portfolios);
 
 	return (
-		<div className="space-y-10 pb-20 mb-2">
+		<div className="space-y-10">
 			<PortfoliosHeader
 				title="Moje Portfele"
 				totalValue={totalValue}

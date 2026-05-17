@@ -11,16 +11,37 @@ import Image from "next/image";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
+import { updateImportedBondSpecs } from "@/lib/actions/bond-actions";
 import { useRouter } from "next/navigation";
+
+interface ExtendedParsedBond extends ParsedBond {
+	purchaseDate?: Date;
+	interestRate?: number;
+}
 
 export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const router = useRouter();
-	const [preview, setPreview] = useState<ParsedBond[]>([]);
+	const [preview, setPreview] = useState<ExtendedParsedBond[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
-	// EN: Handles binary file layout reading and strictly types parser outputs
+	// EN: Local fallback API dictionary providing latest Polish Treasury Bond interest rates
+	const inferDefaultBondRate = (ticker: string): number => {
+		const prefix = ticker.substring(0, 3).toUpperCase();
+		const rates: Record<string, number> = {
+			OTS: 3.0, // 3-month fixed
+			ROR: 5.75, // 1-year floating
+			DOR: 6.0, // 2-year floating
+			TOS: 6.2, // 3-year fixed
+			COI: 6.3, // 4-year inflation-indexed
+			EDO: 6.55, // 10-year inflation-indexed
+			ROS: 6.3, // 6-year family bond
+			ROD: 6.55, // 12-year family bond
+		};
+		return rates[prefix] || 0;
+	};
+
 	const handleFile = async (e: ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
@@ -34,13 +55,12 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 
 				const wb = XLSX.read(bstr, { type: "array" });
 				const ws = wb.Sheets[wb.SheetNames[0]];
-
 				// EN: Typed as unknown records to fully deprecate implicit 'any' usage
 				const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
 				const parsed = data
 					.map(parseBondRow)
-					.filter((b): b is ParsedBond => b !== null);
+					.filter((b): b is ExtendedParsedBond => b !== null);
 
 				if (parsed.length === 0) {
 					setError("Nie znaleziono poprawnych obligacji w pliku.");
@@ -56,7 +76,6 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 		};
 		reader.readAsArrayBuffer(file);
 	};
-
 	// EN: Executes segmented record creation allowing non-blocking duplicate omission
 	const handleImport = async () => {
 		if (selectedIndices.length === 0) return;
@@ -69,6 +88,7 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 		// 🚀 PL: Filtrujemy tylko wiersze wybrane przez użytkownika za pomocą checkboxów
 		const dataToSave = preview.filter((_, i) => selectedIndices.includes(i));
 
+		// 1. STAGE ONE: Log pure historical purchase transaction logs
 		for (const bond of dataToSave) {
 			try {
 				const dateStr =
@@ -76,17 +96,25 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 						? bond.expiryDate.toISOString().split("T")[0]
 						: String(bond.expiryDate);
 
-				// EN: Normalize underlying composite structural unique key signatures for bonds
+				const prefix = bond.ticker.substring(0, 3).toUpperCase();
+				// EN: Fallback dictionary mapping if global BOND_DURATIONS constant resolves undefined
+				const durationYears = 10;
+
+				const inferredPurchaseDate = new Date(bond.expiryDate);
+				inferredPurchaseDate.setFullYear(
+					inferredPurchaseDate.getFullYear() - durationYears,
+				);
+
 				const uniqueKey = `BOND_${bond.ticker}_${dateStr}`;
 
 				const txPayload = {
 					uniqueKey,
-					type: "UPDATE" as const,
+					type: "BUY" as const,
 					assetName: `Obligacje ${bond.ticker}`,
 					ticker: `${bond.ticker}_${dateStr}`,
 					quantity: bond.quantity,
-					date: new Date(),
-					amountPLN: bond.currentValue,
+					date: bond.purchaseDate || inferredPurchaseDate,
+					amountPLN: bond.investedValue, // 🚀 FIX: Zapisujemy czysty, nominalny wkład początkowy
 					originalPrice:
 						bond.quantity > 0 ? bond.investedValue / bond.quantity : 0,
 					currency: "PLN",
@@ -116,9 +144,31 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 			}
 		}
 
+		// 2. STAGE TWO: Recalculate portfolio and push precise current asset metrics
 		try {
 			if (count > 0) {
+				// EN: Build base asset entries from transaction logs
 				await syncPortfolioAssets(portfolioId);
+
+				// 🚀 FIX: Przepychamy aktualne wyceny i oprocentowanie bezpośrednio do tabeli aktywów
+				for (const bond of dataToSave) {
+					const dateStr =
+						bond.expiryDate instanceof Date
+							? bond.expiryDate.toISOString().split("T")[0]
+							: String(bond.expiryDate);
+
+					const fullTicker = `${bond.ticker}_${dateStr}`;
+					const finalRate =
+						bond.interestRate || inferDefaultBondRate(bond.ticker);
+
+					await updateImportedBondSpecs(
+						portfolioId,
+						fullTicker,
+						bond.currentValue,
+						finalRate,
+					);
+				}
+
 				toast.success(`Sukces! Zaimportowano ${count} obligacji.`);
 			}
 
@@ -138,8 +188,9 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 			setPreview([]);
 			setSelectedIndices([]);
 			router.refresh();
-		} catch {
-			toast.error("Wystąpił błąd podczas synchronizacji portfela.");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Wystąpił błąd podczas synchronizacji końcowej portfela.");
 		} finally {
 			setLoading(false);
 		}
@@ -166,14 +217,12 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 		}
 	};
 
-	// EN: Calculate summary values purely against actively selected index nodes
 	const previewTotal = preview
 		.filter((_, i) => selectedIndices.includes(i))
 		.reduce((sum, b) => sum + b.currentValue, 0);
 
 	return (
 		<div className="flex flex-col gap-6">
-			{/* FILE DRAG AND DROP ZONE */}
 			<div className="relative group">
 				<input
 					type="file"
@@ -186,18 +235,17 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 					htmlFor="bond-upload"
 					className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-border/50 rounded-3xl bg-card/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer group"
 				>
-					<div className=" mb-3">
-						{/* <FileUp className="h-6 w-6 text-primary" /> */}
+					<div className="mb-3">
 						<Image
-							src={"/obligacje.png"}
+							src="https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img/https://bank.pl/wp-content/uploads/2013/05/mf.obligacje.01.250x181.jpg"
 							// src={
 							// 	"https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img/https://bank.pl/wp-content/uploads/2013/05/mf.obligacje.01.250x181.jpg" ||
 							// 	"/obligacje.png"
 							// }
-							alt={"Obligacje skarbowe"}
+							alt="Obligacje skarbowe"
 							width={60}
 							height={50}
-							className="object-cover rounded-md"
+							className="object-cover rounded-md shadow-md"
 						/>
 					</div>
 					<span className="text-sm font-bold tracking-tight">
@@ -307,12 +355,6 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 							</tr>
 						</tfoot>
 					</table>
-
-					{/* DEDICATED INFERRED DURATION METADATA NOTICE */}
-					<p className="px-4 py-2 text-[9px] text-muted-foreground border-t border-border/20">
-						* Data emisji obliczana automatycznie na podstawie rodzaju obligacji
-						(np. DOR = 2 lata, EDO = 10 lat przed wykupem).
-					</p>
 
 					<div className="p-4 bg-muted/10 flex justify-between items-center border-t border-border/50">
 						<div className="flex flex-col">

@@ -113,9 +113,54 @@ export async function getBondsData(portfolioId: string) {
 	};
 }
 
+// export async function deleteBond(id: string) {
+// 	try {
+// 		// 1. Pobieramy dane przed usunięciem
+// 		const bond = await db.asset.findUnique({
+// 			where: { id },
+// 		});
+
+// 		if (!bond) return { success: false, message: "Nie znaleziono obligacji" };
+
+// 		await db.$transaction([
+// 			// 2. Dodajemy wpis do historii (bilansujący na zero)
+// 			db.transactionHistory.create({
+// 				data: {
+// 					portfolioId: bond.portfolioId,
+// 					assetName: bond.name || (bond.ticker ?? "NIE PODANO"),
+// 					ticker: bond.ticker,
+// 					quantity: -bond.quantity, // Ujemna ilość, żeby wyzerować stos na wykresie
+// 					executedValue: -bond.currentValue, // Ujemna wartość
+// 					executedAt: new Date(),
+// 					category: "BONDS",
+// 					rationale: "[ZAMKNIĘCIE POZYCJI] Usunięcie transzy z portfela",
+// 				},
+// 			}),
+// 			// 3. Usuwamy samo aktywo
+// 			db.asset.delete({
+// 				where: { id },
+// 			}),
+// 		]);
+
+// 		// 4. Revalidujemy wszystkie ścieżki, gdzie te dane występują
+// 		revalidatePath("/bond-reports");
+// 		revalidatePath("/dashboard");
+
+// 		return {
+// 			success: true,
+// 			message: "Obligacja usunięta i zarchiwizowana w historii",
+// 		};
+// 	} catch (error) {
+// 		console.error("Delete error:", error);
+// 		return { success: false, message: "Nie udało się usunąć obligacji" };
+// 	}
+// }
+
+// EN: Ensure the function always returns a valid ActionResponse
+
 export async function deleteBond(id: string) {
 	try {
-		// 1. Pobieramy dane przed usunięciem
+		// 1. Fetch asset details before performing deletion
 		const bond = await db.asset.findUnique({
 			where: { id },
 		});
@@ -123,26 +168,28 @@ export async function deleteBond(id: string) {
 		if (!bond) return { success: false, message: "Nie znaleziono obligacji" };
 
 		await db.$transaction([
-			// 2. Dodajemy wpis do historii (bilansujący na zero)
+			// 2. Add entry to history (balancing transaction logs)
 			db.transactionHistory.create({
 				data: {
 					portfolioId: bond.portfolioId,
 					assetName: bond.name || (bond.ticker ?? "NIE PODANO"),
 					ticker: bond.ticker,
-					quantity: -bond.quantity, // Ujemna ilość, żeby wyzerować stos na wykresie
-					executedValue: -bond.currentValue, // Ujemna wartość
+					type: "SELL", // 🚀 FIX: Explicitly set to SELL so it renders as SPRZEDAŻ instead of KUPNO
+					quantity: Math.abs(bond.quantity), // 🚀 FIX: Use absolute positive value to prevent "+-" UI layout bugs
+					executedValue: Math.abs(bond.currentValue), // 🚀 FIX: Positive volume since SELL type natively handles negative balance shifts
 					executedAt: new Date(),
 					category: "BONDS",
 					rationale: "[ZAMKNIĘCIE POZYCJI] Usunięcie transzy z portfela",
+					comment: "[ZAMKNIĘCIE POZYCJI] Usunięcie transzy z portfela", // 🚀 FIX: Supplied both for legacy table view support
 				},
 			}),
-			// 3. Usuwamy samo aktywo
+			// 3. Delete the asset record itself
 			db.asset.delete({
 				where: { id },
 			}),
 		]);
 
-		// 4. Revalidujemy wszystkie ścieżki, gdzie te dane występują
+		// 4. Revalidate all paths where this data occurs
 		revalidatePath("/bond-reports");
 		revalidatePath("/dashboard");
 
@@ -156,7 +203,6 @@ export async function deleteBond(id: string) {
 	}
 }
 
-// EN: Ensure the function always returns a valid ActionResponse
 export const handleDeleteBond = async (id: string): Promise<ActionResponse> => {
 	try {
 		await deleteBond(id);
@@ -565,5 +611,32 @@ export async function importBondsAction(
 	} catch (error) {
 		console.error("Import Error:", error);
 		return { success: false, error: "Błąd podczas zapisu w bazie danych" };
+	}
+}
+
+export async function updateImportedBondSpecs(
+	portfolioId: string,
+	ticker: string,
+	currentValue: number,
+	interestRate: number,
+) {
+	try {
+		// EN: Direct update on asset table to supply current live valuation and interest rates
+		await db.asset.update({
+			where: {
+				portfolioId_ticker: {
+					portfolioId,
+					ticker,
+				},
+			},
+			data: {
+				currentValue,
+				interestRate,
+			},
+		});
+		return { success: true };
+	} catch (error) {
+		console.error("Failed to update imported bond specs:", error);
+		return { success: false, error };
 	}
 }

@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle, FileUp, Trash2 } from "lucide-react";
 import { ParsedBond, parseBondRow } from "@/lib/utils/bond-parser";
 import React, { ChangeEvent, useState } from "react";
 
+import Image from "next/image";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
@@ -185,8 +186,19 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 					htmlFor="bond-upload"
 					className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-border/50 rounded-3xl bg-card/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer group"
 				>
-					<div className="bg-primary/10 p-4 rounded-2xl mb-3 group-hover:scale-110 transition-transform">
-						<FileUp className="h-6 w-6 text-primary" />
+					<div className=" mb-3">
+						{/* <FileUp className="h-6 w-6 text-primary" /> */}
+						<Image
+							src={"/obligacje.png"}
+							// src={
+							// 	"https://sp-ao.shortpixel.ai/client/to_webp,q_glossy,ret_img/https://bank.pl/wp-content/uploads/2013/05/mf.obligacje.01.250x181.jpg" ||
+							// 	"/obligacje.png"
+							// }
+							alt={"Obligacje skarbowe"}
+							width={60}
+							height={50}
+							className="object-cover rounded-md"
+						/>
 					</div>
 					<span className="text-sm font-bold tracking-tight">
 						Wybierz plik z obligacjami skarbowymi

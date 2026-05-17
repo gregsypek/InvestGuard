@@ -8,6 +8,7 @@ import { ParsedXtbTransaction, parseXtbRow } from "@/lib/utils/xtb-parser";
 import React, { useState } from "react";
 
 import { Category } from "@prisma/client";
+import Image from "next/image";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
@@ -242,8 +243,16 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 					htmlFor="xtb-upload"
 					className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-border/50 rounded-3xl bg-card/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer group"
 				>
-					<div className="bg-primary/10 p-4 rounded-2xl mb-3 group-hover:scale-110 transition-transform">
-						<FileUp className="h-6 w-6 text-primary" />
+					<div className=" mb-3 ">
+						{/* <FileUp className="h-6 w-6 text-primary" />
+						 */}
+						<Image
+							src={"/xtb.png"}
+							alt={"XTB"}
+							width={50}
+							height={40}
+							className="object-cover rounded-md" //
+						/>
 					</div>
 					<span className="text-sm font-bold tracking-tight">
 						Wybierz raport XTB

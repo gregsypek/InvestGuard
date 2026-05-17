@@ -1,11 +1,12 @@
 // components/ui/assets/QuickDepositForm.tsx
 "use client";
 
-import { PlusCircle, WalletCards } from "lucide-react";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
+import { PlusCircle } from "lucide-react";
 import { addManualDeposit } from "@/lib/actions/transactions";
 
 export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
@@ -35,22 +36,24 @@ export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
 
 	return (
 		<div className="bg-card/40 p-6 rounded-3xl border border-border/50 shadow-sm">
-			<div className="flex items-center gap-3 mb-4">
-				<div className="p-2 bg-primary/10 rounded-xl">
-					<WalletCards className="h-5 w-5 text-primary" />
-				</div>
-				<div>
-					<h3 className="text-sm font-bold uppercase tracking-wider">
-						Zasilenie gotówką
-					</h3>
-					<p className="text-[10px] text-muted-foreground uppercase">
-						Dodaj środki na poczet przyszłych zakupów
-					</p>
+			<div className="flex items-center justify-center gap-3 mb-4">
+				<div className=" mb-3 ">
+					{/* <BanknoteX className="h-12 w-12 text-primary" /> */}
+					<Image
+						src={"/cash.png"}
+						alt={"Gotówka"}
+						width={90}
+						height={60}
+						className="object-cover"
+					/>
 				</div>
 			</div>
 
-			<form onSubmit={handleSubmit} className="flex items-center gap-3">
-				<div className="relative flex-1">
+			<form
+				onSubmit={handleSubmit}
+				className="flex items-center justify-center gap-3"
+			>
+				<div className="relative ">
 					<Input
 						type="number"
 						placeholder="Kwota PLN"

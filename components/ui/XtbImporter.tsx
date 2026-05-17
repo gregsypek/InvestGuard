@@ -3,7 +3,7 @@
 
 import * as XLSX from "xlsx";
 
-import { CheckCircle, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle, FileUp, Trash2 } from "lucide-react";
 import { ParsedXtbTransaction, parseXtbRow } from "@/lib/utils/xtb-parser";
 import React, { useState } from "react";
 
@@ -18,15 +18,16 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const [isImporting, setIsImporting] = useState(false);
 	const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 	const router = useRouter();
-	// 1. Logika wczytywania i parowania danych
+	const [error, setError] = useState<string | null>(null);
+
 	// 1. Logika wczytywania i parowania danych
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
-
+		setError(null);
 		const reader = new FileReader();
 
-		reader.onload = (event) => {
+		reader.onload = (event: ProgressEvent<FileReader>) => {
 			try {
 				// EN: Get the raw ArrayBuffer from the reader
 				// PL: Pobieramy surowy ArrayBuffer z czytnika
@@ -36,7 +37,6 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 				// EN: Use type: "array" for raw ArrayBuffer - most stable for browser XLSX
 				// PL: Używamy type: "array" bezpośrednio na ArrayBuffer - najstabilniejsza metoda
 				const workbook = XLSX.read(data, {
-					// type: "array",
 					type: "array",
 					cellDates: true,
 				});
@@ -48,41 +48,48 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 				);
 
 				if (!sheetName) {
-					return alert(
+					setError(
 						"Nie znaleziono arkusza 'Cash Operations'! Upewnij się, że to raport XTB.",
 					);
+					return;
 				}
 
 				const worksheet = workbook.Sheets[sheetName];
 
-				// EN: Convert worksheet to raw rows to find the header index
-				// PL: Konwertujemy arkusz na surowe wiersze, by znaleźć index nagłówka
+				// EN: Convert worksheet to raw rows typed safely as multidimensional unknown array
+				// PL: Konwertujemy arkusz na surowe wiersze z bezpiecznym typowaniem unknown[][] zamiast any[][]
 				const rowsRaw = XLSX.utils.sheet_to_json(worksheet, {
 					header: 1,
-				}) as any[][];
+				}) as unknown[][];
 
 				const headerIndex = rowsRaw.findIndex(
-					(r) => r.includes("Type") || r.includes("Typ"),
+					(r) => Array.isArray(r) && (r.includes("Type") || r.includes("Typ")),
 				);
 
 				if (headerIndex === -1) {
-					return alert("Nie znaleziono nagłówków (Type/Typ) w arkuszu.");
+					setError("Nie znaleziono nagłówków (Type/Typ) w arkuszu.");
+					return;
 				}
 
-				// EN: Parse actual data rows starting from headerIndex
-				// PL: Parsujemy dane właściwe zaczynając od headerIndex
+				// EN: Parse actual data rows typed as native object records
+				// PL: Parsujemy dane właściwe zaczynając od headerIndex otypowane bezpiecznie
 				const rows = XLSX.utils.sheet_to_json(worksheet, {
 					range: headerIndex,
-				}) as any[];
+				}) as Record<string, unknown>[];
 
 				const parsed = rows
 					.map((r) => parseXtbRow(r))
 					.filter(Boolean) as ParsedXtbTransaction[];
 
+				if (parsed.length === 0) {
+					setError("Nie znaleziono poprawnych transakcji w pliku.");
+					return;
+				}
+
 				// EN: Merge commissions and swap costs by position ID
 				// PL: Scalamy prowizje i koszty swapu po ID pozycji
 				const groupedData = parsed.reduce(
-					(acc: ParsedXtbTransaction[], current) => {
+					(acc: ParsedXtbTransaction[], current: ParsedXtbTransaction) => {
 						if (!current.positionId) {
 							acc.push(current);
 							return acc;
@@ -108,26 +115,26 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 					[],
 				);
 
-				// EN: Update state to show the preview table
-				// PL: Aktualizujemy stan, by wyświetlić tabelę podglądu
 				setPreviewData(groupedData);
 				setSelectedIndices(parsed.map((_, i) => i));
-			} catch (error) {
-				console.error("Błąd podczas odczytu pliku Excel:", error);
+			} catch (err: unknown) {
+				setError("Błąd podczas odczytu pliku Excel.");
+				console.error("Błąd podczas odczytu pliku Excel:", err);
 				alert(
 					"Nie udało się odczytać pliku. Spróbuj otworzyć go w Excelu i zapisać ponownie jako .xlsx",
 				);
 			}
 		};
 
-		// 🚀 KLUCZOWE: Uruchomienie czytnika w formacie ArrayBuffer
 		reader.readAsArrayBuffer(file);
-		// reader.readAsBinaryString(file); // 🚀 ZMIANA NA BINARY STRING
 	};
 
 	// 2. Funkcje zarządzania podglądem
 	const handleRemoveRow = (index: number) => {
 		setPreviewData((prev) => prev.filter((_, i) => i !== index));
+		setSelectedIndices((prev) =>
+			prev.filter((i) => i !== index).map((i) => (i > index ? i - 1 : i)),
+		);
 	};
 
 	const handleChangeCategory = (index: number, newCat: Category) => {
@@ -138,57 +145,74 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 		});
 	};
 
-	// const handleFinalImport = async () => {
-	// 	setIsImporting(true);
-	// 	let count = 0;
-	// 	try {
-	// 		// EN: Save each transaction to history
-	// 		// PL: Zapisujemy każdą transakcję do historii
-	// 		for (const tx of previewData) {
-	// 			await saveXtbTransaction(tx, portfolioId);
-	// 			count++;
-	// 		}
-
-	// 		// EN: Sync assets table with history to update Dashboard
-	// 		// PL: Synchronizujemy tabelę Asset z historią, by odświeżyć Dashboard
-	// 		await syncPortfolioAssets(portfolioId);
-
-	// 		alert(`Sukces! Zaimportowano i zsynchronizowano ${count} transakcji. ✨`);
-	// 		setPreviewData([]);
-	// 	} catch (error) {
-	// 		console.error("Błąd podczas importu:", error);
-	// 		alert("Wystąpił błąd podczas zapisywania transakcji.");
-	// 	} finally {
-	// 		setIsImporting(false);
-	// 	}
-	// };
 	const handleFinalImport = async () => {
-		if (selectedIndices.length === 0) return; // EN: Don't import if nothing selected
+		if (selectedIndices.length === 0) return;
 
 		setIsImporting(true);
+		setError(null);
 		let count = 0;
-		try {
-			// 🚀 FILTR: Bierzemy tylko te wiersze, których indeksy są w selectedIndices
-			const dataToSave = previewData.filter((_, i) =>
-				selectedIndices.includes(i),
-			);
+		let duplicateCount = 0;
 
-			for (const tx of dataToSave) {
+		// 🚀 FILTR: Bierzemy tylko te wiersze, których indeksy są w selectedIndices
+		const dataToSave = previewData.filter((_, i) =>
+			selectedIndices.includes(i),
+		);
+
+		for (const tx of dataToSave) {
+			try {
+				// 🚀 EN: Inner try-catch ensures that one duplicate doesn't abort the remaining loop items
+				// 🚀 PL: Wewnętrzny try-catch sprawia, że jeden duplikat nie przerywa sprawdzania reszty listy
 				await saveXtbTransaction(tx, portfolioId);
 				count++;
+			} catch (err: unknown) {
+				console.error(err);
+				const errMsg = err instanceof Error ? err.message : String(err);
+
+				if (
+					errMsg.toLowerCase().includes("unique") ||
+					errMsg.toLowerCase().includes("duplicate") ||
+					errMsg.toLowerCase().includes("istnieje") ||
+					errMsg.toLowerCase().includes("dodane")
+				) {
+					duplicateCount++;
+				} else {
+					setIsImporting(false);
+					toast.error("Wystąpił nieoczekiwany błąd podczas zapisywania.");
+					return;
+				}
+			}
+		}
+
+		try {
+			if (count > 0) {
+				await syncPortfolioAssets(portfolioId);
+				toast.success(`Sukces! Zaimportowano ${count} transakcji.`);
 			}
 
-			await syncPortfolioAssets(portfolioId);
-			toast.success(`Sukces! Zaimportowano ${count} transakcji.`); // EN: Better than alert
+			// 🚀 EN: Set non-blocking error view summary after the complete processing sequence finishes
+			// 🚀 PL: Ustawiamy podsumowanie błędów na dole po zakończeniu przetwarzania całej pętli
+			if (duplicateCount > 0 && count === 0) {
+				setError(
+					"Wybrane aktywo z tą datą i kwotą jest już dodane w tym portfelu.",
+				);
+			} else if (duplicateCount > 0) {
+				setError(
+					`Zaimportowano ${count} transakcji. Pominięto ${duplicateCount} pozycji, które były już dodane w tym portfelu.`,
+				);
+			} else {
+				setError(null);
+			}
+
 			setPreviewData([]);
-			setSelectedIndices([]); // EN: Clear selection after success
+			setSelectedIndices([]);
 			router.refresh();
 		} catch {
-			toast.error("Wystąpił błąd podczas zapisywania.");
+			toast.error("Wystąpił błąd podczas synchronizacji portfela.");
 		} finally {
 			setIsImporting(false);
 		}
 	};
+
 	const toggleRow = (idx: number) => {
 		setSelectedIndices((prev) =>
 			prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx],
@@ -205,20 +229,37 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 
 	// 3. Renderowanie interfejsu
 	return (
-		<div className="space-y-4 p-4 border rounded-xl bg-background shadow-sm">
-			<div className="flex items-center justify-between">
-				<h3 className="text-lg font-bold">Import Raportu XTB</h3>
-				<span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-					Format: .xlsx
-				</span>
+		<div className="flex flex-col gap-6">
+			<div className="relative group">
+				<input
+					type="file"
+					onChange={handleFileUpload}
+					accept=".xlsx, .xls, .csv"
+					className="hidden"
+					id="xtb-upload"
+				/>
+				<label
+					htmlFor="xtb-upload"
+					className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-border/50 rounded-3xl bg-card/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer group"
+				>
+					<div className="bg-primary/10 p-4 rounded-2xl mb-3 group-hover:scale-110 transition-transform">
+						<FileUp className="h-6 w-6 text-primary" />
+					</div>
+					<span className="text-sm font-bold tracking-tight">
+						Wybierz raport XTB
+					</span>
+					<span className="text-[10px] text-muted-foreground uppercase mt-1 tracking-widest">
+						Obsługiwane: .XLSX
+					</span>
+				</label>
 			</div>
 
-			<input
-				type="file"
-				accept=".xlsx"
-				onChange={handleFileUpload}
-				className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-white cursor-pointer hover:file:bg-primary/90 transition-all"
-			/>
+			{error && (
+				<div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 border-dashed rounded-2xl text-destructive text-xs text-red-600">
+					<AlertTriangle className="h-4 w-4" />
+					{error}
+				</div>
+			)}
 
 			{previewData.length > 0 && (
 				<div className="mt-6 overflow-x-auto border rounded-2xl bg-card shadow-xl overflow-hidden">

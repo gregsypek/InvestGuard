@@ -400,7 +400,6 @@ export async function syncPortfolioAssets(portfolioId: string) {
 			// 1. WPŁATY I PRZEWALUTOWANIA (Twoje realne pieniądze z zewnątrz)
 			if (tx.type === "DEPOSIT" || tx.type === "BUY") {
 				// EN: Funds from bank account or currency exchange - increases both spendable cash and capital base
-				// PL: Środki z konta lub wymiana - zwiększa gotówkę i bazę zainwestowanego kapitału
 				cashAsset.totalQuantity += tx.executedValue;
 				cashAsset.totalInvested += tx.executedValue;
 			}
@@ -408,15 +407,12 @@ export async function syncPortfolioAssets(portfolioId: string) {
 			// 2. ODSETKI I DYWIDENDY (Pieniądze wypracowane przez rynek)
 			else if (tx.type === "INTEREST") {
 				// EN: Interest/Dividends increase spendable cash, but are NOT part of user's personal investment base
-				// PL: Odsetki zwiększają ilość gotówki, ale NIE są Twoją dopłatą (nie zwiększają bazy inwestycji)
 				cashAsset.totalQuantity += tx.executedValue;
-				// Nie dotykamy totalInvested, dzięki czemu Twój zysk % będzie liczony od realnie wpłaconych kwot
 			}
 
 			// 3. WYPŁATY ŚRODKÓW (Zmniejszenie kapitału)
 			else if (tx.type === "SELL") {
 				// EN: Withdrawal to bank account - decreases both spendable cash and capital base
-				// PL: Wypłata na konto bankowe - zmniejsza gotówkę i bazę kapitałową
 				cashAsset.totalQuantity -= tx.executedValue;
 				cashAsset.totalInvested -= tx.executedValue;
 			}
@@ -424,7 +420,6 @@ export async function syncPortfolioAssets(portfolioId: string) {
 			// 4. KOREKTY RĘCZNE (Np. wyrównanie salda)
 			else if (tx.type === "UPDATE") {
 				// EN: Manual corrections usually only adjust the current balance
-				// PL: Ręczne korekty zazwyczaj zmieniają tylko aktualny stan konta
 				cashAsset.totalQuantity += tx.executedValue;
 			}
 
@@ -471,6 +466,13 @@ export async function syncPortfolioAssets(portfolioId: string) {
 		if (data.totalQuantity <= 0 && ticker !== "CASH") {
 			data.totalQuantity = 0;
 			data.totalInvested = 0;
+		}
+
+		// 🚀 NOWY BLOK KODU ZAPOBIEGAJĄCY UJEMNEJ GOTÓWCE 🚀
+		// EN: Prevent negative cash balances when testing stock imports without logging initial cash deposits
+		if (ticker === "CASH") {
+			if (data.totalQuantity < 0) data.totalQuantity = 0;
+			if (data.totalInvested < 0) data.totalInvested = 0;
 		}
 
 		await db.asset.upsert({

@@ -330,12 +330,21 @@ const AssetLedgerTable = ({
 								// 	asset.quantity > 0 && !isAggregatedBond
 								// 		? asset.currentValue / asset.quantity
 								// 		: 0;
-								const share = Number(
-									(
-										((asset.currentValue ?? 0) / totalPortfolioValue) *
-										100
-									).toFixed(1),
-								);
+								// const share = Number(
+								// 	(
+								// 		((asset.currentValue ?? 0) / totalPortfolioValue) *
+								// 		100
+								// 	).toFixed(1),
+								// );
+								const share =
+									totalPortfolioValue <= 0
+										? 0
+										: Number(
+												(
+													((asset.currentValue ?? 0) / totalPortfolioValue) *
+													100
+												).toFixed(1),
+											);
 								const categoryColor =
 									COLORS[asset.category as keyof typeof COLORS] || "#ccc";
 

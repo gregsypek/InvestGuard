@@ -1,7 +1,8 @@
+import { CategoryStatus, Portfolio, PortfolioWithAssets } from "./types";
+
 // lib/calculations.ts
 import { Asset } from "@prisma/client";
 import { CATEGORY_CONFIG } from "./constants";
-import { CategoryStatus, Portfolio, PortfolioWithAssets } from "./types";
 
 /**
  * Calculates the gap between the current portfolio and the target model.
@@ -91,21 +92,26 @@ export function getGlobalStats(portfolios: PortfolioWithAssets[]) {
 		categoryTotals, // Dane do wykresu lub tabeli
 	};
 }
-//PL (Profit & Loss)
 export function calculateAssetPL(asset: {
 	investedCapital: number;
 	currentValue: number;
 }) {
-	// 1. Zabezpieczenie przed dzieleniem przez zero
-	if (asset.investedCapital === 0) {
-		return { profitAmount: 0, profitPercent: 0 };
+	// 🚀 FIX: Zabezpieczenie przed dzieleniem przez zero oraz wartościami ujemnymi bazy kosztowej
+	// Jeśli wkład nie istnieje, wynosi 0 lub spadł na minus (debet testowy), zysk procentowy to zawsze 0%
+	if (!asset.investedCapital || asset.investedCapital <= 0) {
+		// EN: Calculate absolute currency spread but force percentage representation to zero to avoid Infinity layout bugs
+		// PL: Obliczamy zysk kwotowy, ale wymuszamy 0% zysku procentowego, aby uniknąć błędów renderowania Infinity
+		const fallbackProfit = asset.currentValue - (asset.investedCapital || 0);
+		return {
+			profitAmount: fallbackProfit,
+			profitPercent: 0,
+		};
 	}
 
 	// 2. Obliczamy zysk kwotowy
 	const profitAmount = asset.currentValue - asset.investedCapital;
 
 	// 3. Obliczamy zysk procentowy
-	// Tutaj użyjemy Twojego wzoru: (zysk / kapitał) * 100
 	const profitPercent = (profitAmount / asset.investedCapital) * 100;
 
 	return {
@@ -144,3 +150,24 @@ export function calculateBondProgress(purchaseDate: Date, maturityDate: Date) {
 // 	if (progress < 90) return "bg-emerald-500"; // Blisko wykupu
 // 	return "bg-green-400 animate-pulse"; // Gotowa do rolowania!
 // }
+
+export function calculateAssetProfit(asset: {
+	investedCapital: number;
+	currentValue: number;
+}) {
+	// 🚀 FIX: Zabezpieczenie przed dzieleniem przez zero lub wartościami ujemnymi w bazie kosztowej
+	if (!asset.investedCapital || asset.investedCapital <= 0) {
+		return {
+			profitAmount: asset.currentValue - (asset.investedCapital || 0),
+			profitPercent: 0,
+		};
+	}
+
+	const profitAmount = asset.currentValue - asset.investedCapital;
+	const profitPercent = (profitAmount / asset.investedCapital) * 100;
+
+	return {
+		profitAmount,
+		profitPercent,
+	};
+}

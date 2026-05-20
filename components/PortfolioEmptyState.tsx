@@ -116,7 +116,7 @@ export default function PortfolioEmptyState({
 		: "/portfolios";
 
 	return (
-		<div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 max-w-md mx-auto p-6">
+		<div className="flex flex-col items-center justify-center h-full  text-center space-y-6 max-w-md mx-auto ">
 			{userName && variant !== "NOT_FOUND" && (
 				<div className="animate-in fade-in slide-in-from-top-4 duration-700">
 					<p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">

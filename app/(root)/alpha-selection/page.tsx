@@ -228,7 +228,7 @@ export default async function AlphaSelectionPage({
 						<SectionHeader icon={ChartArea} title="Analityka Wyników Alpha" />
 						<SubHeader
 							title="Wydajność strategii"
-							description="Wizualizacja trendu wartości oraz historia depozytów wyłącznie dla kategorii Booster."
+							description="Wizualizacja trendu wartości oraz historia depozytów wyłącznie dla kategorii Akcje (Booster)."
 							icon={TrendingUp}
 						/>
 					</div>
@@ -239,19 +239,12 @@ export default async function AlphaSelectionPage({
 						</Link>
 					</AddButton>
 				</div>
-				<div className="mx-6 py-4 pb-16">
-					{/* <InteractiveChartSection
-						transactions={formattedTransactions.filter(
-							(t) => t.category === "BOOSTER",
-						)}
-						assets={formattedAssets.filter((a) => a.category === "BOOSTER")}
-					/> */}
+				<div className="mx-6 py-4 ">
 					<InteractiveChartSection
 						//  Przekaż wszystkie transakcje, nie filtruj ich tutaj!
 						transactions={formattedTransactions}
 						// Aktywa filtrujemy, co wyznaczy dostępne przyciski kategorii na wykresie
 						assets={formattedAssets.filter((a) => a.category === "BOOSTER")}
-						// portfolioId={portfolioId}
 					/>
 				</div>
 			</section>
@@ -272,7 +265,7 @@ export default async function AlphaSelectionPage({
 					icon={Rocket}
 				/>
 				<div className="w-full ps-6">
-					<AlphaLedgerTable />
+					<AlphaLedgerTable portfolioId={activeId} />
 				</div>
 			</section>
 		</div>

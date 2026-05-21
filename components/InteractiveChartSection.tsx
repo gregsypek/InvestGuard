@@ -1,7 +1,7 @@
 "use client";
 
 import { DashboardAsset, Transaction } from "@/lib/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AlphaChart } from "./alpha/AlphaChart";
 import { COLORS } from "@/lib/constants";
@@ -17,40 +17,39 @@ export function InteractiveChartSection({
 	transactions = [],
 	assets = [],
 }: Props) {
+	// 1. HOOK: Obliczamy dostępne kategorie
 	const availableCategories = useMemo(() => {
-		const cats = assets
-			.filter(
-				(a) =>
-					a.category !== "BOND" &&
-					a.category !== "OBLIGACJE" &&
-					a.category !== "CASH", // 🚀 Ignorujemy gotówkę w trendzie
-			)
-			.map((a) => a.category);
-		return Array.from(new Set(cats));
+		if (!assets || assets.length === 0) return [];
+		return Array.from(new Set(assets.map((a) => a.category)));
 	}, [assets]);
 
+	// 2. HOOK: Stan wybranych kategorii
 	const [selectedCats, setSelectedCats] =
 		useState<string[]>(availableCategories);
 
-	const { areaPoints, barPoints } = useMemo(() => {
-		if (!Array.isArray(transactions)) return { areaPoints: [], barPoints: [] };
+	// 3. Używamy useEffect zamiast useMemo do zmiany stanu!
+	useEffect(() => {
+		setSelectedCats(availableCategories);
+	}, [availableCategories]);
 
-		// 1. Filtrujemy historię dla wykresu TRENDU (AreaChart)
-		// Chcemy tu widzieć tylko pracujące aktywa (bez gotówki i obligacji)
-		const filteredTx = transactions.filter(
-			(t) =>
-				selectedCats.includes(t.category) &&
-				t.category !== "BOND" &&
-				t.category !== "OBLIGACJE" &&
-				t.category !== "CASH", // Gotówka nie buduje "wartości aktywów"
+	// 4. HOOK: Przenosimy to wyżej, przed "if (...) return"
+	const { areaPoints, barPoints } = useMemo(() => {
+		if (!Array.isArray(transactions) || transactions.length === 0) {
+			return { areaPoints: [], barPoints: [] };
+		}
+
+		const filteredTx = transactions.filter((t) =>
+			selectedCats.includes(t.category),
 		);
 
-		// 2. Pobieramy tylko te aktywa, które mają kategorię wybraną w filtrach
+		if (filteredTx.length === 0) return { areaPoints: [], barPoints: [] };
+
+		// Obliczamy prawdziwy mnożnik na podstawie realnych danych
+
 		const selectedAssets = assets.filter((a) =>
 			selectedCats.includes(a.category),
 		);
 
-		// 3. Obliczamy ROI tylko dla aktywnych/wybranych aktywów
 		const totalInvoiced = selectedAssets.reduce(
 			(sum, a) => sum + Number(a.investedCapital),
 			0,
@@ -62,17 +61,35 @@ export function InteractiveChartSection({
 
 		const currentRoiFactor = totalInvoiced > 0 ? totalValue / totalInvoiced : 1;
 
-		// 4. Generujemy dane do obu wykresów
 		return prepareChartAnalytics(filteredTx, currentRoiFactor);
 	}, [transactions, selectedCats, assets]);
-	console.log("🚀 ~ InteractiveChartSection ~ areaPoints:", areaPoints);
 
-	const toggleCategory = (cat: string) => {
+	// Walidacja "No Data" oparta tylko na tym, co zaznaczone w selectedCats
+	const validChartTransactions =
+		transactions?.filter((t) => availableCategories.includes(t.category)) || [];
+
+	// 5. WCZESNE ZAKOŃCZENIE (Early Return) - Zawsze na samym dole, po wszystkich Hookach!
+	if (validChartTransactions.length === 0) {
+		return (
+			<div className="w-full bg-card/30 p-12 rounded-3xl border border-dashed border-border/60 flex flex-col items-center justify-center text-center space-y-2 my-4">
+				<p className="text-sm font-semibold text-foreground">
+					Brak historii transakcji dla tego widoku
+				</p>
+				<p className="text-xs text-muted-foreground">
+					Nie masz jeszcze transakcji rynkowych dla aktywów przypisanych do tego
+					wykresu.
+				</p>
+			</div>
+		);
+	}
+
+	const toggleCategory = (category: string) => {
 		setSelectedCats((prev) =>
-			prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
+			prev.includes(category)
+				? prev.filter((c) => c !== category)
+				: [...prev, category],
 		);
 	};
-
 	return (
 		<div className="space-y-6">
 			{/* Selektor Kategorii z Kolorami */}

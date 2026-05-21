@@ -155,7 +155,7 @@ const DashboardAnalytics = ({
 				<div className="mx-6 py-4">
 					<InteractiveChartSection
 						transactions={transactions}
-						assets={portfolio.assets}
+						assets={portfolio.assets.filter((a) => a.category !== "CASH")}
 					/>
 				</div>
 			</section>

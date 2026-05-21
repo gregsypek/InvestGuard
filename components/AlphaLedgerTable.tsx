@@ -16,7 +16,11 @@ import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 
-export default async function AlphaLedgerTable({}) {
+export default async function AlphaLedgerTable({
+	portfolioId,
+}: {
+	portfolioId?: string;
+}) {
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
 
@@ -24,6 +28,7 @@ export default async function AlphaLedgerTable({}) {
 	const boosterAssets = await db.asset.findMany({
 		where: {
 			category: "BOOSTER" as Category,
+			portfolioId: portfolioId || undefined, //  Filtruje rekordy po aktywnym portfelu
 			portfolio: { userId: session.user.id },
 		},
 		include: { portfolio: true },

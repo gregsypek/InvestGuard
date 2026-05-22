@@ -1,7 +1,6 @@
+// lib/chart-helpers.ts
 import { Transaction } from "./types";
 
-// EN: Interfaces for chart data points
-// PL: Interfejsy dla punktów danych na wykresach
 export interface AreaChartPoint {
 	name: string;
 	wkład: number;
@@ -12,11 +11,6 @@ export interface BarChartPoint {
 	month: string;
 	amount: number;
 }
-
-/**
- * EN: Prepares data for AlphaChart and MonthlyDepositsChart based on transactions
- * PL: Przygotowuje dane dla AlphaChart i MonthlyDepositsChart na podstawie transakcji
- */
 
 export const prepareChartAnalytics = (
 	transactions: Transaction[],
@@ -42,10 +36,18 @@ export const prepareChartAnalytics = (
 			year: "2-digit",
 		});
 
-		cumulative += Number(t.executedValue);
+		// 🚀 FIX: Rozróżniamy napływ kapitału (BUY) od wycofania środków z aktywów (SELL)
+		if (t.type === "BUY") {
+			cumulative += Number(t.executedValue);
+		} else if (t.type === "SELL") {
+			cumulative -= Number(t.executedValue);
+		}
+
+		// Zabezpieczenie przed spadkiem poniżej zera (np. gdy zrealizowany zysk ze sprzedaży przewyższa wkład pierwotny)
+		const safeCumulative = cumulative < 0 ? 0 : cumulative;
 
 		// Nadpisujemy — interesuje nas skumulowana wartość NA KONIEC każdego miesiąca
-		monthlyArea[sortKey] = { label, cumulative, sortKey };
+		monthlyArea[sortKey] = { label, cumulative: safeCumulative, sortKey };
 	});
 
 	const areaPoints = Object.values(monthlyArea)
@@ -56,7 +58,7 @@ export const prepareChartAnalytics = (
 			wycena: Math.round(cumulative * roiFactor),
 		}));
 
-	// 2. Logika dla MonthlyDeposits (Słupki - chronologicznie)
+	// 2. Logika dla MonthlyDeposits (Słupki - bez zmian)
 	const monthlyMap: Record<
 		string,
 		{ month: string; amount: number; sortKey: number }
@@ -70,15 +72,20 @@ export const prepareChartAnalytics = (
 		});
 		const sortKey = date.getFullYear() * 100 + date.getMonth();
 
-		if (!monthlyMap[monthKey]) {
-			monthlyMap[monthKey] = { month: monthKey, amount: 0, sortKey };
+		if (t.type === "DEPOSIT" || t.type === "BUY") {
+			if (!monthlyMap[monthKey]) {
+				monthlyMap[monthKey] = { month: monthKey, amount: 0, sortKey };
+			}
+			monthlyMap[monthKey].amount += Number(t.executedValue);
 		}
-		monthlyMap[monthKey].amount += Number(t.executedValue);
 	});
 
 	const barPoints = Object.values(monthlyMap)
 		.sort((a, b) => a.sortKey - b.sortKey)
-		.map(({ month, amount }) => ({ month, amount: Number(amount.toFixed(2)) }));
+		.map(({ month, amount }) => ({
+			month,
+			amount: Math.round(amount),
+		}));
 
 	return { areaPoints, barPoints };
 };

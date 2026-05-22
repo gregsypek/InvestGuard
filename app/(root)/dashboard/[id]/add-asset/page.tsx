@@ -1,11 +1,21 @@
 import {
+	Coins,
+	FileText,
+	Form,
+	LibrarySquareIcon,
+	PieChart,
+} from "lucide-react";
+import {
 	getPortfolioAssets,
 	getPortfolioCategories,
 } from "@/lib/actions/portfolio.actions";
 
 import AddAssetForm from "@/components/ui/assets/AddAssetForm";
-import { LibrarySquareIcon } from "lucide-react";
+import { BondImporter } from "@/components/ui/BondImporter";
 import { QuickDepositForm } from "@/components/ui/QuickDepositForm";
+import { SafeActionButton } from "@/components/ui/SafeActionButton";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { SubHeader } from "@/components/shared/SubHeader";
 import { XtbImporter } from "@/components/ui/XtbImporter";
 
 interface Props {
@@ -27,36 +37,72 @@ export default async function AddAssetPage({ params }: Props) {
 		: [];
 	const assets = assetsResult.success ? assetsResult.data : [];
 	return (
-		<section className="w-full space-y-8 pb-20">
-			<div className="flex flex-col gap-1">
-				<h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-					<LibrarySquareIcon className="h-5 w-5 text-primary" />
-					Zarządzanie Aktywami
-				</h2>
-				<p className="text-xs text-muted-foreground uppercase font-medium">
-					Dodaj środki lub zaimportuj historię transakcji
-				</p>
-			</div>
-
-			{/* 🚀 Sekcja Szybkiego Zasilenia */}
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<QuickDepositForm portfolioId={id} />
-				{/* Możesz tu dodać drugi mały widżet np. Info o aktualnym saldo CASH */}
-			</div>
-
-			<div className="pt-4 border-t border-border/50">
-				<h3 className="text-sm font-bold uppercase tracking-widest mb-6 opacity-70">
-					Ręczne dodawanie aktywów
-				</h3>
-				<AddAssetForm portfolioId={id} allowedCategories={categories} />
-			</div>
-
-			<div className="pt-4 border-t border-border/50">
-				<h3 className="text-sm font-bold uppercase tracking-widest mb-6 opacity-70">
-					Import z platformy XTB
-				</h3>
-				<XtbImporter portfolioId={id} />
-			</div>
-		</section>
+		<div className="space-y-10 pb-20">
+			<section className="pt-8 border-t border-border">
+				<div className="flex justify-between">
+					<SectionHeader
+						icon={LibrarySquareIcon}
+						title="Ręczne dodawanie aktywów"
+					/>
+				</div>
+				<SubHeader
+					title="Wybierz odpowiednią zakładkę "
+					description="Dodaj środki wybierając osobny formularz do aktywów/gotówki lub obligacji"
+					icon={Form}
+				/>
+				<div className="mx-6 py-2">
+					<AddAssetForm
+						portfolioId={id}
+						allowedCategories={categories}
+						existingAssets={assets}
+					/>
+				</div>
+			</section>
+			<section className="pt-8 border-t border-border">
+				<div className="flex justify-between">
+					<SectionHeader
+						icon={FileText}
+						title="Import aktywów z raportu - XTB"
+					/>
+				</div>
+				<SubHeader
+					title="Automatyczne dodawanie aktywów z raportu XTB"
+					description="Wygeneruj raport na platformie XTB i zaimportuj go tutaj, aby szybko dodać swoje aktywa i przeliczyć aktualne saldo"
+					icon={Form}
+				/>
+				<div className="mx-6 py-2">
+					<XtbImporter portfolioId={id} />
+				</div>
+			</section>
+			<section className="pt-8 border-t border-border">
+				<div className="flex justify-between">
+					<SectionHeader
+						icon={FileText}
+						title="Import obligacji z raportu - PKO BP"
+					/>
+				</div>
+				<SubHeader
+					title="Automatyczne dodawanie obligacji"
+					description="Wygeneruj raport w banku PKO i zaimportuj go tutaj, aby szybko dodać swoje obligacje i przeliczyć aktualne saldo"
+					icon={Form}
+				/>
+				<div className="mx-6 py-2">
+					<BondImporter portfolioId={id} />{" "}
+				</div>
+			</section>
+			<section className="pt-8 border-t border-border">
+				<div className="flex justify-between">
+					<SectionHeader icon={FileText} title="Szybkie Zasilenia Gotówki" />
+				</div>
+				<SubHeader
+					title="Dodaj środki do portfela"
+					description="Gotówka jest automatycznie księgowania jako depozyt, więc będzie uwzględniana w analizach i wykresach. To szybki sposób na aktualizację stanu portfela bez konieczności dodawania poszczególnych aktywów."
+					icon={Coins}
+				/>
+				<div className="mx-6 py-2">
+					<QuickDepositForm portfolioId={id} />{" "}
+				</div>
+			</section>
+		</div>
 	);
 }

@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle, FileUp, Trash2 } from "lucide-react";
 import { ParsedBond, parseBondRow } from "@/lib/utils/bond-parser";
 import React, { ChangeEvent, useState } from "react";
 
+import { BOND_DURATIONS } from "@/lib/constants";
 import Image from "next/image";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
@@ -97,8 +98,8 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 						: String(bond.expiryDate);
 
 				const prefix = bond.ticker.substring(0, 3).toUpperCase();
-				// EN: Fallback dictionary mapping if global BOND_DURATIONS constant resolves undefined
-				const durationYears = 10;
+
+				const durationYears = BOND_DURATIONS[prefix] || 10;
 
 				const inferredPurchaseDate = new Date(bond.expiryDate);
 				inferredPurchaseDate.setFullYear(

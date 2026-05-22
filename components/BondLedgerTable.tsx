@@ -16,6 +16,7 @@ import {
 } from "@/lib/actions/bond-actions";
 
 import { Asset } from "@prisma/client";
+import { BOND_DURATIONS } from "@/lib/constants";
 import { Bond } from "@/lib/types";
 import { DeleteButton } from "./DeleteButton";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
@@ -79,24 +80,16 @@ export default function BondLedgerTable({
 
 		return Math.max(0, Math.min(100, (current / total) * 100));
 	};
+	console.log("🚀 ~ calculateProgress ~ calculateProgress:", calculateProgress);
 
 	// EN: Function to estimate maturity date based on series type
 	const getMaturityDate = (bond: Bond) => {
 		if (bond.maturityDate) return new Date(bond.maturityDate);
 
-		const durations: Record<string, number> = {
-			ROD: 12,
-			EDO: 10,
-			ROS: 6,
-			COI: 4,
-			TOZ: 3,
-			DOR: 2,
-			ROR: 1,
-			OTS: 0.25,
-		};
-
+		// Wyciągamy TYLKO 3 pierwsze litery przedrostka do słownika
 		const cleanTicker = bond.ticker?.split("_")[0].toUpperCase() || "";
-		const years = durations[cleanTicker] || 0;
+		const prefix = cleanTicker.substring(0, 3); // Z 'ROD0438' robimy 'ROD'
+		const years = BOND_DURATIONS[prefix] || 10; // Zabezpieczenie na 10 lat, a nie na 0!
 
 		// Bezpieczne tworzenie daty z purchaseDate
 		const d = new Date(bond.purchaseDate);
@@ -208,6 +201,10 @@ export default function BondLedgerTable({
 										const progressValue = calculateProgress(
 											bond.purchaseDate,
 											mDate,
+										);
+										console.log(
+											"🚀 ~ BondLedgerTable ~ progressValue:",
+											progressValue,
 										);
 
 										return (

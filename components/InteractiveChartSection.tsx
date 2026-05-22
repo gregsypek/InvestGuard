@@ -1,10 +1,10 @@
 "use client";
 
+import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import { DashboardAsset, Transaction } from "@/lib/types";
 import { useEffect, useMemo, useState } from "react";
 
 import { AlphaChart } from "./alpha/AlphaChart";
-import { COLORS } from "@/lib/constants";
 import { MonthlyDepositsChart } from "./alpha/MonthlyDepositChart";
 import { prepareChartAnalytics } from "@/lib/chart-helpers";
 
@@ -99,6 +99,8 @@ export function InteractiveChartSection({
 					const catColor = COLORS[cat as keyof typeof COLORS] || "#94a3b8";
 					console.log("🚀 ~ InteractiveChartSection ~ catColor:", catColor);
 
+					const labelKey = cat as keyof typeof CATEGORY_LABELS;
+
 					return (
 						<button
 							key={cat}
@@ -126,7 +128,9 @@ export function InteractiveChartSection({
 								}`}
 								style={{ backgroundColor: catColor }}
 							/>
-							<span className="tracking-wider">{cat}</span>
+							<span className="tracking-wider">
+								{CATEGORY_LABELS[labelKey] || cat}
+							</span>
 						</button>
 					);
 				})}

@@ -36,7 +36,7 @@ export const CATEGORY_LABELS: Record<AssetCategory, string> = {
 	DEVELOPED: "Rynki Rozwinięte",
 	EMERGING: "Rynki Wschodzące",
 	GOLD: "Złoto",
-	BOOSTER: "Booster (Alpha)",
+	BOOSTER: "Akcje (Booster)",
 	CASH: "Gotówka",
 	CRYPTO: "Kryptowaluty",
 	COMMODITIES: "Surowce",
@@ -109,7 +109,7 @@ export const CATEGORY_CONFIG = [
 	{
 		id: "BOOSTER", // EN: Added Booster to match your CSS variables
 		targetKey: "targetBooster",
-		name: "Booster",
+		name: "Akcje",
 		color: "bg-portfolio-booster",
 	},
 	{

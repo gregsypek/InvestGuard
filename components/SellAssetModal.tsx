@@ -81,9 +81,20 @@ export function SellAssetModal({
 							placeholder="0.00"
 							onChange={(e) => setQuantity(Number(e.target.value))}
 						/>
-						<p className="text-[10px] text-muted-foreground">
+						{/* <p className="text-[10px] text-muted-foreground">
 							Max: {asset.quantity.toFixed(2)}
-						</p>
+						</p> */}
+						<button
+							type="button"
+							onClick={() => setQuantity(Number(asset.quantity.toFixed(4)))}
+							className="text-[10px] font-bold text-primary hover:underline text-left"
+						>
+							Kliknij, aby sprzedać MAX:{" "}
+							{asset.quantity.toLocaleString("pl-PL", {
+								maximumFractionDigits: 4,
+							})}{" "}
+							szt.
+						</button>
 					</div>
 					<div className="space-y-2">
 						<label className="text-xs font-bold uppercase opacity-60">

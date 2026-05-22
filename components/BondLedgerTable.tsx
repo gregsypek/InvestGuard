@@ -202,10 +202,6 @@ export default function BondLedgerTable({
 											bond.purchaseDate,
 											mDate,
 										);
-										console.log(
-											"🚀 ~ BondLedgerTable ~ progressValue:",
-											progressValue,
-										);
 
 										return (
 											<tr

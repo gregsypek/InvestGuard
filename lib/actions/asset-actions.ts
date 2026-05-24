@@ -460,7 +460,11 @@ export async function syncPortfolioAssets(portfolioId: string) {
 		}
 	}
 
-	// 3. Zapis do bazy danych
+	// 3. Pobieramy obecne stany z bazy, aby mądrze kalkulować tymczasowe wyceny (placeholdery)
+	const existingAssets = await db.asset.findMany({ where: { portfolioId } });
+	const existingMap = new Map(existingAssets.map((a) => [a.ticker, a]));
+
+	// 4. Zapis do bazy danych
 	for (const [ticker, data] of assetMap) {
 		// Jeśli sprzedaliśmy wszystkie sztuki, po prostu wpisujemy 0, żeby mieć czystą historię
 		if (data.totalQuantity <= 0 && ticker !== "CASH") {
@@ -468,11 +472,44 @@ export async function syncPortfolioAssets(portfolioId: string) {
 			data.totalInvested = 0;
 		}
 
-		// 🚀 NOWY BLOK KODU ZAPOBIEGAJĄCY UJEMNEJ GOTÓWCE 🚀
+		// 🚀 BLOK KODU ZAPOBIEGAJĄCY UJEMNEJ GOTÓWCE
 		// EN: Prevent negative cash balances when testing stock imports without logging initial cash deposits
 		if (ticker === "CASH") {
 			if (data.totalQuantity < 0) data.totalQuantity = 0;
 			if (data.totalInvested < 0) data.totalInvested = 0;
+		}
+
+		// 🚀 NOWOŚĆ: Logika "inteligentnego placeholdera" dla wyceny bieżącej (currentValue)
+		// EN: Smart placeholder logic for currentValue before Yahoo API updates it
+		const existingAsset = existingMap.get(ticker);
+		let nextCurrentValue = existingAsset
+			? Number(existingAsset.currentValue)
+			: data.totalInvested;
+
+		if (ticker === "CASH") {
+			nextCurrentValue = data.totalInvested;
+		} else if (existingAsset) {
+			if (existingAsset.quantity === 0 && data.totalQuantity > 0) {
+				// A. Było 0 sztuk, teraz są (nowa/odnowiona pozycja) -> wycena to nasz kapitał
+				nextCurrentValue = data.totalInvested;
+			} else if (data.totalQuantity > existingAsset.quantity) {
+				// B. Dokupienie akcji -> sztucznie podbijamy wycenę o nowy wkład, by nie pokazać straty
+				const investedDifference =
+					data.totalInvested - Number(existingAsset.investedCapital);
+				if (investedDifference > 0) {
+					nextCurrentValue += investedDifference;
+				}
+			} else if (
+				data.totalQuantity < existingAsset.quantity &&
+				data.totalQuantity > 0
+			) {
+				// C. Sprzedaż części akcji -> pomniejszamy wycenę proporcjonalnie
+				const ratio = data.totalQuantity / existingAsset.quantity;
+				nextCurrentValue = nextCurrentValue * ratio;
+			} else if (data.totalQuantity === 0) {
+				// D. Całkowita sprzedaż -> zerujemy wycenę
+				nextCurrentValue = 0;
+			}
 		}
 
 		await db.asset.upsert({
@@ -486,8 +523,8 @@ export async function syncPortfolioAssets(portfolioId: string) {
 				name: data.name,
 				quantity: data.totalQuantity,
 				investedCapital: data.totalInvested,
-				// Aktualizujemy currentValue TYLKO dla gotówki, akcje odświeża Yahoo!
-				...(ticker === "CASH" && { currentValue: data.totalInvested }),
+				// 🚀 Podpinamy nasz wyliczony tymczasowy placeholder!
+				currentValue: nextCurrentValue,
 				category: data.category,
 			},
 			create: {
@@ -496,7 +533,7 @@ export async function syncPortfolioAssets(portfolioId: string) {
 				name: data.name,
 				quantity: data.totalQuantity,
 				investedCapital: data.totalInvested,
-				currentValue: data.totalInvested, // Cena startowa
+				currentValue: nextCurrentValue, // Cena startowa
 				category: data.category,
 				purchaseDate: data.firstPurchase || new Date(),
 			},

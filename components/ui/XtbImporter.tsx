@@ -3,12 +3,13 @@
 
 import * as XLSX from "xlsx";
 
-import { AlertTriangle, CheckCircle, FileUp, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle, Trash2 } from "lucide-react";
 import { ParsedXtbTransaction, parseXtbRow } from "@/lib/utils/xtb-parser";
 import React, { useState } from "react";
 
 import { Category } from "@prisma/client";
 import Image from "next/image";
+import { inferTickersCategories } from "@/lib/actions/portfolio.actions";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
@@ -22,13 +23,15 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const [error, setError] = useState<string | null>(null);
 
 	// 1. Logika wczytywania i parowania danych
+	// Zwróć uwagę na słówko "async" dopisane do eventu:
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 		setError(null);
 		const reader = new FileReader();
 
-		reader.onload = (event: ProgressEvent<FileReader>) => {
+		// 🚀 ZMIANA 1: Zmieniamy na async, żeby móc poczekać na bazę danych
+		reader.onload = async (event: ProgressEvent<FileReader>) => {
 			try {
 				// EN: Get the raw ArrayBuffer from the reader
 				// PL: Pobieramy surowy ArrayBuffer z czytnika
@@ -116,8 +119,33 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 					[],
 				);
 
-				setPreviewData(groupedData);
-				setSelectedIndices(parsed.map((_, i) => i));
+				// 🚀 ZMIANA 2: TUTAJ WCHODZI NASZA NOWA LOGIKA UCZENIA SIĘ
+
+				// EN: Extract unique tickers from the grouped data
+				// PL: 1. Pobieramy unikalne tickery z pogrupowanych danych
+				const uniqueTickers = Array.from(
+					new Set(groupedData.map((tx) => tx.ticker).filter(Boolean)),
+				) as string[];
+
+				// EN: Fetch learned categories from the database
+				// PL: 2. Pobieramy z bazy zapamiętane kategorie dla tych tickerów
+				const learnedCategories = await inferTickersCategories(
+					uniqueTickers,
+					portfolioId,
+				);
+
+				// EN: Override parsed categories with learned ones
+				// PL: 3. Nadpisujemy kategorie tymi wyciągniętymi z bazy
+				const formattedPreview = groupedData.map((tx) => {
+					if (tx.ticker && learnedCategories[tx.ticker]) {
+						return { ...tx, category: learnedCategories[tx.ticker] };
+					}
+					return tx;
+				});
+
+				// 🚀 ZMIANA 3: Używamy 'formattedPreview' zamiast starego 'groupedData'
+				setPreviewData(formattedPreview);
+				setSelectedIndices(formattedPreview.map((_, i) => i));
 			} catch (err: unknown) {
 				setError("Błąd podczas odczytu pliku Excel.");
 				console.error("Błąd podczas odczytu pliku Excel:", err);
@@ -129,7 +157,6 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 
 		reader.readAsArrayBuffer(file);
 	};
-
 	// 2. Funkcje zarządzania podglądem
 	const handleRemoveRow = (index: number) => {
 		setPreviewData((prev) => prev.filter((_, i) => i !== index));

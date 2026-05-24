@@ -2,6 +2,7 @@
 
 import { PortfolioFormValues, PortfolioSchema } from "../validations/portfolio";
 
+import { Category } from "@prisma/client";
 import { PORTFOLIO_STRATEGY_MAP } from "../constants";
 import { auth } from "@/auth";
 import { cookies } from "next/headers";
@@ -207,5 +208,38 @@ export async function getPortfolioAssets(portfolioId: string) {
 	} catch (error) {
 		console.error("Error fetching assets:", error);
 		return { success: false, data: [] };
+	}
+}
+
+// EN: Dynamically look up previously saved categories for a list of tickers within a portfolio
+export async function inferTickersCategories(
+	tickers: string[],
+	portfolioId: string,
+): Promise<Record<string, Category>> {
+	try {
+		// EN: Fetch existing assets matching the imported tickers to reuse their assigned categories
+		const existingAssets = await db.asset.findMany({
+			where: {
+				portfolioId,
+				ticker: { in: tickers },
+			},
+			select: {
+				ticker: true,
+				category: true,
+			},
+		});
+
+		// EN: Build a dynamic dictionary mapping ticker -> Category
+		const mapping: Record<string, Category> = {};
+		existingAssets.forEach((asset) => {
+			if (asset.ticker && asset.category) {
+				mapping[asset.ticker] = asset.category;
+			}
+		});
+
+		return mapping;
+	} catch (error) {
+		console.error("Failed to infer categories:", error);
+		return {};
 	}
 }

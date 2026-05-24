@@ -10,7 +10,7 @@ import {
 	YAxis,
 } from "recharts";
 
-import { AlphaPoint } from "../InteractiveChartSectionOLS";
+import { AlphaPoint } from "../InteractiveChartSection";
 
 export function AlphaChart({ data }: { data: AlphaPoint[] }) {
 	// Odcinamy ostatni punkt jeśli duplikuje przedostatni

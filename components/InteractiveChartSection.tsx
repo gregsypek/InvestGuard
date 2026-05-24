@@ -13,6 +13,12 @@ interface Props {
 	assets: DashboardAsset[];
 }
 
+export interface AlphaPoint {
+	name: string; // np. "03.26" (miesiąc i rok)
+	wkład: number; // np. 429 (kapitał zainwestowany)
+	wycena: number; // np. 506 (aktualna wartość rynkowa)
+}
+
 export function InteractiveChartSection({
 	transactions = [],
 	assets = [],

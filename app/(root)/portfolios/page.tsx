@@ -65,7 +65,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 			/>
 			<PortfoliosClientView
 				portfolios={portfolios}
-				portfolioId={portfolioId}
+				portfolioId={portfolioId ?? undefined}
 				categoryTotals={categoryTotals}
 			/>
 		</div>

@@ -33,7 +33,7 @@ export default async function PortfolioLayout({
 		getPortfolioStats(portfolio);
 
 	return (
-		<div className="space-y-10 p-6">
+		<div className="space-y-10">
 			<DashboardHeader
 				key={id} // Ensure the header resets its internal state when the portfolio changes
 				portfolio={portfolio}

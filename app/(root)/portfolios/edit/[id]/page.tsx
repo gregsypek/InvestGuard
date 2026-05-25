@@ -33,7 +33,7 @@ export default async function EditPortfolioPage({ params }: Props) {
 		getGlobalStats(allPortfolios);
 
 	return (
-		<div className="space-y-8">
+		<div>
 			<PortfoliosHeader
 				title="Edytuj portfel"
 				totalValue={totalValue}

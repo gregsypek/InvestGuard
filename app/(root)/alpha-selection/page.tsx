@@ -19,13 +19,13 @@ import { Category } from "@prisma/client";
 import { InteractiveChartSection } from "@/components/InteractiveChartSection";
 import Link from "next/link";
 import { MigrationTool } from "@/components/alpha/MigrationTool";
+import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { SubHeader } from "@/components/shared/SubHeader";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getActivePortfolioId } from "@/lib/session";
 import { redirect } from "next/navigation";
-import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 
 export default async function AlphaSelectionPage({
 	searchParams,
@@ -159,6 +159,7 @@ export default async function AlphaSelectionPage({
 	if (!portfolio) {
 		return <PortfolioEmptyState variant="PORTFOLIOS" />;
 	}
+
 	// if (!portfolio) redirect("/dashboard");
 
 	// Przygotowanie danych (rzutowanie Decimal -> Number) dla TS i builda
@@ -171,12 +172,13 @@ export default async function AlphaSelectionPage({
 
 	const formattedTransactions = portfolio.transactionHistories.map((tx) => ({
 		...tx,
+		type: tx.type,
 		executedValue: Number(tx.executedValue),
 		ticker: tx.ticker || null,
 	}));
 
 	return (
-		<div className="p-6 px-8 space-y-10 ">
+		<div className="space-y-10">
 			<AlphaHeader
 				// totalTransactions={2}
 				customBreadcrumbs={
@@ -226,7 +228,7 @@ export default async function AlphaSelectionPage({
 						<SectionHeader icon={ChartArea} title="Analityka Wyników Alpha" />
 						<SubHeader
 							title="Wydajność strategii"
-							description="Wizualizacja trendu wartości oraz historia depozytów wyłącznie dla kategorii Booster."
+							description="Wizualizacja trendu wartości oraz historia depozytów wyłącznie dla kategorii Akcje (Booster)."
 							icon={TrendingUp}
 						/>
 					</div>
@@ -237,11 +239,11 @@ export default async function AlphaSelectionPage({
 						</Link>
 					</AddButton>
 				</div>
-				<div className="mx-6 py-4 pb-16">
+				<div className="mx-6 py-4 ">
 					<InteractiveChartSection
-						transactions={formattedTransactions.filter(
-							(t) => t.category === "BOOSTER",
-						)}
+						//  Przekaż wszystkie transakcje, nie filtruj ich tutaj!
+						transactions={formattedTransactions}
+						// Aktywa filtrujemy, co wyznaczy dostępne przyciski kategorii na wykresie
 						assets={formattedAssets.filter((a) => a.category === "BOOSTER")}
 					/>
 				</div>
@@ -251,6 +253,7 @@ export default async function AlphaSelectionPage({
 				<MigrationTool
 					assets={filteredAssets}
 					categories={filteredCategories}
+					portfolioId={portfolioId}
 				/>
 			</section>
 			{/* SEKCJA TABELA */}
@@ -262,7 +265,7 @@ export default async function AlphaSelectionPage({
 					icon={Rocket}
 				/>
 				<div className="w-full ps-6">
-					<AlphaLedgerTable />
+					<AlphaLedgerTable portfolioId={activeId} />
 				</div>
 			</section>
 		</div>

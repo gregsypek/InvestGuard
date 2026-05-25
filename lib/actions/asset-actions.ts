@@ -366,3 +366,179 @@ export async function updateAlphaDetails(
 		return { success: false, error: "Błąd podczas aktualizacji" };
 	}
 }
+
+// lib/actions/asset-actions.ts
+
+export async function syncPortfolioAssets(portfolioId: string) {
+	// Natychmiastowe sprawdzenie
+	if (!portfolioId || typeof portfolioId !== "string") {
+		console.error("❌ syncPortfolioAssets: portfolioId is missing or invalid!");
+		return { success: false, error: "Missing portfolio ID" };
+	}
+	const transactions = await db.transactionHistory.findMany({
+		where: { portfolioId },
+		orderBy: { executedAt: "asc" },
+	});
+
+	const assetMap = new Map();
+
+	// 1. Zawsze na starcie tworzymy kubełek "Gotówka"
+	assetMap.set("CASH", {
+		ticker: "CASH",
+		name: "Wolna Gotówka PLN",
+		totalQuantity: 0,
+		totalInvested: 0,
+		firstPurchase: new Date(),
+		category: "CASH",
+	});
+
+	for (const tx of transactions) {
+		const isCashTx = tx.ticker === "CASH" || tx.category === "CASH";
+		const cashAsset = assetMap.get("CASH");
+
+		if (isCashTx) {
+			// 1. WPŁATY I PRZEWALUTOWANIA (Twoje realne pieniądze z zewnątrz)
+			if (tx.type === "DEPOSIT" || tx.type === "BUY") {
+				// EN: Funds from bank account or currency exchange - increases both spendable cash and capital base
+				cashAsset.totalQuantity += tx.executedValue;
+				cashAsset.totalInvested += tx.executedValue;
+			}
+
+			// 2. ODSETKI I DYWIDENDY (Pieniądze wypracowane przez rynek)
+			else if (tx.type === "INTEREST") {
+				// EN: Interest/Dividends increase spendable cash, but are NOT part of user's personal investment base
+				cashAsset.totalQuantity += tx.executedValue;
+			}
+
+			// 3. WYPŁATY ŚRODKÓW (Zmniejszenie kapitału)
+			else if (tx.type === "SELL") {
+				// EN: Withdrawal to bank account - decreases both spendable cash and capital base
+				cashAsset.totalQuantity -= tx.executedValue;
+				cashAsset.totalInvested -= tx.executedValue;
+			}
+
+			// 4. KOREKTY RĘCZNE (Np. wyrównanie salda)
+			else if (tx.type === "UPDATE") {
+				// EN: Manual corrections usually only adjust the current balance
+				cashAsset.totalQuantity += tx.executedValue;
+			}
+
+			continue; // Idziemy do następnej transakcji
+		}
+
+		// 2. Inicjalizacja aktywa (jeśli kupujemy coś po raz pierwszy)
+		if (tx.ticker && !assetMap.has(tx.ticker)) {
+			assetMap.set(tx.ticker, {
+				ticker: tx.ticker,
+				name: tx.assetName,
+				totalQuantity: 0,
+				totalInvested: 0,
+				firstPurchase: tx.executedAt,
+				category: tx.category,
+			});
+		}
+
+		const asset = tx.ticker ? assetMap.get(tx.ticker) : null;
+
+		if (asset && tx.type === "BUY") {
+			// A. Kupujemy akcje: rośnie ilość aktywa...
+			asset.totalQuantity += tx.quantity;
+			asset.totalInvested += tx.executedValue;
+
+			// ...B. ale PŁACIMY za to naszą gotówką (CASH spada)
+			cashAsset.totalQuantity -= tx.executedValue;
+			cashAsset.totalInvested -= tx.executedValue;
+		} else if (asset && tx.type === "SELL") {
+			// A. Sprzedajemy akcje: maleje ilość aktywa...
+			const ratio = tx.quantity / (asset.totalQuantity + tx.quantity);
+			asset.totalQuantity -= tx.quantity;
+			asset.totalInvested -= asset.totalInvested * ratio;
+
+			// ...B. ale gotówka z transakcji wraca na nasze konto (CASH rośnie)
+			cashAsset.totalQuantity += tx.executedValue;
+			cashAsset.totalInvested += tx.executedValue;
+		}
+	}
+
+	// 3. Pobieramy obecne stany z bazy, aby mądrze kalkulować tymczasowe wyceny (placeholdery)
+	const existingAssets = await db.asset.findMany({ where: { portfolioId } });
+	const existingMap = new Map(existingAssets.map((a) => [a.ticker, a]));
+
+	// 4. Zapis do bazy danych
+	for (const [ticker, data] of assetMap) {
+		// Jeśli sprzedaliśmy wszystkie sztuki, po prostu wpisujemy 0, żeby mieć czystą historię
+		if (data.totalQuantity <= 0 && ticker !== "CASH") {
+			data.totalQuantity = 0;
+			data.totalInvested = 0;
+		}
+
+		// 🚀 BLOK KODU ZAPOBIEGAJĄCY UJEMNEJ GOTÓWCE
+		// EN: Prevent negative cash balances when testing stock imports without logging initial cash deposits
+		if (ticker === "CASH") {
+			if (data.totalQuantity < 0) data.totalQuantity = 0;
+			if (data.totalInvested < 0) data.totalInvested = 0;
+		}
+
+		// 🚀 NOWOŚĆ: Logika "inteligentnego placeholdera" dla wyceny bieżącej (currentValue)
+		// EN: Smart placeholder logic for currentValue before Yahoo API updates it
+		const existingAsset = existingMap.get(ticker);
+		let nextCurrentValue = existingAsset
+			? Number(existingAsset.currentValue)
+			: data.totalInvested;
+
+		if (ticker === "CASH") {
+			nextCurrentValue = data.totalInvested;
+		} else if (existingAsset) {
+			if (existingAsset.quantity === 0 && data.totalQuantity > 0) {
+				// A. Było 0 sztuk, teraz są (nowa/odnowiona pozycja) -> wycena to nasz kapitał
+				nextCurrentValue = data.totalInvested;
+			} else if (data.totalQuantity > existingAsset.quantity) {
+				// B. Dokupienie akcji -> sztucznie podbijamy wycenę o nowy wkład, by nie pokazać straty
+				const investedDifference =
+					data.totalInvested - Number(existingAsset.investedCapital);
+				if (investedDifference > 0) {
+					nextCurrentValue += investedDifference;
+				}
+			} else if (
+				data.totalQuantity < existingAsset.quantity &&
+				data.totalQuantity > 0
+			) {
+				// C. Sprzedaż części akcji -> pomniejszamy wycenę proporcjonalnie
+				const ratio = data.totalQuantity / existingAsset.quantity;
+				nextCurrentValue = nextCurrentValue * ratio;
+			} else if (data.totalQuantity === 0) {
+				// D. Całkowita sprzedaż -> zerujemy wycenę
+				nextCurrentValue = 0;
+			}
+		}
+
+		await db.asset.upsert({
+			where: {
+				portfolioId_ticker: {
+					portfolioId,
+					ticker,
+				},
+			},
+			update: {
+				name: data.name,
+				quantity: data.totalQuantity,
+				investedCapital: data.totalInvested,
+				// 🚀 Podpinamy nasz wyliczony tymczasowy placeholder!
+				currentValue: nextCurrentValue,
+				category: data.category,
+			},
+			create: {
+				portfolioId,
+				ticker,
+				name: data.name,
+				quantity: data.totalQuantity,
+				investedCapital: data.totalInvested,
+				currentValue: nextCurrentValue, // Cena startowa
+				category: data.category,
+				purchaseDate: data.firstPurchase || new Date(),
+			},
+		});
+	}
+
+	return { success: true };
+}

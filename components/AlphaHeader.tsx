@@ -16,7 +16,7 @@ export function AlphaHeader({ customBreadcrumbs }: AlphaHeaderProps) {
 					</h1>
 					<p className="text-muted-foreground font-medium mt-1">
 						Aktywne zarządzanie i selekcja aktywów o podniesionym ryzyku które
-						kategoryzujemy jako BOOSTER.
+						kategoryzujemy jako Akcje (Booster).
 					</p>
 				</div>
 			</div>

@@ -71,10 +71,14 @@ const generateHistory = (
 ): TransactionHistory[] => {
 	return Array.from({ length: months }).map((_, i) => ({
 		id: `tx-${assetName}-${i}`,
+		externalId: `demo-ext-${assetName}-${i}`, // 🚀 DODANE: Wymagane przez bazę
 		type: "BUY",
 		assetName,
 		category: category as Category,
 		executedValue: totalValue / months,
+		originalPrice: totalValue / months, // 🚀 DODANE: Cena oryginalna
+		originalCurrency: "PLN", // 🚀 DODANE: Waluta oryginalna
+		exchangeRate: 1, // 🚀 DODANE: Kurs wymiany
 		quantity: 1,
 		executedAt: daysAgo((months - i) * 30),
 		portfolioId: "demo-id",
@@ -82,6 +86,7 @@ const generateHistory = (
 		updatedAt: new Date(),
 		ticker: null,
 		rationale: null,
+		comment: "Demo", // 🚀 DODANE: Komentarz systemowy
 	}));
 };
 

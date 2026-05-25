@@ -9,6 +9,13 @@ import { revalidatePath } from "next/cache";
 
 const yahooFinance = new YahooFinance();
 
+// EN: Simple mapper for problematic tickers between XTB and Yahoo
+// PL: Mapowanie tickerów, których Yahoo nie rozumie w formacie XTB
+const TICKER_MAP: Record<string, string> = {
+	"SP20.NL": "IS20.DE",
+	"EIMI.UK": "EIMI.L",
+	"ALAG.UK": "ALAG.L",
+};
 export async function refreshPortfolioPrices(portfolioId: string) {
 	const session = await auth();
 	if (!session?.user?.id) return { error: "Błąd autoryzacji" };
@@ -28,10 +35,11 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 		let updatedCount = 0;
 
 		for (const asset of assets) {
-			// Limit odświeżania dla darmowych kont (raz na 24h)
-			if (role === "REGULAR" && asset.updatedAt > oneDayAgo) continue;
+			if (asset.ticker === "CASH" || asset.category === "CASH") continue;
 
-			const symbol = formatYahooTicker(asset.ticker || asset.name);
+			// EN: 1. Clean ticker and 2. Map it to Yahoo-friendly symbol
+			const baseTicker = asset.ticker?.split("_")[0] || "";
+			const symbol = formatYahooTicker(TICKER_MAP[baseTicker] || baseTicker);
 
 			try {
 				const result = await yahooFinance.quote(
@@ -41,37 +49,49 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 				);
 				const quote = Array.isArray(result) ? result[0] : result;
 
-				if (quote?.regularMarketPrice != null) {
-					const rawPrice = quote.regularMarketPrice as number;
-					// POBIERAMY ZMIANĘ 24H Z API YAHOO
-					const dailyChange = quote.regularMarketChangePercent || 0;
-					const currency = quote.currency || "PLN";
-					let priceInPLN = rawPrice;
+				// 🚀 CRITICAL FIX: Check if quote exists before accessing properties
+				if (!quote || quote.regularMarketPrice == null) {
+					console.warn(`⚠️ Yahoo Finance returned no data for: ${symbol}`);
+					continue;
+				}
 
-					// Przeliczanie walut przez Twój bufor (ExchangeRate)
-					if (currency !== "PLN") {
-						const searchCurrency = currency === "GBp" ? "GBP" : currency;
-						const fxData = await getLiveExchangeRate(searchCurrency);
+				const rawPrice = quote.regularMarketPrice as number;
+				const currency = quote.currency || "PLN";
+				let priceInPLN = rawPrice;
 
-						if (fxData) {
-							const multiplier = currency === "GBp" ? 0.01 : 1;
-							priceInPLN = rawPrice * multiplier * fxData.value;
-						}
+				// EN: Handle Currency Conversion logic correctly
+				if (currency !== "PLN") {
+					const searchCurrency = currency === "GBp" ? "GBP" : currency;
+					const fxData = await getLiveExchangeRate(searchCurrency);
+
+					if (!fxData) {
+						console.error(
+							`❌ Missing FX Rate for ${searchCurrency}. Skipping ${symbol}.`,
+						);
+						continue;
 					}
 
-					// AKTUALIZACJA W BAZIE (Zapisujemy cenę i zmianę dobową)
-					await db.asset.update({
-						where: { id: asset.id },
-						data: {
-							currentValue: priceInPLN * asset.quantity,
-							dailyChange: dailyChange, // To pole zasila Twój pasek
-							updatedAt: new Date(),
-						},
-					});
-					updatedCount++;
+					const multiplier = currency === "GBp" ? 0.01 : 1;
+					priceInPLN = rawPrice * multiplier * fxData.value;
 				}
+
+				// EN: Final Update - logging AFTER FX calculation for accuracy
+				console.log(
+					`✅ [${asset.ticker}] -> ${priceInPLN.toFixed(2)} PLN (Raw: ${rawPrice} ${currency})`,
+				);
+
+				await db.asset.update({
+					where: { id: asset.id },
+					data: {
+						currentValue: priceInPLN * asset.quantity,
+						dailyChange: quote.regularMarketChangePercent || 0,
+						name: quote.longName || quote.shortName || asset.name,
+						updatedAt: new Date(),
+					},
+				});
+				updatedCount++;
 			} catch (err) {
-				console.error(`Błąd Yahoo dla ${symbol}:`, err);
+				console.error(`❌ Error refreshing ${symbol}:`, err);
 			}
 		}
 

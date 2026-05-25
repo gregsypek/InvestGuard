@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { db } from "../db";
+import { revalidatePath } from "next/cache";
 
 export async function getTransactionHistory(
 	page: number = 1,
@@ -49,6 +49,7 @@ export async function getTransactionHistory(
 		return { success: false, error: "Could not load transaction history" };
 	}
 }
+
 export async function deleteHistoryItem(id: string) {
 	try {
 		await db.transactionHistory.delete({ where: { id } });

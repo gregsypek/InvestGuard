@@ -1,5 +1,6 @@
-// EN: Interfaces for chart data points
-// PL: Interfejsy dla punktów danych na wykresach
+// lib/chart-helpers.ts
+import { Transaction } from "./types";
+
 export interface AreaChartPoint {
 	name: string;
 	wkład: number;
@@ -11,36 +12,53 @@ export interface BarChartPoint {
 	amount: number;
 }
 
-/**
- * EN: Prepares data for AlphaChart and MonthlyDepositsChart based on transactions
- * PL: Przygotowuje dane dla AlphaChart i MonthlyDepositsChart na podstawie transakcji
- */
-import { Transaction } from "./types";
-
 export const prepareChartAnalytics = (
 	transactions: Transaction[],
 	roiFactor: number,
 ) => {
-	// 1. Logika dla AreaChart (Trend skumulowany)
 	const sortedTx = [...transactions].sort(
 		(a, b) =>
 			new Date(a.executedAt).getTime() - new Date(b.executedAt).getTime(),
 	);
 
+	// 1. Grupujemy transakcje po miesiącach (RRRR-MM) → jeden punkt = jeden miesiąc
+	const monthlyArea: Record<
+		string,
+		{ label: string; cumulative: number; sortKey: number }
+	> = {};
+
 	let cumulative = 0;
-	const areaPoints = sortedTx.map((t) => {
-		cumulative += Number(t.executedValue);
-		return {
-			name: new Date(t.executedAt).toLocaleDateString("pl-PL", {
-				day: "2-digit",
-				month: "2-digit",
-			}),
-			wkład: Math.round(cumulative),
-			wycena: Math.round(cumulative * roiFactor),
-		};
+	sortedTx.forEach((t) => {
+		const date = new Date(t.executedAt);
+		const sortKey = date.getFullYear() * 100 + date.getMonth();
+		const label = date.toLocaleDateString("pl-PL", {
+			month: "2-digit",
+			year: "2-digit",
+		});
+
+		// 🚀 FIX: Rozróżniamy napływ kapitału (BUY) od wycofania środków z aktywów (SELL)
+		if (t.type === "BUY") {
+			cumulative += Number(t.executedValue);
+		} else if (t.type === "SELL") {
+			cumulative -= Number(t.executedValue);
+		}
+
+		// Zabezpieczenie przed spadkiem poniżej zera (np. gdy zrealizowany zysk ze sprzedaży przewyższa wkład pierwotny)
+		const safeCumulative = cumulative < 0 ? 0 : cumulative;
+
+		// Nadpisujemy — interesuje nas skumulowana wartość NA KONIEC każdego miesiąca
+		monthlyArea[sortKey] = { label, cumulative: safeCumulative, sortKey };
 	});
 
-	// 2. Logika dla MonthlyDeposits (Słupki - chronologicznie)
+	const areaPoints = Object.values(monthlyArea)
+		.sort((a, b) => a.sortKey - b.sortKey)
+		.map(({ label, cumulative }) => ({
+			name: label,
+			wkład: Math.round(cumulative),
+			wycena: Math.round(cumulative * roiFactor),
+		}));
+
+	// 2. Logika dla MonthlyDeposits (Słupki - bez zmian)
 	const monthlyMap: Record<
 		string,
 		{ month: string; amount: number; sortKey: number }
@@ -52,18 +70,22 @@ export const prepareChartAnalytics = (
 			month: "short",
 			year: "2-digit",
 		});
-		const sortKey = date.getFullYear() * 100 + date.getMonth(); // RRRRMM dla sortowania
+		const sortKey = date.getFullYear() * 100 + date.getMonth();
 
-		if (!monthlyMap[monthKey]) {
-			monthlyMap[monthKey] = { month: monthKey, amount: 0, sortKey };
+		if (t.type === "DEPOSIT" || t.type === "BUY") {
+			if (!monthlyMap[monthKey]) {
+				monthlyMap[monthKey] = { month: monthKey, amount: 0, sortKey };
+			}
+			monthlyMap[monthKey].amount += Number(t.executedValue);
 		}
-		monthlyMap[monthKey].amount += Number(t.executedValue);
 	});
 
 	const barPoints = Object.values(monthlyMap)
 		.sort((a, b) => a.sortKey - b.sortKey)
-		.map(({ month, amount }) => ({ month, amount: Number(amount.toFixed(2)) }));
-	console.log("🚀 ~ prepareChartAnalytics ~ barPoints:", barPoints);
+		.map(({ month, amount }) => ({
+			month,
+			amount: Math.round(amount),
+		}));
 
 	return { areaPoints, barPoints };
 };

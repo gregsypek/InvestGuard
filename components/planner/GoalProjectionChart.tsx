@@ -104,7 +104,10 @@ export function GoalProjectionChart({
 								border: "1px solid var(--border)",
 								fontSize: "10px",
 							}}
-							formatter={(v: number) => [`${v.toLocaleString()} zł`, "Kapitał"]}
+							formatter={(v: any) => [
+								`${v?.toLocaleString() || 0} zł`,
+								"Kapitał",
+							]}
 						/>
 						<ReferenceLine
 							y={targetValue}

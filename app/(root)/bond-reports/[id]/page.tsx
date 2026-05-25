@@ -39,13 +39,10 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 		},
 	});
 	const { id: pathId } = await params;
-	const { portfolioId: queryId } = await searchParams; //  Pobieramy ID z ?portfolioId=...
-	if (!pathId) return <PortfolioEmptyState variant="NOT_FOUND" />;
-
-	// 1. LOGIKA SYNCHRONIZACJI:
-	// Jeśli w URL jest portfolioId, to ono jest "ważniejsze" (wybrane z selektora).
-	// Jeśli nie ma, używamy ID ze ścieżki.
-	const activeId = queryId || pathId;
+	// 🚀 DEFINIUJEMY portfolioId na podstawie pathId
+	const portfolioId = pathId;
+	const activeId = pathId; // Jeśli używasz też activeId w Linkach
+	// if (!pathId) return <PortfolioEmptyState variant="NOT_FOUND" />;
 
 	// EN: Fetch bonds again (Next.js automatically deduplicates identical fetch requests in the background)
 	const data = await getBondsData(activeId);
@@ -57,8 +54,11 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 	const { bonds, stats, portfolioName } = data;
 	const isEmpty = bonds.length === 0;
 
+	if (!portfolioId) {
+		return <PortfolioEmptyState variant="PORTFOLIOS" />;
+	}
 	return (
-		<div className=" p-6 px-8 space-y-10 pb-20">
+		<div className="space-y-10">
 			<BondHeader
 				title="Moje Obligacje"
 				totalBonds={bonds.length}
@@ -86,16 +86,13 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 					</Link>
 				</AddButton>
 			</div>
-
 			{isEmpty ? (
-				<div className="mt-12">
-					<PortfolioEmptyState
-						variant="PLANNER"
-						title="Brak obligacji w tym portfelu"
-						description="Nie dodałeś jeszcze żadnych obligacji skarbowych. Kliknij 'Dodaj Serię', aby rozpocząć."
-						portfolioId={activeId}
-					/>
-				</div>
+				<PortfolioEmptyState
+					variant="BONDS"
+					// title="Brak obligacji w tym portfelu"
+					// description="Nie dodałeś jeszcze żadnych obligacji skarbowych. Kliknij 'Dodaj Serię', aby rozpocząć."
+					portfolioId={activeId}
+				/>
 			) : (
 				<BondLedgerTable
 					initialBonds={bonds}

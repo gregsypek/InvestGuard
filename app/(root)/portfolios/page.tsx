@@ -12,36 +12,42 @@ interface Props {
 }
 
 export default async function PortfoliosPage({ searchParams }: Props) {
-	// EN: Fetch all portfolios with their assets for global aggregation
 	const session = await auth();
 
-	// Redirect to sign-in if the user is not authenticated
 	if (!session?.user?.id) {
 		redirect("/sign-in");
 	}
+
 	const portfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
 		include: { assets: true, transactionHistories: true },
 		orderBy: { createdAt: "desc" },
 	});
 
-	// EN: Resolve portfolioId from URL or fallback to cookies for "Add Asset" context
-	const portfolioId = await getActivePortfolioId(searchParams);
-
-	// EN: SCENARIO: No portfolios exist in the database
+	// 1. Jeśli nie ma żadnych portfeli (usunięto ostatni), od razu pokaż stan pusty
 	if (portfolios.length === 0) {
 		return <PortfolioEmptyState variant="PORTFOLIOS" />;
 	}
 
-	if (!portfolioId) {
-		return <PortfolioEmptyState variant="NOT_SELECTED" />;
-	}
+	// 2. Pobierz ID z URL lub ciasteczka
+	const rawPortfolioId = await getActivePortfolioId(searchParams);
 
+	// 🚀 KLUCZOWA POPRAWKA: Sprawdź, czy portfolioId z ciasteczka/URL faktycznie istnieje w pobranych portfelach
+	// Zapobiega to pętli, gdy w ciasteczku siedzi ID usuniętego portfela
+	const activePortfolio = portfolios.find((p) => p.id === rawPortfolioId);
+	const portfolioId = activePortfolio ? rawPortfolioId : null;
+
+	// 3. Jeśli portfel został usunięty (brak activePortfolio), pokaż pozostałe portfele i zresetuj selection (nie pokazuj stanu pustego, bo są inne portfele)
+	// if (!portfolioId) {
+	// 	return <PortfolioEmptyState variant="NOT_SELECTED" />;
+	// }
+
+	// 4. Dopiero tutaj licz statystyki, gdy mamy pewność, że portfel istnieje
 	const { totalValue, portfoliosCount, assetsCount, categoryTotals } =
 		getGlobalStats(portfolios);
 
 	return (
-		<div className="space-y-10 pb-20 mb-2">
+		<div className="space-y-10">
 			<PortfoliosHeader
 				title="Moje Portfele"
 				totalValue={totalValue}
@@ -59,7 +65,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 			/>
 			<PortfoliosClientView
 				portfolios={portfolios}
-				portfolioId={portfolioId}
+				portfolioId={portfolioId ?? undefined}
 				categoryTotals={categoryTotals}
 			/>
 		</div>

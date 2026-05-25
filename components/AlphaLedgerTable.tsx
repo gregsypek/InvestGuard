@@ -16,7 +16,11 @@ import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 
-export default async function AlphaLedgerTable({}) {
+export default async function AlphaLedgerTable({
+	portfolioId,
+}: {
+	portfolioId?: string;
+}) {
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
 
@@ -24,11 +28,14 @@ export default async function AlphaLedgerTable({}) {
 	const boosterAssets = await db.asset.findMany({
 		where: {
 			category: "BOOSTER" as Category,
+			portfolioId: portfolioId || undefined, //  Filtruje rekordy po aktywnym portfelu
 			portfolio: { userId: session.user.id },
 		},
 		include: { portfolio: true },
 		orderBy: { conviction: "desc" },
 	});
+
+	const activeBoosterAssets = boosterAssets.filter((a) => a.quantity > 0);
 
 	return (
 		<Table>
@@ -47,7 +54,7 @@ export default async function AlphaLedgerTable({}) {
 				</TableRow>
 			</TableHeader>
 			<TableBody>
-				{boosterAssets.map((asset) => {
+				{activeBoosterAssets.map((asset) => {
 					const individualRoi =
 						asset.investedCapital > 0
 							? ((asset.currentValue - asset.investedCapital) /

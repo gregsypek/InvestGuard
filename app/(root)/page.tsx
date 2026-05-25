@@ -35,7 +35,7 @@ function GuestOnboarding() {
 	return (
 		<div className="flex flex-col min-h-screen">
 			{/* Hero Section */}
-			<section className="py-20 px-6 text-center bg-linear-to-b from-background to-secondary/20">
+			<section className="py-10  text-center bg-linear-to-b from-background to-secondary/20">
 				<h1 className="text-4xl md:text-6xl font-black tracking-tighter  mb-6">
 					Witaj w <span className="text-primary">{APP_NAME}</span>
 				</h1>

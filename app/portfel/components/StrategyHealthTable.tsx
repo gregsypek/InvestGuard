@@ -97,7 +97,8 @@ export default function StrategyHealthTable({ data }: Props) {
 										) : item.differencePLN > 0 ? (
 											<Button
 												size="sm"
-												className="bg-emerald-600/10 hover:bg-emerald-600 hover:text-white text-emerald-600 border-none shadow-none text-[10px] font-bold uppercase h-8 transition-all"
+												variant="outline"
+												className="bg-transparent hover:bg-transparent border  text-emerald-600 border-none shadow-none text-[10px] font-bold uppercase h-8 transition-all"
 											>
 												<ArrowUpRight className="h-3.5 w-3.5 mr-1" />
 												Dokup {item.differencePLN.toLocaleString()} PLN
@@ -106,7 +107,7 @@ export default function StrategyHealthTable({ data }: Props) {
 											<Button
 												size="sm"
 												variant="outline"
-												className="text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white text-[10px] font-bold uppercase h-8 transition-all"
+												className="text-red-500  text-[10px] font-bold border-none uppercase h-8 transition-all"
 											>
 												<ArrowDownRight className="h-3.5 w-3.5 mr-1" />
 												Nadmiar {Math.abs(

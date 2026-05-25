@@ -21,7 +21,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 	DEVELOPED: "Rynki Rozwinięte",
 	EMERGING: "Rynki Wschodzące",
 	GOLD: "Złoto",
-	BOOSTER: "Booster (Alpha)",
+	BOOSTER: "Akcje (Alpha)",
 	CASH: "Gotówka",
 	CRYPTO: "Kryptowaluty",
 	COMMODITIES: "Surowce",

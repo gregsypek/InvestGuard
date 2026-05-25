@@ -36,11 +36,11 @@ export const CATEGORY_LABELS: Record<AssetCategory, string> = {
 	DEVELOPED: "Rynki Rozwinięte",
 	EMERGING: "Rynki Wschodzące",
 	GOLD: "Złoto",
-	BOOSTER: "Booster (Alpha)",
+	BOOSTER: "Akcje (Booster)",
 	CASH: "Gotówka",
 	CRYPTO: "Kryptowaluty",
 	COMMODITIES: "Surowce",
-	UNKNOWN: "Nieznane (Wymaga akcji!)", // 👈 Nowa etykieta
+	UNKNOWN: "Nieznana",
 };
 
 // Your master plan: 15/15/10/55/5
@@ -109,7 +109,7 @@ export const CATEGORY_CONFIG = [
 	{
 		id: "BOOSTER", // EN: Added Booster to match your CSS variables
 		targetKey: "targetBooster",
-		name: "Booster",
+		name: "Akcje",
 		color: "bg-portfolio-booster",
 	},
 	{
@@ -143,6 +143,7 @@ export const CATEGORY_DETAILS: Record<
 	CASH: { label: "Gotówka", color: "bg-slate-400", icon: "💵" },
 	CRYPTO: { label: "Kryptowaluty", color: "bg-blue-600", icon: "🪙" },
 	COMMODITIES: { label: "Surowce", color: "bg-brown-600", icon: "🛢️" },
+	UNKNOWN: { label: "Nieznana", color: "bg-gray-500", icon: "❓" },
 };
 
 // EN: Shared focus styles to remove thick ring and use subtle border instead

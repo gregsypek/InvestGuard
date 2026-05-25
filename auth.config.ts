@@ -7,6 +7,15 @@ export const authConfig = {
 		Google({
 			clientId: process.env.GOOGLE_CLIENT_ID,
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+			// EN: Force Google to show the account selection screen
+			// PL: Wymuszamy na Google ekran wyboru konta
+			authorization: {
+				params: {
+					prompt: "select_account",
+					access_type: "offline",
+					response_type: "code",
+				},
+			},
 		}),
 	],
 	// Tutaj definiujemy stronę logowania, aby middleware wiedział, gdzie przekierować

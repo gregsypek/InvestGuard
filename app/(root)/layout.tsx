@@ -89,7 +89,7 @@ export default async function RootLayout({
 		}),
 	];
 	return (
-		<div className="flex h-screen overflow-hidden bg-background">
+		<div className="flex h-screen overflow-hidden bg-background ">
 			<Aside />
 			<div className="flex flex-col flex-1 min-w-0">
 				{/* Composition Pattern  Dzięki przekazaniu komponentu jako prop UserButton 👤 jest renderowany na serwerze (ma dostęp do sesji i nagłówków), a Header 🧭 zajmuje się tylko interakcją w przeglądarce.*/}
@@ -101,7 +101,9 @@ export default async function RootLayout({
 				/>
 				<main className="flex-1 overflow-y-auto ">
 					<MarketTicker data={tickerData} /> {/* scrollable main part */}
-					<div className="max-w-7xl mx-auto">{children}</div>
+					<div className="max-w-7xl mx-auto  p-6 px-8 space-y-10">
+						{children}
+					</div>
 				</main>
 			</div>
 		</div>

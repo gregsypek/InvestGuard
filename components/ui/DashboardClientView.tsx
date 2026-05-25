@@ -32,7 +32,7 @@ export default function DashboardClientView({
 
 	if (!hasMounted) return null;
 	return (
-		<div className="space-y-10 pb-20">
+		<div className="space-y-10 ">
 			{/* 3. REBALANCING & CHARTS (Sekcja analityczna) */}
 			<DashboardAnalytics
 				portfolio={portfolio}

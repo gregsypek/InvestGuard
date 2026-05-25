@@ -1,10 +1,10 @@
 "use client";
 
+import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import { DashboardAsset, Transaction } from "@/lib/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { AlphaChart } from "./alpha/AreaChart";
-import { COLORS } from "@/lib/constants";
+import { AlphaChart } from "./alpha/AlphaChart";
 import { MonthlyDepositsChart } from "./alpha/MonthlyDepositChart";
 import { prepareChartAnalytics } from "@/lib/chart-helpers";
 
@@ -13,33 +13,49 @@ interface Props {
 	assets: DashboardAsset[];
 }
 
+export interface AlphaPoint {
+	name: string; // np. "03.26" (miesiąc i rok)
+	wkład: number; // np. 429 (kapitał zainwestowany)
+	wycena: number; // np. 506 (aktualna wartość rynkowa)
+}
+
 export function InteractiveChartSection({
 	transactions = [],
 	assets = [],
 }: Props) {
+	// 1. HOOK: Obliczamy dostępne kategorie
 	const availableCategories = useMemo(() => {
-		const cats = assets
-			.filter((a) => a.category !== "BOND" && a.category !== "OBLIGACJE")
-			.map((a) => a.category);
-		return Array.from(new Set(cats));
+		if (!assets || assets.length === 0) return [];
+		return Array.from(new Set(assets.map((a) => a.category)));
 	}, [assets]);
 
+	// 2. HOOK: Stan wybranych kategorii
 	const [selectedCats, setSelectedCats] =
 		useState<string[]>(availableCategories);
 
-	const { areaPoints, barPoints } = useMemo(() => {
-		if (!Array.isArray(transactions)) return { areaPoints: [], barPoints: [] };
+	// 3. Używamy useEffect zamiast useMemo do zmiany stanu!
+	useEffect(() => {
+		setSelectedCats(availableCategories);
+	}, [availableCategories]);
 
-		const filteredTx = transactions.filter(
-			(t) =>
-				selectedCats.includes(t.category) &&
-				t.category !== "BOND" &&
-				t.category !== "OBLIGACJE",
+	// 4. HOOK: Przenosimy to wyżej, przed "if (...) return"
+	const { areaPoints, barPoints } = useMemo(() => {
+		if (!Array.isArray(transactions) || transactions.length === 0) {
+			return { areaPoints: [], barPoints: [] };
+		}
+
+		const filteredTx = transactions.filter((t) =>
+			selectedCats.includes(t.category),
 		);
+
+		if (filteredTx.length === 0) return { areaPoints: [], barPoints: [] };
+
+		// Obliczamy prawdziwy mnożnik na podstawie realnych danych
 
 		const selectedAssets = assets.filter((a) =>
 			selectedCats.includes(a.category),
 		);
+
 		const totalInvoiced = selectedAssets.reduce(
 			(sum, a) => sum + Number(a.investedCapital),
 			0,
@@ -48,17 +64,38 @@ export function InteractiveChartSection({
 			(sum, a) => sum + Number(a.currentValue),
 			0,
 		);
+
 		const currentRoiFactor = totalInvoiced > 0 ? totalValue / totalInvoiced : 1;
 
 		return prepareChartAnalytics(filteredTx, currentRoiFactor);
 	}, [transactions, selectedCats, assets]);
 
-	const toggleCategory = (cat: string) => {
+	// Walidacja "No Data" oparta tylko na tym, co zaznaczone w selectedCats
+	const validChartTransactions =
+		transactions?.filter((t) => availableCategories.includes(t.category)) || [];
+
+	// 5. WCZESNE ZAKOŃCZENIE (Early Return) - Zawsze na samym dole, po wszystkich Hookach!
+	if (validChartTransactions.length === 0) {
+		return (
+			<div className="w-full bg-card/30 p-12 rounded-3xl border border-dashed border-border/60 flex flex-col items-center justify-center text-center space-y-2 my-4">
+				<p className="text-sm font-semibold text-foreground">
+					Brak historii transakcji dla tego widoku
+				</p>
+				<p className="text-xs text-muted-foreground">
+					Nie masz jeszcze transakcji rynkowych dla aktywów przypisanych do tego
+					wykresu.
+				</p>
+			</div>
+		);
+	}
+
+	const toggleCategory = (category: string) => {
 		setSelectedCats((prev) =>
-			prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
+			prev.includes(category)
+				? prev.filter((c) => c !== category)
+				: [...prev, category],
 		);
 	};
-
 	return (
 		<div className="space-y-6">
 			{/* Selektor Kategorii z Kolorami */}
@@ -68,14 +105,16 @@ export function InteractiveChartSection({
 					const catColor = COLORS[cat as keyof typeof COLORS] || "#94a3b8";
 					console.log("🚀 ~ InteractiveChartSection ~ catColor:", catColor);
 
+					const labelKey = cat as keyof typeof CATEGORY_LABELS;
+
 					return (
 						<button
 							key={cat}
 							onClick={() => toggleCategory(cat)}
 							className={`group flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all border ${
 								isActive
-									? "shadow-md scale-105 opacity-100"
-									: "border-transparent opacity-40 hover:opacity-60 bg-muted/10"
+									? "shadow-sm scale-105 opacity-100"
+									: "border-gray-600 opacity-60 hover:opacity-80 bg-muted/10"
 							}`}
 							style={
 								isActive
@@ -91,11 +130,13 @@ export function InteractiveChartSection({
 						>
 							<div
 								className={`w-2 h-2 rounded-full shrink-0 transition-transform ${
-									isActive ? "scale-110" : "scale-100 grayscale-[0.5]"
+									isActive ? "scale-110" : "scale-100 grayscale-[1]"
 								}`}
 								style={{ backgroundColor: catColor }}
 							/>
-							<span className="tracking-wider">{cat}</span>
+							<span className="tracking-wider">
+								{CATEGORY_LABELS[labelKey] || cat}
+							</span>
 						</button>
 					);
 				})}

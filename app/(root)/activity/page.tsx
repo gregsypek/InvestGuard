@@ -22,9 +22,9 @@ import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
+import { db } from "@/lib/db";
 import { getTransactionHistory } from "@/lib/actions/history.actions";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
 
 export default async function ActivityPage({
 	searchParams,
@@ -116,12 +116,13 @@ export default async function ActivityPage({
 						</TableHeader>
 						<TableBody>
 							{transactions.map((t) => {
+								const isBuy = t.type === "BUY";
+								const isDeposit = t.type === "DEPOSIT"; // Dodaj to
+								const isInterest = t.type === "INTEREST"; // Dodaj to
+								const isCorrection = t.type === "UPDATE";
+								const isPositive = isBuy || isDeposit || isInterest; // Grupa "na plusie"
 								const categoryColor =
 									COLORS[t.category as keyof typeof COLORS] || "var(--primary)";
-
-								// ZMIANA 3: Koniec zgadywania po słowach i znakach. Używamy Enuma:
-								const isBuy = t.type === "BUY";
-								const isCorrection = t.type === "UPDATE";
 
 								return (
 									<TableRow
@@ -141,14 +142,22 @@ export default async function ActivityPage({
 															? "bg-blue-500/10 text-blue-600"
 															: isBuy
 																? "bg-emerald-500/10 text-emerald-600"
-																: "bg-orange-500/10 text-orange-600",
+																: isDeposit
+																	? "bg-purple-500/10 text-purple-600" // Nowy kolor dla wpłaty
+																	: isInterest
+																		? "bg-amber-500/10 text-amber-600" // Nowy kolor dla odsetek
+																		: "bg-orange-500/10 text-orange-600",
 													)}
 												>
 													{isCorrection
 														? "Korekta"
 														: isBuy
 															? "Kupno"
-															: "Sprzedaż"}
+															: isDeposit
+																? "Wpłata"
+																: isInterest
+																	? "Odsetki"
+																	: "Sprzedaż"}
 												</span>
 											</div>
 										</TableCell>
@@ -190,18 +199,17 @@ export default async function ActivityPage({
 													isCorrection
 														? t.executedValue >= 0
 															? "text-blue-600"
-															: "text-red-500" // Kolor dla wyniku korekty
-														: isBuy
+															: "text-red-500"
+														: isPositive
 															? "text-emerald-600"
 															: "text-orange-600",
 												)}
 											>
-												{/* ZMIANA 4: Dynamiczny znak dla UPDATE na podstawie zapisanej Delty */}
 												{isCorrection
 													? t.executedValue > 0
 														? "+"
 														: ""
-													: isBuy
+													: isPositive
 														? "+"
 														: "-"}
 												{Math.abs(t.executedValue).toLocaleString("pl-PL", {
@@ -210,10 +218,10 @@ export default async function ActivityPage({
 												PLN
 											</div>
 											<div className="text-[10px] text-muted-foreground font-normal">
-												{/* Sztuki: Korekta to zawsze 0 */}
 												{isCorrection
 													? "0.0000"
-													: (isBuy ? "+" : "") + t.quantity.toFixed(4)}{" "}
+													: (isPositive ? "+" : "-") +
+														t.quantity.toFixed(4)}{" "}
 												szt.
 											</div>
 										</TableCell>

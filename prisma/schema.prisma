@@ -23,6 +23,7 @@ enum Category {
   CRYPTO
   COMMODITIES
   UNKNOWN
+  UNKNOWN
 }
 
 enum TimeHorizon {
@@ -32,11 +33,11 @@ enum TimeHorizon {
 }
 
 enum TransactionType {
-  BUY // Standardowy zakup aktywów 🛒
-  SELL // Sprzedaż aktywów 💸
-  UPDATE // Ręczne korekty wyceny 🛠️
-  DEPOSIT // Twoje wpłaty zewnętrzne (np. IKE deposit) 🏦
-  INTEREST // Odsetki od wolnych środków (np. Free funds interest) 💵
+  BUY
+  SELL
+  UPDATE
+  DEPOSIT
+  INTEREST
 }
 
 model Asset {
@@ -129,28 +130,29 @@ model InvestmentPlan {
 
 model TransactionHistory {
   id         String          @id @default(cuid())
-  externalId String?         @unique
+  externalId String?
   type       TransactionType @default(BUY)
   assetName  String
   ticker     String? // EN: Optional for cash operations
 
   // EN: Multi-currency support fields
   // PL: Pola wspierające wiele walut
-  originalPrice    Float? // EN: Price in EUR/USD from comments
-  originalCurrency String? // EN: EUR, USD, PLN
+  originalPrice    Float? // Cena w EUR/USD wyciągnięta z komentarza XTB
+  originalCurrency String? // EUR, USD, PLN
   exchangeRate     Float   @default(1.0)
 
-  executedValue Float // EN: The actual amount spent in PLN
+  executedValue Float // Kwota w PLN (z kolumny Amount w Excelu)
   category      Category
   executedAt    DateTime @default(now())
   rationale     String?
+  comment       String?
   quantity      Float    @default(0)
 
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
-  // EN: Composite index for uniqueness if externalId is missing
-  // PL: Indeks kompozytowy dla unikalności, gdy brakuje externalId
+  @@unique([portfolioId, externalId])
+  // Indeks dla wydajności przy filtrowaniu po dacie i kwocie
   @@index([executedAt, executedValue])
 }
 

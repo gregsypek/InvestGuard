@@ -18,5 +18,5 @@ export default async function PortfoliosLayout({
 	// but for now, the Header will be managed inside individual pages
 	// or right here if you want it constant.
 
-	return <main className="p-6">{children}</main>;
+	return <main className="space-y-10">{children}</main>;
 }

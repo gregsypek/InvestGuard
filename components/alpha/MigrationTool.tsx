@@ -28,9 +28,14 @@ interface SimpleAsset {
 interface MigrationToolProps {
 	assets: SimpleAsset[];
 	categories: Category[];
+	portfolioId: string;
 }
 
-export function MigrationTool({ assets, categories }: MigrationToolProps) {
+export function MigrationTool({
+	assets,
+	categories,
+	portfolioId,
+}: MigrationToolProps) {
 	// 1. Pierwszy select pusty (Wybierz aktywo...)
 	const [selectedAssetId, setSelectedAssetId] = useState<string>("");
 	// 2. Domyślnie ustawiony BOOSTER jako cel
@@ -44,7 +49,11 @@ export function MigrationTool({ assets, categories }: MigrationToolProps) {
 
 		setLoading(true);
 		try {
-			const res = await migrateAssetCategory(currentAsset.name, targetCat);
+			const res = await migrateAssetCategory(
+				currentAsset.name,
+				targetCat,
+				portfolioId,
+			);
 			if (res.success) {
 				toast.success(`Zaktualizowano ${currentAsset.name} do ${targetCat}`);
 				setSelectedAssetId(""); // Reset po sukcesie

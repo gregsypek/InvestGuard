@@ -35,6 +35,7 @@ import {
 } from "@/lib/actions/asset-actions";
 
 import { AdjustAssetModal } from "./AdjustAssetModal";
+import { AssetLogo } from "./shared/AssetLogo";
 import { DeleteButton } from "./DeleteButton";
 import Link from "next/link";
 import PaginatedBar from "./shared/PaginatedBar";
@@ -76,6 +77,7 @@ const AssetLedgerTable = ({
 
 	// --- LOGIKA AGREGACJI (HUB & SPOKE) ---
 	const assetsWithPL = useMemo(() => {
+		// console.log("🚀 ~ AssetLedgerTable ~ assets:", assets);
 		// 1. Oddzielamy zwykłe aktywa od obligacji
 		const standardAssets = assets.filter((a) => a.category !== "BONDS");
 		const bondAssets = assets.filter((a) => a.category === "BONDS");
@@ -131,6 +133,7 @@ const AssetLedgerTable = ({
 		// console.log("🚀 ~ AssetLedgerTable ~ combined:", combined);
 
 		return combined.map((asset) => {
+			console.log("🚀 ~ AssetLedgerTable ~ asset:", asset);
 			const { profitAmount, profitPercent } = calculateAssetPL({
 				investedCapital: asset.investedCapital ?? 0,
 				currentValue: asset.currentValue ?? 0,
@@ -251,6 +254,7 @@ const AssetLedgerTable = ({
 							</TableRow>
 						) : (
 							paginatedAssets.map((asset) => {
+								console.log("🚀 ~ AssetLedgerTable ~ asset:", asset);
 								const isAggregatedBond = asset.id === "bonds-summary-id";
 
 								// // EN: Smart filtering: If it's the aggregated bond row, show ALL bond history.
@@ -285,26 +289,27 @@ const AssetLedgerTable = ({
 											new Date(b.executedAt).getTime(),
 									)
 									.reduce((acc: ChartPoint[], tx) => {
-										// 🆕 ZMIANA LOGIKI WYKRESU:
 										let valueToAdd = 0;
 
 										if (isAggregatedBond) {
-											// Dla obligacji operujemy na wartości (PLN)
-											if (tx.type === "SELL") {
-												// Sprzedaż musi POMNIEJSZAĆ słupek na wykresie
-												valueToAdd = -Math.abs(tx.executedValue);
-											} else {
-												// KUPNO i KOREKTA (korekta może być +/- więc po prostu dodajemy jej wartość)
-												valueToAdd = tx.executedValue;
-											}
+											// Logika dla obligacji (operujemy na PLN)
+											valueToAdd =
+												tx.type === "SELL"
+													? -Math.abs(tx.executedValue)
+													: Math.abs(tx.executedValue);
 										} else {
-											// Dla innych aktywów (np. akcji) operujemy na ilości (szt.)
-											// W bazie danych quantity przy sprzedaży jest już ujemne (np. -1)
-											valueToAdd = tx.quantity;
+											// Logika dla akcji/ETF (operujemy na sztukach)
+											// EN: If it's a BUY or DEPOSIT, value is positive. If SELL, it's negative.
+											// PL: Jeśli KUPNO/WPŁATA - dodatnie. Jeśli SPRZEDAŻ - ujemne.
+											const isNegative = tx.type === "SELL";
+											valueToAdd = isNegative
+												? -Math.abs(tx.quantity)
+												: Math.abs(tx.quantity);
 										}
 
 										const lastAmount =
 											acc.length > 0 ? acc[acc.length - 1].amount : 0;
+
 										acc.push({
 											date: new Date(tx.executedAt).toLocaleDateString(),
 											amount: lastAmount + valueToAdd,
@@ -325,12 +330,21 @@ const AssetLedgerTable = ({
 								// 	asset.quantity > 0 && !isAggregatedBond
 								// 		? asset.currentValue / asset.quantity
 								// 		: 0;
-								const share = Number(
-									(
-										((asset.currentValue ?? 0) / totalPortfolioValue) *
-										100
-									).toFixed(1),
-								);
+								// const share = Number(
+								// 	(
+								// 		((asset.currentValue ?? 0) / totalPortfolioValue) *
+								// 		100
+								// 	).toFixed(1),
+								// );
+								const share =
+									totalPortfolioValue <= 0
+										? 0
+										: Number(
+												(
+													((asset.currentValue ?? 0) / totalPortfolioValue) *
+													100
+												).toFixed(1),
+											);
 								const categoryColor =
 									COLORS[asset.category as keyof typeof COLORS] || "#ccc";
 
@@ -345,6 +359,9 @@ const AssetLedgerTable = ({
 												isExpanded && "bg-muted/30",
 												isHighlighted && "bg-primary/5",
 												// isAggregatedBond && "bg-primary/5", // EN: Subtle highlight for the summary row
+												asset.quantity === 0 &&
+													!isAggregatedBond &&
+													"opacity-50 grayscale-[0.5]",
 											)}
 											onClick={() => {
 												if (hasHistory) {
@@ -365,7 +382,14 @@ const AssetLedgerTable = ({
 															)}
 														/>
 													)}
-													<div className="font-bold text-sm">{asset.name}</div>
+													{/* EN: Using our optimized component | PL: Użycie zoptymalizowanego komponentu */}
+													<AssetLogo
+														ticker={asset.ticker || ""}
+														className="w-4 h-4"
+													/>
+													<div className="font-bold text-sm truncate max-w-60">
+														{asset.name}
+													</div>
 												</div>
 												<div className="flex items-center gap-2 mt-1">
 													<span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded uppercase">
@@ -417,6 +441,10 @@ const AssetLedgerTable = ({
 													<span className="text-[10px] text-muted-foreground uppercase tracking-widest block text-center opacity-50 ">
 														Auto-kalkulacja
 													</span>
+												) : asset.quantity === 0 ? (
+													<span className="text-[10px] text-muted-foreground block text-center opacity-30">
+														—
+													</span>
 												) : (
 													<div className="flex justify-center">
 														<QuickAdjustCell
@@ -430,26 +458,32 @@ const AssetLedgerTable = ({
 											</TableCell>
 
 											<TableCell className="text-right">
-												<div
-													className={cn(
-														"text-xs font-bold font-mono",
-														asset.profitAmount >= 0
-															? "text-emerald-500"
-															: "text-red-500",
-													)}
-												>
-													<div>
-														{asset.profitAmount > 0 ? "+" : ""}
-														{asset.profitAmount.toLocaleString(undefined, {
-															minimumFractionDigits: 2,
-															maximumFractionDigits: 2,
-														})}{" "}
-														PLN
+												{asset.quantity === 0 && !isAggregatedBond ? (
+													<div className="inline-flex items-center px-1.5 py-0.5 rounded border border-dashed border-muted-foreground/30 text-[9px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+														ZAMKNIĘTA POZYCJA
 													</div>
-													<div className="text-[10px] opacity-70">
-														{asset.profitPercent.toFixed(2)}%
+												) : (
+													<div
+														className={cn(
+															"text-xs font-bold font-mono",
+															asset.profitAmount >= 0
+																? "text-emerald-500"
+																: "text-red-500",
+														)}
+													>
+														<div>
+															{asset.profitAmount > 0 ? "+" : ""}
+															{asset.profitAmount.toLocaleString(undefined, {
+																minimumFractionDigits: 2,
+																maximumFractionDigits: 2,
+															})}{" "}
+															PLN
+														</div>
+														<div className="text-[10px] opacity-70">
+															{asset.profitPercent.toFixed(2)}%
+														</div>
 													</div>
-												</div>
+												)}
 											</TableCell>
 
 											<TableCell className="text-right font-bold font-mono text-sm tabular-nums">
@@ -487,6 +521,7 @@ const AssetLedgerTable = ({
 														<DropdownMenuContent align="end" className="w-40">
 															<DropdownMenuItem
 																className="cursor-pointer font-medium"
+																disabled={asset.quantity === 0}
 																onClick={(e) => {
 																	e.stopPropagation();
 
@@ -507,6 +542,7 @@ const AssetLedgerTable = ({
 															</DropdownMenuItem>
 															<DropdownMenuItem
 																className="cursor-pointer font-medium"
+																disabled={asset.quantity === 0} // 🚀 BLOKADA: Korekta zera jest zbędna
 																onClick={(e) => {
 																	e.stopPropagation();
 
@@ -556,51 +592,46 @@ const AssetLedgerTable = ({
 																	<TrendingUp className="h-3 w-3" /> Wzrost
 																	kapitału
 																</p>
-																<div className="h-[450px] w-full min-h-75">
-																	<ResponsiveContainer
-																		width="100%"
-																		height="80%"
-																	>
-																		<AreaChart data={chartData}>
-																			<defs>
-																				<linearGradient
-																					id="colorAmount"
-																					x1="0"
-																					y1="0"
-																					x2="0"
-																					y2="1"
-																				>
-																					<stop
-																						offset="5%"
-																						stopColor={categoryColor}
-																						stopOpacity={0.3}
-																					/>
-																					<stop
-																						offset="95%"
-																						stopColor={categoryColor}
-																						stopOpacity={0}
-																					/>
-																				</linearGradient>
-																			</defs>
-																			<Tooltip
-																				contentStyle={{
-																					fontSize: "10px",
-																					borderRadius: "8px",
-																					backgroundColor: "#fff",
-																				}}
-																			/>
-																			<Area
-																				type="stepAfter"
-																				dataKey="amount"
-																				stroke={categoryColor}
-																				fillOpacity={1}
-																				fill="url(#colorAmount)"
-																				strokeWidth={2}
-																				dot={{ r: 2, fill: categoryColor }}
-																			/>
-																		</AreaChart>
-																	</ResponsiveContainer>
-																</div>
+																<ResponsiveContainer width="100%" height="80%">
+																	<AreaChart data={chartData}>
+																		<defs>
+																			<linearGradient
+																				id="colorAmount"
+																				x1="0"
+																				y1="0"
+																				x2="0"
+																				y2="1"
+																			>
+																				<stop
+																					offset="5%"
+																					stopColor={categoryColor}
+																					stopOpacity={0.3}
+																				/>
+																				<stop
+																					offset="95%"
+																					stopColor={categoryColor}
+																					stopOpacity={0}
+																				/>
+																			</linearGradient>
+																		</defs>
+																		<Tooltip
+																			contentStyle={{
+																				fontSize: "10px",
+																				borderRadius: "8px",
+																				backgroundColor: "#fff",
+																			}}
+																		/>
+																		<Area
+																			type="stepAfter"
+																			dataKey="amount"
+																			stroke={categoryColor}
+																			fillOpacity={1}
+																			fill="url(#colorAmount)"
+																			strokeWidth={2}
+																			dot={{ r: 2, fill: categoryColor }}
+																		/>
+																	</AreaChart>
+																</ResponsiveContainer>
 															</div>
 
 															{/* PRAWA STRONA: Lista transakcji (9/12) */}
@@ -696,7 +727,7 @@ const AssetLedgerTable = ({
 																											: "text-orange-600",
 																								)}
 																							>
-																								{/* ZMIANA 2: Pokazujemy +/- dla korekty na podstawie executedValue */}
+																								{/* Pokazujemy +/- na podstawie kierunku */}
 																								{isCorrection
 																									? t.executedValue > 0
 																										? "+"
@@ -720,10 +751,13 @@ const AssetLedgerTable = ({
 																							)}
 																						</div>
 																						<span className="min-w-18 font-bold text-muted-foreground">
+																							{/* ZMIANA: Znak ilości sztuk zależy od kierunku transakcji (Kupno: +, Sprzedaż: -) */}
 																							{isCorrection
 																								? "0.0000"
-																								: (t.quantity > 0 ? "+" : "") +
-																									t.quantity.toFixed(4)}{" "}
+																								: (isBuy ? "+" : "-") +
+																									Math.abs(t.quantity).toFixed(
+																										4,
+																									)}{" "}
 																							szt.
 																						</span>
 																					</div>

@@ -59,7 +59,7 @@ const DashboardAnalytics = ({
 		);
 	}
 	return (
-		<div className="space-y-10 pb-20">
+		<div className="space-y-10 ">
 			{/* --- TOP SECTION: CHARTS & SIDEBAR --- */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 				<div className="lg:col-span-2 space-y-10">
@@ -155,7 +155,7 @@ const DashboardAnalytics = ({
 				<div className="mx-6 py-4">
 					<InteractiveChartSection
 						transactions={transactions}
-						assets={portfolio.assets}
+						assets={portfolio.assets.filter((a) => a.category !== "CASH")}
 					/>
 				</div>
 			</section>

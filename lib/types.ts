@@ -1,4 +1,4 @@
-import { Category, TransactionHistory } from "@prisma/client";
+import { Category, TransactionHistory, TransactionType } from "@prisma/client";
 
 export type AssetCategory =
 	| "BONDS"
@@ -144,6 +144,7 @@ export interface Bond {
 // PL: Skorygowany interfejs transakcji pasujący do schematu bazy
 export interface Transaction {
 	id: string;
+	type: TransactionType;
 	executedAt: Date | string;
 	executedValue: number;
 	category: string;
@@ -171,4 +172,14 @@ export interface GoalProjectionProps {
 	currentValue: number;
 	targetValue: number;
 	monthlyDeposit: number;
+}
+
+// PL: Surowa struktura wiersza z eksportu Excel XTB
+export interface XtbExcelRow {
+	ID: string | number;
+	Time: string;
+	Type: string;
+	Symbol: string;
+	Comment: string;
+	Amount: number;
 }

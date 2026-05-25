@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "client"
 }
 
 datasource db {
   provider = "postgresql"
-  // BRAK URL - Prisma 7 pobierze go z prisma.config.ts podczas migracji
+  // In Prisma 7, we no longer put env() here. 
+  // We specify only the provider.
 }
 
 enum Role {
@@ -22,7 +24,6 @@ enum Category {
   CASH
   CRYPTO
   COMMODITIES
-  UNKNOWN
   UNKNOWN
 }
 

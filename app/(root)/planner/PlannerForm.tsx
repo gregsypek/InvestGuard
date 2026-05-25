@@ -23,7 +23,7 @@ import {
 import { useForm, useWatch } from "react-hook-form";
 import { useMemo, useState } from "react";
 
-import type { Category } from "@prisma/client";
+import { Category } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label"; // EN: Fixed missing import
 import { PlannerSchema } from "@/lib/validations/planner";
@@ -84,7 +84,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 		setViewMode(mode);
 		form.reset({
 			...form.getValues(),
-			category: (mode === "bond" ? "BONDS" : "") as Category,
+			category: (mode === "bond" ? "BONDS" : "") as any,
 			ticker: mode === "bond" ? "EDO" : "",
 			name: mode === "bond" ? "Obligacje EDO" : "",
 		});

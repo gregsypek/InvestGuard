@@ -1,5 +1,15 @@
 import { AssetCategory, CategoryConfig } from "./types";
-import { CloudSun, GraduationCap, Scale } from "lucide-react";
+import {
+	CloudSun,
+	FileText,
+	GraduationCap,
+	History,
+	LayoutDashboard,
+	Notebook,
+	Rocket,
+	Scale,
+	Wallet,
+} from "lucide-react";
 import {
 	allWeatherPortfolio,
 	classicPortfolio,
@@ -16,6 +26,15 @@ export const SERVER_URL =
 	process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 
 export const PAGE_ITEMS = 10;
+
+export const NAV_ITEMS = [
+	{ name: "Panel Główny", href: "/dashboard", icon: LayoutDashboard },
+	{ name: "Twoje Portfele", href: "/portfolios", icon: Wallet },
+	{ name: "Planowanie", href: "/planner", icon: Notebook },
+	{ name: "Historia Aktywności", href: "/activity", icon: History },
+	{ name: "Strategia Aktywna", href: "/alpha-selection", icon: Rocket },
+	{ name: "Analiza Obligacji", href: "/bond-reports", icon: FileText },
+];
 
 export const CATEGORY_ASSETS: AssetCategory[] = [
 	"BONDS",

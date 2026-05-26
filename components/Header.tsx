@@ -123,9 +123,9 @@ export default function Header({
 		}
 	}, [selectedPortfolioId, pathname, urlPortfolioId, idFromPath, router]);
 	return (
-		<header className="flex justify-between items-center p-2 border-b border-border bg-background text-foreground sticky top-0 z-50">
+		<header className="flex justify-between items-center p-2 border-b border-border md:bg-background md:text-foreground sticky top-0 z-50 bg-sidebar text-sidebar-foreground">
 			{/* LEWA STRONA: Hamburger (Mobile) + Selektor Portfela */}
-			<div className="px-2 md:px-5 flex items-center gap-2 md:gap-3">
+			<div className="px-2 md:px-5  items-center gap-2 md:gap-3 flex flex-1">
 				{/* MOBILNY HAMBURGER (Widoczny tylko < md) */}
 				<div className="md:hidden">
 					<Sheet>
@@ -240,80 +240,81 @@ export default function Header({
 						</SheetContent>
 					</Sheet>
 				</div>
-
-				{/* SELEKTOR PORTFELA */}
-				<Select
-					key={isDemoMode ? "demo" : `real-${displayValue}`}
-					value={displayValue || undefined}
-					onValueChange={handlePortfolioChange}
-				>
-					<SelectTrigger
-						className={cn(
-							"w-[145px] sm:w-48 md:w-60 bg-muted/50 border-border2 font-bold text-[10px] md:text-[11px] uppercase tracking-widest h-9 transition-all",
-							!displayValue && portfolios.length > 0 && !isDemoMode
-								? "border-primary/50 animate-pulse"
-								: "border-border2",
-							isDemoMode &&
-								"border-emerald-500/50 bg-emerald-500/5 text-emerald-600 ring-emerald-500/20",
-						)}
+				<div className="w-full">
+					{/* SELEKTOR PORTFELA */}
+					<Select
+						key={isDemoMode ? "demo" : `real-${displayValue}`}
+						value={displayValue || undefined}
+						onValueChange={handlePortfolioChange}
 					>
-						<div className="flex items-center gap-2 overflow-hidden">
-							{isDemoMode ? (
-								<GraduationCap className="h-4 w-4 shrink-0 text-emerald-600" />
-							) : (
-								<WalletCards
-									className={cn(
-										"h-4 w-4 shrink-0",
-										displayValue ? "text-primary" : "text-muted-foreground",
-									)}
-								/>
+						<SelectTrigger
+							className={cn(
+								" w-full md:w-80 bg-muted/50  font-bold text-[10px] md:text-[11px] uppercase tracking-widest h-9 transition-all",
+								!displayValue && portfolios.length > 0 && !isDemoMode
+									? "border-primary/50 animate-pulse"
+									: "border-slate-700",
+								isDemoMode &&
+									"border-emerald-500/50 bg-emerald-500/5 text-emerald-600 ring-emerald-500/20",
 							)}
-							<div className="truncate text-left">
-								<SelectValue
-									placeholder={
-										isDemoMode
-											? "Tryb Edukacyjny"
-											: portfolios.length === 0
-												? "Brak portfeli"
-												: "Wybierz portfel..."
-									}
-								/>
-							</div>
-						</div>
-					</SelectTrigger>
-
-					<SelectContent>
-						<div className="flex items-center gap-2 text-xs font-bold text-blue-500 focus:text-blue-600 cursor-pointer">
-							<div className="flex items-center gap-2 py-2">
-								<Wallet2 className="h-4 w-4 text-blue-500" />
-								TWOJE PORTFELE
-							</div>
-						</div>
-						<SelectSeparator />
-
-						{portfolios.map((p) => (
-							<SelectItem
-								key={p.id}
-								value={p.id}
-								className="text-xs font-medium focus:bg-primary/10"
-							>
-								{p.name}
-							</SelectItem>
-						))}
-
-						<SelectSeparator />
-						{/* 4. Stała opcja wejścia w demo dostępna zawsze w liście */}
-						<SelectItem
-							value="enter-demo"
-							className="text-xs font-bold text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700 cursor-pointer"
 						>
-							<div className="flex items-center gap-2">
-								<GraduationCap className="h-4 w-4" />
-								ZOBACZ DEMO
+							<div className="flex items-center gap-2 overflow-hidden ">
+								{isDemoMode ? (
+									<GraduationCap className="h-4 w-4 shrink-0 text-emerald-600" />
+								) : (
+									<WalletCards
+										className={cn(
+											"h-4 w-4 shrink-0",
+											displayValue ? "text-primary" : "text-muted-foreground",
+										)}
+									/>
+								)}
+								<div className="truncate text-left">
+									<SelectValue
+										placeholder={
+											isDemoMode
+												? "Tryb Edukacyjny"
+												: portfolios.length === 0
+													? "Brak portfeli"
+													: "Wybierz portfel..."
+										}
+									/>
+								</div>
 							</div>
-						</SelectItem>
-					</SelectContent>
-				</Select>
+						</SelectTrigger>
+
+						<SelectContent>
+							<div className="flex items-center gap-2 text-xs font-bold text-blue-500 focus:text-blue-600 cursor-pointer">
+								<div className="flex items-center gap-2 py-2">
+									<Wallet2 className="h-4 w-4 text-blue-500" />
+									TWOJE PORTFELE
+								</div>
+							</div>
+							<SelectSeparator />
+
+							{portfolios.map((p) => (
+								<SelectItem
+									key={p.id}
+									value={p.id}
+									className="text-xs font-medium focus:bg-primary/10"
+								>
+									{p.name}
+								</SelectItem>
+							))}
+
+							<SelectSeparator />
+							{/* 4. Stała opcja wejścia w demo dostępna zawsze w liście */}
+							<SelectItem
+								value="enter-demo"
+								className="text-xs font-bold text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700 cursor-pointer"
+							>
+								<div className="flex items-center gap-2">
+									<GraduationCap className="h-4 w-4" />
+									ZOBACZ DEMO
+								</div>
+							</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
 			</div>
 
 			{/* PRAWA STRONA: Odświeżanie + Menu Desktopowe */}

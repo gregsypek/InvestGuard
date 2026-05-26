@@ -80,6 +80,7 @@ export default function Aside() {
 						if (item.href === "/planner") finalHref = "/demo/planner";
 						if (strategy) finalHref += `?s=${strategy}`;
 					} else if (activePortfolioId && !isDemoMode) {
+						// Tryb Normalny: Jeśli mamy aktywne ID, doklejamy je do każdego linku!
 						finalHref += `?portfolioId=${activePortfolioId}`;
 					}
 

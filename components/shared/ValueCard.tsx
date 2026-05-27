@@ -21,21 +21,19 @@ export function ValueCard({
 	children,
 }: ValueCardProps) {
 	return (
-		<div
-			className={cn(
-				"flex items-start flex-col text-primary py-2 px-4 rounded-xl border border-primary/20 shrink-0 bg-background/50",
-				className,
-			)}
-		>
-			<p className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">
+		<div className={cn("flex flex-col gap-1 shrink-0", className)}>
+			{/* Mała, techniczna etykieta */}
+			<p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5">
+				{Icon && <Icon className="h-3 w-3" />}
 				{label}
 			</p>
-			<div className="flex items-center gap-2">
-				{Icon && <Icon className="h-4 w-4" />}
+
+			{/* Wartość */}
+			<div className="flex items-center gap-2 text-slate-200">
 				{children ? (
 					children
 				) : (
-					<span className="font-mono font-black">
+					<span className="font-mono text-lg font-semibold tracking-tight">
 						{/* FIX: Bezpieczna obsługa undefined dla value */}
 						{formatString && typeof value === "number"
 							? value.toLocaleString("pl-PL", {
@@ -44,7 +42,7 @@ export function ValueCard({
 								})
 							: value}
 						{suffix && (
-							<span className="ml-1 text-[10px] font-normal opacity-70">
+							<span className="ml-1.5 text-[11px] font-bold text-slate-500">
 								{suffix}
 							</span>
 						)}

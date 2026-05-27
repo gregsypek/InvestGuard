@@ -81,16 +81,16 @@ export const DashboardHeader = ({
 	) : null;
 
 	return (
-		<header className="flex flex-col md:flex-row justify-between items-start md:items-start gap-6">
-			{/* LEWA STRONA: Zawsze widoczna (Breadcrumbs i Tytuł) */}
+		// ZMIANA: Głębokie, ciemne tło całego nagłówka bez bocznych marginesów
+		<header className="flex flex-col gap-8 w-full bg-[#0a0e17] text-white p-6 md:p-8 border-b border-white/5 rounded-b-2xl md:rounded-none">
+			{/* GÓRA: Zawsze widoczna (Breadcrumbs i Tytuł) */}
 			<div>
-				{/* EN: Use custom breadcrumbs if provided, otherwise use our smart default */}
 				{customBreadcrumbs || defaultBreadcrumbs}
-				<div>
-					<h1 className="text-4xl font-black tracking-tighter lowercase flex items-center gap-3">
+				<div className="mt-2">
+					<h1 className="text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">
 						{name}
 					</h1>
-					<p className="text-muted-foreground font-medium mt-1">
+					<p className="text-slate-500 font-medium mt-1 text-sm md:text-base">
 						{isAddAssetPage
 							? "Zarządzaj składem swojego portfela"
 							: "Zarządzaj portfelem i kontroluj strategie"}
@@ -98,62 +98,72 @@ export const DashboardHeader = ({
 				</div>
 			</div>
 
-			{/* PRAWA STRONA: Statystyki */}
-			<div className="flex self-start sm:justify-end flex-wrap gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-				{/* {isLoading ? (
-					// SZKIELET STATYSTYK
-					<>
-						<div className="h-12 w-32 bg-muted animate-pulse rounded-xl" />
-						<div className="h-12 w-32 bg-muted animate-pulse rounded-xl" />
-						<div className="h-12 w-32 bg-muted animate-pulse rounded-xl" />
-					</>
-				) : (
-					// REALNE DANE
-					<> */}
-				{/* Całkowita Wartość */}
-				<ValueCard
-					label="Całkowita Wartość"
-					icon={Wallet2}
-					value={totalPortfolioValue}
-					formatString
-					suffix="PLN"
-				/>
-
-				{/* Kapitał */}
-				<ValueCard
-					label="Zainwestowany kapitał"
-					icon={Container}
-					value={totalInvestedCapital}
-					formatString
-					suffix="PLN"
-				/>
-
-				{/* P&L */}
-				<ValueCard label="Całkowity Wynik (P&L)">
-					<div
-						className={cn(
-							"flex items-baseline gap-2 font-mono font-black",
-							totalProfitAmount > 0
-								? "text-emerald-500"
-								: totalProfitAmount < 0
-									? "text-red-500"
-									: "text-muted-foreground",
-						)}
-					>
-						<span className="text-md tabular-nums">
-							{totalProfitAmount > 0 ? "+" : ""}
-							{totalProfitAmount.toLocaleString("pl-PL", {
+			{/* DÓŁ: Statystyki (Premium Trading Style) */}
+			<div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pb-2 md:pb-0">
+				{/* OGROMNA Całkowita Wartość - WYRÓŻNIONA */}
+				<div className="space-y-1">
+					<div className="flex items-center gap-1.5 text-slate-500 font-bold tracking-widest text-[10px] uppercase mb-1">
+						<Wallet2 className="w-3.5 h-3.5" />
+						<span>Całkowita Wartość</span>
+					</div>
+					<div className="flex items-baseline gap-2">
+						<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
+							{totalPortfolioValue.toLocaleString("pl-PL", {
 								minimumFractionDigits: 2,
+								maximumFractionDigits: 2,
 							})}
-						</span>
-						<span className="text-[10px] font-bold">
-							({totalProfitPercent > 0 ? "+" : ""}
-							{totalProfitPercent.toFixed(2)}%)
+						</h2>
+						<span className="text-xl md:text-2xl text-slate-500 font-bold">
+							PLN
 						</span>
 					</div>
-				</ValueCard>
-				{/* </> */}
-				{/* )} */}
+				</div>
+
+				{/* PRAWA STRONA: Mniejsze statystyki z neonowymi akcentami */}
+				<div className="flex self-start sm:justify-end flex-wrap gap-8 md:gap-12 overflow-x-auto no-scrollbar">
+					{/* Kapitał */}
+					<ValueCard
+						label="Zainwestowany kapitał"
+						icon={Container}
+						value={totalInvestedCapital}
+						formatString
+						suffix="PLN"
+					/>
+
+					{/* P&L */}
+					<ValueCard label="Całkowity Wynik (P&L)">
+						<div className="flex items-center gap-2 font-mono">
+							<span
+								className={cn(
+									"text-xl font-bold tracking-tight",
+									totalProfitAmount > 0
+										? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]"
+										: totalProfitAmount < 0
+											? "text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.4)]"
+											: "text-slate-400",
+								)}
+							>
+								{totalProfitAmount > 0 ? "+" : ""}
+								{totalProfitAmount.toLocaleString("pl-PL", {
+									minimumFractionDigits: 2,
+								})}
+							</span>
+							<span
+								className={cn(
+									"flex items-center text-xs font-bold px-2 py-0.5 rounded-sm",
+									totalProfitPercent > 0
+										? "bg-emerald-500/10 text-emerald-400"
+										: totalProfitPercent < 0
+											? "bg-rose-500/10 text-rose-500"
+											: "bg-slate-800 text-slate-400",
+								)}
+							>
+								{totalProfitPercent > 0 ? "+" : ""}
+								{totalProfitPercent.toFixed(2)}%
+							</span>
+						</div>
+					</ValueCard>
+				</div>
 			</div>
 		</header>
 	);

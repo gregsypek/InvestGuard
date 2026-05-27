@@ -47,8 +47,10 @@ export default function RootLayout({
 			>
 				<ThemeProvider
 					attribute="class"
-					defaultTheme="light"
-					enableSystem
+					defaultTheme="dark" /* Startujemy w dark mode! */
+					enableSystem={
+						false
+					} /* Ignorujemy system, wymuszamy giełdowy klimat */
 					disableTransitionOnChange
 				>
 					{children}

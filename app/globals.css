@@ -114,38 +114,38 @@
 }
 
 .dark {
-	/* Dark mode settings 🌙 */
-	/* Page background takes the navy color of the original Aside */
-	/* Your background */
-	--background: oklch(0.12 0.03 245);
-	--foreground: oklch(0.98 0 0);
-	/* Sidebar becomes even darker for contrast */
-	--sidebar: oklch(0.12 0.03 245);
-	--sidebar-foreground: oklch(0.9 0 0);
+	/* 🌙 Premium Trading Dark Mode */
 
-	/* Making the border slightly more visible (lighter navy) */
-	--border: oklch(0.35 0.04 250);
-	--border2: oklch(1 0 250);
+	/* GŁÓWNE TŁO: Bardzo głęboki, niemal czarny grafit  */
+	--background: oklch(0.15 0.01 255);
+	--foreground: oklch(
+		0.98 0 0
+	); /* Czysta biel dla maksymalnego kontrastu tekstu */
 
-	/* Card background should be distinct from page background */
-	--card: oklch(0.18 0.04 250);
+	/* SIDEBAR: Minimalnie ciemniejszy od tła (dodaje głębi) */
+	--sidebar: oklch(0.13 0.01 255);
+	--sidebar-foreground: oklch(0.75 0.02 255);
 
-	/* EN: Dark mode overrides using CSS variables */
-	/* UI: Nadpisywanie kolorów dla trybu ciemnego */
-	--color-bond-orange: oklch(0.18 0.04 250);
-	--color-bond-orange-border: oklch(0.4 0.1 70);
+	/* KARTY: Jeśli gdzieś jeszcze są, niech będą bardzo dyskretne, bez sztucznego rozjaśniania */
+	--card: oklch(0.17 0.01 255);
+	--card-foreground: oklch(0.98 0 0);
 
-	--color-bond-blue: oklch(0.18 0.04 250);
-	--color-bond-blue-border: oklch(0.4 0.08 240);
+	/* RAMKI (Borders): Ultra-subtelne, zgaszone, żeby nie tworzyły siatki (gridu) na ekranie */
+	--border: oklch(0.22 0.01 255);
+	--border2: oklch(0.22 0.01 255);
+	--input: oklch(0.22 0.01 255);
 
-	--color-alpha-purple: oklch(0.18 0.04 250);
-	--color-alpha-purple-border: oklch(0.4 0.15 300);
+	/* ELEMENTY WYCISZONE (Muted): Delikatne tła pod przyciski i szare teksty */
+	--muted: oklch(0.2 0.01 255);
+	--muted-foreground: oklch(0.65 0.02 255);
 
-	--primary: oklch(0.7 0.2 250);
-	--switch-off: oklch(0.4 0.05 250);
+	/* GŁÓWNY AKCENT (Primary): Skorygowany na chłodniejszy, bardziej "techniczny" niebieski */
+	--primary: oklch(0.55 0.15 255);
+	--primary-foreground: oklch(0.98 0 0);
 
-	--popover: oklch(0.18 0.04 250);
-	--popover-foreground: var(--foreground);
+	/* POPOVERY (Menu rozwijane, Tooltipy) */
+	--popover: oklch(0.15 0.01 255);
+	--popover-foreground: oklch(0.98 0 0);
 
-	--muted-foreground: oklch(0.7 0.03 245);
+	--switch-off: oklch(0.25 0.01 255);
 }

@@ -30,7 +30,8 @@ export function MarketTicker({ data }: MarketTickerProps) {
 	return (
 		<div
 			className={cn(
-				"relative group w-full bg-secondary/30 border-b border-border overflow-hidden select-none transition-all duration-300",
+				// Tło #05070a (niemal czarne), brak jasnych borderów, cienka linia na dole border-white/5
+				"relative group w-full bg-[#05070a] text-slate-300 border-b border-white/5 overflow-hidden select-none transition-all duration-300",
 				isVisible ? "py-1.5 h-9" : "h-9 py-1.5 bg-transparent border-none",
 			)}
 		>
@@ -42,36 +43,44 @@ export function MarketTicker({ data }: MarketTickerProps) {
 						display: "inline-flex",
 					}}
 				>
-					{[...data, ...data, ...data].map((item, idx) => (
-						<div
-							key={idx}
-							className="flex items-center px-10 gap-3 border-r border-border/50"
-						>
-							{item.logo ? (
-								<TickerIcon ticker={item.label} logoUrl={item.logo} />
-							) : (
-								<div className="w-full h-full rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
-									{item.label[0]}
-								</div>
-							)}
-							<span className="text-[10px] font-bold text-muted-foreground uppercase">
-								{item.label}
-							</span>
-							<span className="text-sm font-mono font-bold tracking-tighter text-foreground">
-								{item.value}
-							</span>
-							<span
-								className={cn(
-									"text-[10px] font-bold",
-									String(item.change).startsWith("+")
-										? "text-emerald-500"
-										: "text-rose-500",
-								)}
+					{[...data, ...data, ...data].map((item, index) => {
+						// Logika kolorowania liczb w tickerze
+						const changeStr = String(item.change);
+						const isPositive =
+							changeStr.startsWith("+") ||
+							(!changeStr.startsWith("-") && parseFloat(changeStr) > 0);
+						const isNegative = changeStr.startsWith("-");
+
+						return (
+							<div
+								key={index}
+								className="flex items-center space-x-2.5 mx-6 text-[11px] font-medium tracking-wide"
 							>
-								{item.change}
-							</span>
-						</div>
-					))}
+								{item.logo ? (
+									<TickerIcon ticker={item.label} logoUrl={item.logo} />
+								) : (
+									<div className="w-4 h-4 rounded-full bg-slate-800 flex items-center justify-center text-[8px] font-bold text-slate-400">
+										{item.label[0]}
+									</div>
+								)}
+
+								<span className="text-slate-400 uppercase">{item.label}</span>
+								<span className="font-mono text-slate-200">{item.value}</span>
+								<span
+									className={cn(
+										"font-mono font-bold",
+										isPositive
+											? "text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.3)]"
+											: isNegative
+												? "text-rose-500 drop-shadow-[0_0_5px_rgba(244,63,94,0.3)]"
+												: "text-slate-500",
+									)}
+								>
+									{item.change}
+								</span>
+							</div>
+						);
+					})}
 				</div>
 			)}
 

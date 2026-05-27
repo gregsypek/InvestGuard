@@ -89,19 +89,21 @@ export default async function RootLayout({
 		}),
 	];
 	return (
-		<div className="flex h-screen overflow-hidden bg-background ">
+		<div className="flex h-screen overflow-hidden bg-background">
 			<Aside />
 			<div className="flex flex-col flex-1 min-w-0">
-				{/* Composition Pattern  Dzięki przekazaniu komponentu jako prop UserButton 👤 jest renderowany na serwerze (ma dostęp do sesji i nagłówków), a Header 🧭 zajmuje się tylko interakcją w przeglądarce.*/}
 				<Header
 					selectedPortfolioId={selectedPortfolioId}
 					portfolios={portfolios}
 					userButton={userControl}
 					userRole={userRole}
 				/>
-				<main className="flex-1 overflow-y-auto ">
-					<MarketTicker data={tickerData} /> {/* scrollable main part */}
-					<div className="max-w-7xl mx-auto  p-6 px-8 space-y-10">
+				<main className="flex-1 overflow-y-auto">
+					<MarketTicker data={tickerData} />
+
+					{/* Zamiast sztywnego p-6, używamy responsywnego paddingu, 
+              a górny margines (pt-0) pozwala Hero sekcji przylegać do góry */}
+					<div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 md:pt-4 space-y-8">
 						{children}
 					</div>
 				</main>

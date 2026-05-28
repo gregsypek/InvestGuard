@@ -1,7 +1,6 @@
 "use client";
 
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Cell,
 	Legend,
@@ -14,40 +13,29 @@ import {
 import { useEffect, useState } from "react";
 
 import { CategoryStatus } from "@/lib/types";
-import { PieChart as PieChartIcon } from "lucide-react"; // EN: Icon for empty state
+import { PieChart as PieChartIcon } from "lucide-react";
 
 interface PortfolioPieChartProps {
 	title: string;
 	dataKey: string;
 	data: CategoryStatus[];
 }
-// 1. Definiujemy kształt pojedynczego elementu legendy
-// interface LegendPayloadItem {
-// 	value: string; // To będzie techniczna nazwa kategorii (np. "BONDS")
-// 	color: string; // Kolor z wykresu
-// 	// Możesz dodać inne pola jeśli ich potrzebujesz
-// }
-// 2. Typujemy propsy funkcji
+
 interface CustomLegendProps {
 	// Use 'readonly' to match Recharts' internal requirements
-	// payload?: readonly LegendPayloadItem[];
 	payload?: readonly LegendPayload[];
 }
+
 export default function PortfolioPieChart({
 	title,
 	dataKey,
 	data,
 }: PortfolioPieChartProps) {
-	// EN: Check if all values are zero or data is empty
-	// UI: Sprawdzenie czy wszystkie wartości są zerowe lub brak danych
 	const isEmpty =
 		data.length === 0 ||
 		data.every(
 			(item) => (item[dataKey as keyof CategoryStatus] as number) === 0,
 		);
-
-	// EN: Custom Legend to match the "Circle with border" requirement
-	// UI: Własna legenda z "kółkiem z borderem"
 
 	const [hasMounted, setHasMounted] = useState(false);
 
@@ -56,31 +44,30 @@ export default function PortfolioPieChart({
 		return () => clearTimeout(t);
 	}, []);
 
-	// if (!hasMounted) return null;
-
 	if (!hasMounted)
 		return (
-			<div className="aspect-video w-full bg-muted animate-pulse rounded-xl" />
+			<div className="w-full h-[400px] bg-white/5 animate-pulse rounded-2xl" />
 		);
+
 	const renderCustomLegend = (props: CustomLegendProps) => {
 		const { payload } = props;
 		if (!payload) return null;
 
 		return (
-			<ul className="flex flex-wrap justify-center gap-x-2 gap-y-2 mt-2">
+			<ul className="flex flex-wrap justify-center gap-x-4 gap-y-3 mt-6">
 				{payload.map((entry, index) => {
-					// EN: We cast 'entry.value' to the keys of CATEGORY_LABELS to satisfy TypeScript's index signature requirements.
 					const labelKey = entry.value as keyof typeof CATEGORY_LABELS;
 
 					return (
 						<li key={`item-${index}`} className="flex items-center gap-2">
-							{/* EN: The circle with border matching your system style */}
 							<div
-								className="h-3 w-3 rounded-full border border-border2 shadow-xs"
-								style={{ backgroundColor: entry.color }}
+								className="h-2 w-2 rounded-full opacity-80"
+								style={{
+									backgroundColor: entry.color,
+									boxShadow: `0 0 8px ${entry.color}`,
+								}}
 							/>
-							<span className="text-xs font-medium text-muted-foreground">
-								{/* EN: Accessing the label with a typed key ensures safety and avoids the 'any' error. */}
+							<span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
 								{CATEGORY_LABELS[labelKey] || entry.value}
 							</span>
 						</li>
@@ -91,79 +78,71 @@ export default function PortfolioPieChart({
 	};
 
 	return (
-		<Card className="border-border shadow-sm bg-background overflow-hidden flex flex-col">
-			<CardHeader className="pb-2">
-				<CardTitle className="text-md flex justify-center my-3 tracking-tight text-foreground">
-					{title}
-				</CardTitle>
-			</CardHeader>
-			<CardContent className="h-full min-h-75 lg:min-h-60 w-full relative pt-0">
+		<div className="flex flex-col bg-[#0a0e17] border border-white/5 rounded-2xl p-6 relative w-full h-full">
+			<h4 className="text-sm font-bold uppercase tracking-widest text-slate-400 text-center mb-2">
+				{title}
+			</h4>
+
+			{/* FIX dla Safari: Sztywna wysokość zamiast flex-1 */}
+			<div className="w-full h-[300px] min-h-[300px] mt-4 relative">
 				{isEmpty ? (
-					<div className="flex h-full w-full flex-col items-center justify-center space-y-3">
-						<div className="rounded-full border-2 border-dashed border-muted/50 p-6">
-							<PieChartIcon className="h-10 w-10 text-muted-foreground/30" />
+					<div className="absolute inset-0 flex flex-col items-center justify-center space-y-3">
+						<div className="rounded-full border border-white/5 bg-[#05070a] p-6 shadow-inner">
+							<PieChartIcon className="h-10 w-10 text-slate-700" />
 						</div>
 						<div className="text-center">
-							<p className="text-sm font-semibold text-foreground/80">
+							<p className="text-sm font-semibold text-slate-300">
 								Brak danych do wykresu
 							</p>
-							<p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+							<p className="text-[10px] uppercase tracking-widest text-slate-600 mt-1">
 								Dodaj aktywa, aby zobaczyć podział
 							</p>
 						</div>
 					</div>
 				) : (
-					<div className="h-[350px] w-full min-h-[300px]">
-						<ResponsiveContainer width="100%" height="100%">
-							<PieChart>
-								<Pie
-									data={data}
-									dataKey={dataKey}
-									nameKey="category"
-									cx="50%"
-									cy="50%" // Przesunięte lekko do góry, by zrobić miejsce na legendę
-									innerRadius={65}
-									outerRadius={85}
-									paddingAngle={5}
-									stroke="var(--card)" // Stroke w kolorze tła karty daje efekt "pustych przerw"
-									strokeWidth={3}
-								>
-									{data.map((entry) => (
-										<Cell
-											key={entry.category}
-											fill={COLORS[entry.category as keyof typeof COLORS]}
-											className="outline-none hover:opacity-80 transition-opacity"
-										/>
-									))}
-								</Pie>
-								<Tooltip
-									cursor={false}
-									contentStyle={{
-										backgroundColor: "var(--card)",
-										border: "1px solid var(--border)",
-										borderRadius: "12px",
-										fontSize: "12px",
-										fontWeight: "600",
-										boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-									}}
-									itemStyle={{
-										color: "var(--foreground)",
-									}}
-									// Poprawiony formatter z obsługą opcjonalną
-									formatter={(value) =>
-										typeof value === "number" ? `${value.toFixed(2)}%` : "0.00%"
-									}
-								/>
-								<Legend
-									content={renderCustomLegend}
-									verticalAlign="bottom"
-									// wrapperStyle={{ paddingTop: "20px" }}
-								/>
-							</PieChart>
-						</ResponsiveContainer>
-					</div>
+					<ResponsiveContainer width="100%" height="100%">
+						<PieChart>
+							<Pie
+								data={data}
+								dataKey={dataKey}
+								nameKey="category"
+								cx="50%"
+								cy="50%"
+								innerRadius={70}
+								outerRadius={95}
+								paddingAngle={4}
+								stroke="#0a0e17"
+								strokeWidth={4}
+							>
+								{data.map((entry) => (
+									<Cell
+										key={entry.category}
+										fill={COLORS[entry.category as keyof typeof COLORS]}
+										className="outline-none hover:opacity-80 transition-opacity cursor-pointer"
+									/>
+								))}
+							</Pie>
+							<Tooltip
+								cursor={false}
+								contentStyle={{
+									backgroundColor: "#05070a",
+									border: "1px solid rgba(255,255,255,0.05)",
+									borderRadius: "12px",
+									fontSize: "12px",
+									fontWeight: "700",
+									boxShadow: "0 8px 16px rgba(0,0,0,0.4)",
+									color: "#e2e8f0",
+								}}
+								itemStyle={{ color: "#e2e8f0" }}
+								formatter={(value) =>
+									typeof value === "number" ? `${value.toFixed(2)}%` : "0.00%"
+								}
+							/>
+							<Legend content={renderCustomLegend} verticalAlign="bottom" />
+						</PieChart>
+					</ResponsiveContainer>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</div>
 	);
 }

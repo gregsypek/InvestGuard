@@ -41,7 +41,8 @@ const DashboardAnalytics = ({
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams.get("newAssetId");
-
+	// EN:  Reverse to get latest, then slice
+	// UI:  Odwracamy, by dostać najnowsze, potem tniemy
 	const recentAssets = useMemo(
 		() => [...assets].reverse().slice(0, 6),
 		[assets],

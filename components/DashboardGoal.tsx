@@ -13,7 +13,7 @@ const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 
 	return (
 		// ZMIANA: Usunięto sztywne tło bg-card. Komponent jest "płaski" i oddycha.
-		<section className="w-full py-4 md:py-6">
+		<section className="w-full p-2 md:p-4 xl:p-6">
 			<div className="flex justify-between items-end mb-4">
 				{/* LEWA STRONA: Postęp procentowy w stylu Hero */}
 				<div className="flex flex-col gap-1">

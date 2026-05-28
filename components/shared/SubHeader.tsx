@@ -1,5 +1,4 @@
 import { LucideIcon } from "lucide-react";
-import React from "react";
 import { cn } from "@/lib/utils";
 
 interface SubHeaderProps {
@@ -7,7 +6,7 @@ interface SubHeaderProps {
 	description?: string;
 	icon?: LucideIcon;
 	className?: string;
-	children?: React.ReactNode; // Na przyciski/akcje po prawej stronie
+	children?: React.ReactNode;
 }
 
 export function SubHeader({
@@ -18,10 +17,11 @@ export function SubHeader({
 	children,
 }: SubHeaderProps) {
 	return (
-		<div className={cn("pb-2 mx-6", className)}>
+		// ZMIANA: dodano spójny padding z dołu
+		<div className={cn("pb-4", className)}>
 			<div className="flex items-center justify-between">
-				<h3 className="text-md font-bold text-foreground flex items-center gap-2">
-					{Icon && <Icon className="h-4 w-4 text-primary" />}
+				<h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+					{Icon && <Icon className="h-4 w-4 text-slate-500" />}
 					{title}
 				</h3>
 
@@ -29,7 +29,9 @@ export function SubHeader({
 			</div>
 
 			{description && (
-				<p className="text-xs text-muted-foreground mt-1">{description}</p>
+				<p className="text-xs font-medium text-slate-500 mt-1.5">
+					{description}
+				</p>
 			)}
 		</div>
 	);

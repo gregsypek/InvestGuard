@@ -3,6 +3,7 @@
 import {
 	ArrowRightCircle,
 	ChartArea,
+	History,
 	ListOrdered,
 	Pencil,
 	PieChart,
@@ -17,17 +18,15 @@ import { InteractiveChartSection } from "../InteractiveChartSection";
 import PortfolioCharts from "../PortfolioCharts";
 import RecentActivityCard from "./assets/RecentActivityCard";
 import { SafeActionButton } from "./SafeActionButton";
-import { SectionHeader } from "../shared/SectionHeader";
+import { SectionLayout } from "../shared/SectionLayout";
 import StrategyHealthTable from "@/app/portfel/components/StrategyHealthTable";
-import { SubHeader } from "../shared/SubHeader";
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
 	portfolioStatus: CategoryStatus[];
-	transactions: Transaction[]; // Dodaj to
-	// EN: Add the new prop to the interface
+	transactions: Transaction[];
 	allPortfoliosWithCash: { id: string; name: string }[];
 	isDemo?: boolean;
 }
@@ -42,153 +41,135 @@ const DashboardAnalytics = ({
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams.get("newAssetId");
-	// EN:  Reverse to get latest, then slice
-	// UI:  Odwracamy, by dostać najnowsze, potem tniemy
+
 	const recentAssets = useMemo(
-		() => [...assets].reverse().slice(0, 5),
+		() => [...assets].reverse().slice(0, 6),
 		[assets],
 	);
 
 	if (!portfolio || !portfolio.assets) {
 		return (
-			<div className="flex flex-col items-center justify-center p-20 border border-dashed rounded-2xl">
-				<p className="text-muted-foreground">
-					Ładowanie portfela lub brak danych...
+			<div className="flex flex-col items-center justify-center p-20 border border-white/5 rounded-2xl bg-slate-900/20">
+				<div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+				<p className="text-slate-400 font-medium tracking-wide text-sm">
+					Wczytywanie danych portfela...
 				</p>
 			</div>
 		);
 	}
+
 	return (
-		<div className="space-y-10 ">
-			{/* --- TOP SECTION: CHARTS & SIDEBAR --- */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-				<div className="lg:col-span-2 space-y-10">
-					<section>
-						<SectionHeader
-							title="Przewodnik rebalansowania"
-							icon={ArrowRightCircle}
-						/>
-						<StrategyHealthTable data={portfolioStatus} />
-					</section>
+		// Główny kontener całej dolnej strony (flex-col zdejmuje potrzebę układania gridu)
+		<div className="flex flex-col">
+			{/* 1. SEKCJA: REBALANSOWANIE */}
+			<SectionLayout
+				title="Przewodnik rebalansowania"
+				titleIcon={ArrowRightCircle}
+				subtitle="Kondycja i Rebalancing"
+				description="Porównanie obecnej struktury portfela z Twoim celem inwestycyjnym."
+				subtitleIcon={PieChart}
+			>
+				<StrategyHealthTable data={portfolioStatus} />
+			</SectionLayout>
+
+			{/* 2. SEKCJA: OSTATNIE AKTYWA (Pionowo, pod tabelą) */}
+			<SectionLayout
+				title="Historia Aktywności"
+				titleIcon={History}
+				subtitle="Ostatnie aktywa"
+				description="Lista ostatnio dodanych pozycji z możliwością szybkiego usunięcia."
+				subtitleIcon={ListOrdered}
+				action={
+					<SafeActionButton
+						label="Dodaj Aktywo"
+						icon={Plus}
+						isDemo={isDemo}
+						variant="outline"
+						className="border-slate-800 hover:bg-slate-800 text-slate-300"
+						href={`/dashboard/${portfolio.id}/add-asset`}
+					/>
+				}
+			>
+				<div className="flex flex-wrap gap-3">
+					{assets.length === 0 ? (
+						<div className="flex flex-col items-center justify-center p-8 border border-white/5 rounded-xl bg-slate-900/30 text-center w-full">
+							<p className="text-sm font-medium text-slate-300">Brak aktywów</p>
+							<p className="text-xs text-slate-500 mt-2">
+								Twój portfel jest pusty. Dodaj pierwsze aktywo.
+							</p>
+						</div>
+					) : (
+						recentAssets.map((asset) => (
+							<RecentActivityCard
+								asset={asset}
+								isHighlighted={asset.id === highlightedId}
+								key={asset.id}
+								isDemo={isDemo}
+							/>
+						))
+					)}
 				</div>
+			</SectionLayout>
 
-				{/* SIDEBAR: Recent Assets (Minimalist style) */}
-				<aside className="space-y-6 bg-background">
-					<div className="flex justify-between items-center px-1">
-						<h3 className="text-md font-bold flex items-center gap-2">
-							Ostatnie aktywa
-						</h3>
-
-						<SafeActionButton
-							label="Dodaj Aktywo"
-							icon={Plus}
-							isDemo={isDemo}
-							variant="outline"
-							href={`/dashboard/${portfolio.id}/add-asset`}
-						/>
-					</div>
-
-					<div className="space-y-3">
-						{/* EN: Check if there are any assets to display */}
-						{/* UI: Sprawdzenie, czy lista aktywów nie jest pusta */}
-						{assets.length === 0 ? (
-							<div className="flex flex-col items-center justify-center p-8 border border-dashed border-border rounded-xl bg-card/30 text-center space-y-3">
-								<div className="space-y-4">
-									<p className="text-sm font-medium">Brak aktywów</p>
-									<p className="text-xs text-muted-foreground leading-relaxed">
-										Twój portfel jest pusty. Dodaj pierwsze aktywo, aby zacząć
-										śledzić alokację.
-									</p>
-								</div>
-							</div>
-						) : (
-							recentAssets.map((asset) => {
-								const isHighlighted = asset.id === highlightedId;
-								return (
-									<RecentActivityCard
-										asset={asset}
-										isHighlighted={isHighlighted}
-										key={asset.id}
-										isDemo={isDemo}
-									/>
-								);
-							})
-						)}
-					</div>
-				</aside>
-			</div>
-			<section className="pt-8 border-t border-border">
-				<div className="flex justify-between">
-					<SectionHeader icon={ChartArea} title="Strategia Alokacji" />
+			{/* 3. SEKCJA: WYKRESY ALOKACJI */}
+			<SectionLayout
+				title="Strategia Alokacji"
+				titleIcon={PieChart}
+				subtitle="Wizualizacja portfela"
+				description="Modelowa alokacja w zestawieniu z rzeczywistym stanem posiadania."
+				subtitleIcon={ChartArea}
+				action={
 					<SafeActionButton
 						label="Edytuj Cele"
 						icon={Pencil}
 						variant="outline"
 						isDemo={isDemo}
+						className="border-slate-800 hover:bg-slate-800 text-slate-300"
 						href={`/portfolios/edit/${portfolio.id}`}
 					/>
-				</div>
-				<SubHeader
-					title="Wykresy kołowe"
-					description="Wizualizacja modelowego portfela  w zestawieniu z rzeczywistym stanem posiadania."
-					icon={PieChart}
+				}
+			>
+				<PortfolioCharts data={portfolioStatus} />
+			</SectionLayout>
+
+			{/* 4. SEKCJA: WYKRES WZROSTU */}
+			<SectionLayout
+				title="Analiza Wzrostu i Depozytów"
+				titleIcon={ChartArea}
+				subtitle="Wydajność kapitału"
+				description="Skumulowany wkład vs bieżąca wycena oraz historia wpłat."
+				subtitleIcon={TrendingUp}
+			>
+				<InteractiveChartSection
+					transactions={transactions}
+					assets={portfolio.assets.filter((a) => a.category !== "CASH")}
 				/>
-				<div className="mx-6 py-2">
-					<PortfolioCharts data={portfolioStatus} />
-				</div>
-			</section>
+			</SectionLayout>
 
-			<section className="pt-8 border-t border-border pb-6">
-				<div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-					<div>
-						<SectionHeader
-							icon={ChartArea}
-							title="Analiza Wzrostu i Depozytów"
-						/>
-						<SubHeader
-							title="Wydajność kapitału"
-							description="Porównanie skumulowanego wkładu z bieżącą wyceną rynkową oraz historia miesięcznych dopłat."
-							icon={TrendingUp}
-						/>
-					</div>
-				</div>
-				<div className="mx-6 py-4">
-					<InteractiveChartSection
-						transactions={transactions}
-						assets={portfolio.assets.filter((a) => a.category !== "CASH")}
-					/>
-				</div>
-			</section>
-			{/* --- BOTTOM SECTION: RICH ASSET TABLE --- */}
-			<section className="pt-8 border-t border-border">
-				<div className="flex justify-between">
-					<SectionHeader
-						icon={ListOrdered}
-						title="Szczegółowy Rejestr
-					Aktywów"
-					/>
-
+			{/* 5. SEKCJA: TABELA AKTYWÓW */}
+			<SectionLayout
+				title="Szczegółowy Rejestr Aktywów"
+				titleIcon={ListOrdered}
+				subtitle="Lista pozycji z portfela"
+				description="Zestawienie średniej ceny zakupu, liczby jednostek i wyniku P&L."
+				subtitleIcon={TableProperties}
+				action={
 					<SafeActionButton
 						label="Nowe Aktywo"
 						icon={Plus}
 						isDemo={isDemo}
 						variant="outline"
+						className="border-slate-800 hover:bg-slate-800 text-slate-300"
 						href={`/dashboard/${portfolio.id}/add-asset`}
 					/>
-				</div>
-				<SubHeader
-					title="Lista pozycji z portfela"
-					description="Lista pozycji z uwzględnieniem średniej ceny zakupu, liczby jednostek oraz skumulowanego wyniku P&L."
-					icon={TableProperties}
+				}
+			>
+				<AssetLedger
+					portfolio={portfolio}
+					allPortfoliosWithCash={allPortfoliosWithCash}
+					isDemo={isDemo}
 				/>
-				<div className="mx-6 py-2">
-					<AssetLedger
-						portfolio={portfolio}
-						allPortfoliosWithCash={allPortfoliosWithCash}
-						isDemo={isDemo}
-					/>
-				</div>
-			</section>
+			</SectionLayout>
 		</div>
 	);
 };

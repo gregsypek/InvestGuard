@@ -32,7 +32,7 @@ const QuickAdjustCell = ({
 		return (
 			<Button
 				variant="outline"
-				className="text-[10px] h-7 px-2 font-mono hover:bg-primary/10 border-dashed"
+				className="text-[10px] h-7 px-2 font-mono hover:bg-primary/10 border-dashed border-white/30"
 				onClick={() => {
 					setIsEditing(true);
 					setInputValue(currentValue.toString());

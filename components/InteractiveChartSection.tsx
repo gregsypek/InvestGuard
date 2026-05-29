@@ -73,15 +73,15 @@ export function InteractiveChartSection({
 	// Walidacja "No Data" oparta tylko na tym, co zaznaczone w selectedCats
 	const validChartTransactions =
 		transactions?.filter((t) => availableCategories.includes(t.category)) || [];
-
 	// 5. WCZESNE ZAKOŃCZENIE (Early Return) - Zawsze na samym dole, po wszystkich Hookach!
 	if (validChartTransactions.length === 0) {
 		return (
-			<div className="w-full bg-card/30 p-12 rounded-3xl border border-dashed border-border/60 flex flex-col items-center justify-center text-center space-y-2 my-4">
-				<p className="text-sm font-semibold text-foreground">
+			// ZMIANA: Mroczny stan pusty wtapiający się w tło
+			<div className="w-full bg-[#0a0e17] p-12 rounded-2xl  border-white/10 flex flex-col items-center justify-center text-center space-y-3 my-4">
+				<p className="text-sm font-semibold text-slate-300">
 					Brak historii transakcji dla tego widoku
 				</p>
-				<p className="text-xs text-muted-foreground">
+				<p className="text-xs text-slate-500 max-w-md leading-relaxed">
 					Nie masz jeszcze transakcji rynkowych dla aktywów przypisanych do tego
 					wykresu.
 				</p>
@@ -96,57 +96,65 @@ export function InteractiveChartSection({
 				: [...prev, category],
 		);
 	};
+
 	return (
 		<div className="space-y-6">
-			{/* Selektor Kategorii z Kolorami */}
-			<div className="flex flex-wrap gap-3 px-1">
+			{/* Selektor Kategorii w stylu Trading UI */}
+			<div className="flex flex-wrap gap-2.5 px-1">
 				{availableCategories.map((cat) => {
 					const isActive = selectedCats.includes(cat);
-					const catColor = COLORS[cat as keyof typeof COLORS] || "#94a3b8";
-					console.log("🚀 ~ InteractiveChartSection ~ catColor:", catColor);
-
+					// ZMIANA: Zabezpieczenie koloru (fallback na neutralny slate)
+					const catColor = COLORS[cat as keyof typeof COLORS] || "#64748b";
 					const labelKey = cat as keyof typeof CATEGORY_LABELS;
 
 					return (
 						<button
 							key={cat}
 							onClick={() => toggleCategory(cat)}
-							className={`group flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all border ${
+							className={`group flex flex-wrap items-center gap-3 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase hover:cursor-pointer tracking-widest transition-all duration-300 border ${
 								isActive
-									? "shadow-sm scale-105 opacity-100"
-									: "border-gray-600 opacity-60 hover:opacity-80 bg-muted/10"
+									? "text-slate-600 "
+									: "border-white/5 text-slate-700 bg-transparent hover:bg-white/2"
 							}`}
 							style={
 								isActive
 									? {
-											backgroundColor: `${catColor}15`, // Lekkie zabarwienie tła kolorem (15% opacity)
-											borderColor: catColor,
-											color: "var(--foreground)",
+											backgroundColor: `${catColor}15`, // Bardzo delikatne tło (15% krycia)
+											borderColor: `${catColor}40`, // Lekko widoczna ramka w kolorze
+											boxShadow: `0 0 10px ${catColor}10`, // Delikatna poświata przycisku
 										}
-									: {
-											color: "var(--muted-foreground)", // Przygaszony tekst dla nieaktywnych
-										}
+									: {}
 							}
 						>
+							{/* NEONOWA KROPKA */}
 							<div
-								className={`w-2 h-2 rounded-full shrink-0 transition-transform ${
-									isActive ? "scale-110" : "scale-100 grayscale-[1]"
-								}`}
-								style={{ backgroundColor: catColor }}
+								className="w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-300"
+								style={
+									isActive
+										? {
+												backgroundColor: catColor,
+												boxShadow: `0 0 8px ${catColor}`, // Świecenie kropki
+											}
+										: {
+												backgroundColor: "#334155", // Zgaszona szara kropka dla nieaktywnych
+											}
+								}
 							/>
-							<span className="tracking-wider">
-								{CATEGORY_LABELS[labelKey] || cat}
-							</span>
+							<span>{CATEGORY_LABELS[labelKey] || cat}</span>
 						</button>
 					);
 				})}
 			</div>
 
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				<div className="lg:col-span-2 bg-card/40 p-6 rounded-3xl border border-border/50 shadow-sm h-80">
+			{/* KONTENERY WYKRESÓW */}
+			<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+				{/* Wykres Liniowy (Alpha) */}
+				<div className="xl:col-span-2 bg-[#0a0e17] p-4 md:p-6 rounded-2xl border border-white/5 h-[350px] min-h-[350px] relative w-full flex flex-col">
 					<AlphaChart data={areaPoints} />
 				</div>
-				<div className="bg-card/40 p-6 rounded-3xl border border-border/50 shadow-sm h-80">
+
+				{/* Wykres Słupkowy (Wpłaty) */}
+				<div className="bg-[#0a0e17] p-4 md:p-6 rounded-2xl border border-white/5 h-[350px] min-h-[350px] relative w-full flex flex-col">
 					<MonthlyDepositsChart data={barPoints} />
 				</div>
 			</div>

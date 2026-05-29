@@ -221,25 +221,34 @@ const AssetLedgerTable = ({
 
 	return (
 		<>
-			<div className="w-full">
-				<Table>
-					<TableHeader className="">
-						<TableRow className="border-border">
-							<TableHead className="w-50 font-bold py-4">Aktywo</TableHead>
-							<TableHead className="w-37.5 font-bold">Kategoria</TableHead>
-							<TableHead className="w-50 font-bold text-center">
+			{/* ZMIANA: Usunięto całkowicie tło kontenera (bg-transparent lub bg-background bez ramek), 
+			    aby tabela nie wyglądała jak zamknięta w pudełku. */}
+			<div className="w-full overflow-x-auto no-scrollbar pb-4">
+				<Table className="min-w-[700px] sm:min-w-[800px]">
+					<TableHeader>
+						<TableRow className="border-b border-white/[0.03] hover:bg-transparent">
+							{/* STICKY COLUMN - HEADER: Ciemne tło, dopasowane do Twoich zmian */}
+							<TableHead className="sticky left-0 z-20 bg-[#0a0e17] w-48 sm:w-56 text-[10px] font-bold uppercase tracking-widest text-slate-500 py-4 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none">
+								Aktywo
+							</TableHead>
+							{/* ZMIANA: Ukrywamy nagłówek kategorii na telefonach */}
+							<TableHead className="hidden sm:table-cell w-32 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-none">
+								Kategoria
+							</TableHead>
+							<TableHead className="w-32 sm:w-40 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-center border-none">
 								Alokacja (%)
 							</TableHead>
-							<TableHead className="w-45 font-bold text-center">
+							<TableHead className="w-32 sm:w-40 text-[10px] font-bold uppercase tracking-widest text-slate-500 text-center border-none">
 								Korekta
 							</TableHead>
-							<TableHead className="text-right font-bold w-32">
+							<TableHead className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-500 w-28 sm:w-32 border-none">
 								Zysk / Strata
 							</TableHead>
-							<TableHead className="text-right font-bold">
+							<TableHead className="text-right text-[10px] font-bold uppercase tracking-widest text-slate-500 border-none pr-4">
 								Wartość Rynkowa
 							</TableHead>
-							<TableHead className="w-12"></TableHead>
+							{/* ZMIANA: Maksymalnie odchudzona ostatnia kolumna */}
+							<TableHead className="w-8 border-none px-0"></TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -247,37 +256,21 @@ const AssetLedgerTable = ({
 							<TableRow>
 								<TableCell
 									colSpan={7}
-									className="text-center py-12 text-muted-foreground"
+									className="text-center py-16 text-slate-500 font-medium border-none"
 								>
 									Portfel jest pusty. Zacznij dodawać aktywa.
 								</TableCell>
 							</TableRow>
 						) : (
 							paginatedAssets.map((asset) => {
-								console.log("🚀 ~ AssetLedgerTable ~ asset:", asset);
 								const isAggregatedBond = asset.id === "bonds-summary-id";
 
-								// // EN: Smart filtering: If it's the aggregated bond row, show ALL bond history.
-								// // Otherwise, show specific asset history by clean ticker.
-								// const assetHistory = isAggregatedBond
-								// 	? portfolio.transactionHistories.filter(
-								// 			(tx) => tx.category === "BONDS",
-								// 		)
-								// 	: portfolio.transactionHistories.filter(
-								// 			(tx) =>
-								// 				(tx.ticker &&
-								// 					tx.ticker.split("_")[0] === asset.cleanTicker) ||
-								// 				tx.assetName === asset.name,
-								// 		);
-								// EN: Smart filtering: Ensure history is isolated by technical ticker AND category
 								const assetHistory = isAggregatedBond
 									? portfolio.transactionHistories.filter(
 											(tx) => tx.category === "BONDS",
 										)
 									: portfolio.transactionHistories.filter(
 											(tx) =>
-												// KLUCZ: Porównujemy pełny techniczny ticker (np. CASH_BOOSTER)
-												// oraz kategorię, aby uniknąć wycieku historii między wierszami
 												tx.ticker === asset.ticker &&
 												tx.category === asset.category,
 										);
@@ -292,15 +285,11 @@ const AssetLedgerTable = ({
 										let valueToAdd = 0;
 
 										if (isAggregatedBond) {
-											// Logika dla obligacji (operujemy na PLN)
 											valueToAdd =
 												tx.type === "SELL"
 													? -Math.abs(tx.executedValue)
 													: Math.abs(tx.executedValue);
 										} else {
-											// Logika dla akcji/ETF (operujemy na sztukach)
-											// EN: If it's a BUY or DEPOSIT, value is positive. If SELL, it's negative.
-											// PL: Jeśli KUPNO/WPŁATA - dodatnie. Jeśli SPRZEDAŻ - ujemne.
 											const isNegative = tx.type === "SELL";
 											valueToAdd = isNegative
 												? -Math.abs(tx.quantity)
@@ -321,21 +310,10 @@ const AssetLedgerTable = ({
 								const isExpanded = expandedAssetId === asset.id && hasHistory;
 								const isHighlighted = asset.id === highlightedId;
 
-								// EN: Logic for slicing history based on toggle
 								const visibleHistory = showFullHistory
 									? assetHistory
 									: assetHistory.slice(0, 3);
 
-								// const currentUnitPrice =
-								// 	asset.quantity > 0 && !isAggregatedBond
-								// 		? asset.currentValue / asset.quantity
-								// 		: 0;
-								// const share = Number(
-								// 	(
-								// 		((asset.currentValue ?? 0) / totalPortfolioValue) *
-								// 		100
-								// 	).toFixed(1),
-								// );
 								const share =
 									totalPortfolioValue <= 0
 										? 0
@@ -346,103 +324,126 @@ const AssetLedgerTable = ({
 												).toFixed(1),
 											);
 								const categoryColor =
-									COLORS[asset.category as keyof typeof COLORS] || "#ccc";
+									COLORS[asset.category as keyof typeof COLORS] || "#64748b";
 
 								return (
 									<React.Fragment key={asset.id}>
+										{/* ULTRA-DELIKATNE LINIE POMIĘDZY WIERSZAMI */}
 										<TableRow
 											className={cn(
-												"border-border transition-colors group",
+												"border-b border-white/[0.03] transition-colors group",
 												hasHistory
-													? "cursor-pointer hover:bg-muted/20"
+													? "cursor-pointer hover:bg-white/[0.02]"
 													: "opacity-90",
-												isExpanded && "bg-muted/30",
-												isHighlighted && "bg-primary/5",
-												// isAggregatedBond && "bg-primary/5", // EN: Subtle highlight for the summary row
+												isExpanded && "bg-[#05070a]",
+												isHighlighted && "bg-blue-500/5",
 												asset.quantity === 0 &&
 													!isAggregatedBond &&
-													"opacity-50 grayscale-[0.5]",
+													"opacity-50 grayscale",
 											)}
 											onClick={() => {
 												if (hasHistory) {
 													setExpandedAssetId(
 														isExpanded ? null : (asset.id as string),
 													);
-													setShowFullHistory(false); // Resetujemy widok przy zmianie wiersza
+													setShowFullHistory(false);
 												}
 											}}
 										>
-											<TableCell className="relative py-2">
-												<div className="flex items-center gap-2">
+											{/* STICKY COLUMN - DANE: Ciemne tło */}
+											<TableCell
+												className={cn(
+													"sticky left-0 z-10 py-3 md:px-4 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none transition-colors",
+													isExpanded
+														? "bg-[#080c14]"
+														: "bg-[#0a0e17] group-hover:bg-[#0c121e]",
+												)}
+											>
+												<div className="flex items-center gap-2 md:gap-3 pl-1">
 													{hasHistory && (
 														<ChevronDown
 															className={cn(
-																"h-3 w-3 text-primary transition-transform duration-200",
+																"h-4 w-4 shrink-0 text-slate-500 group-hover:text-slate-300 transition-all duration-200",
 																isExpanded ? "rotate-180" : "rotate-0",
 															)}
 														/>
 													)}
-													{/* EN: Using our optimized component | PL: Użycie zoptymalizowanego komponentu */}
+													{/* <AssetLogo
+														ticker={asset.ticker || ""}
+														className="w-5 h-5 md:w-6 md:h-6 drop-shadow-sm shrink-0 bg-white rounded-full   p-2"
+													/> */}
 													<AssetLogo
 														ticker={asset.ticker || ""}
-														className="w-4 h-4"
+														// Było: w-5 h-5 md:w-6 md:h-6
+														// Jest: w-4 h-4 md:w-5 md:h-5 (zmniejszone o jeden stopień)
+														className="w-4 h-4 md:w-5 md:h-5 drop-shadow-sm shrink-0 bg-white rounded-full"
 													/>
-													<div className="font-bold text-sm truncate max-w-60">
-														{asset.name}
+													<div className="flex flex-col justify-center">
+														{/* INTELIGENTNE UKRYWANIE: Na telefonach nazwa jest mocno ścięta lub ukryta */}
+														<div className="hidden sm:block font-bold text-xs md:text-sm text-slate-200 truncate max-w-[140px] md:max-w-[180px] xl:max-w-[240px] tracking-tight">
+															{asset.name}
+														</div>
+														<div className="flex items-center gap-1.5 md:mt-0.5">
+															{/* ZMIANA: Na telefonach pokazujemy kropkę kategorii obok tickera! */}
+															<div
+																className="w-1.5 h-1.5 rounded-full opacity-80 shrink-0 sm:hidden block"
+																style={{ backgroundColor: categoryColor }}
+															/>
+															<span className="text-[10px] md:text-[9px] font-bold text-slate-300 md:text-slate-400 font-mono sm:bg-white/5 sm:border sm:border-white/10 px-0 sm:px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+																{asset.cleanTicker}
+															</span>
+															<span className="text-[10px] text-blue-400 font-bold tracking-wide">
+																{isAggregatedBond ||
+																	`${(asset.quantity ?? 0).toLocaleString(
+																		undefined,
+																		{
+																			minimumFractionDigits: 2,
+																			maximumFractionDigits: 2,
+																		},
+																	)} szt`}
+															</span>
+														</div>
 													</div>
 												</div>
-												<div className="flex items-center gap-2 mt-1">
-													<span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded uppercase">
-														{asset.cleanTicker}
-													</span>
-													<span className="text-[10px] text-blue-500 font-bold">
-														{isAggregatedBond ||
-															`${(asset.quantity ?? 0).toLocaleString(
-																undefined,
-																{
-																	minimumFractionDigits: 2,
-																	maximumFractionDigits: 2,
-																},
-															)} szt`}
-													</span>
-												</div>
 											</TableCell>
 
-											<TableCell>
-												<div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase">
+											{/* ZMIANA: Ukryta kolumna Kategorii na telefonach */}
+											<TableCell className="border-none hidden sm:table-cell">
+												<div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
 													<div
-														className="w-2 h-2 rounded-full"
+														className="w-1.5 h-1.5 rounded-full opacity-80 shrink-0"
 														style={{ backgroundColor: categoryColor }}
 													/>
-													{asset.category
-														? CATEGORY_LABELS[asset.category]
-														: ""}
+													<span className="truncate max-w-[100px]">
+														{asset.category
+															? CATEGORY_LABELS[asset.category]
+															: ""}
+													</span>
 												</div>
 											</TableCell>
 
-											<TableCell>
-												<div className="space-y-1 pr-4">
-													<div className="flex justify-between text-[10px] font-bold">
-														<span className="text-muted-foreground uppercase">
-															Udział
+											<TableCell className="border-none">
+												<div className="space-y-1.5 pr-2 sm:pr-4">
+													<div className="flex justify-center text-[10px] font-bold">
+														<span className="text-slate-300 font-mono">
+															{share}%
 														</span>
-														<span>{share}%</span>
 													</div>
 													<Progress
 														value={share}
 														indicatorColor={categoryColor}
-														className="h-1"
+														className="h-1 bg-slate-800"
 													/>
 												</div>
 											</TableCell>
 
-											<TableCell>
+											<TableCell className="border-none">
 												{isAggregatedBond ? (
-													<span className="text-[10px] text-muted-foreground uppercase tracking-widest block text-center opacity-50 ">
+													<span className="text-[9px] text-slate-600 uppercase tracking-widest block text-center font-bold">
 														Auto-kalkulacja
 													</span>
 												) : asset.quantity === 0 ? (
-													<span className="text-[10px] text-muted-foreground block text-center opacity-30">
+													<span className="text-sm text-slate-700 block text-center font-bold">
 														—
 													</span>
 												) : (
@@ -457,18 +458,18 @@ const AssetLedgerTable = ({
 												)}
 											</TableCell>
 
-											<TableCell className="text-right">
+											<TableCell className="text-right border-none">
 												{asset.quantity === 0 && !isAggregatedBond ? (
-													<div className="inline-flex items-center px-1.5 py-0.5 rounded border border-dashed border-muted-foreground/30 text-[9px] font-bold text-muted-foreground/50 uppercase tracking-widest">
-														ZAMKNIĘTA POZYCJA
+													<div className="inline-flex items-center px-2 py-0.5 rounded-sm border border-white/5 bg-white/5 text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+														Zamknięta
 													</div>
 												) : (
 													<div
 														className={cn(
-															"text-xs font-bold font-mono",
+															"text-xs md:text-sm font-bold font-mono tracking-tight",
 															asset.profitAmount >= 0
-																? "text-emerald-500"
-																: "text-red-500",
+																? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.2)]"
+																: "text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.2)]",
 														)}
 													>
 														<div>
@@ -477,55 +478,59 @@ const AssetLedgerTable = ({
 																minimumFractionDigits: 2,
 																maximumFractionDigits: 2,
 															})}{" "}
-															PLN
+															<span className="text-[9px] uppercase">PLN</span>
 														</div>
-														<div className="text-[10px] opacity-70">
+														<div className="text-[9px] md:text-[10px] opacity-80 mt-0.5">
+															{asset.profitPercent > 0 ? "+" : ""}
 															{asset.profitPercent.toFixed(2)}%
 														</div>
 													</div>
 												)}
 											</TableCell>
 
-											<TableCell className="text-right font-bold font-mono text-sm tabular-nums">
+											<TableCell className="text-right font-bold font-mono text-sm md:text-[15px] text-slate-200 tabular-nums border-none pr-4">
 												{asset.currentValue
 													? asset.currentValue.toLocaleString("pl-PL", {
 															minimumFractionDigits: 2,
 															maximumFractionDigits: 2,
 														})
 													: 0}{" "}
-												<span className="text-[10px] font-normal opacity-50">
+												<span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-0.5">
 													PLN
 												</span>
 											</TableCell>
 
+											{/* ZMIANA: Skompresowana ostatnia kolumna akcji */}
 											<TableCell
-												className="text-right"
+												className="text-right border-none px-0 pr-2"
 												onClick={(e) => e.stopPropagation()}
 											>
 												{isAggregatedBond ? (
 													!isDemo && (
 														<Link
 															href="/bond-reports"
-															className="flex items-center justify-end gap-1 text-[10px] font-bold uppercase text-primary hover:text-blue-600 transition-colors  px-2 py-1.5 rounded-md"
+															className="inline-flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all p-1.5 rounded-md"
+															title="Szczegóły"
 														>
-															Szczegóły <ExternalLink size={12} />
+															<ExternalLink size={14} />
 														</Link>
 													)
 												) : (
 													<DropdownMenu>
 														<DropdownMenuTrigger asChild>
-															<button className="p-2 hover:bg-muted rounded-full transition-colors outline-none focus:ring-2 focus:ring-ring">
-																<MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+															<button className="p-1.5 hover:bg-white/10 rounded-md transition-colors outline-none focus:ring-2 focus:ring-blue-500">
+																<MoreHorizontal className="h-4 w-4 text-slate-400" />
 															</button>
 														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end" className="w-40">
+														<DropdownMenuContent
+															align="end"
+															className="w-40 bg-[#0a0e17] border-white/5 text-slate-200"
+														>
 															<DropdownMenuItem
-																className="cursor-pointer font-medium"
+																className="cursor-pointer font-medium hover:bg-white/5 focus:bg-white/5"
 																disabled={asset.quantity === 0}
 																onClick={(e) => {
 																	e.stopPropagation();
-
-																	// BLOKADA DEMO
 																	if (isDemo) {
 																		toast.error("Akcja zablokowana", {
 																			description:
@@ -534,19 +539,17 @@ const AssetLedgerTable = ({
 																		});
 																		return;
 																	}
-																	setAssetToSell(asset as unknown as Asset); // 👈 Informujemy TS, że to nadal jest Asset
+																	setAssetToSell(asset as unknown as Asset);
 																}}
 															>
-																<HandCoins className="mr-2 h-4 w-4 text-emerald-500" />{" "}
+																<HandCoins className="mr-2 h-4 w-4 text-emerald-400" />{" "}
 																Sprzedaj
 															</DropdownMenuItem>
 															<DropdownMenuItem
-																className="cursor-pointer font-medium"
-																disabled={asset.quantity === 0} // 🚀 BLOKADA: Korekta zera jest zbędna
+																className="cursor-pointer font-medium hover:bg-white/5 focus:bg-white/5"
+																disabled={asset.quantity === 0}
 																onClick={(e) => {
 																	e.stopPropagation();
-
-																	// BLOKADA DEMO
 																	if (isDemo) {
 																		toast.error("Akcja zablokowana", {
 																			description:
@@ -555,23 +558,21 @@ const AssetLedgerTable = ({
 																		});
 																		return;
 																	}
-
-																	// Wyciągamy pola UI, zostawiając resztę (czysty Asset) w zmiennej baseAsset
 																	setAssetToAdjust(asset as unknown as Asset);
 																}}
 															>
-																<Scale className="mr-2 h-4 w-4 text-blue-500" />{" "}
+																<Scale className="mr-2 h-4 w-4 text-blue-400" />{" "}
 																Korekta
 															</DropdownMenuItem>
-															<DropdownMenuSeparator />
+															<DropdownMenuSeparator className="bg-white/5" />
 															<div onClick={(e) => e.stopPropagation()}>
 																<DeleteButton
 																	id={asset.id}
 																	onDelete={deleteAsset}
 																	confirmMsg={`Usunąć całkowicie ${asset.name}?`}
 																	isDemo={isDemo}
-																	className="flex w-full items-center gap-4 px-2 py-1.5 cursor-pointer font-medium text-sm text-destructive hover:bg-destructive/10 transition-colors"
-																	label="Usuń "
+																	className="flex w-full items-center gap-2 px-2 py-1.5 cursor-pointer font-medium text-sm text-rose-500 hover:bg-rose-500/10 transition-colors rounded-sm"
+																	label="Usuń"
 																/>
 															</div>
 														</DropdownMenuContent>
@@ -580,27 +581,27 @@ const AssetLedgerTable = ({
 											</TableCell>
 										</TableRow>
 
-										{/* --- EXPANDED TRANSACTION HISTORY --- */}
+										{/* SEKCJA Z HISTORIĄ */}
 										{isExpanded && (
-											<TableRow className="bg-muted/5 border-none hover:bg-muted/5">
+											<TableRow className="bg-background border-b border-white/5 hover:bg-[#05070a]">
 												<TableCell colSpan={7} className="p-0 border-none">
-													<div className="animate-in fade-in slide-in-from-top-1 duration-200">
-														<div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
-															{/* LEWA STRONA: Wykres (3/12) */}
-															<div className="lg:col-span-3 h-48 lg:h-full bg-background/50 rounded-xl border border-border/50 p-4">
-																<p className="text-[10px] font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
-																	<TrendingUp className="h-3 w-3" /> Wzrost
+													<div className="animate-in fade-in slide-in-from-top-2 duration-300">
+														<div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 md:p-6 bg-gradient-to-b from-black/20 to-transparent shadow-inner">
+															{/* LEWA STRONA: Wykres */}
+															<div className="lg:col-span-4 h-48 lg:h-full bg-[#0a0e17] rounded-xl border border-white/5 p-4 flex flex-col">
+																<p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+																	<TrendingUp className="h-3.5 w-3.5" /> Wzrost
 																	kapitału
 																</p>
-																<div className="h-[350px] w-full">
+																<div className="flex-1 w-full min-h-[150px]">
 																	<ResponsiveContainer
 																		width="100%"
-																		height="80%"
+																		height="100%"
 																	>
 																		<AreaChart data={chartData}>
 																			<defs>
 																				<linearGradient
-																					id="colorAmount"
+																					id={`colorAmount-${asset.id}`}
 																					x1="0"
 																					y1="0"
 																					x2="0"
@@ -609,7 +610,7 @@ const AssetLedgerTable = ({
 																					<stop
 																						offset="5%"
 																						stopColor={categoryColor}
-																						stopOpacity={0.3}
+																						stopOpacity={0.4}
 																					/>
 																					<stop
 																						offset="95%"
@@ -620,35 +621,44 @@ const AssetLedgerTable = ({
 																			</defs>
 																			<Tooltip
 																				contentStyle={{
-																					fontSize: "10px",
+																					backgroundColor: "#05070a",
+																					border:
+																						"1px solid rgba(255,255,255,0.05)",
 																					borderRadius: "8px",
-																					backgroundColor: "#fff",
+																					fontSize: "11px",
+																					fontWeight: "600",
+																					color: "#e2e8f0",
 																				}}
+																				itemStyle={{ color: categoryColor }}
 																			/>
 																			<Area
 																				type="stepAfter"
 																				dataKey="amount"
 																				stroke={categoryColor}
 																				fillOpacity={1}
-																				fill="url(#colorAmount)"
+																				fill={`url(#colorAmount-${asset.id})`}
 																				strokeWidth={2}
-																				dot={{ r: 2, fill: categoryColor }}
+																				dot={{
+																					r: 3,
+																					fill: categoryColor,
+																					stroke: "#0a0e17",
+																					strokeWidth: 2,
+																				}}
 																			/>
 																		</AreaChart>
 																	</ResponsiveContainer>
 																</div>
 															</div>
 
-															{/* PRAWA STRONA: Lista transakcji (9/12) */}
-															<div className="lg:col-span-9 space-y-3">
-																<div className="flex justify-between items-center px-2 mb-1">
-																	<p className="text-[10px] font-bold text-muted-foreground uppercase">
+															{/* PRAWA STRONA: Lista transakcji */}
+															<div className="lg:col-span-8 space-y-3">
+																<div className="flex justify-between items-center px-1 mb-2">
+																	<p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
 																		{isAggregatedBond
-																			? "Historia wszystkich transz obligacji"
-																			: "Ostatnie operacje"}
+																			? "Historia transz obligacji"
+																			: "Rejestr Zleceń"}
 																	</p>
 
-																	{/* --- PRZEŁĄCZNIK WIDOKU --- */}
 																	{assetHistory.length > 3 && (
 																		<label className="flex items-center gap-2 cursor-pointer group">
 																			<input
@@ -657,26 +667,20 @@ const AssetLedgerTable = ({
 																				onChange={() =>
 																					setShowFullHistory(!showFullHistory)
 																				}
-																				className="w-3 h-3 rounded border-gray-300 text-primary focus:ring-primary"
+																				className="w-3 h-3 rounded bg-[#0a0e17] border-white/10 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
 																			/>
-																			<span className="text-[9px] font-bold text-muted-foreground uppercase group-hover:text-primary transition-colors">
-																				Pokaż całą historię (
-																				{assetHistory.length})
+																			<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-300 transition-colors">
+																				Cała historia ({assetHistory.length})
 																			</span>
 																		</label>
 																	)}
 																</div>
 
-																<div className="max-h-96 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-																	{/* EN: We map ONLY over visibleHistory to respect the toggle/slice logic */}
+																<div className="max-h-64 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
 																	{visibleHistory.map(
 																		(t: TransactionHistory) => {
-																			// ZMIANA 1: Polegamy na typie z bazy (Enum)
 																			const isBuy = t.type === "BUY";
-																			// const isSell = t.type === "SELL";
 																			const isCorrection = t.type === "UPDATE";
-
-																			// Obliczamy cenę jednostkową tylko dla kupna/sprzedaży
 																			const txUnitPrice =
 																				t.quantity !== 0
 																					? Math.abs(
@@ -687,22 +691,22 @@ const AssetLedgerTable = ({
 																			return (
 																				<div
 																					key={t.id}
-																					className="flex items-center justify-between text-[11px] bg-background/50 border border-border/40 p-3 rounded-lg hover:border-border transition-colors"
+																					className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] bg-[#0a0e17] border border-white/5 p-3 rounded-lg hover:bg-white/[0.02] transition-colors"
 																				>
-																					<div className="flex items-center gap-4">
-																						<span className="text-muted-foreground font-medium">
+																					<div className="flex items-center gap-3 md:gap-4">
+																						<span className="text-slate-400 font-mono tracking-tighter">
 																							{new Date(
 																								t.executedAt,
 																							).toLocaleDateString()}
 																						</span>
 																						<span
 																							className={cn(
-																								"px-1.5 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-tighter",
+																								"px-2 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-widest border",
 																								isCorrection
-																									? "bg-blue-500/10 text-blue-600" // Niebieski dla UPDATE
+																									? "bg-blue-500/10 text-blue-400 border-blue-500/20"
 																									: isBuy
-																										? "bg-emerald-500/10 text-emerald-600"
-																										: "bg-orange-500/10 text-orange-600",
+																										? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+																										: "bg-orange-500/10 text-orange-400 border-orange-500/20",
 																							)}
 																						>
 																							{isCorrection
@@ -712,27 +716,26 @@ const AssetLedgerTable = ({
 																									: "Sprzedaż"}
 																						</span>
 																						{isAggregatedBond && (
-																							<span className="font-bold text-[10px] text-slate-500 uppercase">
+																							<span className="font-bold text-[10px] text-slate-500 uppercase tracking-widest">
 																								{t.assetName || "Seria"}
 																							</span>
 																						)}
 																					</div>
 
-																					<div className="flex gap-6 font-mono text-right">
+																					<div className="flex justify-between sm:justify-end gap-6 font-mono text-right items-center">
 																						<div className="flex flex-col">
 																							<span
 																								className={cn(
-																									"font-bold",
+																									"font-bold text-xs tracking-tight",
 																									isCorrection
 																										? t.executedValue >= 0
-																											? "text-blue-600"
-																											: "text-red-500" // Niebieski zysk, czerwona strata korekty
+																											? "text-blue-400"
+																											: "text-rose-400"
 																										: isBuy
-																											? "text-emerald-500"
-																											: "text-orange-600",
+																											? "text-emerald-400"
+																											: "text-orange-400",
 																								)}
 																							>
-																								{/* Pokazujemy +/- na podstawie kierunku */}
 																								{isCorrection
 																									? t.executedValue > 0
 																										? "+"
@@ -749,21 +752,22 @@ const AssetLedgerTable = ({
 																								PLN
 																							</span>
 																							{!isCorrection && (
-																								<span className="text-[9px] text-muted-foreground">
+																								<span className="text-[9px] text-slate-500 font-medium tracking-tighter">
 																									@ {txUnitPrice.toFixed(2)} /
 																									szt.
 																								</span>
 																							)}
 																						</div>
-																						<span className="min-w-18 font-bold text-muted-foreground">
-																							{/* ZMIANA: Znak ilości sztuk zależy od kierunku transakcji (Kupno: +, Sprzedaż: -) */}
+																						<span className="min-w-[70px] font-bold text-slate-400 text-xs">
 																							{isCorrection
 																								? "0.0000"
 																								: (isBuy ? "+" : "-") +
 																									Math.abs(t.quantity).toFixed(
 																										4,
 																									)}{" "}
-																							szt.
+																							<span className="text-[9px] text-slate-600">
+																								szt.
+																							</span>
 																						</span>
 																					</div>
 																				</div>
@@ -773,9 +777,8 @@ const AssetLedgerTable = ({
 
 																	{!showFullHistory &&
 																		assetHistory.length > 3 && (
-																			<p className="text-[10px] text-center text-muted-foreground italic pt-2 opacity-50">
+																			<p className="text-[10px] text-center text-slate-600 font-bold tracking-widest uppercase py-3">
 																				... i {assetHistory.length - 3} więcej
-																				operacji.
 																			</p>
 																		)}
 																</div>
@@ -800,7 +803,7 @@ const AssetLedgerTable = ({
 			/>
 
 			{assetToSell && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05070a]/80 backdrop-blur-sm p-4">
 					<SellAssetModal
 						asset={assetToSell}
 						portfoliosWithCash={allPortfoliosWithCash}
@@ -813,7 +816,7 @@ const AssetLedgerTable = ({
 			)}
 
 			{assetToAdjust && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05070a]/80 backdrop-blur-sm p-4">
 					<AdjustAssetModal
 						asset={assetToAdjust}
 						onConfirm={handleConfirmAdjust}

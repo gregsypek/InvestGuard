@@ -1,7 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { HeartPlus, LayoutGrid } from "lucide-react";
+import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import {
 	Table,
 	TableBody,
@@ -11,21 +10,8 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 
-import { COLORS } from "@/lib/constants";
-import { CustomCardHeader } from "./shared/CustomCardHeader";
+import { LayoutGrid } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-
-// EN: Mapping technical IDs to Polish labels for display
-const CATEGORY_LABELS: Record<string, string> = {
-	BONDS: "Obligacje",
-	DEVELOPED: "Rynki Rozwinięte",
-	EMERGING: "Rynki Wschodzące",
-	GOLD: "Złoto",
-	BOOSTER: "Akcje (Alpha)",
-	CASH: "Gotówka",
-	CRYPTO: "Kryptowaluty",
-	COMMODITIES: "Surowce",
-};
 
 interface CategoryTableProps {
 	data: Record<string, number>;
@@ -33,101 +19,95 @@ interface CategoryTableProps {
 }
 
 export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
-	// EN: Convert object to array and sort by value descending
 	const sortedCategories = Object.entries(data).sort(([, a], [, b]) => b - a);
 
-	// EN: Handle scenario where no data is available
 	if (sortedCategories.length === 0) {
 		return (
-			<Card className="border-border2 bg-card">
-				<CardContent className="flex flex-col items-center justify-center py-10 text-center space-y-3">
-					<LayoutGrid className="h-10 w-10 text-muted-foreground/30" />
-					<div className="space-y-1">
-						<p className="text-sm font-medium">Brak danych alokacji</p>
-						<p className="text-xs text-muted-foreground">
-							Dodaj pierwsze aktywa do swoich portfeli, aby zobaczyć
-							podsumowanie.
-						</p>
-					</div>
-				</CardContent>
-			</Card>
+			<div className="w-full rounded-2xl border border-t-border bg-t-bg-panel flex flex-col items-center justify-center py-16 text-center space-y-3">
+				<div className="p-4 rounded-full bg-black/5 dark:bg-white/5 border border-t-border-subtle mb-2">
+					<LayoutGrid className="h-8 w-8 text-t-text-tertiary" />
+				</div>
+				<div className="space-y-1">
+					<p className="text-sm font-bold text-t-text-primary tracking-tight">
+						Brak danych alokacji
+					</p>
+					<p className="text-xs font-medium text-t-text-secondary">
+						Dodaj pierwsze aktywa do swoich portfeli, aby zobaczyć podsumowanie.
+					</p>
+				</div>
+			</div>
 		);
 	}
 
 	return (
-		<Card className=" bg-background border-none shadow-none">
-			<CustomCardHeader
-				title="Skład i Zdrowie Portfela"
-				description="Rozkład aktywów ze wszystkich Twoich portfeli (łącznie)"
-				icon={HeartPlus}
-			/>
-			<CardContent>
-				<Table>
-					<TableHeader className="bg-muted/30">
-						<TableRow className="border-border2 hover:bg-transparent">
-							<TableHead className="w-50 font-bold text-foreground">
-								Kategoria
-							</TableHead>
-							<TableHead className="text-right font-bold text-foreground">
-								Wartość (PLN)
-							</TableHead>
-							<TableHead className="w-[40%] text-right font-bold text-foreground">
-								Alokacja
-							</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{sortedCategories.map(([category, value]) => {
-							// EN: Calculate percentage safely to avoid division by zero
-							const percentage =
-								totalValue > 0 ? (value / totalValue) * 100 : 0;
-							const colorValue = COLORS[category] || "var(--primary)";
-							// console.log("🚀 ~ CategoryTable ~ colorValue:", colorValue)
+		<div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-t-border bg-t-bg-panel">
+			<Table className="w-full min-w-[500px] sm:min-w-[650px]">
+				<TableHeader>
+					<TableRow className="border-b border-t-border-subtle hover:bg-transparent">
+						{/* ZMIANA: Dokładnie ta sama logika STICKY co w StrategyHealthTable */}
+						<TableHead className="sticky left-0 z-10 w-40 md:w-56 bg-t-bg-sticky text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-r border-t-border md:border-none shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] md:shadow-none pl-6 py-4">
+							Kategoria
+						</TableHead>
+						<TableHead className="text-right text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4 md:pr-8">
+							Wartość (PLN)
+						</TableHead>
+						<TableHead className="text-right text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4 pr-6 w-[30%] md:w-[40%]">
+							Udział
+						</TableHead>
+					</TableRow>
+				</TableHeader>
 
-							return (
-								<TableRow
-									key={category}
-									className="border-border hover:bg-muted/20 transition-colors"
-								>
-									<TableCell className="font-medium">
-										<div className="flex items-center gap-3">
-											{/* EN: Custom circle with border matching the rest of the UI */}
-											<div
-												className="h-3 w-3 rounded-full border border-border2 shadow-xs"
-												style={{ backgroundColor: colorValue }}
-											/>
-											<span className="font-semibold text-sm">
-												{CATEGORY_LABELS[category] || category}
-											</span>
-										</div>
-									</TableCell>
-									<TableCell className="text-right font-mono text-sm">
-										{value.toLocaleString("pl-PL", {
-											maximumFractionDigits: 2,
-											minimumFractionDigits: 2,
-										})}
-									</TableCell>
-									<TableCell>
-										<div className="flex items-center gap-4">
-											{/* EN: Using the progress bar to visualize the weight */}
-											<Progress
-												value={percentage}
-												className="h-2 flex-1 bg-muted"
-												// FIX: Use colorValue (CSS var) instead of the label text
-												// UI: Używamy zmiennej koloru, a nie nazwy kategorii
-												indicatorColor={colorValue}
-											/>
-											<span className="text-xs font-bold w-12 text-right tabular-nums">
-												{percentage.toFixed(1)}%
-											</span>
-										</div>
-									</TableCell>
-								</TableRow>
-							);
-						})}
-					</TableBody>
-				</Table>
-			</CardContent>
-		</Card>
+				<TableBody>
+					{sortedCategories.map(([category, value]) => {
+						const percentage = totalValue > 0 ? (value / totalValue) * 100 : 0;
+						const colorValue =
+							COLORS[category as keyof typeof COLORS] || "#64748b";
+
+						return (
+							<TableRow
+								key={category}
+								// ZMIANA: Przywrócono "hover:bg-t-hover" oraz "group" dla podświetlenia wiersza
+								className="border-b border-t-border-subtle hover:bg-t-hover transition-colors group"
+							>
+								{/* ZMIANA: Komórka synchronizuje swój kolor z hoverem na wierszu (group-hover:bg-t-bg-sticky-hover) */}
+								<TableCell className="sticky left-0 z-10 pl-6 py-4 sm:py-5 bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover border-r border-t-border md:border-none shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] md:shadow-none transition-colors">
+									<div className="flex items-center gap-3">
+										<div
+											className="h-2 w-2 rounded-full opacity-80 shrink-0"
+											style={{ backgroundColor: colorValue }}
+										/>
+										<span className="font-bold text-sm tracking-tight text-t-text-primary whitespace-nowrap">
+											{CATEGORY_LABELS[
+												category as keyof typeof CATEGORY_LABELS
+											] || category}
+										</span>
+									</div>
+								</TableCell>
+
+								<TableCell className="text-right font-mono text-sm font-semibold text-t-text-primary border-none py-4 sm:py-5 md:pr-8">
+									{value.toLocaleString("pl-PL", {
+										maximumFractionDigits: 2,
+										minimumFractionDigits: 2,
+									})}
+								</TableCell>
+
+								<TableCell className="pr-6 border-none py-4 sm:py-5">
+									<div className="flex items-center justify-end gap-6">
+										<Progress
+											value={percentage}
+											className="h-1.5 w-full max-w-[160px] bg-slate-200 dark:bg-slate-800"
+											indicatorColor={colorValue}
+										/>
+										<span className="text-xs font-bold w-12 text-right tabular-nums text-t-text-secondary font-mono">
+											{percentage.toFixed(1)}%
+										</span>
+									</div>
+								</TableCell>
+							</TableRow>
+						);
+					})}
+				</TableBody>
+			</Table>
+		</div>
 	);
 };

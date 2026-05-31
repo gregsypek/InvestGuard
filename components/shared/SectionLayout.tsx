@@ -24,10 +24,10 @@ export const SectionLayout = ({
 	action,
 	children,
 }: SectionLayoutProps) => (
-	<section className="flex flex-col gap-5 md:gap-6 py-10 md:py-14 xl:py-20 border-t border-white/5 first:pt-0 first:border-0 p-2 md:p-4 xl:p-6">
+	// ZMIANA: border-white/5 -> border-t-border
+	<section className="flex flex-col gap-5 md:gap-6 py-10 md:py-12 xl:py-18  p-2 md:p-4 ">
 		<div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
 			<div>
-				{/* Wymuszamy nadpisanie domyślnych marginesów z komponentów nagłówków */}
 				<SectionHeader title={title} icon={titleIcon} className="mb-2" />
 				<SubHeader
 					title={subtitle}
@@ -35,7 +35,6 @@ export const SectionLayout = ({
 					className="pb-4"
 				/>
 			</div>
-			{/* Kontener na przycisk (np. Dodaj Aktywo) wyrównany do prawej na desktopie */}
 			{action && <div className="shrink-0 sm:mb-1 self-end">{action}</div>}
 		</div>
 		<div className="w-full">{children}</div>

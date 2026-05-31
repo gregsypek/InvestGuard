@@ -78,23 +78,22 @@ export default function PortfolioPieChart({
 	};
 
 	return (
-		<div className="flex flex-col bg-[#0a0e17] border border-white/5 rounded-2xl p-6 relative w-full h-full">
-			<h4 className="text-sm font-bold uppercase tracking-widest text-slate-400 text-center mb-2">
+		<div className="flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-6 relative w-full h-full">
+			<h4 className="text-sm font-bold uppercase tracking-widest text-t-text-tertiary text-center mb-2">
 				{title}
 			</h4>
 
-			{/* FIX dla Safari: Sztywna wysokość zamiast flex-1 */}
 			<div className="w-full h-[300px] min-h-[300px] mt-4 relative">
 				{isEmpty ? (
 					<div className="absolute inset-0 flex flex-col items-center justify-center space-y-3">
-						<div className="rounded-full border border-white/5 bg-[#05070a] p-6 shadow-inner">
-							<PieChartIcon className="h-10 w-10 text-slate-700" />
+						<div className="rounded-full border border-t-border bg-t-bg-base p-6 shadow-inner">
+							<PieChartIcon className="h-10 w-10 text-t-text-tertiary" />
 						</div>
 						<div className="text-center">
-							<p className="text-sm font-semibold text-slate-300">
+							<p className="text-sm font-semibold text-t-text-primary">
 								Brak danych do wykresu
 							</p>
-							<p className="text-[10px] uppercase tracking-widest text-slate-600 mt-1">
+							<p className="text-[10px] uppercase tracking-widest text-t-text-tertiary mt-1">
 								Dodaj aktywa, aby zobaczyć podział
 							</p>
 						</div>
@@ -111,7 +110,8 @@ export default function PortfolioPieChart({
 								innerRadius={70}
 								outerRadius={95}
 								paddingAngle={4}
-								stroke="#0a0e17"
+								// ZMIANA: Używamy zmiennej natywnej dla CSS
+								stroke="var(--t-bg-panel)"
 								strokeWidth={4}
 							>
 								{data.map((entry) => (
@@ -125,15 +125,15 @@ export default function PortfolioPieChart({
 							<Tooltip
 								cursor={false}
 								contentStyle={{
-									backgroundColor: "#05070a",
-									border: "1px solid rgba(255,255,255,0.05)",
+									backgroundColor: "var(--t-bg-panel)",
+									border: "1px solid var(--t-border)",
 									borderRadius: "12px",
 									fontSize: "12px",
 									fontWeight: "700",
-									boxShadow: "0 8px 16px rgba(0,0,0,0.4)",
-									color: "#e2e8f0",
+									boxShadow: "0 8px 16px rgba(0,0,0,0.1)", // Mniejszy cień dla trybu jasnego
+									color: "var(--t-text-primary)",
 								}}
-								itemStyle={{ color: "#e2e8f0" }}
+								itemStyle={{ color: "var(--t-text-primary)" }}
 								formatter={(value) =>
 									typeof value === "number" ? `${value.toFixed(2)}%` : "0.00%"
 								}

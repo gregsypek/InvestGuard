@@ -1,12 +1,12 @@
 "use client";
 
-import { Globe, Plus } from "lucide-react";
+import { Briefcase, Globe, PieChart, Plus } from "lucide-react";
 
 import { CategoryTable } from "@/components/CategoryTable";
 import PortfolioCard from "@/components/PortfolioCard";
 import { PortfolioWithAssets } from "@/lib/types";
 import { SafeActionButton } from "./SafeActionButton";
-import { SectionHeader } from "@/components/shared/SectionHeader";
+import { SectionLayout } from "../shared/SectionLayout";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -30,32 +30,13 @@ export default function PortfoliosClientView({
 
 	return (
 		<>
-			{/* EN: Portfolios Section with Sticky "Dock" for AddButton on Desktop */}
-			<div className="flex flex-col lg:flex-row gap-6 items-start relative ">
-				{/* EN: Main container for portfolio cards with horizontal scroll on mobile */}
-				{/* UI: Główny kontener na karty portfeli */}
-				<div className="flex-1 w-full min-w-0">
-					<div
-						className={cn(
-							"flex overflow-x-auto pb-6 justify-start gap-2",
-							"snap-x snap-mandatory no-scrollbar",
-							"-mx-4 px-4 md:mx-0 md:px-0", // EN: Negative margin offset by padding / UI: Przesunięcie marginesem i wyrównanie paddingiem
-						)}
-					>
-						{portfolios.map((p) => (
-							<div
-								key={p.id}
-								className="min-w-72 md:min-w-[320px] flex snap-start shrink-0"
-							>
-								<PortfolioCard portfolio={p} isDemo={isDemo} />
-							</div>
-						))}
-					</div>
-				</div>
-
-				{/* EN: The "Dock" - Sticky action button that stays visible during scroll */}
-				{/* UI: "Dock" - Przyklejony przycisk dodawania, widoczny przy skrolowaniu */}
-				<div className="w-full lg:w-auto xl:sticky justify-end flex self-end  ">
+			{/* SEKCJA 1: Twoje Portfele */}
+			<SectionLayout
+				title="Zarządzanie Portfelami"
+				titleIcon={Briefcase}
+				subtitle="Lista Portfeli"
+				description="Przeglądaj, edytuj i dodawaj nowe portfele do swojego konta."
+				action={
 					<SafeActionButton
 						label="Dodaj Nowy Portfel"
 						icon={Plus}
@@ -63,16 +44,46 @@ export default function PortfoliosClientView({
 						variant="outline"
 						href="/portfolios/new"
 					/>
+				}
+			>
+				{/* UI: Oczyszczony kontener na karty portfeli z automatycznym gridem */}
+				<div className="w-full min-w-0">
+					<div
+						className={cn(
+							// MOBILKA: Flexbox z horyzontalnym scrollem, snappowaniem i ukrytym suwakiem
+							"flex overflow-x-auto pb-6 justify-start gap-4 snap-x snap-mandatory no-scrollbar -mx-4 px-4",
+
+							// DESKTOP (od md/lg): Przełączenie na Grid, wyłączenie scrolla i reset marginesów
+							"md:grid md:grid-cols-2 xl:grid-cols-3 md:overflow-visible md:snap-none md:mx-0 md:px-0 md:pb-0 md:gap-6",
+						)}
+					>
+						{portfolios.map((p) => (
+							<div
+								key={p.id}
+								className={cn(
+									// MOBILKA: Sztywne wymiary karty
+									"min-w-[290px] sm:min-w-[320px] flex snap-start shrink-0",
+
+									// DESKTOP: Reset sztywnej szerokości
+									"md:min-w-0 md:w-full md:shrink",
+								)}
+							>
+								<PortfolioCard portfolio={p} isDemo={isDemo} />
+							</div>
+						))}
+					</div>
 				</div>
-			</div>
+			</SectionLayout>
 
-			{/* EN: Global Asset Allocation Table (Aggregated View) */}
-			<div className="pt-8 border-t border-border">
-				<div className="flex justify-between ">
-					<SectionHeader icon={Globe} title="Alokacja Globalna" />
-
-					{/* EN: Only show add asset button if we have a portfolio context */}
-					{portfolioId && (
+			{/* SEKCJA 2: Alokacja Globalna */}
+			<SectionLayout
+				title="Alokacja Globalna"
+				titleIcon={Globe}
+				subtitle="Skład i Zdrowie Portfela"
+				description="Rozkład aktywów ze wszystkich Twoich portfeli (łącznie)."
+				subtitleIcon={PieChart}
+				action={
+					portfolioId ? (
 						<SafeActionButton
 							label="Dodaj Aktywo"
 							icon={Plus}
@@ -80,11 +91,11 @@ export default function PortfoliosClientView({
 							variant="outline"
 							href={`/dashboard/${portfolioId}/add-asset`}
 						/>
-					)}
-				</div>
-
+					) : undefined
+				}
+			>
 				<CategoryTable data={categoryTotals} totalValue={totalValue} />
-			</div>
+			</SectionLayout>
 		</>
 	);
 }

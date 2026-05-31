@@ -20,8 +20,10 @@ export function SubHeader({
 		// ZMIANA: dodano spójny padding z dołu
 		<div className={cn("pb-4", className)}>
 			<div className="flex items-center justify-between">
-				<h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
-					{Icon && <Icon className="h-4 w-4 text-slate-500" />}
+				{/* ZMIANA: text-slate-400 na text-t-text-secondary */}
+				<h3 className="text-sm font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
+					{/* ZMIANA: text-slate-500 na text-t-text-tertiary */}
+					{Icon && <Icon className="h-4 w-4 text-t-text-tertiary" />}
 					{title}
 				</h3>
 
@@ -29,7 +31,7 @@ export function SubHeader({
 			</div>
 
 			{description && (
-				<p className="text-xs font-medium text-slate-500 mt-1.5">
+				<p className="text-xs font-medium text-t-text-tertiary mt-1.5">
 					{description}
 				</p>
 			)}

@@ -77,7 +77,7 @@ export function InteractiveChartSection({
 	if (validChartTransactions.length === 0) {
 		return (
 			// ZMIANA: Mroczny stan pusty wtapiający się w tło
-			<div className="w-full bg-[#0a0e17] p-12 rounded-2xl  border-white/10 flex flex-col items-center justify-center text-center space-y-3 my-4">
+			<div className="w-full bg-t-bg-panel border-t-border p-12 rounded-2xl   flex flex-col items-center justify-center text-center space-y-3 my-4">
 				<p className="text-sm font-semibold text-slate-300">
 					Brak historii transakcji dla tego widoku
 				</p>
@@ -149,12 +149,12 @@ export function InteractiveChartSection({
 			{/* KONTENERY WYKRESÓW */}
 			<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 				{/* Wykres Liniowy (Alpha) */}
-				<div className="xl:col-span-2 bg-[#0a0e17] p-4 md:p-6 rounded-2xl border border-white/5 h-[350px] min-h-[350px] relative w-full flex flex-col">
+				<div className="xl:col-span-2 bg-t-bg-panel p-4 md:p-6 rounded-2xl border border-t-border h-[350px] min-h-[350px] relative w-full flex flex-col">
 					<AlphaChart data={areaPoints} />
 				</div>
 
 				{/* Wykres Słupkowy (Wpłaty) */}
-				<div className="bg-[#0a0e17] p-4 md:p-6 rounded-2xl border border-white/5 h-[350px] min-h-[350px] relative w-full flex flex-col">
+				<div className="bg-t-bg-panel p-4 md:p-6 rounded-2xl border border-t-border h-[350px] min-h-[350px] relative w-full flex flex-col">
 					<MonthlyDepositsChart data={barPoints} />
 				</div>
 			</div>

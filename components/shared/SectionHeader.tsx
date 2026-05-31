@@ -16,7 +16,8 @@ export function SectionHeader({
 }: SectionHeaderProps) {
 	return (
 		<div className={cn("flex justify-between items-center mb-6", className)}>
-			<h2 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2 text-slate-200">
+			{/* ZMIANA: text-slate-200 na text-t-text-primary */}
+			<h2 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2 text-t-text-primary">
 				{Icon && <Icon className="h-5 w-5 md:h-6 md:w-6 text-primary" />}
 				{title}
 			</h2>

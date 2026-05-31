@@ -50,7 +50,7 @@ const DashboardAnalytics = ({
 
 	if (!portfolio || !portfolio.assets) {
 		return (
-			<div className="flex flex-col items-center justify-center p-20 border border-white/5 rounded-2xl bg-slate-900/20">
+			<div className="flex flex-col items-center justify-center p-20 border border-white/5 rounded-2xl bg-slate-900/20 ">
 				<div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
 				<p className="text-slate-400 font-medium tracking-wide text-sm">
 					Wczytywanie danych portfela...

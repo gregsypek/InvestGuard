@@ -37,6 +37,19 @@
 }
 
 @theme {
+	/* Rejestracja w Tailwind, aby używać klas np. bg-t-bg-panel */
+	--color-t-bg-base: var(--t-bg-base);
+	--color-t-bg-panel: var(--t-bg-panel);
+	--color-t-bg-sticky: var(--t-bg-sticky);
+	--color-t-bg-sticky-hover: var(--t-bg-sticky-hover);
+	--color-t-border: var(--t-border);
+	--color-t-border-subtle: var(--t-border-subtle);
+	--color-t-hover: var(--t-hover);
+
+	--color-t-text-primary: var(--t-text-primary);
+	--color-t-text-secondary: var(--t-text-secondary);
+	--color-t-text-tertiary: var(--t-text-tertiary);
+
 	/* Binding CSS variables to Tailwind classes */
 	--color-portfolio-gold: var(--portfolio-gold);
 	--color-portfolio-bonds: var(--portfolio-bonds);
@@ -111,6 +124,27 @@
 	--popover-foreground: var(--foreground);
 
 	--muted-foreground: oklch(0.55 0.03 245);
+
+	/* NOWE ZMIENNE TRADING UI (Wersja Jasna) */
+	--t-bg-base: oklch(
+		0.97 0 0
+	); /* Bardzo jasny, chłodny szary jako tło pod spodem */
+	--t-bg-panel: oklch(1 0 0); /* Czysty biały dla głównych kontenerów i kart */
+	--t-bg-sticky: oklch(0.94 0 0); /* Jasnoszary dla zablokowanej kolumny */
+	--t-bg-sticky-hover: oklch(0.9 0 0); /* Nieco ciemniejszy szary przy hover */
+
+	--t-border: rgba(0, 0, 0, 0.08); /* Wyraźniejsza, ale delikatna ramka */
+	--t-border-subtle: rgba(
+		0,
+		0,
+		0,
+		0.04
+	); /* Ledwo widoczna ramka dzieląca wiersze */
+	--t-hover: rgba(0, 0, 0, 0.03); /* Subtelne przyciemnienie po najechaniu */
+
+	--t-text-primary: oklch(0.15 0 0); /* Niemal czarny (odpowiednik slate-900) */
+	--t-text-secondary: oklch(0.4 0 0); /* Ciemnoszary (odpowiednik slate-600) */
+	--t-text-tertiary: oklch(0.55 0 0); /* Średnioszary (odpowiednik slate-400) */
 }
 
 .dark {
@@ -148,4 +182,18 @@
 	--popover-foreground: oklch(0.98 0 0);
 
 	--switch-off: oklch(0.25 0.01 255);
+
+	/* NOWE ZMIENNE TRADING UI (Wersja Ciemna - Premium) */
+	--t-bg-base: #05070a; /* Najgłębsza czerń pod spodem */
+	--t-bg-panel: #0a0e17; /* Mroczny granat dla kontenerów */
+	--t-bg-sticky: #0d1526; /* Ciemny błękit dla zablokowanej kolumny */
+	--t-bg-sticky-hover: #121d33; /* Rozjaśniony ciemny błękit przy hover */
+
+	--t-border: rgba(255, 255, 255, 0.05);
+	--t-border-subtle: rgba(255, 255, 255, 0.03);
+	--t-hover: rgba(255, 255, 255, 0.02);
+
+	--t-text-primary: #e2e8f0; /* Jasny szary (slate-200) */
+	--t-text-secondary: #94a3b8; /* Szary (slate-400) */
+	--t-text-tertiary: #64748b; /* Zgaszony szary (slate-500) */
 }

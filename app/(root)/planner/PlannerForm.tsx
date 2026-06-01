@@ -23,9 +23,7 @@ import {
 import { useForm, useWatch } from "react-hook-form";
 import { useMemo, useState } from "react";
 
-import { Category } from "@prisma/client";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // EN: Fixed missing import
 import { PlannerSchema } from "@/lib/validations/planner";
 import { SimpleSwitch } from "@/components/ui/SimpleSwitchProps";
 import { Slider } from "@/components/ui/slider";
@@ -105,36 +103,40 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 
 	return (
 		<div className="space-y-6 ">
+			{/* EN: MODE SELECTOR - Updated to use deep panel styling */}
+
 			{/* SELEKTOR TRYBÓW */}
-			<div className="flex bg-muted/50  gap-3  items-center">
+			<div className="flex bg-white dark:bg-black/5 p-1.5 rounded-xl gap-1.5 items-center border border-t-border">
+				{/* Przycisk 1: Aktywo / Gotówka (Niebieski po aktywacji) */}
 				<button
 					type="button"
 					onClick={() => handleModeChange("asset")}
 					className={cn(
-						"flex items-center gap-2 px-4 flex-1 py-2 rounded-lg text-xs font-bold transition-all ml-1",
+						// Baza dla obu stanów: zawsze dodajemy klasę 'border'
+						"flex items-center justify-center gap-2 px-4 flex-1 py-2.5 rounded-lg text-xs font-bold transition-all border",
 						viewMode === "asset"
-							? "bg-background shadow-sm text-primary border border2"
-							: "text-muted-foreground border hover:text-foreground",
+							? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30 shadow-sm"
+							: "bg-transparent border-black/10 dark:border-white/10 text-t-text-secondary hover:text-t-text-primary hover:bg-t-hover hover:border-black/20 dark:hover:border-white/20",
 					)}
 				>
-					{" "}
 					<PlusCircle size={14} /> Aktywo / Gotówka
 				</button>
 
+				{/* Przycisk 2: Planuj Obligację */}
 				<button
 					type="button"
 					onClick={() => handleModeChange("bond")}
 					className={cn(
-						"flex items-center gap-2 flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ml-1",
+						// Baza dla obu stanów: zawsze dodajemy klasę 'border'
+						"flex items-center justify-center gap-2 flex-1 px-4 py-2.5 rounded-lg text-xs font-bold transition-all border",
 						viewMode === "bond"
-							? "bg-background shadow-sm text-primary "
-							: "text-muted-foreground border hover:text-foreground",
+							? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30 shadow-sm"
+							: "bg-transparent border-black/10 dark:border-white/10 text-t-text-secondary hover:text-t-text-primary hover:bg-t-hover hover:border-black/20 dark:hover:border-white/20",
 					)}
 				>
 					<Landmark size={14} /> Planuj Obligację
 				</button>
 			</div>
-
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -143,10 +145,17 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 							name="portfolioId"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Portfel docelowy</FormLabel>
+									<FormLabel className="text-sm font-bold text-t-text-primary">
+										Portfel docelowy
+									</FormLabel>
 									<Select onValueChange={field.onChange} value={field.value}>
 										<FormControl>
-											<SelectTrigger className={inputStyles}>
+											<SelectTrigger
+												className={cn(
+													inputStyles,
+													"bg-black/5  dark:bg-blue-500/5 border-t-border",
+												)}
+											>
 												<SelectValue placeholder="Wybierz portfel" />
 											</SelectTrigger>
 										</FormControl>
@@ -158,7 +167,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 											))}
 										</SelectContent>
 									</Select>
-									<FormMessage />
+									<FormMessage className="text-red-500 text-xs" />
 								</FormItem>
 							)}
 						/>
@@ -167,7 +176,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 							name="plannedDate"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>
+									<FormLabel className="text-sm font-bold text-t-text-primary">
 										{viewMode === "bond"
 											? "Dokładna data zakupu"
 											: "Miesiąc realizacji"}
@@ -176,12 +185,15 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 										<Input
 											// EN: Dynamic type switching based on mode
 											type={viewMode === "bond" ? "date" : "month"}
-											className={inputStyles}
+											className={cn(
+												inputStyles,
+												"bg-black/5  dark:bg-blue-500/5  border-t-border",
+											)}
 											{...field}
 											value={field.value ?? ""}
 										/>
 									</FormControl>
-									<FormMessage />
+									<FormMessage className="text-red-500 text-xs" />
 								</FormItem>
 							)}
 						/>
@@ -189,20 +201,17 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 							control={form.control}
 							name="isRecurring"
 							render={({ field }) => (
-								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-1 h-18">
+								// EN: Upgraded container to match deep UI look
+								<FormItem className="flex flex-row items-center justify-between rounded-xl border  p-4 shadow-sm h-auto bg-black/5  dark:bg-blue-500/5 border-t-border">
 									<div className="space-y-0.5">
-										<FormLabel className="text-sm font-semibold">
+										<FormLabel className="text-sm font-bold text-t-text-primary">
 											Cykliczne?
 										</FormLabel>
-										<FormDescription className="text-xs">
+										<FormDescription className="text-xs text-t-text-tertiary">
 											Zaplanuj też na kolejne miesiące
 										</FormDescription>
 									</div>
 									<FormControl>
-										{/* <Switch
-												checked={field.value}
-												onCheckedChange={field.onChange}
-											/> */}
 										<SimpleSwitch
 											checked={!!field.value}
 											onChange={field.onChange}
@@ -219,7 +228,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 									name="category"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel className="text-sm font-bold">
+											<FormLabel className="text-sm font-bold text-t-text-primary">
 												Kategoria
 											</FormLabel>
 											<Select
@@ -230,14 +239,19 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 														form.setValue("name", "Gotówka");
 														form.setValue("ticker", "CASH");
 													} else if (value === "BONDS") {
-														// EN: Clear ticker if switching from cash back to bonds for template logic
+														// EN: Clear ticker if switching from cash back to bonds
 														form.setValue("ticker", "");
 													}
 												}}
 												defaultValue={field.value}
 											>
 												<FormControl>
-													<SelectTrigger className={inputStyles}>
+													<SelectTrigger
+														className={cn(
+															inputStyles,
+															"bg-black/5  dark:bg-blue-500/5  border-t-border",
+														)}
+													>
 														<SelectValue placeholder="Wybierz typ" />
 													</SelectTrigger>
 												</FormControl>
@@ -246,7 +260,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 														<SelectItem key={cat} value={cat}>
 															<div className="flex items-center gap-2">
 																<div
-																	className="h-2 w-2 rounded-full border border-border2"
+																	className="h-2 w-2 rounded-full border border-t-border-subtle bg-black/5  dark:bg-blue-500/2  border-t-border"
 																	style={{
 																		backgroundColor: `var(--portfolio-${cat.toLowerCase()})`,
 																	}}
@@ -259,16 +273,19 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 													))}
 												</SelectContent>
 											</Select>
-											<FormMessage />
+											<FormMessage className="text-red-500 text-xs" />
 										</FormItem>
 									)}
 								/>
 							</>
 						) : (
 							<div className="flex flex-col gap-2">
-								<Label className="text-sm font-medium">Kategoria</Label>
-								<div className="flex items-center gap-2 h-10 px-3 bg-muted/40 rounded-lg border text-xs font-bold text-primary">
-									<Landmark size={14} /> OBLIGACJE SKARBOWE
+								<FormLabel className="text-sm font-bold text-t-text-primary">
+									Kategoria
+								</FormLabel>
+								<div className="flex items-center gap-2 h-[42px] px-3 bg-black/5  dark:bg-blue-500/5  rounded-lg border border-t-border text-xs font-bold text-t-text-primary">
+									<Landmark size={14} className="text-blue-500" /> OBLIGACJE
+									SKARBOWE
 								</div>
 							</div>
 						)}
@@ -278,27 +295,30 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 							name="name"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm font-bold uppercase tracking-tighter">
+									<FormLabel className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
 										{isCash
 											? "Opis wpłaty"
 											: selectedCategory === "BONDS"
 												? "Wybierz typ obligacji"
 												: "Nazwa aktywa"}
 									</FormLabel>
-
 									{selectedCategory === "BONDS" ? (
 										<Select
 											onValueChange={(value) => {
-												// 'value' to tutaj klucz, np. "EDO"
 												field.onChange(
 													BOND_CONFIG[value as keyof typeof BOND_CONFIG].label,
 												);
-												form.setValue("ticker", value); // Automatycznie ustawia ticker (EDO, COI itd.)
+												form.setValue("ticker", value);
 											}}
 											defaultValue={field.value}
 										>
 											<FormControl>
-												<SelectTrigger className={cn(inputStyles, "h-11")}>
+												<SelectTrigger
+													className={cn(
+														inputStyles,
+														"h-[42px] bg-black/5  dark:bg-blue-500/5  border-t-border",
+													)}
+												>
 													<SelectValue placeholder="Wybierz serię..." />
 												</SelectTrigger>
 											</FormControl>
@@ -328,24 +348,27 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 										<FormControl>
 											<Input
 												placeholder="Np. iShares Physical Gold"
-												className={inputStyles}
+												className={cn(
+													inputStyles,
+													"bg-black/5  dark:bg-blue-500/5  border-t-border",
+												)}
 												{...field}
 												value={field.value ?? ""}
 											/>
 										</FormControl>
 									)}
-									<FormMessage />
+									<FormMessage className="text-red-500 text-xs" />{" "}
 								</FormItem>
 							)}
 						/>
 
-						{/* POLE: TICKER (ZABLOKOWANE DLA OBLIGACJI) */}
+						{/* EN: TICKER FIELD (DISABLED FOR BONDS/CASH) */}
 						<FormField
 							control={form.control}
 							name="ticker"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm font-bold uppercase tracking-tighter text-muted-foreground">
+									<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 										Ticker / Symbol
 									</FormLabel>
 									<FormControl>
@@ -357,22 +380,22 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 											}
 											className={cn(
 												inputStyles,
+												"bg-black/5  dark:bg-blue-500/5  border-t-border",
 												selectedCategory === "BONDS" &&
-													"bg-muted opacity-70 cursor-not-allowed font-mono text-amber-600",
+													"bg-black/5  dark:bg-blue-500/5  border-t-border opacity-70 cursor-not-allowed font-mono text-amber-600 dark:text-amber-500",
 												selectedCategory === "CASH" &&
-													"bg-muted opacity-70 cursor-not-allowed font-mono text-blue-600",
+													"bg-black/5  dark:bg-blue-500/5  border-t-border opacity-70 cursor-not-allowed font-mono text-blue-600 dark:text-blue-500",
 											)}
 											{...field}
 											value={field.value ?? ""}
-											// EN: Lock field if category is CASH
-
+											// EN: Lock field if category is CASH or BONDS
 											readOnly={
 												selectedCategory === "BONDS" ||
 												selectedCategory === "CASH"
-											} // Uniemożliwia ręczną zmianę dla obligacji
+											}
 										/>
 									</FormControl>
-									<FormMessage />
+									<FormMessage className="text-red-500 text-xs" />{" "}
 								</FormItem>
 							)}
 						/>
@@ -381,46 +404,49 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 							name="value"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel>Kwota (PLN)</FormLabel>
+									<FormLabel className="text-sm font-bold text-t-text-primary">
+										Kwota (PLN)
+									</FormLabel>
 									<FormControl>
 										<Input
 											type="number"
-											className={inputStyles}
-											// ROZWIĄZANIE:
-											// Rozbijamy {...field}, aby nadpisać problematyczne właściwości
+											className={cn(
+												inputStyles,
+												"bg-black/5  dark:bg-blue-500/5  border-t-border font-mono",
+											)}
 											{...field}
-											// 1. Zabezpieczamy wartość przed null/undefined/unknown
 											value={(field.value as number | string) ?? ""}
-											// 2. Konwertujemy tekst z inputa na liczbę dla React Hook Form
 											onChange={(e) => field.onChange(Number(e.target.value))}
 										/>
 									</FormControl>
-									<FormMessage />
+									<FormMessage className="text-red-500 text-xs" />
 								</FormItem>
 							)}
 						/>
 					</div>
+
+					{/* EN: STRATEGIC ANALYSIS PANEL */}
 					{viewMode === "asset" && isBooster && (
-						<div className="space-y-6 pt-6 border-t border-border/50">
-							<div className="flex items-center gap-2">
-								<div className="h-1 w-8 bg-primary rounded-full" />
-								<h3 className="text-xs font-black uppercase tracking-widest opacity-70">
+						<div className="space-y-6 pt-8 mt-4 border-t border-t-border-subtle">
+							<div className="flex items-center gap-3">
+								<div className="h-1.5 w-10 bg-blue-500 rounded-full" />
+								<h3 className="text-xs font-black uppercase tracking-widest text-t-text-secondary">
 									Analiza Strategiczna
 								</h3>
 							</div>
 
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-								{/* POLE: PRZEKONANIE (CONVICTION) */}
+								{/* EN: CONVICTION SLIDER */}
 								<FormField
 									control={form.control}
 									name="conviction"
 									render={({ field }) => (
 										<FormItem className="space-y-4">
 											<div className="flex justify-between items-center">
-												<FormLabel className="text-sm font-bold">
+												<FormLabel className="text-sm font-bold text-t-text-primary">
 													Poziom przekonania
 												</FormLabel>
-												<span className="text-xs font-black text-primary bg-primary/10 px-2 py-1 rounded-lg border border-primary/20">
+												<span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20 tabular-nums">
 													{field.value || 50}%
 												</span>
 											</div>
@@ -434,39 +460,39 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 													className="py-4"
 												/>
 											</FormControl>
-											<FormDescription className="text-[10px]">
+											<FormDescription className="text-xs text-t-text-tertiary">
 												Jak bardzo wierzysz w sukces tej tezy? (Skala 1-100%)
 											</FormDescription>
-											<FormMessage />
+											<FormMessage className="text-red-500 text-xs" />
 										</FormItem>
 									)}
 								/>
 
-								{/* POLE: TEZA (RATIONALE) */}
+								{/* EN: RATIONALE TEXTAREA */}
 								<FormField
 									control={form.control}
 									name="rationale"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel className="text-sm font-bold">
+											<FormLabel className="text-sm font-bold text-t-text-primary">
 												Teza inwestycyjna
 											</FormLabel>
 											<FormControl>
 												<Textarea
-													placeholder="Np. Spółka jest niedowartościowana o 20% względem sektora, czekam na wyniki kwartalne..."
-													className="resize-none min-h-25 bg-background"
+													placeholder="Np. Spółka jest niedowartościowana o 20% względem sektora..."
+													className="resize-none min-h-[120px] bg-t-bg-base border-t-border"
 													{...field}
 													value={field.value ?? ""}
 												/>
 											</FormControl>
-											<FormMessage />
+											<FormMessage className="text-red-500 text-xs" />
 										</FormItem>
 									)}
 								/>
 							</div>
 						</div>
 					)}
-					<div className="flex justify-end">
+					<div className="flex justify-end pt-4">
 						<SubmitButton
 							label="Zapisz plan"
 							isLoading={form.formState.isSubmitting}

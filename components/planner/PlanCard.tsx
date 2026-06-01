@@ -89,7 +89,6 @@ export function PlanCard({
 	// 	}
 	// };
 
-	console.log("🚀 ~ PlanCard ~ purchaseDate:", purchaseDate);
 	// console.log("🚀 ~ PlanCard ~ purchaseDate:", purchaseDate);
 	// const [interestRate, setInterestRate] = useState(0);
 	// EN: Initialize as string to support "typing" dots and commas
@@ -180,60 +179,60 @@ export function PlanCard({
 	return (
 		<div
 			className={cn(
-				"group relative bg-card border  border-primary/50 rounded-2xl p-3 transition-all duration-300 shadow-sm hover:shadow-md overflow-hidden",
-				isLocked && " backdrop-blur-[1px]",
+				"group relative rounded-2xl p-4 transition-all duration-300 overflow-hidden min-w-80 flex-1",
+				// ZMIANA: Przejście na zmienne systemowe
+				"bg-t-bg-base border border-t-border hover:border-t-border-subtle",
+				isLocked && "backdrop-blur-[1px] opacity-90",
 			)}
 		>
-			<div className="flex flex-col gap-4 ">
+			<div className="flex flex-col gap-4">
+				{/* NAGŁÓWEK KARTY */}
 				<div className="flex justify-between items-start">
 					<div className="space-y-1">
 						<div className="flex items-center gap-2">
 							{plan.isRecurring && (
 								<div
-									className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10"
+									className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20"
 									title="Plan cykliczny"
 								>
 									<RefreshCw className="h-3 w-3 text-blue-500" />
 								</div>
 							)}
 							<span
-								className="h-2 w-2 rounded-full"
+								className="h-2.5 w-2.5 rounded-full"
 								style={{
 									backgroundColor:
 										COLORS[plan.targetCategory as keyof typeof COLORS] ||
 										"#ccc",
 								}}
 							/>
-							<h3 className="text-sm  font-bold truncate">{plan.name}</h3>
+							<h3 className="text-sm font-bold truncate text-t-text-primary">
+								{plan.name}
+							</h3>
 							{plan.conviction && (
-								<span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
-									{plan.conviction}% - pewność
+								<span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 tabular-nums">
+									{plan.conviction}%
 								</span>
 							)}
-							{/* {isLocked && (
-								<div className=" flex items-center text-white gap-2 px-3 py-1 rounded-md bg-slate-800">
-									<Clock className="w-3 h-3  animate-pulse" />
-									<span className="text-[10px]    uppercase tracking-widest">
-										{`Dostępny od (${plan.plannedDate})`}
-									</span>
-								</div>
-							)} */}
+
 							{isLocked && (
-								<div className=" flex items-center justify-end bg-background/10 text-center ">
-									<div className="flex items-center gap-3 bg-slate-700 text-white px-3 py-1 rounded-xl shadow-2xl border border-white/10 scale-90 transition-transform duration-500">
-										<div className="flex flex-col">
-											<span className="text-[10px] font-black uppercase  tracking-[0.2em] text-amber-500">
+								<div className="flex items-center justify-end">
+									{/* ZMIANA: Złoty status blokady z nowym layoutem */}
+									<div className="flex items-center gap-2 bg-amber-500/10 dark:bg-amber-500/5 px-3 py-1 rounded-lg border border-amber-500/20">
+										<Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500" />
+										<div className="flex flex-col line-height-1">
+											<span className="text-[9px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
 												Oczekiwanie
 											</span>
-											<span className="text-xs font-bold whitespace-nowrap">
-												{`Dostępny od (${plan.plannedDate})`}
+											<span className="text-[10px] font-bold text-t-text-secondary whitespace-nowrap">
+												Dostępny od ({plan.plannedDate})
 											</span>
 										</div>
 									</div>
 								</div>
 							)}
 						</div>
-						<p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+						<p className="text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest">
 							{
 								CATEGORY_LABELS[
 									plan.targetCategory as keyof typeof CATEGORY_LABELS
@@ -243,129 +242,91 @@ export function PlanCard({
 						</p>
 					</div>
 
-					<div className="flex items-center gap-1">
+					{/* PRZYCISKI AKCJI */}
+					<div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
 						<button
 							onClick={() => setIsOpen(true)}
-							className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors"
+							className="p-2.5 rounded-xl bg-t-hover text-t-text-secondary hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
 						>
 							<CheckSquare size={16} />
 						</button>
-						{/* <DeleteButton
-							id={plan.id}
-							onDelete={async (id) => {
-								const res = await deleteInvestmentPlan(id);
-								if (res.success) router.refresh();
-							}}
-						/> */}
+
 						<Button
 							variant="ghost"
 							size="icon"
 							onClick={handleDelete}
-							className="h-6 w-6 text-muted-foreground hover:text-red-600"
+							className="h-9 w-9 text-t-text-tertiary hover:bg-rose-500/10 hover:text-rose-600"
 						>
-							<Trash2 className="h-3.5 w-3.5" />
+							<Trash2 className="h-4 w-4" />
 						</Button>
 					</div>
 				</div>
 
-				<div className="grid grid-cols-2 gap-3">
-					<div className="flex flex-wrap gap-3 items-center">
-						<p className="font-mono text-xs tabular-nums text-muted-foreground ">
-							Planowana kwota
+				{/* WARTOŚCI I TERMIN */}
+				<div className="grid grid-cols-2 gap-4 pt-2 border-t border-t-border-subtle">
+					<div className="flex flex-wrap gap-2 items-center">
+						<p className="font-mono text-xs text-t-text-secondary">
+							Planowana kwota:
 						</p>
-						<p className="text-xs font-mono tracking-tighter">
+						<p className="text-sm font-black tracking-tight text-t-text-primary">
 							{plan.value.toLocaleString("pl-PL")}
-							<span className="text-[10px]">PLN</span>
+							<span className="text-[10px] font-bold text-t-text-tertiary tracking-normal ml-1">
+								PLN
+							</span>
 						</p>
 					</div>
-					<div className="flex flex-wrap gap-3 items-center">
-						<p className="font-mono text-xs  text-muted-foreground">Termin</p>
-						<p className="text-xs font-mono tracking-tighter flex items-center gap-1">
-							<CalendarIcon size={12} className="text-primary" />
+					<div className="flex flex-wrap gap-2 items-center">
+						<p className="font-mono text-xs text-t-text-secondary">Termin:</p>
+						<p className="text-xs font-bold flex items-center gap-1.5 text-t-text-primary bg-t-bg-base px-2 py-0.5 rounded border border-t-border">
+							<CalendarIcon size={12} className="text-blue-500" />
 							{plan.plannedDate}
 						</p>
 					</div>
-					{/* OVERLAY DLA ZABLOKOWANYCH
-					{isLocked && (
-						<div className="absolute inset-0 z-20 flex items-center justify-center bg-background/10 backdrop-blur-[0.6px]">
-							<div className="flex items-center gap-3 bg-sidebar text-white px-3 py-2 rounded-2xl shadow-2xl border border-white/10">
-								<Clock className="w-4 h-4 text-amber-500 animate-pulse" />
-								<div className="flex flex-col">
-									<span className="text-[10px] font-black uppercase tracking-widest text-amber-500">
-										Oczekiwanie
-									</span>
-									<span className="text-xs font-bold whitespace-nowrap">
-										Dostępne od {plan.plannedDate}
-									</span>
-								</div>
-							</div>
-						</div>
-					)} */}
 				</div>
 
+				{/* NOTATKA */}
 				{plan.rationale && (
-					<div className="text-[11px] text-muted-foreground leading-relaxed italic border-l-2 border-primary/20 pl-3 py-1">
+					<div className="mt-2 text-[11px] text-t-text-secondary leading-relaxed italic border-l-2 border-blue-500/40 pl-3 py-1 bg-t-bg-base/50 rounded-r-lg">
 						&quot;{plan.rationale}&quot;
 					</div>
 				)}
 			</div>
 
+			{/* ======================= MODAL REALIZACJI ======================= */}
 			<Dialog open={isOpen} onOpenChange={setIsOpen}>
-				<DialogContent className="  max-w-2xl bg-card border-border shadow-2xl rounded-3xl p-8">
+				<DialogContent className="max-w-2xl bg-t-bg-panel border-t-border shadow-2xl rounded-2xl p-6 md:p-8">
 					<DialogHeader className="space-y-3">
-						<div className="h-12 w-12 rounded-2xl bg-green-500/10 flex items-center justify-center mb-2">
-							<RefreshCw className="h-6 w-6 text-green-600" />
+						<div className="h-12 w-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-2">
+							<RefreshCw className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
 						</div>
-						<DialogTitle className="text-2xl font-black tracking-tight">
+						<DialogTitle className="text-2xl font-black tracking-tight text-t-text-primary">
 							Potwierdź realizację
 						</DialogTitle>
-						<DialogDescription className="text-sm font-medium">
+						<DialogDescription className="text-sm font-medium text-t-text-secondary">
 							Uzupełnij ostateczne parametry transakcji rynkowej.
 						</DialogDescription>
 					</DialogHeader>
 
-					<div className=" grid grid-cols-1 md:grid-cols-2 gap-6 py-6 ">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
 						{/* DATA ZAKUPU */}
-						<div className={cn(!isBond && "col-span-2", "space-y-2 ")}>
-							<Label className="text-[10px] font-bold uppercase opacity-60">
+						<div className={cn(!isBond && "col-span-2", "space-y-2")}>
+							<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 								Data zakupu
 							</Label>
 							<Input
 								type="date"
 								value={purchaseDate}
 								onChange={(e) => setPurchaseDate(e.target.value)}
-								className={inputStyles}
+								className={cn(inputStyles, "bg-t-bg-base border-t-border")}
 							/>
 						</div>
+
 						{/* OPROCENTOWANIE */}
 						{isBond && (
 							<div className="space-y-2">
-								<Label className="text-[10px] font-bold uppercase opacity-60">
+								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 									Oprocentowanie (%)
 								</Label>
-								{/* <Input
-								type="number"
-								step="0.01"
-								value={interestRate}
-								onChange={(e) => setInterestRate(Number(e.target.value))}
-								className={inputStyles}
-							/> */}
-
-								{/* <Input
-									type="text" // EN: Change to text for better float handling on Safari/Chrome
-									inputMode="decimal" // EN: Mobile-friendly decimal keyboard
-									value={interestRate}
-									// disabled={plan.targetCategory !== "BONDS"}
-									onChange={(e) => {
-										// EN: Allow only numbers and one decimal separator (dot or comma)
-										const val = e.target.value.replace(",", ".");
-										if (/^-?\d*\.?\d*$/.test(val)) {
-											setInterestRate(val);
-										}
-									}}
-									placeholder="0.00"
-									className={inputStyles}
-								/> */}
 								<Input
 									type="text"
 									inputMode="decimal"
@@ -375,6 +336,7 @@ export function PlanCard({
 									}
 									className={cn(
 										inputStyles,
+										"bg-t-bg-base border-t-border",
 										plan.targetCategory !== "BONDS" &&
 											"opacity-50 cursor-not-allowed",
 									)}
@@ -382,97 +344,49 @@ export function PlanCard({
 								/>
 							</div>
 						)}
-						{/* SEKCJA: NAZWA (Domyślnie wyliczona, ale edytowalna) */}
+
+						{/* SEKCJA: NAZWA */}
 						<div className="md:col-span-2 space-y-2">
 							<div className="flex items-center justify-between">
-								<Label className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 									Nazwa aktywa (seria)
 								</Label>
-
-								{/* EN: Template picker visible only for Bonds category */}
-								{/* UI: Wybór szablonu widoczny tylko dla kategorii obligacji */}
-								{/* {plan.targetCategory === "BONDS" && (
-									<Select onValueChange={handleTemplateSelect}>
-										<SelectTrigger className="h-7 w-auto border-none bg-amber-500/10 text-amber-700 text-[10px] font-bold px-2 hover:bg-amber-500/20 transition-colors">
-											<SelectValue placeholder="⚡ SZABLONY OBLIGACJI" />
-										</SelectTrigger>
-										<SelectContent>
-											{Object.entries(BOND_CONFIG).map(([key, config]) => (
-												<SelectItem
-													key={key}
-													value={key}
-													className="text-xs cursor-pointer"
-												>
-													<div className="flex items-center gap-2">
-														<div
-															className={cn(
-																"w-2 h-2 rounded-full",
-																config.color,
-															)}
-														/>
-														{config.label}
-													</div>
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								)} */}
 							</div>
 							<Input
 								value={finalName}
 								onChange={(e) => setFinalName(e.target.value)}
 								className={cn(
 									inputStyles,
-									"font-black text-amber-600 uppercase",
+									"bg-t-bg-base border-t-border font-black text-amber-600 dark:text-amber-500 uppercase",
 								)}
 								placeholder="Np. ROD0438"
 							/>
 							{plan.targetCategory === "BONDS" && (
-								<p className="text-[10px] text-muted-foreground italic">
-									* Nazwa wygenerowana automatycznie (Ticker + Miesiąc + Rok
-									Zapadalności)
+								<p className="text-[10px] text-t-text-tertiary italic">
+									* Nazwa wygenerowana automatycznie
 								</p>
 							)}
 						</div>
-						{/* <div className="space-y-2">
-							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
-								Nazwa aktywa
-							</Label>
-							<Input
-								value={finalName}
-								onChange={(e) => setFinalName(e.target.value)}
-								className={inputStyles}
-							/>
-						</div> */}
-
-						{/* <div className="space-y-2">
-							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
-								Dokładna data zakupu
-							</Label>
-							<Input
-								type="date"
-								value={finalDate}
-								onChange={(e) => setFinalDate(e.target.value)}
-								className={inputStyles}
-							/>
-						</div> */}
 
 						{/* OSTATECZNA KWOTA */}
 						<div className="space-y-2">
-							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
+							<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 								Kwota ostateczna (PLN)
 							</Label>
 							<Input
 								type="number"
 								value={finalValue}
 								onChange={(e) => setFinalValue(Number(e.target.value))}
-								className={inputStyles}
+								className={cn(
+									inputStyles,
+									"bg-t-bg-base border-t-border font-mono",
+								)}
 							/>
 						</div>
 
 						{/* KURS ZAKUPU */}
 						<div className="space-y-2">
-							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
+							<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 								{isCash ? "Kurs wymiany" : "Kurs zakupu (Cena za 1 szt.)"}
 							</Label>
 							<Input
@@ -481,19 +395,23 @@ export function PlanCard({
 								value={isCash ? "1" : purchasePrice || ""}
 								onChange={(e) => setPurchasePrice(e.target.valueAsNumber || 0)}
 								disabled={isCash}
-								className={cn(inputStyles, isCash && "bg-muted opacity-50")}
+								className={cn(
+									inputStyles,
+									"bg-t-bg-base border-t-border font-mono",
+									isCash &&
+										"bg-black/5 dark:bg-white/5 opacity-50 cursor-not-allowed",
+								)}
 							/>
 						</div>
-						{/* DODATEK: Nakładka informacyjna dla zablokowanego planu */}
 
 						{/* SEKCJA KSIĘGOWANIA */}
-						<div className="md:col-span-2 space-y-4 rounded-2xl border border-border p-5 bg-muted/20">
+						<div className="md:col-span-2 space-y-4 rounded-xl border border-t-border p-5 bg-black/5 dark:bg-white/5">
 							<div className="flex items-center justify-between">
-								<div className="space-y-0.5">
-									<Label className="text-sm font-bold">
+								<div className="space-y-1">
+									<Label className="text-sm font-bold text-t-text-primary">
 										Księgowanie automatyczne
 									</Label>
-									<p className="text-[10px] text-muted-foreground uppercase font-medium">
+									<p className="text-[10px] text-t-text-secondary uppercase tracking-widest font-bold">
 										Odejmij kwotę od zasobów CASH
 									</p>
 								</div>
@@ -502,14 +420,19 @@ export function PlanCard({
 
 							{isBooked && (
 								<div className="animate-in fade-in slide-in-from-top-2 duration-300">
-									<Label className="text-[10px] font-black uppercase opacity-60 ml-1">
+									<Label className="text-[10px] font-black uppercase tracking-widest text-t-text-tertiary ml-1 mb-2 block">
 										Wybierz portfel źródłowy
 									</Label>
 									<Select
 										value={sourcePortfolioId}
 										onValueChange={setSourcePortfolioId}
 									>
-										<SelectTrigger className="bg-background mt-1 h-11 rounded-xl">
+										<SelectTrigger
+											className={cn(
+												inputStyles,
+												"bg-t-bg-panel border-t-border h-[42px]",
+											)}
+										>
 											<SelectValue placeholder="Wybierz źródło środków" />
 										</SelectTrigger>
 										<SelectContent>
@@ -524,47 +447,39 @@ export function PlanCard({
 							)}
 						</div>
 
+						{/* NOTATKA */}
 						<div className="md:col-span-2 space-y-2">
-							<Label className="text-xs font-bold uppercase tracking-wider opacity-70">
+							<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 								Notatka z transakcji
 							</Label>
 							<Input
 								placeholder="Np. prowizja 5 PLN, kurs bankowy..."
 								value={executionNote}
 								onChange={(e) => setExecutionNote(e.target.value)}
-								className={inputStyles}
+								className={cn(inputStyles, "bg-t-bg-base border-t-border")}
 							/>
 						</div>
 					</div>
-					{/* {isLocked && (
-						<div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 shadow-xl">
-							<Clock className="w-3 h-3 text-amber-400 animate-pulse" />
-							<span className="text-[10px] font-black text-white uppercase tracking-widest">
-								Dostępne wkrótce (patrz miesiąc realizacji)
-							</span>
-						</div>
-					)} */}
-					{/* DODATEK: Nakładka informacyjna dla zablokowanego planu */}
 
-					<DialogFooter>
+					{/* STOPKA Z PRZYCISKIEM */}
+					<DialogFooter className="pt-2">
 						<Button
 							onClick={handleExecute}
-							// Zablokowanie przycisku, jeśli plan jest na przyszłość
 							disabled={
 								isPending || (isBooked && !sourcePortfolioId) || isLocked
 							}
 							className={cn(
-								"w-full h-14 font-black uppercase tracking-widest text-xs rounded-2xl transition-all",
+								"w-full h-14 font-black uppercase tracking-widest text-xs rounded-xl transition-all duration-300",
 								isLocked
-									? "bg-slate-900 text-white px-3 py-2 rounded-2xl shadow-2xl border  cursor-not-allowed"
-									: "bg-green-600 hover:bg-green-700 text-white shadow-xl shadow-green-500/20",
+									? "bg-t-bg-base text-t-text-tertiary border border-t-border shadow-none cursor-not-allowed"
+									: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] border border-emerald-500/50",
 							)}
 						>
 							{isPending ? (
 								<Loader2 className="h-5 w-5 animate-spin" />
 							) : isLocked ? (
-								<div className="h-8 w-8 rounded-xl bg-slate-900 flex items-center gap-4 justify-center cursor-not-allowed">
-									<Clock className="w-4 h-4 text-amber-500 animate-pulse" />
+								<div className="flex items-center gap-3">
+									<Clock className="w-5 h-5 text-amber-500" />
 									{`Dostępny wkrótce (${plan.plannedDate})`}
 								</div>
 							) : (

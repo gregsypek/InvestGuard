@@ -86,7 +86,7 @@ const DashboardAnalytics = ({
 						icon={Plus}
 						isDemo={isDemo}
 						variant="outline"
-						className="border-slate-800 hover:bg-slate-800 text-slate-300"
+						className="border-slate-800 bg-slate-800 text-slate-300"
 						href={`/dashboard/${portfolio.id}/add-asset`}
 					/>
 				}

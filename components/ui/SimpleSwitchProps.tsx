@@ -18,7 +18,7 @@ export function SimpleSwitch({
 			className={cn(
 				"relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out outline-none border-2 border-transparent",
 				// Używamy naszych nowych zmiennych
-				checked ? "bg-foreground" : "bg-switch-off",
+				checked ? "bg-black" : "bg-switch-off",
 				className,
 			)}
 		>

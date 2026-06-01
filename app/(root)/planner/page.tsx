@@ -1,14 +1,11 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { PiggyBank, PlusSquare, TrendingUp } from "lucide-react";
 
-import { CustomCardHeader } from "@/components/shared/CustomCardHeader";
 import { GoalProjectionChart } from "@/components/planner/GoalProjectionChart";
 import PlannerForm from "./PlannerForm";
 import { PlannerHeader } from "@/components/PlanerHeader";
 import { PlannerList } from "@/components/planner/PlanenerList";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
-import { SectionHeader } from "@/components/shared/SectionHeader";
-import { SubHeader } from "@/components/shared/SubHeader";
+import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getActivePortfolioId } from "@/lib/session";
@@ -80,82 +77,68 @@ export default async function PlannerPage({ searchParams }: Props) {
 	);
 
 	return (
-		<div className="space-y-10">
-			{/* EN: Consistent vertical spacing with PortfoliosPage */}
+		<div>
+			{/* NAGŁÓWEK */}
 			<PlannerHeader
 				totalPlannedValue={totalPlannedValue}
 				plannedCount={plannedCount}
 				customBreadcrumbs={
-					<nav className="text-sm text-muted-foreground italic">
-						Narzędzia /{" "}
-						<span className="text-primary font-medium lowercase">Planer</span>
-					</nav>
+					<div className="flex items-center gap-2 mb-2">
+						<nav className="text-sm text-slate-400 italic">
+							Narzędzia /{" "}
+							<span className="text-blue-400 font-medium lowercase">
+								Planer
+							</span>
+						</nav>
+					</div>
 				}
 			/>
-			<div className="grid gap-8 xl:grid-cols-7 items-start">
-				{/* LEWA KOLUMNA: Formularz (4 z 7) */}
-				<div className="lg:col-span-4 space-y-8 xl:border-r xl:border-border pe-4">
-					{/* EN: Unified section header style */}
-					<SectionHeader
-						title="Nowy plan
-						inwestycyjny"
-						icon={PlusSquare}
+
+			{/* SEKCJA 1: Formularz */}
+			<SectionLayout
+				title="Nowy plan inwestycyjny"
+				titleIcon={PlusSquare}
+				subtitle="Zdefiniuj aktywo, które zamierzasz dodać do portfela w najbliższym czasie."
+				description="Zaplanowane zakupy pozwalają Ci kontrolować przepływ gotówki i lepiej zarządzać budżetem inwestycyjnym. Dodając plan, określasz, jakie aktywo chcesz kupić, w jakiej ilości i kiedy. To narzędzie jest idealne do organizowania przyszłych zakupów i utrzymania dyscypliny inwestycyjnej."
+			>
+				{/* bg-t-bg-panel */}
+				{/* Delikatny kontener, aby formularz ładnie odcinał się od tła strony */}
+				<div className="bg-white/2 dark:bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 lg:p-8 shadow-sm">
+					<PlannerForm
+						portfolios={portfolios}
+						defaultPortfolioId={portfolioId ?? undefined}
 					/>
-
-					<Card className="bg-background border-none shadow-none  overflow-hidden col-span-2">
-						<CustomCardHeader
-							icon={PiggyBank}
-							title="Parametry zakupu"
-							description="Zdefiniuj aktywo, które zamierzasz dodać do portfela w
-								najbliższym czasie."
-						/>
-						<CardContent className="pt-8">
-							<PlannerForm
-								portfolios={portfolios}
-								defaultPortfolioId={portfolioId ?? undefined}
-							/>
-						</CardContent>
-					</Card>
 				</div>
+			</SectionLayout>
 
-				{/* PRAWA KOLUMNA: Lista (3 z 7) - STICKY */}
-				{/* EN: Making the list sticky so it stays visible while filling long forms */}
-				<div className="lg:col-span-3 space-y-8  lg:top-32">
-					<div className="flex items-center justify-between gap-2 px-1">
-						<div className="flex items-center gap-2">
-							<h2 className="text-xl font-bold mb-2">Oczekujące Realizacje</h2>
-						</div>
-						<span className="bg-blue-500/10 text-blue-500 text-[10px] font-bold px-2 py-0.5 rounded-full">
-							{plannedCount}
+			{/* SEKCJA 2: Lista Oczekujących */}
+			<SectionLayout
+				title="Oczekujące Realizacje"
+				titleIcon={PiggyBank}
+				subtitle="Lista zaplanowanych zakupów, które jeszcze nie zostały zrealizowane."
+				description="Na jej podstawie możesz monitorować nadchodzące inwestycje i zarządzać nimi w czasie."
+				action={
+					<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg">
+						<span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+							Zaplanowane: {plannedCount}
 						</span>
 					</div>
+				}
+			>
+				{/* Wyświetlamy listę bezpośrednio – strona będzie się naturalnie scrollować w dół */}
+				<PlannerList />
+			</SectionLayout>
 
-					<div className="max-h-[70vh] overflow-y-auto no-scrollbar pr-1 -mr-1">
-						<PlannerList />
-					</div>
-
-					{/* <Card className="bg-card/30 border-border p-6 rounded-3xl">
-						<SectionHeader title="Projekcja Celu" icon={TrendingUp} />
-						<div className="pt-6">
-							<GoalProjectionChart
-								currentValue={currentPortfolioValue}
-								targetValue={goalValue}
-								monthlyDeposit={monthlyPlanned}
-							/>
-						</div>
-					</Card> */}
-				</div>
-			</div>
-			<section className="  pt-8 border-t border-border pb-6">
-				<SectionHeader title="Projekcja Celu" icon={TrendingUp} />
-				<SubHeader
-					title="Symulacja osiągnięcia celu inwestycyjnego"
-					description="Wizualizacja pokazuje, jak Twoje obecne oszczędności i plany inwestycyjne mogą przyczynić się do osiągnięcia wyznaczonego celu finansowego. Symulacja zakłada średnioroczne zwroty na poziomie 7%, co jest historycznym średnim wynikiem dla zdywersyfikowanego portfela akcji. Pamiętaj, że rzeczywiste wyniki mogą się różnić w zależności od warunków rynkowych."
-					icon={TrendingUp}
-				/>
-				<div className="pt-6 px-8 w-full">
-					{/* Kontener wewnętrzny daje sztywną wysokość dla wykresu[cite: 1] */}
-					<div className="h-110 w-full">
+			{/* SEKCJA 3: Projekcja Celu */}
+			<SectionLayout
+				title="Projekcja Celu"
+				titleIcon={TrendingUp}
+				subtitle="Symulacja osiągnięcia celu inwestycyjnego"
+				description="Wizualizacja pokazuje, jak Twoje obecne oszczędności i plany inwestycyjne mogą przyczynić się do osiągnięcia wyznaczonego celu finansowego. Symulacja zakłada średnioroczne zwroty na poziomie 7%, co jest historycznym średnim wynikiem dla zdywersyfikowanego portfela akcji. Pamiętaj, że rzeczywiste wyniki mogą się różnić w zależności od warunków rynkowych."
+			>
+				{/* Kontener na wykres analogiczny do tego z formularza */}
+				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-sm">
+					<div className="h-[400px] w-full relative">
 						<GoalProjectionChart
 							currentValue={currentPortfolioValue}
 							targetValue={goalValue}
@@ -163,7 +146,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 						/>
 					</div>
 				</div>
-			</section>
+			</SectionLayout>
 		</div>
 	);
 }

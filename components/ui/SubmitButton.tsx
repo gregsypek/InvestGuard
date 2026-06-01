@@ -1,43 +1,50 @@
-"use client";
+import { Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useFormStatus } from "react-dom";
 
-/**
- * Custom Submit Button component
- * Handles loading states and theme adaptation automatically
- */
+interface SubmitButtonProps {
+	label: string;
+	isLoading?: boolean;
+	disabled?: boolean;
+	className?: string;
+	icon?: React.ReactNode;
+}
 export function SubmitButton({
 	label,
 	isLoading,
 	disabled,
 	className,
-}: {
-	label: string;
-	isLoading?: boolean;
-	disabled?: boolean;
-	className?: string;
-}) {
+	icon,
+}: SubmitButtonProps) {
 	// Przycisk będzie zablokowany, jeśli ALBO hook wykryje wysyłkę, ALBO podamy isLoading ręcznie
 	const { pending } = useFormStatus();
 
-	// 3. Przycisk jest nieaktywny, gdy pracuje LUB gdy wymusimy to przez props
-	const isDisabled = pending || isLoading || disabled;
+	// Przycisk jest zablokowany, jeśli formularz się wysyła LUB nie przeszedł walidacji
+	const isDisabled = isLoading || disabled || pending;
+
 	return (
 		<Button
 			type="submit"
 			disabled={isDisabled}
-			className={`w-full  font-semibold transition-all border duration-200 active:scale-95 cursor-pointer hover:border-border2 bg-blue-400 ${className || ""}`}
+			className={cn(
+				"font-bold transition-all duration-300 active:scale-95 shadow-sm rounded-2xl",
+				// ZMIANA: hover:bg-slate-700 zabija domyślny hover Shadcn. Zostaje tylko zmiana koloru tekstu!
+				"border border-slate-800 bg-slate-700 text-blue-300 hover:text-blue-400 hover:bg-slate-700 cursor-pointer",
+				// Obsługa zablokowanego stanu
+				"disabled:bg-t-bg-base disabled:text-t-text-tertiary disabled:border-t-border disabled:shadow-none disabled:opacity-70 disabled:cursor-not-allowed",
+				className,
+			)}
 		>
 			{isDisabled ? (
 				<>
-					<Loader2 className="mr-2 h-4 w-4 " />
+					<Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-400" />
 					Uzupełnij dane ...
 				</>
 			) : (
 				<>
-					{/* <Plus className="mr-2 h-4 w-4 " /> */}
+					{icon || <Save className="mr-2 h-4 w-4" />}
 					{label}
 				</>
 			)}

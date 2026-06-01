@@ -41,6 +41,22 @@ function generateProjection(current: number, target: number, deposit: number) {
 		isUnreachable: months >= 360 && balance < target,
 	};
 }
+const CustomTooltip = ({ active, payload, label }: any) => {
+	if (active && payload && payload.length) {
+		return (
+			<div className="bg-t-bg-panel border border-t-border rounded-xl p-3 shadow-xl">
+				<p className="text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest mb-1">
+					{label}
+				</p>
+				<p className="text-sm font-black text-blue-600 dark:text-blue-400 font-mono tracking-tighter">
+					{payload[0].value?.toLocaleString("pl-PL")}{" "}
+					<span className="text-[10px] font-bold">PLN</span>
+				</p>
+			</div>
+		);
+	}
+	return null;
+};
 
 export function GoalProjectionChart({
 	currentValue,
@@ -57,76 +73,75 @@ export function GoalProjectionChart({
 	);
 
 	return (
-		<div className="space-y-4 h-full flex flex-col ">
+		<div className="space-y-4 h-full flex flex-col">
 			<div className="flex justify-between items-baseline px-1">
 				<div className="text-right">
-					<span className="text-2xl font-bold text-primary">
+					<span className="text-3xl font-black text-blue-600 dark:text-blue-400 tabular-nums tracking-tighter">
 						{isUnreachable ? "30+" : years}
 					</span>
-					<span className="text-[10px] font-black ml-1 uppercase opacity-60">
+					<span className="text-[10px] font-bold ml-1.5 uppercase tracking-widest text-t-text-tertiary">
 						lat
 					</span>
 				</div>
 			</div>
 
-			<div className="flex-1 w-full min-h-50">
+			<div className="flex-1 w-full min-h-[250px]">
 				<ResponsiveContainer width="100%" height="100%">
 					<AreaChart
 						data={data}
-						margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+						margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
 					>
 						<defs>
 							<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-								<stop
-									offset="5%"
-									stopColor="var(--primary)"
-									stopOpacity={0.2}
-								/>
-								<stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+								<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+								<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
 							</linearGradient>
 						</defs>
 						<CartesianGrid
 							strokeDasharray="3 3"
 							vertical={false}
-							strokeOpacity={0.05}
+							stroke="#94a3b8" // Neutralny szary (slate-400), który ładnie zniknie przez opacity
+							strokeOpacity={0.15}
 						/>
 						<XAxis
 							dataKey="name"
-							fontSize={9}
+							fontSize={10}
 							tickLine={false}
 							axisLine={false}
+							tick={{ fill: "#64748b", fontWeight: 600 }} // slate-500
+							dy={10}
 						/>
 						<YAxis hide domain={[0, "dataMax + 5000"]} />
+
 						<Tooltip
-							contentStyle={{
-								borderRadius: "16px",
-								backgroundColor: "var(--card)",
-								border: "1px solid var(--border)",
-								fontSize: "10px",
+							content={<CustomTooltip />}
+							cursor={{
+								stroke: "#3b82f6",
+								strokeWidth: 1,
+								strokeDasharray: "3 3",
+								opacity: 0.5,
 							}}
-							formatter={(v: any) => [
-								`${v?.toLocaleString() || 0} zł`,
-								"Kapitał",
-							]}
 						/>
+
 						<ReferenceLine
 							y={targetValue}
-							stroke="var(--primary)"
-							strokeDasharray="5 5"
+							stroke="#3b82f6"
+							strokeDasharray="4 4"
+							strokeOpacity={0.8}
 							label={{
 								position: "top",
 								value: "CEL",
-								fill: "var(--primary)",
-								fontSize: 9,
-								fontWeight: "bold",
+								fill: "#3b82f6",
+								fontSize: 10,
+								fontWeight: "900",
 							}}
 						/>
 						<Area
 							type="monotone"
 							dataKey="value"
-							stroke="var(--primary)"
+							stroke="#3b82f6"
 							fill="url(#colorValue)"
-							strokeWidth={2}
+							strokeWidth={3} // Lekko pogrubiona linia dla lepszego akcentu
 						/>
 					</AreaChart>
 				</ResponsiveContainer>

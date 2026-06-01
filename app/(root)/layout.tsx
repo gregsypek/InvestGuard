@@ -103,7 +103,7 @@ export default async function RootLayout({
 
 					{/* Zamiast sztywnego p-6, używamy responsywnego paddingu, 
               a górny margines (pt-0) pozwala Hero sekcji przylegać do góry */}
-					<div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 md:pt-4 space-y-8">
+					<div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
 						{children}
 					</div>
 				</main>

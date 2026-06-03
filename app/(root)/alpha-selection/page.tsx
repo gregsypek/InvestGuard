@@ -4,6 +4,7 @@ import {
 	Rocket,
 	Target,
 	TrendingUp,
+	Wrench,
 } from "lucide-react";
 import {
 	getPortfolioAssets,
@@ -14,6 +15,7 @@ import AddButton from "@/components/ui/AddButton";
 import { AlphaHeader } from "@/components/AlphaHeader";
 import AlphaLedgerTable from "@/components/AlphaLedgerTable";
 import { BondStatCard } from "@/components/shared/BondStatCard";
+import { Button } from "@/components/ui/button";
 import { Category } from "@prisma/client";
 // import type { Category } from "@prisma/client";
 import { InteractiveChartSection } from "@/components/InteractiveChartSection";
@@ -21,6 +23,7 @@ import Link from "next/link";
 import { MigrationTool } from "@/components/alpha/MigrationTool";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SectionHeader } from "@/components/shared/SectionHeader";
+import { SectionLayout } from "@/components/shared/SectionLayout";
 import { SubHeader } from "@/components/shared/SubHeader";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -178,96 +181,77 @@ export default async function AlphaSelectionPage({
 	}));
 
 	return (
-		<div className="space-y-10">
+		<div className="">
 			<AlphaHeader
-				// totalTransactions={2}
+				globalTotalValue={globalTotalValue}
+				alphaTotalValue={alphaTotalValue}
+				realAlphaShare={realAlphaShare}
+				alphaRoi={alphaRoi}
+				// opcjonalnie: activePositions={4}
 				customBreadcrumbs={
-					<nav className="text-sm text-muted-foreground italic">
-						Narzędzia /{" "}
-						<span className="text-primary font-medium lowercase">Alpha</span>
-					</nav>
+					<div className="flex items-center gap-2 mb-2">
+						<nav className="text-sm text-slate-400 italic">
+							Narzędzia /{" "}
+							<span className="text-rose-400 font-medium lowercase">Alpha</span>
+						</nav>
+					</div>
 				}
 			/>
 
-			{/* EN: KPI Section */}
-			<div className="flex flex-wrap flex-col md:flex-row gap-4 md:gap-6">
-				<BondStatCard
-					title="Wycena Portfela (Total)"
-					value={`${globalTotalValue.toLocaleString()} PLN`}
-					icon={Rocket}
-					description="Wartość całkowita portfela"
-				/>
-				<BondStatCard
-					title="Wycena Sekcji Alpha"
-					value={`${alphaTotalValue.toLocaleString()} PLN`}
-					icon={Target}
-					valueColor="amber"
-					description="Wartość samych Boosterów"
-				/>
-				<BondStatCard
-					title="Udział Alpha w Całości"
-					value={`${realAlphaShare.toFixed(2)}%`}
-					description="Twoja ekspozycja na ryzyko"
-					variant={realAlphaShare > 10 ? "orange" : "neutral"}
-					icon={Target}
-				/>
-				<BondStatCard
-					title="Wynik Alpha (ROI)"
-					value={`${alphaRoi >= 0 ? "+" : ""}${alphaRoi.toFixed(2)}%`}
-					description="Zysk/Strata sekcji ryzykownych"
-					valueColor={alphaRoi >= 0 ? "green" : "red"}
-					icon={TrendingUp}
-				/>
-			</div>
-
-			{/* EN: Main Table Section */}
-			<section className="pt-8 border-t border-border">
-				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
-					<div className="space-y-1">
-						<div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium uppercase tracking-wider"></div>
-						<SectionHeader icon={ChartArea} title="Analityka Wyników Alpha" />
-						<SubHeader
-							title="Wydajność strategii"
-							description="Wizualizacja trendu wartości oraz historia depozytów wyłącznie dla kategorii Akcje (Booster)."
-							icon={TrendingUp}
-						/>
-					</div>
-
-					<AddButton className="gap-2 shadow-sm h-9">
-						<Link href={targetUrl} className="gap-2 flex items-center">
+			{/* GŁÓWNA SEKCJA: Analityka i Wykres w nowym standardzie */}
+			<SectionLayout
+				title="Analityka Wyników Alpha"
+				titleIcon={ChartArea}
+				subtitle="Wydajność strategii"
+				description="Wizualizacja trendu wartości oraz historia wpłat wyłącznie dla kapitału podwyższonego ryzyka (Booster)."
+				action={
+					<Button
+						asChild
+						className="bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-sm transition-colors h-10 px-5"
+					>
+						<Link href={targetUrl} className="flex items-center gap-2">
+							<Rocket className="w-4 h-4" />
 							Nowa Teza
 						</Link>
-					</AddButton>
-				</div>
-				<div className="mx-6 py-4 ">
+					</Button>
+				}
+			>
+				{/* Kontener systemowy z tłem panelu (Glassmorphism w trybie ciemnym) */}
+				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
 					<InteractiveChartSection
-						//  Przekaż wszystkie transakcje, nie filtruj ich tutaj!
+						// Przekazujemy wszystkie transakcje zgodnie z zaleceniem
 						transactions={formattedTransactions}
-						// Aktywa filtrujemy, co wyznaczy dostępne przyciski kategorii na wykresie
+						// Aktywa filtrowane dla wykresu
 						assets={formattedAssets.filter((a) => a.category === "BOOSTER")}
 					/>
 				</div>
-			</section>
-			{/* SEKCJA NARZĘDZIA */}
-			<section className="pt-12 border-t border-border">
+			</SectionLayout>
+			{/* SEKCJA NARZĘDZIA (Tymczasowo tutaj, gotowe na przeniesienie w przyszłości) */}
+			<SectionLayout
+				title="Narzędzia Administracyjne"
+				titleIcon={Wrench}
+				subtitle="Konserwacja danych"
+				description="Narzędzie pozwala na masową korektę błędnie przypisanych kategorii dla konkretnego aktywa, aktualizując jednocześnie całą historię jego transakcji."
+			>
 				<MigrationTool
 					assets={filteredAssets}
 					categories={filteredCategories}
 					portfolioId={portfolioId}
 				/>
-			</section>
-			{/* SEKCJA TABELA */}
-			<section className="pt-12 border-t border-border">
-				<SectionHeader icon={ListOrdered} title="Szczegółowe Pozycje Alpha" />
-				<SubHeader
-					title="Twoje aktywa Booster"
-					description="Lista wszystkich aktywów z kategorii Booster wraz z kluczowymi informacjami i możliwością szybkiej edycji."
-					icon={Rocket}
-				/>
-				<div className="w-full ps-6">
+			</SectionLayout>
+
+			{/* SEKCJA TABELA LEDGERA */}
+			<SectionLayout
+				title="Szczegółowe Pozycje Alpha"
+				titleIcon={ListOrdered}
+				subtitle="Twoje aktywa Booster"
+				description="Lista wszystkich aktywów z kategorii Booster wraz z kluczowymi informacjami, zyskami i możliwością szybkiej edycji pozycji."
+			>
+				{/* Pudełko systemowe dla tabeli (identyczne jak na stronie Historii) */}
+				<div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-t-border bg-t-bg-panel shadow-sm p-1 md:p-0">
 					<AlphaLedgerTable portfolioId={activeId} />
 				</div>
-			</section>
+			</SectionLayout>
 		</div>
 	);
 }

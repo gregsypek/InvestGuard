@@ -1,5 +1,23 @@
 "use client";
 
+// NOWE Importy dla AlertDialog (Usuwanie Premium)
+import {
+	AlertDialog,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+	AlertTriangle,
+	Loader2,
+	MoreHorizontal,
+	Trash2,
+	UserCheck,
+} from "lucide-react";
+// Importy dla Dropdown i Dialog (Edycja)
 import {
 	Dialog,
 	DialogContent,
@@ -16,7 +34,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, MoreHorizontal, Trash2, UserCheck } from "lucide-react";
 import {
 	deleteAssetAction,
 	updateAlphaDetails,
@@ -25,6 +42,7 @@ import {
 import type { Asset } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import PremiumDeleteModal from "../shared/PremiumDeleteModal";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -32,88 +50,119 @@ import { useState } from "react";
 
 export function BoosterActionsClient({ asset }: { asset: Asset }) {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // Nowy stan dla modala usuwania
 	const [isPending, setIsPending] = useState(false);
 
 	// Stany dla edycji
 	const [newConviction, setNewConviction] = useState(asset.conviction || 50);
 	const [newRationale, setNewRationale] = useState(asset.rationale || "");
 
+	// Nowa, bezpieczna funkcja usuwania z zaawansowanymi Toastami
 	const handleDelete = async () => {
-		if (!confirm(`Czy na pewno chcesz trwale usunąć ${asset.name} z portfela?`))
-			return;
-
 		setIsPending(true);
-		const res = await deleteAssetAction(asset.id);
-		if (res.success) toast.success("Usunięto aktywo");
-		else toast.error(res.error);
-		setIsPending(false);
+		try {
+			const res = await deleteAssetAction(asset.id);
+			if (res.success) {
+				toast.success("Usunięto pomyślnie", {
+					description: `Aktywo ${asset.name} zostało trwale wykasowane z portfela.`,
+				});
+				setIsDeleteDialogOpen(false); // Zamykamy modal po sukcesie
+			} else {
+				toast.error("Wystąpił błąd", {
+					description: res.error || "Nie udało się usunąć elementu.",
+				});
+			}
+		} catch (error) {
+			toast.error("Błąd krytyczny", {
+				description: "Wystąpił nieoczekiwany problem z połączeniem.",
+			});
+		} finally {
+			setIsPending(false);
+		}
 	};
 
 	const handleUpdate = async () => {
 		setIsPending(true);
 		const res = await updateAlphaDetails(asset.id, newConviction, newRationale);
 		if (res.success) {
-			toast.success("Teza zaktualizowana");
+			toast.success("Teza zaktualizowana", {
+				description: `Nowe parametry dla ${asset.ticker} zostały zapisane.`,
+			});
 			setIsEditDialogOpen(false);
 		} else {
-			toast.error(res.error);
+			toast.error("Wystąpił błąd", { description: res.error });
 		}
 		setIsPending(false);
 	};
 
 	return (
 		<>
+			{/* MENU ROZWIJANE */}
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
 						size="icon"
-						className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-opacity opacity-0 group-hover:opacity-100 cursor-pointer"
+						className="h-8 w-8 text-muted-foreground hover:bg-t-border hover:text-blue-500 transition-colors cursor-pointer"
 					>
 						<MoreHorizontal className="h-4 w-4" />
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent
 					align="end"
-					className="w-48 p-1 rounded-xl shadow-xl"
+					className="w-48 p-1 rounded-xl shadow-xl bg-t-bg-panel border-t-border"
 				>
-					<DropdownMenuLabel className="px-2.5 py-2 text-xs font-black uppercase opacity-50">
+					<DropdownMenuLabel className="px-2.5 py-2 text-[10px] font-black uppercase tracking-widest text-t-text-tertiary">
 						Zarządzaj
 					</DropdownMenuLabel>
-					<DropdownMenuSeparator />
+					<DropdownMenuSeparator className="bg-t-border-subtle" />
+
 					<DropdownMenuItem
 						onClick={() => setIsEditDialogOpen(true)}
-						className="gap-2 p-2.5 cursor-pointer rounded-lg"
+						className="gap-2 p-2.5 cursor-pointer rounded-lg text-t-text-secondary hover:text-t-text-primary hover:bg-t-hover font-medium text-xs transition-colors"
 					>
-						<UserCheck className="h-4 w-4 text-emerald-600" /> Edytuj tezę
+						<UserCheck className="h-4 w-4 text-blue-500" /> Edytuj tezę
 					</DropdownMenuItem>
+
+					{/* Zmieniono akcję: Otwiera nasz nowy modal zamiast native confirm() */}
 					<DropdownMenuItem
-						onClick={handleDelete}
-						className="gap-2 p-2.5 cursor-pointer rounded-lg text-red-600 focus:text-red-600 focus:bg-red-500/10"
+						onClick={() => setIsDeleteDialogOpen(true)}
+						className="gap-2 p-2.5 cursor-pointer rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 font-medium text-xs transition-colors"
 					>
 						<Trash2 className="h-4 w-4" /> Usuń pozycję
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 
-			{/* DIALOG EDYCJI */}
+			{/* ======================================================== */}
+			{/* 1. DIALOG EDYCJI TEZY 																   */}
+			{/* ======================================================== */}
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				<DialogContent className="sm:max-w-106 rounded-3xl">
+				{/* ZMIANA: Dodane w-[95vw] dla ochrony na małych ekranach mobilnych */}
+				<DialogContent className="w-[95vw] max-w-md sm:max-w-md rounded-2xl bg-t-bg-panel border-t-border shadow-2xl p-6 sm:p-8">
 					<DialogHeader>
-						<DialogTitle className="text-xl font-black uppercase tracking-tight">
+						<DialogTitle className="text-xl font-black uppercase tracking-tight text-t-text-primary">
 							Aktualizacja Tezy
 						</DialogTitle>
-						<DialogDescription>
-							Dostosuj parametry dla {asset.name} ({asset.ticker}).
+						<DialogDescription className="text-sm font-medium text-t-text-tertiary">
+							Dostosuj parametry i uzasadnienie dla{" "}
+							<strong className="text-t-text-secondary">
+								{asset.name} ({asset.ticker})
+							</strong>
+							.
 						</DialogDescription>
 					</DialogHeader>
 
-					<div className="grid gap-6 py-4">
-						<div className="space-y-4">
-							<div className="flex justify-between">
-								<Label className="font-bold">
-									Przekonanie: {newConviction}%
+					{/* ZMIANA: Zastąpiono 'grid' bezpieczniejszym 'flex flex-col' */}
+					<div className="flex flex-col gap-6 py-4">
+						<div className="flex flex-col gap-4">
+							<div className="flex justify-between items-center">
+								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+									Przekonanie (Conviction)
 								</Label>
+								<span className="text-xs font-black text-blue-500">
+									{newConviction}%
+								</span>
 							</div>
 							<Slider
 								value={[newConviction]}
@@ -121,27 +170,32 @@ export function BoosterActionsClient({ asset }: { asset: Asset }) {
 								max={100}
 								step={1}
 								onValueChange={(vals) => setNewConviction(vals[0])}
+								className="w-full py-2" // ZMIANA: wymuszone w-full
 							/>
 						</div>
-						<div className="space-y-2">
-							<Label className="font-bold">Uzasadnienie (Teza)</Label>
+
+						<div className="flex flex-col gap-3">
+							<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+								Uzasadnienie (Teza)
+							</Label>
 							<Textarea
 								value={newRationale}
 								onChange={(e) => setNewRationale(e.target.value)}
-								className="min-h-30 resize-none bg-muted/30"
-								placeholder="Dlaczego nadal trzymasz tę pozycję?"
+								// ZMIANA: w-full i naprawione obramowanie by było spójne z resztą
+								className="w-full min-h-[120px] resize-none bg-black/5 dark:bg-white/5 border border-t-border-subtle focus:border-blue-500 rounded-xl px-4 py-3 text-sm text-t-text-primary"
+								placeholder="Dlaczego ta spółka podbije Twój wynik?"
 							/>
 						</div>
 					</div>
 
-					<DialogFooter>
+					<DialogFooter className="pt-4 border-t border-t-border-subtle">
 						<Button
 							onClick={handleUpdate}
 							disabled={isPending}
-							className="w-full bg-primary font-bold uppercase tracking-widest text-xs h-12 rounded-xl"
+							className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] h-12 rounded-xl shadow-md transition-all"
 						>
 							{isPending ? (
-								<Loader2 className="animate-spin" />
+								<Loader2 className="animate-spin h-4 w-4" />
 							) : (
 								"Zapisz zmiany"
 							)}
@@ -149,6 +203,29 @@ export function BoosterActionsClient({ asset }: { asset: Asset }) {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+			{/* ======================================================== */}
+			{/* 2. WYWOŁANIE UNIWERSALNEGO MODALA USUWANIA               */}
+			{/* ======================================================== */}
+			<PremiumDeleteModal
+				isOpen={isDeleteDialogOpen}
+				onClose={() => setIsDeleteDialogOpen(false)}
+				// Jeśli masz dostęp do isDemo w Boosterze, przekaż go tutaj. Jak nie, daj false.
+				isDemo={false}
+				title="Potwierdź usunięcie"
+				description={`Czy na pewno chcesz bezpowrotnie usunąć aktywo ${asset.name} (${asset.ticker})? Tej operacji nie można cofnąć, a historia transakcji zostanie wykasowana.`}
+				onConfirm={async () => {
+					// Tutaj wrzucamy Twoją akcję. Modal zajmie się kółkiem ładowania!
+					const res = await deleteAssetAction(asset.id);
+					if (res.success) {
+						toast.success("Usunięto pomyślnie", {
+							description: `Aktywo ${asset.name} zostało usunięte.`,
+						});
+						setIsDeleteDialogOpen(false);
+					} else {
+						throw new Error(res.error || "Nie udało się usunąć elementu.");
+					}
+				}}
+			/>
 		</>
 	);
 }

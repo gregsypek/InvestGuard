@@ -9,6 +9,7 @@ import React, { useState } from "react";
 
 import { Category } from "@prisma/client";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 import { inferTickersCategories } from "@/lib/actions/portfolio.actions";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
@@ -255,9 +256,14 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 		}
 	};
 
-	// 3. Renderowanie interfejsu
+	// Pamiętaj o imporcie 'cn' jeśli go nie masz w tym pliku:
+	// import { cn } from "@/lib/utils";
+
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex flex-col gap-8 animate-in fade-in duration-300">
+			{/* ========================================= */}
+			{/* 1. STREFA WGRYWANIA (DROPZONE) */}
+			{/* ========================================= */}
 			<div className="relative group">
 				<input
 					type="file"
@@ -268,149 +274,181 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 				/>
 				<label
 					htmlFor="xtb-upload"
-					className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-border/50 rounded-3xl bg-card/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer group"
+					className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-t-border-subtle hover:border-blue-500/50 rounded-2xl bg-black/5 dark:bg-white/5 hover:bg-blue-500/5 dark:hover:bg-blue-500/10 transition-all cursor-pointer group"
 				>
-					<div className=" mb-3 ">
-						{/* <FileUp className="h-6 w-6 text-primary" />
-						 */}
+					<div className="mb-4 transition-transform group-hover:scale-105 group-active:scale-95 shadow-sm rounded-md overflow-hidden">
 						<Image
 							src={"/xtb.png"}
 							alt={"XTB"}
 							width={50}
-							height={40}
-							className="object-cover rounded-md" //
+							height={50}
+							className="object-cover"
 						/>
 					</div>
-					<span className="text-sm font-bold tracking-tight">
-						Wybierz raport XTB
+					<span className="text-xs font-bold text-t-text-primary uppercase tracking-wider">
+						Wybierz lub upuść raport XTB
 					</span>
-					<span className="text-[10px] text-muted-foreground uppercase mt-1 tracking-widest">
-						Obsługiwane: .XLSX
+					<span className="text-[10px] text-t-text-tertiary uppercase mt-1.5 tracking-widest font-medium">
+						Obsługiwane formaty: .XLSX, .CSV
 					</span>
 				</label>
 			</div>
 
+			{/* ========================================= */}
+			{/* 2. KOMUNIKAT BŁĘDU */}
+			{/* ========================================= */}
 			{error && (
-				<div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 border-dashed rounded-2xl text-destructive text-xs text-red-600">
-					<AlertTriangle className="h-4 w-4" />
+				<div className="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 dark:text-rose-500 text-xs font-bold uppercase tracking-wider animate-in slide-in-from-top-2">
+					<AlertTriangle className="h-5 w-5 shrink-0" />
 					{error}
 				</div>
 			)}
 
+			{/* ========================================= */}
+			{/* 3. TABELA PODGLĄDU I WERYFIKACJI */}
+			{/* ========================================= */}
 			{previewData.length > 0 && (
-				<div className="mt-6 overflow-x-auto border rounded-2xl bg-card shadow-xl overflow-hidden">
-					<table className="w-full text-sm text-left">
-						<thead className="bg-muted/50 border-b">
-							<tr>
-								<th className="p-4 w-10">
-									<input
-										type="checkbox"
-										checked={selectedIndices.length === previewData.length}
-										onChange={toggleAll}
-										className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
-									/>
-								</th>
-								<th className="p-4 font-bold uppercase text-[10px] tracking-wider opacity-60">
-									Data
-								</th>
-								<th className="p-4 font-bold uppercase text-[10px] tracking-wider opacity-60">
-									Aktywo
-								</th>
-								<th className="p-4 font-bold uppercase text-[10px] tracking-wider opacity-60">
-									Kategoria
-								</th>
-								<th className="p-4 font-bold uppercase text-[10px] tracking-wider opacity-60">
-									Kwota
-								</th>
-								<th className="p-4 w-10"></th>
-							</tr>
-						</thead>
-						<tbody>
-							{previewData.map((tx, idx) => {
-								const isSelected = selectedIndices.includes(idx);
-								return (
-									<tr
-										key={idx}
-										className={`border-t border-border/50 transition-colors ${
-											isSelected ? "bg-primary/5" : "opacity-50 grayscale-[0.5]"
-										}`}
-									>
-										<td className="p-4">
-											<input
-												type="checkbox"
-												checked={isSelected}
-												onChange={() => toggleRow(idx)}
-												className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
-											/>
-										</td>
-										<td className="p-4 text-muted-foreground font-medium">
-											{new Date(tx.date).toLocaleDateString("pl-PL")}
-										</td>
-										<td className="p-4">
-											<div
-												className={`font-bold transition-all ${isSelected ? "text-foreground" : "text-muted-foreground"}`}
-											>
-												{tx.assetName}
-											</div>
-											<div className="text-[10px] text-muted-foreground font-mono opacity-70">
-												{tx.ticker}
-											</div>
-										</td>
-										<td className="p-4">
-											<select
-												disabled={!isSelected}
-												value={tx.category}
-												onChange={(e) =>
-													handleChangeCategory(idx, e.target.value as Category)
-												}
-												className="bg-background border border-border/50 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-primary/20 outline-none disabled:opacity-50"
-											>
-												{Object.values(Category).map((c) => (
-													<option key={c} value={c}>
-														{c}
-													</option>
-												))}
-											</select>
-										</td>
-										<td
-											className={`p-4 font-mono font-bold ${isSelected ? "text-foreground" : "text-muted-foreground"}`}
-										>
-											{tx.amountPLN.toLocaleString("pl-PL", {
-												minimumFractionDigits: 2,
-											})}{" "}
-											PLN
-										</td>
-										<td className="p-4">
-											<button
-												onClick={() => handleRemoveRow(idx)}
-												className="text-destructive/50 hover:text-destructive transition-all hover:scale-110"
-											>
-												<Trash2 className="h-4 w-4" />
-											</button>
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
+				<div className="border border-t-border rounded-2xl bg-t-bg-panel shadow-sm overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 duration-500">
+					{/* Wrapper przewijalny dla samej tabeli */}
+					<div className="overflow-x-auto no-scrollbar">
+						<table className="w-full text-sm text-left">
+							<thead className="bg-t-bg-sticky border-b border-t-border-subtle">
+								<tr>
+									<th className="p-4 w-12 text-center">
+										<input
+											type="checkbox"
+											checked={selectedIndices.length === previewData.length}
+											onChange={toggleAll}
+											className="rounded border-t-border-subtle text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer bg-black/5 dark:bg-white/5"
+										/>
+									</th>
+									<th className="p-4 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary whitespace-nowrap">
+										Data
+									</th>
+									<th className="p-4 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+										Aktywo
+									</th>
+									<th className="p-4 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+										Kategoria
+									</th>
+									<th className="p-4 text-right text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary whitespace-nowrap">
+										Kwota
+									</th>
+									<th className="p-4 w-12 text-right"></th>
+								</tr>
+							</thead>
+							<tbody>
+								{previewData.map((tx, idx) => {
+									const isSelected = selectedIndices.includes(idx);
+									const isEven = idx % 2 === 1;
 
-					<div className="p-4 bg-muted/10 flex justify-between items-center border-t border-border/50">
-						<div className="flex flex-col">
-							<p className="text-[11px] font-bold uppercase tracking-widest text-primary">
-								Wybrano: {selectedIndices.length} z {previewData.length}
+									return (
+										<tr
+											key={idx}
+											className={cn(
+												"border-b border-t-border-subtle transition-all",
+												!isSelected && "opacity-40 grayscale", // Wyciszenie odznaczonych
+												isSelected &&
+													isEven &&
+													"bg-t-bg-base/30 dark:bg-black/20", // Paski zebry dla zaznaczonych
+												isSelected && !isEven && "hover:bg-t-hover",
+											)}
+										>
+											<td className="p-4 text-center">
+												<input
+													type="checkbox"
+													checked={isSelected}
+													onChange={() => toggleRow(idx)}
+													className="rounded border-t-border-subtle text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer bg-black/5 dark:bg-white/5"
+												/>
+											</td>
+											<td className="p-4 text-[11px] font-bold tracking-widest uppercase text-t-text-secondary whitespace-nowrap">
+												{new Date(tx.date).toLocaleDateString("pl-PL")}
+											</td>
+											<td className="p-4">
+												<div className="font-bold text-sm text-t-text-primary whitespace-nowrap">
+													{tx.assetName}
+												</div>
+												<div className="text-[10px] text-t-text-tertiary font-mono uppercase tracking-widest mt-0.5">
+													{tx.ticker}
+												</div>
+											</td>
+											<td className="p-4">
+												<select
+													disabled={!isSelected}
+													value={tx.category}
+													onChange={(e) =>
+														handleChangeCategory(
+															idx,
+															e.target.value as Category,
+														)
+													}
+													className="h-9 bg-black/5 dark:bg-t-bg-base border border-t-border-subtle rounded-lg px-3 py-1 text-xs font-bold text-t-text-secondary focus:border-blue-500 outline-none disabled:opacity-50 transition-colors uppercase tracking-wider cursor-pointer"
+												>
+													{Object.values(Category).map((c) => (
+														<option key={c} value={c}>
+															{c}
+														</option>
+													))}
+												</select>
+											</td>
+											<td className="p-4 text-right">
+												<div className="font-mono font-bold text-sm text-t-text-primary whitespace-nowrap">
+													{tx.amountPLN.toLocaleString("pl-PL", {
+														minimumFractionDigits: 2,
+													})}
+													<span className="text-[10px] text-t-text-tertiary ml-1">
+														PLN
+													</span>
+												</div>
+											</td>
+											<td className="p-4 text-right">
+												<button
+													onClick={() => handleRemoveRow(idx)}
+													className="p-2 text-t-text-tertiary hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"
+													title="Usuń wiersz"
+												>
+													<Trash2 className="h-4 w-4" />
+												</button>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+
+					{/* ========================================= */}
+					{/* 4. PASEK AKCJI (FOOTER TABELI) */}
+					{/* ========================================= */}
+					<div className="p-6 bg-t-bg-base/30 dark:bg-black/20 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-t-border-subtle">
+						<div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+							<p className="text-[11px] font-black uppercase tracking-widest text-t-text-primary">
+								Wybrano:{" "}
+								<span className="text-blue-500">{selectedIndices.length}</span>{" "}
+								z {previewData.length}
 							</p>
-							<p className="text-[10px] text-muted-foreground italic mt-0.5">
-								Tylko zaznaczone transakcje zostaną zapisane w bazie.
+							<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest font-bold mt-1">
+								Tylko zaznaczone transakcje zostaną dodane do portfela.
 							</p>
 						</div>
 
 						<button
 							onClick={handleFinalImport}
 							disabled={isImporting || selectedIndices.length === 0}
-							className="flex items-center gap-2 bg-primary text-white px-10 py-3 rounded-xl font-bold hover:bg-primary/90 disabled:opacity-30 disabled:grayscale shadow-lg shadow-primary/20 transition-all active:scale-95"
+							className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white h-12 px-8 rounded-xl font-bold uppercase tracking-widest text-[10px] disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all"
 						>
-							<CheckCircle className="h-4 w-4" />
-							{isImporting ? "Importowanie..." : `Zatwierdź Wybrane`}
+							{isImporting ? (
+								<span className="flex items-center gap-2">
+									<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+									Importowanie...
+								</span>
+							) : (
+								<>
+									<CheckCircle className="h-4 w-4" />
+									Zatwierdź Wybrane
+								</>
+							)}
 						</button>
 					</div>
 				</div>

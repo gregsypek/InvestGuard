@@ -6,13 +6,6 @@ import {
 	TrendingUp,
 	Wallet,
 } from "lucide-react";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 
 import { APP_NAME } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -30,188 +23,212 @@ export default function HomePage() {
 	return <GuestOnboarding />;
 }
 
-// --- WIDOK 1: DLA NOWYCH UŻYTKOWNIKÓW (Onboarding) ---
+// ============================================================================
+// WIDOK 1: DLA NOWYCH UŻYTKOWNIKÓW (Onboarding)
+// ============================================================================
 function GuestOnboarding() {
 	return (
-		<div className="flex flex-col min-h-screen">
-			{/* Hero Section */}
-			<section className="py-10  text-center bg-linear-to-b from-background to-secondary/20">
-				<h1 className="text-4xl md:text-6xl font-black tracking-tighter  mb-6">
-					Witaj w <span className="text-primary">{APP_NAME}</span>
+		<div className="flex flex-col min-h-[calc(100vh-4rem)] animate-in fade-in duration-700">
+			{/* Hero Section (Sekcja Główna) */}
+			<section className="relative flex-1 flex flex-col items-center justify-center py-20 px-4 text-center overflow-hidden">
+				{/* Subtelny glow w tle dla efektu premium */}
+				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full -z-10 pointer-events-none" />
+
+				<h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-t-text-primary">
+					Witaj w{" "}
+					<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400">
+						{APP_NAME}
+					</span>
 				</h1>
-				<p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-					Twoja podróż do wolności finansowej zaczyna się tutaj. Zarządzaj
-					portfelem, ucz się strategii i kontroluj ryzyko w jednym miejscu.
+
+				<p className="text-lg md:text-xl text-t-text-tertiary max-w-2xl mx-auto mb-10 font-medium leading-relaxed">
+					Twoja podróż do wolności finansowej zaczyna się tutaj. Zbuduj,
+					monitoruj i rozwijaj swój portfel z niespotykaną precyzją.
 				</p>
-				<div className="flex justify-center gap-4">
-					<Button size="lg" className="gap-2">
-						<Link href="/portfolios/new" className="gap-2 flex items-center">
-							Stwórz pierwszy portfel <ArrowRight className="w-4 h-4" />
+
+				<div className="flex flex-col sm:flex-row gap-4 justify-center w-full sm:w-auto">
+					<Button
+						asChild
+						className="h-14 px-8 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 font-bold uppercase tracking-widest text-[11px] transition-all hover:scale-105"
+					>
+						<Link href="/sign-in">
+							Rozpocznij Inwestowanie <ArrowRight className="ml-2 h-4 w-4" />
 						</Link>
 					</Button>
-					<Button variant="outline" size="lg" asChild>
-						<Link href="/demo" className="gap-2 flex items-center px-4">
-							Zobacz demo
-						</Link>
+					<Button
+						asChild
+						variant="outline"
+						className="h-14 px-8 rounded-xl border-t-border-subtle bg-t-bg-panel hover:bg-t-hover text-t-text-secondary font-bold uppercase tracking-widest text-[11px] transition-all"
+					>
+						<Link href="/demo">Wypróbuj Demo</Link>
 					</Button>
 				</div>
 			</section>
 
-			{/* Features / Education Grid */}
-			<section className=" px-6 container mx-auto">
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-					<Card>
-						<CardHeader>
-							<ShieldCheck className="w-10 h-10 text-primary mb-2" />
-							<CardTitle>Poznaj swoje ryzyko</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-muted-foreground mb-4">
-								Nie wiesz, czy wolisz bezpieczne obligacje czy dynamiczne akcje?
-								Nasz test profilu inwestora pomoże Ci to ustalić.
-							</p>
-							<Button variant="link" className="px-0 text-primary">
-								Rozwiąż test ryzyka &rarr;
-							</Button>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<Wallet className="w-10 h-10 text-primary mb-2" />
-							<CardTitle>Proste zarządzanie</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-muted-foreground mb-4">
-								W naszej aplikacji w łatwy sposób dodasz aktywa, sprawdzisz
-								dywersyfikację i zaplanujesz rebalancing portfela.
-							</p>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<BookOpen className="w-10 h-10 text-primary mb-2" />
-							<CardTitle>Baza wiedzy</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className="text-muted-foreground mb-4">
-								W inwestowaniu najważniejsza jest wiedza. Przeczytaj nasze
-								poradniki dla początkujących.
-							</p>
-							<Button variant="link" className="px-0 text-primary">
-								Przejdź do bazy wiedzy &rarr;
-							</Button>
-						</CardContent>
-					</Card>
+			{/* Features Section (Karty Funkcjonalności) */}
+			<section className="py-20 container mx-auto px-4 max-w-6xl">
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+					<FeatureCard
+						icon={BarChart3}
+						title="Śledzenie w czasie rzeczywistym"
+						desc="Monitoruj akcje, ETF-y i obligacje w jednym, krystalicznie czystym panelu."
+					/>
+					<FeatureCard
+						icon={ShieldCheck}
+						title="Prywatność i Bezpieczeństwo"
+						desc="Twoje dane są w pełni szyfrowane. Ty rządzisz swoim portfelem."
+					/>
+					<FeatureCard
+						icon={BookOpen}
+						title="Wiedza i Edukacja"
+						desc="Zapisuj własne tezy inwestycyjne i śledź swoje decyzje z perspektywy czasu."
+					/>
 				</div>
-			</section>
-
-			{/* Footer CTA */}
-			<section className="py-20 text-center">
-				<h2 className="text-3xl font-bold mb-6">Gotowy na start?</h2>
-				<Button size="lg" className="px-8" asChild>
-					<Link href="/dashboard" className="gap-2 flex items-center px-4">
-						Zaczynamy
-					</Link>
-				</Button>
 			</section>
 		</div>
 	);
 }
 
-// --- WIDOK 2: DLA ZALOGOWANYCH (Dashboard Preview) ---
+function FeatureCard({
+	icon: Icon,
+	title,
+	desc,
+}: {
+	icon: any;
+	title: string;
+	desc: string;
+}) {
+	return (
+		<div className="bg-t-bg-panel border border-t-border-subtle p-8 rounded-3xl shadow-sm hover:border-blue-500/30 transition-colors group flex flex-col items-center sm:items-start text-center sm:text-left">
+			<div className="bg-black/5 dark:bg-white/5 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-500/10 transition-colors shrink-0">
+				<Icon className="h-6 w-6 text-t-text-secondary group-hover:text-blue-500 transition-colors" />
+			</div>
+			<h3 className="text-lg font-black tracking-tight text-t-text-primary mb-3">
+				{title}
+			</h3>
+			<p className="text-sm font-medium text-t-text-tertiary leading-relaxed">
+				{desc}
+			</p>
+		</div>
+	);
+}
+
+// ============================================================================
+// WIDOK 2: DLA ZALOGOWANYCH (Dashboard Placeholder)
+// ============================================================================
 function UserDashboard() {
 	return (
-		<div className="p-8 space-y-8">
-			{/* Header */}
-			<div className="flex justify-between items-center">
-				<div>
-					<h1 className="text-3xl font-bold">Cześć, Inwestorze! 👋</h1>
-					<p className="text-muted-foreground">
-						Oto podsumowanie Twoich wyników.
+		<div className="p-6 space-y-8 max-w-7xl mx-auto animate-in fade-in duration-500">
+			<div>
+				<h1 className="text-3xl font-black tracking-tighter text-t-text-primary mb-1">
+					Twój Przegląd
+				</h1>
+				<p className="text-sm font-medium text-t-text-tertiary">
+					Krótkie podsumowanie Twojej dzisiejszej sytuacji na rynku.
+				</p>
+			</div>
+
+			{/* Statystyki */}
+			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+				<DashboardStatCard
+					title="Wartość Portfela"
+					value="124 500,00"
+					unit="PLN"
+					subtext="+2.4% w tym miesiącu"
+					subtextPositive={true}
+					icon={Wallet}
+				/>
+				<DashboardStatCard
+					title="Zysk / Strata (All Time)"
+					value="+14 200,50"
+					unit="PLN"
+					subtext="+12.8% całkowitego zwrotu"
+					subtextPositive={true}
+					icon={TrendingUp}
+				/>
+				<DashboardStatCard
+					title="Najlepsze Aktywo"
+					value="S&P 500 ETF"
+					unit=""
+					subtext="+18% zysku"
+					subtextPositive={true}
+					icon={BarChart3}
+				/>
+			</div>
+
+			{/* Dolna sekcja układu */}
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				<div className="lg:col-span-2 bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[300px] flex items-center justify-center">
+					<p className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+						Miejsce na główny wykres portfela
 					</p>
 				</div>
-				<Button>Dodaj transakcję</Button>
+
+				<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 flex flex-col">
+					<h3 className="text-sm font-black uppercase tracking-widest text-t-text-primary mb-6">
+						Obserwowane Rynki
+					</h3>
+					<div className="space-y-4 flex-1">
+						<MarketRow name="WIG20" value="-0.45%" isPositive={false} />
+						<MarketRow name="S&P 500" value="+1.20%" isPositive={true} />
+						<MarketRow name="Złoto (PLN)" value="+0.15%" isPositive={true} />
+					</div>
+				</div>
 			</div>
+		</div>
+	);
+}
 
-			{/* KPI Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between pb-2">
-						<CardTitle className="text-sm font-medium">
-							Całkowita wartość
-						</CardTitle>
-						<Wallet className="w-4 h-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">124,500.00 PLN</div>
-						<p className="text-xs text-muted-foreground">
-							+2,500 PLN w tym miesiącu
-						</p>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between pb-2">
-						<CardTitle className="text-sm font-medium">
-							Stopa zwrotu (YTD)
-						</CardTitle>
-						<TrendingUp className="w-4 h-4 text-green-500" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold text-green-600">+12.4%</div>
-						<p className="text-xs text-muted-foreground">Powyżej inflacji</p>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between pb-2">
-						<CardTitle className="text-sm font-medium">
-							Najlepsze aktywo
-						</CardTitle>
-						<BarChart3 className="w-4 h-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">S&P 500 ETF</div>
-						<p className="text-xs text-green-600">+18% zysku</p>
-					</CardContent>
-				</Card>
+function DashboardStatCard({
+	title,
+	value,
+	unit,
+	subtext,
+	subtextPositive,
+	icon: Icon,
+}: any) {
+	return (
+		<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 shadow-sm">
+			<div className="flex items-center gap-3 mb-4">
+				<div className="p-2.5 bg-black/5 dark:bg-white/5 rounded-xl">
+					<Icon className="h-4 w-4 text-t-text-secondary" />
+				</div>
+				<h3 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+					{title}
+				</h3>
 			</div>
-
-			{/* Sekcja Wykresów i Rynku (Placeholdery) */}
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-				<Card className="h-75 flex items-center justify-center bg-secondary/10 border-dashed">
-					<p className="text-muted-foreground">
-						Miejsce na wykres historyczny portfela
-					</p>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Obserwowane rynki</CardTitle>
-						<CardDescription>Aktualne notowania (Live)</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="flex justify-between items-center border-b pb-2">
-							<span className="font-medium">WIG20</span>
-							<span className="text-red-500 font-mono">-0.45%</span>
-						</div>
-						<div className="flex justify-between items-center border-b pb-2">
-							<span className="font-medium">S&P 500</span>
-							<span className="text-green-500 font-mono">+1.20%</span>
-						</div>
-						<div className="flex justify-between items-center border-b pb-2">
-							<span className="font-medium">Złoto (USD)</span>
-							<span className="text-green-500 font-mono">+0.80%</span>
-						</div>
-						<div className="flex justify-between items-center">
-							<span className="font-medium">USD/PLN</span>
-							<span className="text-gray-500 font-mono">4.02 PLN</span>
-						</div>
-					</CardContent>
-				</Card>
+			<div className="flex items-baseline gap-2 mb-2">
+				<span className="text-3xl font-black text-t-text-primary">{value}</span>
+				{unit && (
+					<span className="text-sm font-bold text-t-text-tertiary">{unit}</span>
+				)}
 			</div>
+			<p
+				className={`text-xs font-bold tracking-wide ${subtextPositive ? "text-emerald-500" : "text-rose-500"}`}
+			>
+				{subtext}
+			</p>
+		</div>
+	);
+}
+
+function MarketRow({
+	name,
+	value,
+	isPositive,
+}: {
+	name: string;
+	value: string;
+	isPositive: boolean;
+}) {
+	return (
+		<div className="flex justify-between items-center border-b border-t-border-subtle pb-3 last:border-0">
+			<span className="text-sm font-bold text-t-text-secondary">{name}</span>
+			<span
+				className={`font-mono text-sm font-bold ${isPositive ? "text-emerald-500" : "text-rose-500"}`}
+			>
+				{value}
+			</span>
 		</div>
 	);
 }

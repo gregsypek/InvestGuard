@@ -92,6 +92,16 @@ export default function Header({
 		: (selectedPortfolioId ?? "");
 
 	const displayValue = isDemoMode ? "" : rawId;
+	// const handlePortfolioChange = (id: string) => {
+	// 	if (id === "enter-demo") {
+	// 		router.push("/demo?s=dalio");
+	// 		return;
+	// 	}
+
+	// 	Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
+	// 	router.push(`/dashboard/${id}`);
+	// };
+
 	const handlePortfolioChange = (id: string) => {
 		if (id === "enter-demo") {
 			router.push("/demo?s=dalio");
@@ -99,7 +109,12 @@ export default function Header({
 		}
 
 		Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
-		router.push(`/dashboard/${id}`);
+
+		if (pathname === "/planner") {
+			router.push(`/planner?portfolioId=${id}`);
+		} else {
+			router.push(`/dashboard/${id}`);
+		}
 	};
 
 	// EN: Sync cookie with URL/Path to prevent "lost" selection
@@ -116,10 +131,22 @@ export default function Header({
 
 	// EN: Auto-redirect if we have a saved ID but no ID in URL on main pages
 	// PL: Auto-przekierowanie, jeśli mamy zapisane ID, ale brak go w URL na stronach głównych
+	// useEffect(() => {
+	// 	const isMainPage = pathname === "/dashboard" || pathname === "/planner";
+	// 	if (isMainPage && selectedPortfolioId && !urlPortfolioId && !idFromPath) {
+	// 		router.replace(`${pathname}/${selectedPortfolioId}`);
+	// 	}
+	// }, [selectedPortfolioId, pathname, urlPortfolioId, idFromPath, router]);
 	useEffect(() => {
 		const isMainPage = pathname === "/dashboard" || pathname === "/planner";
 		if (isMainPage && selectedPortfolioId && !urlPortfolioId && !idFromPath) {
-			router.replace(`${pathname}/${selectedPortfolioId}`);
+			if (pathname === "/planner") {
+				// Planner używa query string
+				router.replace(`${pathname}?portfolioId=${selectedPortfolioId}`);
+			} else {
+				// Dashboard używa podkatalogu
+				router.replace(`${pathname}/${selectedPortfolioId}`);
+			}
 		}
 	}, [selectedPortfolioId, pathname, urlPortfolioId, idFromPath, router]);
 	return (

@@ -3,7 +3,7 @@
 
 import * as XLSX from "xlsx";
 
-import { AlertTriangle, CheckCircle,  Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle, Trash2 } from "lucide-react";
 import { ParsedBond, parseBondRow } from "@/lib/utils/bond-parser";
 import React, { ChangeEvent, useState } from "react";
 
@@ -222,9 +222,6 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const previewTotal = preview
 		.filter((_, i) => selectedIndices.includes(i))
 		.reduce((sum, b) => sum + b.currentValue, 0);
-
-	// Pamiętaj o imporcie 'cn' jeśli brakuje go w tym pliku:
-	// import { cn } from "@/lib/utils";
 
 	return (
 		<div className="flex flex-col gap-8 animate-in fade-in duration-300">

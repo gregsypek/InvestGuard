@@ -571,7 +571,7 @@ const AssetLedgerTable = ({
 															<div
 																onClick={(e) => {
 																	e.stopPropagation();
-																	setAssetToDelete(asset); // EN: Open the delete modal
+																	setAssetToDelete(asset as any); // EN: Open the delete modal
 																}}
 																className="flex w-full items-center gap-2 px-2 py-1.5 cursor-pointer font-medium text-sm text-rose-600 dark:text-rose-500 hover:bg-rose-500/10 transition-colors rounded-sm outline-none"
 															>

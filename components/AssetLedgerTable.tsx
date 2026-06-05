@@ -10,6 +10,7 @@ import {
 	Lock,
 	MoreHorizontal,
 	Scale,
+	Trash2,
 	TrendingUp,
 } from "lucide-react";
 import {
@@ -36,10 +37,11 @@ import {
 
 import { AdjustAssetModal } from "./AdjustAssetModal";
 import { AssetLogo } from "./shared/AssetLogo";
-import { DeleteButton } from "./DeleteButton";
+import { DeleteAssetModal } from "./DeleteAssetModal";
 import Link from "next/link";
 import PaginatedBar from "./shared/PaginatedBar";
 import { PortfolioWithAssets } from "@/lib/types";
+import PremiumDeleteModal from "./shared/PremiumDeleteModal";
 import { Progress } from "@/components/ui/progress";
 import QuickAdjustCell from "./QuickAdjustCell";
 import { SellAssetModal } from "./SellAssetModal";
@@ -71,8 +73,11 @@ const AssetLedgerTable = ({
 	const [showFullHistory, setShowFullHistory] = useState(false);
 	const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
+
 	const [assetToSell, setAssetToSell] = useState<Asset | null>(null);
 	const [assetToAdjust, setAssetToAdjust] = useState<Asset | null>(null);
+	const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null);
+
 	const [isPending, startTransition] = useTransition();
 
 	// --- LOGIKA AGREGACJI (HUB & SPOKE) ---
@@ -554,7 +559,7 @@ const AssetLedgerTable = ({
 																Korekta
 															</DropdownMenuItem>
 															<DropdownMenuSeparator className="bg-t-border" />
-															<div onClick={(e) => e.stopPropagation()}>
+															{/* <div onClick={(e) => e.stopPropagation()}>
 																<DeleteButton
 																	id={asset.id}
 																	onDelete={deleteAsset}
@@ -563,6 +568,16 @@ const AssetLedgerTable = ({
 																	className="flex w-full items-center gap-2 px-2 py-1.5 cursor-pointer font-medium text-sm text-rose-600 dark:text-rose-500 hover:bg-rose-500/10 transition-colors rounded-sm"
 																	label="Usuń"
 																/>
+															</div> */}
+															<div
+																onClick={(e) => {
+																	e.stopPropagation();
+																	setAssetToDelete(asset); // EN: Open the delete modal
+																}}
+																className="flex w-full items-center gap-2 px-2 py-1.5 cursor-pointer font-medium text-sm text-rose-600 dark:text-rose-500 hover:bg-rose-500/10 transition-colors rounded-sm outline-none"
+															>
+																<Trash2 className=" mr-2  w-4 h-4" />
+																<span>Usuń</span>
 															</div>
 														</DropdownMenuContent>
 													</DropdownMenu>
@@ -822,6 +837,30 @@ const AssetLedgerTable = ({
 						isLoading={isPending}
 					/>
 				</div>
+			)}
+
+			{/* ======================================================== */}
+			{/* MODAL USUWANIA Z TABELI (Zawsze na samym dole komponentu)*/}
+			{/* ======================================================== */}
+			{assetToDelete && (
+				<PremiumDeleteModal
+					isOpen={!!assetToDelete}
+					onClose={() => setAssetToDelete(null)}
+					isDemo={isDemo}
+					title="Usuwanie Aktywa"
+					description={`Czy na pewno chcesz bezpowrotnie usunąć aktywo ${assetToDelete?.name}?`}
+					onConfirm={async () => {
+						const result = await deleteAsset(assetToDelete.id);
+
+						if (result && result.success) {
+							toast.success("Usunięto pomyślnie!");
+							setAssetToDelete(null);
+						} else {
+							// Rzucamy błąd, żeby Modal przestał kręcić kółkiem ładowania
+							throw new Error(result?.error || "Nie można usunąć aktywa");
+						}
+					}}
+				/>
 			)}
 		</>
 	);

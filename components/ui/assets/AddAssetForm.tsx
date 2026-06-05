@@ -174,25 +174,25 @@ export default function AddAssetForm({
 		setIsPending(false);
 	};
 
+	const inputStyles =
+		"h-12 bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-blue-500 rounded-xl px-4 text-sm font-medium text-t-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+
 	return (
-		<div className="space-y-6 animate-in fade-in duration-300">
-			{/* NAWIGACJA ZAKŁADEK */}
-			<div className="flex p-1 w-fit items-center gap-3">
+		<div className="space-y-8 animate-in fade-in duration-300">
+			{/* ZAKŁADKI (Segmented Control) */}
+			<div className="flex flex-wrap items-center gap-2 p-1.5 w-fit bg-t-bg-base/50 dark:bg-black/20 rounded-xl border border-t-border-subtle">
 				{!isBondOnly && (
 					<button
 						type="button"
 						onClick={() => {
-							// Najpierw czyścimy URL
 							router.push(window.location.pathname);
-							// Następnie ręcznie resetujemy tryb w formularzu
 							form.setValue("existingAssetId", "new");
-							// setViewMode("asset");
 						}}
 						className={cn(
-							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
+							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
 							viewMode === "asset" && isAddingNew
-								? "bg-background shadow-md text-primary border border2" // Aktywny
-								: "text-muted-foreground border hover:bg-muted/50", // Nieaktywny
+								? "bg-t-bg-panel shadow-sm text-t-text-primary border border-t-border" // Aktywny (Wypukły)
+								: "text-t-text-tertiary border border-transparent hover:text-t-text-primary", // Nieaktywny
 						)}
 					>
 						<PlusCircle size={14} /> Nowe Aktywo / Gotówka
@@ -203,15 +203,13 @@ export default function AddAssetForm({
 						type="button"
 						onClick={() => {
 							router.push(window.location.pathname);
-							// Ustawiamy ID pierwszego dostępnego aktywa, co przełączy isAddingNew na false
 							form.setValue("existingAssetId", filteredExistingAssets[0].id);
-							// setViewMode("asset");
 						}}
 						className={cn(
-							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
+							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
 							viewMode === "asset" && !isAddingNew
-								? "bg-background shadow-md text-primary border border2"
-								: "text-muted-foreground border hover:bg-muted/50",
+								? "bg-t-bg-panel shadow-sm text-t-text-primary border border-t-border"
+								: "text-t-text-tertiary border border-transparent hover:text-t-text-primary",
 						)}
 					>
 						<Recycle size={14} /> Dokup istniejące
@@ -223,17 +221,18 @@ export default function AddAssetForm({
 						type="button"
 						onClick={() => router.push("?view=bond")}
 						className={cn(
-							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ml-1",
+							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
 							viewMode === "bond"
-								? "bg-background shadow-md text-primary border border2"
-								: "text-muted-foreground border hover:text-foreground",
+								? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+								: "text-t-text-tertiary border border-transparent hover:text-emerald-500",
 						)}
 					>
 						<Landmark className="h-4 w-4" /> Dodaj Obligację
 					</button>
 				)}
 			</div>
-			{/* ✅ DYNAMICZNA ZAWARTOŚĆ - Tutaj decydujemy, co wyświetlić pod zakładkami */}
+
+			{/* DYNAMICZNA ZAWARTOŚĆ */}
 			{viewMode === "bond" ? (
 				<div className="animate-in slide-in-from-bottom-2 duration-300">
 					<AddBondForm portfolioId={portfolioId} />
@@ -241,15 +240,15 @@ export default function AddAssetForm({
 			) : (
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)}>
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end p-4">
-							{/* DOKUP: SELECTOR (Zawsze na górze w trybie dokupowania) */}
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
+							{/* DOKUP: SELECTOR */}
 							{!isAddingNew && (
 								<FormField
 									control={form.control}
 									name="existingAssetId"
 									render={({ field }) => (
-										<FormItem className="flex flex-col col-span-2 lg:col-span-3 mb-2">
-											<FormLabel className="text-xs font-bold uppercase opacity-60">
+										<FormItem className="flex flex-col col-span-1 md:col-span-2 lg:col-span-3">
+											<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
 												Zasoby w portfelu
 											</FormLabel>
 											<Select
@@ -258,20 +257,29 @@ export default function AddAssetForm({
 											>
 												<FormControl>
 													<SelectTrigger className={inputStyles}>
-														<SelectValue placeholder="Wybierz aktywo do powiększenia" />
+														<SelectValue placeholder="Wybierz aktywo do powiększenia..." />
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
 													{filteredExistingAssets.map((asset) => (
 														<SelectItem key={asset.id} value={asset.id}>
 															<div className="flex items-center gap-3">
-																<Coins className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-																<div className="flex flex-col items-start">
-																	<span className="text-xs font-bold">
-																		{asset.name} ({asset.ticker?.split("_")[0]})
+																<div
+																	className="h-2 w-2 rounded-full shrink-0"
+																	style={{
+																		backgroundColor:
+																			COLORS[
+																				asset.category as keyof typeof COLORS
+																			],
+																	}}
+																/>
+																<div className="flex flex-col items-start leading-tight">
+																	<span className="text-xs font-bold text-t-text-primary">
+																		{asset.name}{" "}
+																		{asset.ticker &&
+																			`(${asset.ticker.split("_")[0]})`}
 																	</span>
-																	<span className="text-[9px] uppercase tracking-tighter text-muted-foreground leading-none">
-																		Kategoria:{" "}
+																	<span className="text-[9px] uppercase tracking-widest text-t-text-tertiary mt-0.5">
 																		{CATEGORY_LABELS[
 																			asset.category as keyof typeof CATEGORY_LABELS
 																		] || asset.category}
@@ -287,13 +295,13 @@ export default function AddAssetForm({
 								/>
 							)}
 
-							{/* KATEGORIA: Blokowana tylko w trybie dokupowania */}
+							{/* KATEGORIA */}
 							<FormField
 								control={form.control}
 								name="category"
 								render={({ field }) => (
-									<FormItem className="flex flex-col gap-1 col-span-1">
-										<FormLabel className="text-xs font-bold uppercase opacity-60">
+									<FormItem className="flex flex-col col-span-1">
+										<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
 											Kategoria
 										</FormLabel>
 										<Select
@@ -303,7 +311,7 @@ export default function AddAssetForm({
 										>
 											<FormControl>
 												<SelectTrigger className={inputStyles}>
-													<SelectValue placeholder="Typ" />
+													<SelectValue placeholder="Wybierz typ..." />
 												</SelectTrigger>
 											</FormControl>
 											<SelectContent>
@@ -317,7 +325,7 @@ export default function AddAssetForm({
 																		COLORS[cat as keyof typeof COLORS],
 																}}
 															/>
-															<span className="text-xs font-medium">
+															<span className="text-xs font-bold text-t-text-secondary uppercase tracking-wider">
 																{
 																	CATEGORY_LABELS[
 																		cat as keyof typeof CATEGORY_LABELS
@@ -333,124 +341,139 @@ export default function AddAssetForm({
 								)}
 							/>
 
-							{/* TICKER & NAZWA: Blokowane dla Gotówki lub trybu dokupowania */}
+							{/* TICKER */}
 							<FormField
 								control={form.control}
 								name="ticker"
 								render={({ field }) => (
-									<FormItem className="space-y-2 lg:col-span-1">
-										<FormLabel className="text-xs font-bold uppercase opacity-60">
+									<FormItem className="col-span-1">
+										<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
 											Ticker
 										</FormLabel>
 										<FormControl>
 											<Input
 												{...field}
 												disabled={isCash || !isAddingNew}
-												className={cn(
-													inputStyles,
-													(isCash || !isAddingNew) && "bg-muted opacity-80",
-												)}
+												className={cn(inputStyles, "uppercase font-mono")}
+												placeholder="np. AAPL"
 											/>
 										</FormControl>
 									</FormItem>
 								)}
 							/>
 
+							{/* NAZWA */}
 							<FormField
 								control={form.control}
 								name="name"
 								render={({ field }) => (
-									<FormItem className="space-y-2 lg:col-span-1">
-										<FormLabel className="text-xs font-bold uppercase opacity-60">
+									<FormItem className="col-span-1">
+										<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
 											Nazwa
 										</FormLabel>
 										<FormControl>
 											<Input
 												{...field}
 												disabled={isCash || !isAddingNew}
-												className={cn(
-													inputStyles,
-													(isCash || !isAddingNew) && "bg-muted opacity-80",
-												)}
+												className={inputStyles}
+												placeholder="Pełna nazwa aktywa"
 											/>
 										</FormControl>
 									</FormItem>
 								)}
 							/>
 
-							{/* ILOŚĆ & WKŁAD: ZAWSZE AKTYWNE (Oprócz wkładu przy gotówce) */}
+							{/* ILOŚĆ */}
 							<FormField
 								control={form.control}
 								name="quantity"
 								render={({ field }) => (
-									<FormItem className="space-y-2 lg:col-span-1">
-										<FormLabel className="text-xs font-bold uppercase opacity-60">
-											{isCash ? "Kwota (PLN)" : "Liczba jednostek"}
+									<FormItem className="col-span-1">
+										<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+											{isCash ? "Kwota" : "Liczba jednostek"}
 										</FormLabel>
 										<FormControl>
-											<Input
-												type="number"
-												step="any"
-												{...field}
-												value={(field.value ?? "") as string | number}
-												onChange={(e) => field.onChange(e.target.value)}
-												className={inputStyles}
-											/>
+											<div className="relative">
+												<Input
+													type="number"
+													step="any"
+													{...field}
+													value={(field.value ?? "") as string | number}
+													onChange={(e) => field.onChange(e.target.value)}
+													className={cn(inputStyles, "pr-10 font-mono")}
+												/>
+												<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary pointer-events-none">
+													{isCash ? "PLN" : "SZT"}
+												</span>
+											</div>
 										</FormControl>
 									</FormItem>
 								)}
 							/>
 
+							{/* WKŁAD */}
 							<FormField
 								control={form.control}
 								name="investedCapital"
 								render={({ field }) => (
-									<FormItem className="space-y-2 lg:col-span-1">
-										<FormLabel className="text-xs font-bold uppercase opacity-60">
-											Wkład (PLN)
+									<FormItem className="col-span-1">
+										<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+											Wkład własny
 										</FormLabel>
 										<FormControl>
-											<Input
-												type="number"
-												step="any"
-												{...field}
-												value={(field.value ?? "") as string | number}
-												onChange={(e) => field.onChange(e.target.value)}
-												disabled={isCash}
-												className={cn(inputStyles, isCash && "bg-muted")}
-											/>
+											<div className="relative">
+												<Input
+													type="number"
+													step="any"
+													{...field}
+													value={(field.value ?? "") as string | number}
+													onChange={(e) => field.onChange(e.target.value)}
+													disabled={isCash}
+													className={cn(inputStyles, "pr-12 font-mono")}
+												/>
+												<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary pointer-events-none">
+													PLN
+												</span>
+											</div>
 										</FormControl>
 									</FormItem>
 								)}
 							/>
 
-							<div className="lg:col-span-1 flex justify-end">
+							{/* PRZYCISK DODAJ */}
+							<div className="col-span-1 md:col-span-2 lg:col-span-1 flex justify-end h-[48px]">
 								<SubmitButton
-									label={isCash ? "Zaksięguj" : isAddingNew ? "Dodaj" : "Dokup"}
+									label={
+										isCash
+											? "Zaksięguj"
+											: isAddingNew
+												? "Zapisz Aktywo"
+												: "Dokup Pozycję"
+									}
 									isLoading={isPending}
-									// Przycisk będzie wyłączony jeśli trwa wysyłka LUB ilość <= 0
 									disabled={(quantityValue ?? 0) <= 0}
-									// Nadpisujemy szerokość na pełną, by wypełnił komórkę gridu
-									className="w-full h-10 shadow-lg"
+									className="w-full h-full rounded-xl shadow-md font-bold uppercase tracking-widest text-[10px]"
 								/>
 							</div>
 
-							{/* SEKCJA ALPHA */}
+							{/* SEKCJA ALPHA / BOOSTER (Motyw Rubinowy) */}
 							{isBooster && (
-								<div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 mt-2 bg-blue-500/5 rounded-2xl border border-blue-500/20 animate-in slide-in-from-top duration-500">
-									<div className="md:col-span-2 flex items-center gap-2 mb-2">
-										<TrendingUp className="h-4 w-4 text-blue-500" />
-										<h3 className="text-sm font-bold uppercase tracking-tight text-blue-500">
-											Analiza Alpha / Booster
+								<div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8 p-6 lg:p-8 mt-4 bg-rose-500/5 rounded-2xl border border-rose-500/20 animate-in slide-in-from-top duration-500 shadow-inner">
+									<div className="md:col-span-2 flex items-center gap-2 mb-2 border-b border-rose-500/20 pb-4">
+										<TrendingUp className="h-5 w-5 text-rose-500" />
+										<h3 className="text-sm font-black uppercase tracking-widest text-rose-500">
+											Analiza Tezy Inwestycyjnej (Booster)
 										</h3>
 									</div>
+
 									<FormField
 										control={form.control}
 										name="conviction"
 										render={({ field }) => (
 											<FormItem className="space-y-4">
-												<FormLabel className="text-xs font-bold uppercase opacity-70">
-													Pewność Tezy: {field.value}%
+												<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex justify-between">
+													<span>Przekonanie</span>
+													<span className="text-rose-500">{field.value}%</span>
 												</FormLabel>
 												<FormControl>
 													<Slider
@@ -459,25 +482,27 @@ export default function AddAssetForm({
 														step={1}
 														value={[field.value || 50]}
 														onValueChange={(vals) => field.onChange(vals[0])}
+														className="py-4"
 													/>
 												</FormControl>
 											</FormItem>
 										)}
 									/>
+
 									<FormField
 										control={form.control}
 										name="rationale"
 										render={({ field }) => (
 											<FormItem className="space-y-2">
-												<FormLabel className="text-xs font-bold uppercase opacity-70">
-													Uzasadnienie (Teza)
+												<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+													Uzasadnienie
 												</FormLabel>
 												<FormControl>
 													<Textarea
 														{...field}
 														value={field.value || ""}
-														className="resize-none h-20 bg-background/50 text-xs border-dashed"
-														placeholder="Dlaczego ta spółka podbije Twój wynik?"
+														className={cn(inputStyles, "h-24 resize-none py-3")}
+														placeholder="Dlaczego ta spółka podbije Twój wynik? Wpisz krótką notatkę..."
 													/>
 												</FormControl>
 											</FormItem>

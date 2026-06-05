@@ -187,6 +187,7 @@
 	--t-bg-base: #05070a; /* Najgłębsza czerń pod spodem */
 	--t-bg-panel: #0a0e17; /* Mroczny granat dla kontenerów */
 	--t-bg-sticky: #0d1526; /* Ciemny błękit dla zablokowanej kolumny */
+	/* --t-bg-sticky: #04060d; */
 	--t-bg-sticky-hover: #121d33; /* Rozjaśniony ciemny błękit przy hover */
 
 	--t-border: rgba(255, 255, 255, 0.05);

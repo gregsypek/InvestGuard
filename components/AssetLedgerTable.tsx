@@ -37,7 +37,6 @@ import {
 
 import { AdjustAssetModal } from "./AdjustAssetModal";
 import { AssetLogo } from "./shared/AssetLogo";
-import { DeleteAssetModal } from "./DeleteAssetModal";
 import Link from "next/link";
 import PaginatedBar from "./shared/PaginatedBar";
 import { PortfolioWithAssets } from "@/lib/types";

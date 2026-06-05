@@ -390,10 +390,16 @@ export default function BondLedgerTable({
 																<HandCoins size={14} />
 															</button>
 
-															<DeleteButton
+															{/* <DeleteButton
 																id={bond.id}
 																onDelete={handleDeleteBond}
 																confirmMsg="Czy na pewno chcesz bezpowrotnie usunąć wybraną transzę obligacji?"
+															/> */}
+															<DeleteButton
+																id={bond.id}
+																onDelete={handleDeleteBond}
+																title="Usuwanie Transzy Obligacji"
+																confirmMsg="Czy na pewno chcesz bezpowrotnie usunąć wybraną transzę obligacji? Usunięcie wpisu wpłynie na wyliczenia wartości całego portfela."
 															/>
 														</div>
 													</TableCell>

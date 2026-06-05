@@ -22,13 +22,10 @@ import { useForm, useWatch } from "react-hook-form";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
-import { CustomCardHeader } from "./shared/CustomCardHeader";
 import { Input } from "@/components/ui/input";
-import { Pencil } from "lucide-react";
 import { SubmitButton } from "./ui/SubmitButton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { inputStyles } from "@/lib/constants";
 import { toast } from "sonner";
 import { useEffect } from "react";
 import z from "zod";
@@ -135,9 +132,6 @@ export default function PortfolioForm({
 		}
 	}
 
-	// ... (pamiętaj o imporcie cn z @/lib/utils jeśli jeszcze go tam nie ma)
-
-	// Wspólne style dla wszystkich inputów w formularzach
 	const inputStyles =
 		"h-12 bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-blue-500 rounded-xl px-4 text-sm font-medium text-t-text-primary transition-colors";
 

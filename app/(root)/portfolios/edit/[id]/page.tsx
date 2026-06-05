@@ -1,7 +1,9 @@
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Settings2 } from "lucide-react";
+
 import Link from "next/link";
 import PortfolioForm from "@/components/PortfolioForm";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
+import { SectionLayout } from "@/components/shared/SectionLayout";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getGlobalStats } from "@/lib/calculations";
@@ -62,10 +64,22 @@ export default async function EditPortfolioPage({ params }: Props) {
 					</nav>
 				}
 			/>
-
+			{/* 
 			<section className="w-full flex flex-col justify-start md:px-0 overflow-x-hidden">
 				<PortfolioForm initialData={portfolio} portfolioId={id} />
-			</section>
+			</section> */}
+			<SectionLayout
+				title={portfolio ? `Edycja: ${portfolio.name}` : "Nowy Portfel"}
+				titleIcon={Settings2}
+				subtitle="Konfiguracja parametrów"
+				description={
+					portfolio
+						? "Zaktualizuj główne założenia, cel finansowy oraz docelową alokację procentową dla tego portfela."
+						: "Zdefiniuj podstawowe parametry, cel finansowy i idealną alokację kapitału dla swojej nowej strategii."
+				}
+			>
+				<PortfolioForm initialData={portfolio} portfolioId={id} />
+			</SectionLayout>
 		</div>
 	);
 }

@@ -15,6 +15,7 @@ import { BondImporter } from "@/components/ui/BondImporter";
 import { QuickDepositForm } from "@/components/ui/QuickDepositForm";
 import { SafeActionButton } from "@/components/ui/SafeActionButton";
 import { SectionHeader } from "@/components/shared/SectionHeader";
+import { SectionLayout } from "@/components/shared/SectionLayout";
 import { SubHeader } from "@/components/shared/SubHeader";
 import { XtbImporter } from "@/components/ui/XtbImporter";
 
@@ -36,73 +37,62 @@ export default async function AddAssetPage({ params }: Props) {
 		? categoriesResult.categories
 		: [];
 	const assets = assetsResult.success ? assetsResult.data : [];
+	// Pamiętaj o importach ikon, jeśli jakichś brakuje, np.:
+	// import { Coins, FileText, LibrarySquareIcon, UploadCloud } from "lucide-react";
+
 	return (
-		<div className="space-y-10 pb-20">
-			<section className="pt-8 border-t border-border">
-				<div className="flex justify-between">
-					<SectionHeader
-						icon={LibrarySquareIcon}
-						title="Ręczne dodawanie aktywów"
-					/>
-				</div>
-				<SubHeader
-					title="Wybierz odpowiednią zakładkę "
-					description="Dodaj środki wybierając osobny formularz do aktywów/gotówki lub obligacji"
-					icon={Form}
-				/>
-				<div className="mx-6 py-2">
+		<div className="space-y-12 pb-20">
+			{/* 1. SEKCJA: RĘCZNE DODAWANIE */}
+			<SectionLayout
+				title="Ręczne dodawanie aktywów"
+				titleIcon={LibrarySquareIcon}
+				subtitle="Wybierz odpowiednią zakładkę"
+				description="Dodaj środki krok po kroku, wybierając osobny formularz dedykowany dla aktywów, gotówki lub obligacji."
+			>
+				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
 					<AddAssetForm
 						portfolioId={id}
 						allowedCategories={categories}
 						existingAssets={assets}
 					/>
 				</div>
-			</section>
-			<section className="pt-8 border-t border-border">
-				<div className="flex justify-between">
-					<SectionHeader
-						icon={FileText}
-						title="Import aktywów z raportu - XTB"
-					/>
-				</div>
-				<SubHeader
-					title="Automatyczne dodawanie aktywów z raportu XTB"
-					description="Wygeneruj raport na platformie XTB i zaimportuj go tutaj, aby szybko dodać swoje aktywa i przeliczyć aktualne saldo"
-					icon={Form}
-				/>
-				<div className="mx-6 py-2">
+			</SectionLayout>
+
+			{/* 2. SEKCJA: IMPORT XTB */}
+			<SectionLayout
+				title="Import raportu giełdowego (XTB)"
+				titleIcon={FileText} // Możesz tu użyć np. UploadCloud
+				subtitle="Automatyczne księgowanie transakcji"
+				description="Wygeneruj i pobierz raport CSV ze swojej platformy XTB, a następnie zaimportuj go tutaj. System automatycznie rozpozna i doda Twoje aktywa oraz przeliczy saldo."
+			>
+				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
 					<XtbImporter portfolioId={id} />
 				</div>
-			</section>
-			<section className="pt-8 border-t border-border">
-				<div className="flex justify-between">
-					<SectionHeader
-						icon={FileText}
-						title="Import obligacji z raportu - PKO BP"
-					/>
+			</SectionLayout>
+
+			{/* 3. SEKCJA: IMPORT PKO BP (Obligacje) */}
+			<SectionLayout
+				title="Import obligacji skarbowych (PKO BP)"
+				titleIcon={FileText} // Możesz tu użyć np. UploadCloud
+				subtitle="Automatyczne dodawanie bezpiecznych aktywów"
+				description="Pobierz zestawienie swoich obligacji z konta PKO BP i wgraj plik tutaj. Portfel automatycznie zarejestruje Twoje serie i zaktualizuje stan kapitału."
+			>
+				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
+					<BondImporter portfolioId={id} />
 				</div>
-				<SubHeader
-					title="Automatyczne dodawanie obligacji"
-					description="Wygeneruj raport w banku PKO i zaimportuj go tutaj, aby szybko dodać swoje obligacje i przeliczyć aktualne saldo"
-					icon={Form}
-				/>
-				<div className="mx-6 py-2">
-					<BondImporter portfolioId={id} />{" "}
+			</SectionLayout>
+
+			{/* 4. SEKCJA: SZYBKA GOTÓWKA */}
+			<SectionLayout
+				title="Szybkie Zasilenie Gotówki"
+				titleIcon={Coins}
+				subtitle="Dodaj wolne środki do portfela"
+				description="Gotówka jest automatycznie księgowana jako depozyt. To najszybszy sposób na aktualizację stanu konta i uwzględnienie nowego kapitału w analizach oraz wykresach, bez konieczności przypisywania go do konkretnego aktywa."
+			>
+				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
+					<QuickDepositForm portfolioId={id} />
 				</div>
-			</section>
-			<section className="pt-8 border-t border-border">
-				<div className="flex justify-between">
-					<SectionHeader icon={FileText} title="Szybkie Zasilenia Gotówki" />
-				</div>
-				<SubHeader
-					title="Dodaj środki do portfela"
-					description="Gotówka jest automatycznie księgowania jako depozyt, więc będzie uwzględniana w analizach i wykresach. To szybki sposób na aktualizację stanu portfela bez konieczności dodawania poszczególnych aktywów."
-					icon={Coins}
-				/>
-				<div className="mx-6 py-2">
-					<QuickDepositForm portfolioId={id} />{" "}
-				</div>
-			</section>
+			</SectionLayout>
 		</div>
 	);
 }

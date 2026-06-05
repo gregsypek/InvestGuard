@@ -1,7 +1,9 @@
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, FolderPlus } from "lucide-react";
+
 import Link from "next/link";
 import PortfolioForm from "@/components/PortfolioForm";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
+import { SectionLayout } from "@/components/shared/SectionLayout";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getGlobalStats } from "@/lib/calculations";
@@ -42,10 +44,14 @@ export default async function NewPortfolioPage() {
 					</nav>
 				}
 			/>
-
-			<div>
+			<SectionLayout
+				title="Nowy Portfel"
+				titleIcon={FolderPlus}
+				subtitle="Kreator strategii"
+				description="Zdefiniuj podstawowe parametry, cel finansowy i idealną alokację kapitału dla swojej nowej strategii inwestycyjnej."
+			>
 				<PortfolioForm />
-			</div>
+			</SectionLayout>
 		</div>
 	);
 }

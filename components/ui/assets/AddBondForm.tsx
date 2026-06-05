@@ -1,14 +1,7 @@
 "use client";
 
 import { BOND_CONFIG, BOND_TEMPLATES } from "@/lib/constants";
-import {
-	Calculator,
-	Calendar,
-	Info,
-	Landmark,
-	Lightbulb,
-	Percent,
-} from "lucide-react";
+import { Calculator, Calendar, Info, Landmark, Percent } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";

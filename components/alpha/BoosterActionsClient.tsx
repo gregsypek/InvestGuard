@@ -1,22 +1,5 @@
 "use client";
 
-// NOWE Importy dla AlertDialog (Usuwanie Premium)
-import {
-	AlertDialog,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-	AlertTriangle,
-	Loader2,
-	MoreHorizontal,
-	Trash2,
-	UserCheck,
-} from "lucide-react";
 // Importy dla Dropdown i Dialog (Edycja)
 import {
 	Dialog,
@@ -34,6 +17,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Loader2, MoreHorizontal, Trash2, UserCheck } from "lucide-react";
 import {
 	deleteAssetAction,
 	updateAlphaDetails,
@@ -56,30 +40,6 @@ export function BoosterActionsClient({ asset }: { asset: Asset }) {
 	// Stany dla edycji
 	const [newConviction, setNewConviction] = useState(asset.conviction || 50);
 	const [newRationale, setNewRationale] = useState(asset.rationale || "");
-
-	// Nowa, bezpieczna funkcja usuwania z zaawansowanymi Toastami
-	const handleDelete = async () => {
-		setIsPending(true);
-		try {
-			const res = await deleteAssetAction(asset.id);
-			if (res.success) {
-				toast.success("Usunięto pomyślnie", {
-					description: `Aktywo ${asset.name} zostało trwale wykasowane z portfela.`,
-				});
-				setIsDeleteDialogOpen(false); // Zamykamy modal po sukcesie
-			} else {
-				toast.error("Wystąpił błąd", {
-					description: res.error || "Nie udało się usunąć elementu.",
-				});
-			}
-		} catch (error) {
-			toast.error("Błąd krytyczny", {
-				description: "Wystąpił nieoczekiwany problem z połączeniem.",
-			});
-		} finally {
-			setIsPending(false);
-		}
-	};
 
 	const handleUpdate = async () => {
 		setIsPending(true);
@@ -138,7 +98,7 @@ export function BoosterActionsClient({ asset }: { asset: Asset }) {
 			{/* 1. DIALOG EDYCJI TEZY 																   */}
 			{/* ======================================================== */}
 			<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-				{/* ZMIANA: Dodane w-[95vw] dla ochrony na małych ekranach mobilnych */}
+				{/*  Dodane w-[95vw] dla ochrony na małych ekranach mobilnych */}
 				<DialogContent className="w-[95vw] max-w-md sm:max-w-md rounded-2xl bg-t-bg-panel border-t-border shadow-2xl p-6 sm:p-8">
 					<DialogHeader>
 						<DialogTitle className="text-xl font-black uppercase tracking-tight text-t-text-primary">
@@ -153,7 +113,7 @@ export function BoosterActionsClient({ asset }: { asset: Asset }) {
 						</DialogDescription>
 					</DialogHeader>
 
-					{/* ZMIANA: Zastąpiono 'grid' bezpieczniejszym 'flex flex-col' */}
+					{/*  Zastąpiono 'grid' bezpieczniejszym 'flex flex-col' */}
 					<div className="flex flex-col gap-6 py-4">
 						<div className="flex flex-col gap-4">
 							<div className="flex justify-between items-center">
@@ -170,7 +130,7 @@ export function BoosterActionsClient({ asset }: { asset: Asset }) {
 								max={100}
 								step={1}
 								onValueChange={(vals) => setNewConviction(vals[0])}
-								className="w-full py-2" // ZMIANA: wymuszone w-full
+								className="w-full py-2"
 							/>
 						</div>
 
@@ -181,7 +141,6 @@ export function BoosterActionsClient({ asset }: { asset: Asset }) {
 							<Textarea
 								value={newRationale}
 								onChange={(e) => setNewRationale(e.target.value)}
-								// ZMIANA: w-full i naprawione obramowanie by było spójne z resztą
 								className="w-full min-h-[120px] resize-none bg-black/5 dark:bg-white/5 border border-t-border-subtle focus:border-blue-500 rounded-xl px-4 py-3 text-sm text-t-text-primary"
 								placeholder="Dlaczego ta spółka podbije Twój wynik?"
 							/>
@@ -214,7 +173,7 @@ export function BoosterActionsClient({ asset }: { asset: Asset }) {
 				title="Potwierdź usunięcie"
 				description={`Czy na pewno chcesz bezpowrotnie usunąć aktywo ${asset.name} (${asset.ticker})? Tej operacji nie można cofnąć, a historia transakcji zostanie wykasowana.`}
 				onConfirm={async () => {
-					// Tutaj wrzucamy Twoją akcję. Modal zajmie się kółkiem ładowania!
+					// Tutaj wrzucamy akcję. Modal zajmie się kółkiem ładowania!
 					const res = await deleteAssetAction(asset.id);
 					if (res.success) {
 						toast.success("Usunięto pomyślnie", {

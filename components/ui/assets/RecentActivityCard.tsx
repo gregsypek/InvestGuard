@@ -1,8 +1,6 @@
 import { Asset } from "@/lib/types";
 import { COLORS } from "@/lib/constants";
-import { DeleteButton } from "@/components/DeleteButton";
 import { cn } from "@/lib/utils";
-import { deleteAsset } from "@/lib/actions/portfolio.actions";
 interface Props {
 	asset: Asset;
 	isHighlighted: boolean;
@@ -16,7 +14,7 @@ export default function AssetCard({ asset, isHighlighted, isDemo }: Props) {
 				"relative flex justify-between items-center p-3 md:p-4 rounded-xl border transition-all duration-300 group flex-1 min-w-[280px]",
 				isHighlighted
 					? "border-blue-500/30 bg-blue-500/5 shadow-[0_0_15px_rgba(59,130,246,0.1)]"
-					: "border-t-border bg-t-bg-panel hover:bg-t-hover", // ZMIANA
+					: "border-t-border bg-t-bg-panel hover:bg-t-hover",
 			)}
 		>
 			{/* NEONOWY WSKAŹNIK */}
@@ -61,14 +59,14 @@ export default function AssetCard({ asset, isHighlighted, isDemo }: Props) {
 					</p>
 				</div>
 				{/* ZMIANA: Kosz na śmieci jest dyskretnie wygaszony i podświetla się dopiero po najechaniu na kartę myszką */}
-				<div className="opacity-30 group-hover:opacity-100 transition-opacity duration-200">
+				{/* <div className="opacity-30 group-hover:opacity-100 transition-opacity duration-200">
 					<DeleteButton
 						id={asset.id}
 						onDelete={deleteAsset}
 						confirmMsg={`Usunąć ${asset.name}?`}
 						isDemo={isDemo}
 					/>
-				</div>
+				</div> */}
 			</div>
 		</div>
 	);

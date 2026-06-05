@@ -10,7 +10,7 @@ interface Props {
 	portfolioStatus: CategoryStatus[];
 	// EN: Add the new prop here to receive data from the Server Component
 	allPortfoliosWithCash: { id: string; name: string }[];
-	transactions: Transaction[]; // Dodaj to
+	transactions: Transaction[];
 
 	userName?: string | null;
 	isDemo?: boolean;

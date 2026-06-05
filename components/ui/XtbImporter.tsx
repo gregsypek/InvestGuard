@@ -256,9 +256,6 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 		}
 	};
 
-	// Pamiętaj o imporcie 'cn' jeśli go nie masz w tym pliku:
-	// import { cn } from "@/lib/utils";
-
 	return (
 		<div className="flex flex-col gap-8 animate-in fade-in duration-300">
 			{/* ========================================= */}
@@ -289,7 +286,7 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 						Wybierz lub upuść raport XTB
 					</span>
 					<span className="text-[10px] text-t-text-tertiary uppercase mt-1.5 tracking-widest font-medium">
-						Obsługiwane formaty: .XLSX, .CSV
+						Obsługiwane formaty: .XLSX
 					</span>
 				</label>
 			</div>

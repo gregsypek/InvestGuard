@@ -37,76 +37,100 @@ export function AdjustAssetModal({
 	const isValid =
 		newQuantity >= 0 && newInvestedCapital >= 0 && newCurrentValue >= 0;
 
+	const inputStyles =
+		"h-12 bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-blue-500 rounded-xl px-4 text-sm font-medium text-t-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed outline-none w-full";
+
 	return (
-		<div className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-			{/* HEADER */}
-			<div className="flex justify-between items-center p-4 border-b border-border bg-muted/30">
+		<div className="bg-t-bg-panel border border-t-border rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+			{/* ================= HEADER ================= */}
+			<div className="flex items-center justify-between p-6 border-b border-t-border-subtle">
 				<div>
-					<h2 className="font-bold text-lg">Korekta stanu</h2>
-					<p className="text-xs text-muted-foreground uppercase tracking-wider font-mono">
-						{asset.name} {asset.ticker ? `(${asset.ticker})` : ""}
+					<h2 className="text-lg font-black text-t-text-primary tracking-tight">
+						Korekta stanu
+					</h2>
+					<p className="text-[11px] text-t-text-tertiary uppercase tracking-widest font-bold mt-0.5">
+						{asset.name} {asset.ticker && `(${asset.ticker})`}
 					</p>
 				</div>
 				<button
 					onClick={onClose}
-					className="p-2 hover:bg-muted rounded-full transition-colors"
+					className="p-2 text-t-text-tertiary hover:text-blue-500 hover:bg-blue-500/10 rounded-full transition-all"
 				>
-					<X className="h-5 w-5 text-muted-foreground" />
+					<X className="h-5 w-5" />
 				</button>
 			</div>
 
-			{/* BODY */}
+			{/* ================= BODY ================= */}
 			<div className="p-6 space-y-6">
-				{/* Quantity */}
+				{/* Ilość */}
 				<div className="space-y-2">
-					<label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-						Faktyczna ilość (Sztuki)
+					<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+						Faktyczna ilość
 					</label>
-					<input
-						type="number"
-						min="0"
-						step="any"
-						value={newQuantity}
-						onChange={(e) => setNewQuantity(Number(e.target.value))}
-						className="w-full bg-background border border-border rounded-lg px-4 py-3 font-mono text-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-					/>
+					<div className="relative">
+						<input
+							type="number"
+							min="0"
+							step="any"
+							value={newQuantity}
+							onChange={(e) => setNewQuantity(Number(e.target.value))}
+							className={cn(inputStyles, "pr-12 font-mono")}
+							placeholder="0.00"
+						/>
+						<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+							SZT
+						</span>
+					</div>
 				</div>
 
+				{/* Grid: Wkład i Wycena */}
 				<div className="grid grid-cols-2 gap-4">
-					{/* Invested Capital */}
+					{/* Zainwestowano */}
 					<div className="space-y-2">
-						<label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-							Zainwestowano (PLN)
+						<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+							Zainwestowano
 						</label>
-						<input
-							type="number"
-							min="0"
-							step="0.01"
-							value={newInvestedCapital}
-							onChange={(e) => setNewInvestedCapital(Number(e.target.value))}
-							className="w-full bg-background border border-border rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-						/>
+						<div className="relative">
+							<input
+								type="number"
+								min="0"
+								step="0.01"
+								value={newInvestedCapital}
+								onChange={(e) => setNewInvestedCapital(Number(e.target.value))}
+								className={cn(inputStyles, "pr-12 font-mono")}
+								placeholder="0.00"
+							/>
+							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+								PLN
+							</span>
+						</div>
 					</div>
 
-					{/* Current Value */}
+					{/* Obecna Wartość */}
 					<div className="space-y-2">
-						<label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-							Obecna Wartość (PLN)
+						<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+							Obecna Wartość
 						</label>
-						<input
-							type="number"
-							min="0"
-							step="0.01"
-							value={newCurrentValue}
-							onChange={(e) => setNewCurrentValue(Number(e.target.value))}
-							className="w-full bg-background border border-border rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-						/>
+						<div className="relative">
+							<input
+								type="number"
+								min="0"
+								step="0.01"
+								value={newCurrentValue}
+								onChange={(e) => setNewCurrentValue(Number(e.target.value))}
+								className={cn(inputStyles, "pr-12 font-mono")}
+								placeholder="0.00"
+							/>
+							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+								PLN
+							</span>
+						</div>
 					</div>
 				</div>
 
-				{/* Note */}
+				{/* Notatka */}
 				<div className="space-y-2">
-					<label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+					<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
 						Powód korekty (Opcjonalnie)
 					</label>
 					<textarea
@@ -114,13 +138,13 @@ export function AdjustAssetModal({
 						value={note}
 						onChange={(e) => setNote(e.target.value)}
 						placeholder="Np. Podział akcji, poprawa błędu wprowadzania..."
-						className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+						className={cn(inputStyles, "min-h-[80px] py-3 resize-none")}
 					/>
 				</div>
 			</div>
 
-			{/* FOOTER */}
-			<div className="p-4 bg-muted/20 border-t border-border mt-2">
+			{/* ================= FOOTER ================= */}
+			<div className="p-6 bg-t-bg-base/30 dark:bg-black/20 border-t border-t-border-subtle">
 				<button
 					disabled={!isValid || isLoading}
 					onClick={() =>
@@ -132,10 +156,10 @@ export function AdjustAssetModal({
 						})
 					}
 					className={cn(
-						"w-full py-3 rounded-lg font-bold text-sm transition-all flex justify-center items-center gap-2",
+						"w-full h-12 rounded-xl font-bold uppercase tracking-widest text-[11px] flex justify-center items-center gap-2 shadow-md transition-all",
 						isValid && !isLoading
-							? "bg-blue-500 hover:bg-blue-600 text-white shadow-md shadow-blue-500/20"
-							: "bg-muted text-muted-foreground cursor-not-allowed",
+							? "bg-blue-600 hover:bg-blue-500 text-white"
+							: "bg-black/5 dark:bg-white/5 text-t-text-tertiary opacity-50 cursor-not-allowed",
 					)}
 				>
 					{isLoading ? (

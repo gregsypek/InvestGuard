@@ -1,12 +1,11 @@
 "use client";
 
 import { Asset, PortfolioWithAssets } from "@/lib/types";
-import { BriefcaseBusiness, Lock, Pencil, Trash2, Wallet2 } from "lucide-react";
+import { BriefcaseBusiness, Lock, Pencil, Wallet2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Button } from "./ui/button";
 import { DeleteButton } from "./DeleteButton";
-// import { DeleteButton } from "./DeleteButton";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import React from "react";

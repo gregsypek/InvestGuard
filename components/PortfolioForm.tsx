@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Pencil } from "lucide-react";
 import { SubmitButton } from "./ui/SubmitButton";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { inputStyles } from "@/lib/constants";
 import { toast } from "sonner";
 import { useEffect } from "react";
@@ -134,7 +135,13 @@ export default function PortfolioForm({
 		}
 	}
 
-	// 4. Helper to avoid code repetition and fix type errors in Inputs
+	// ... (pamiętaj o imporcie cn z @/lib/utils jeśli jeszcze go tam nie ma)
+
+	// Wspólne style dla wszystkich inputów w formularzach
+	const inputStyles =
+		"h-12 bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-blue-500 rounded-xl px-4 text-sm font-medium text-t-text-primary transition-colors";
+
+	// 4. Helper z ulepszonym designem dla pól docelowych (%)
 	const renderTargetField = (
 		name: keyof PortfolioFormValues,
 		label: string,
@@ -144,140 +151,170 @@ export default function PortfolioForm({
 			name={name}
 			render={({ field }) => (
 				<FormItem>
-					<FormLabel className="text-xs">{label}</FormLabel>
+					<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+						{label}
+					</FormLabel>
 					<FormControl>
-						<Input
-							type="number"
-							{...field}
-							// Casting field.value fixes the 'unknown' TypeScript error
-							value={(field.value as number) ?? 0}
-							className={inputStyles}
-						/>
+						<div className="relative">
+							<Input
+								type="number"
+								{...field}
+								value={(field.value as number) ?? 0}
+								className={cn(inputStyles, "pr-8 font-mono")} // font-mono dla lepszej czytelności cyfr
+							/>
+							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-t-text-tertiary pointer-events-none">
+								%
+							</span>
+						</div>
 					</FormControl>
-					<FormMessage />
+					<FormMessage className="text-xs text-rose-500" />
 				</FormItem>
 			)}
 		/>
 	);
 
 	return (
-		<Card className="bg-background border-none shadow-none space-y-6">
-			<CustomCardHeader
-				className="ps-0"
-				icon={Pencil}
-				title={
-					isEditMode
-						? `Formularz do edycji portfela -  ${initialData?.name} `
-						: "Formularz do tworzenia nowego Portfela"
-				}
-			/>
-			<CardContent className="px-6">
-				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-							<FormField
-								control={form.control}
-								name="name"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Nazwa Portfela</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="np. Emerytalny"
-												{...field}
-												className={inputStyles}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							<FormField
-								control={form.control}
-								name="goal"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Cel finansowy (PLN)</FormLabel>
-										<FormControl>
+		<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-6 sm:p-8 shadow-sm">
+			{/* Zamiast starego CustomCardHeader używamy zintegrowanego, eleganckiego nagłówka */}
+			{/* <div className="mb-8 border-b border-t-border-subtle pb-6">
+				<h2 className="text-2xl font-black tracking-tight text-t-text-primary flex items-center gap-3">
+					<Pencil className="h-6 w-6 text-blue-500" />
+					{isEditMode ? `Edycja: ${initialData?.name}` : "Nowy Portfel"}
+				</h2>
+				<p className="text-sm font-medium text-t-text-tertiary mt-1">
+					{isEditMode
+						? "Zaktualizuj założenia i alokację dla swojego portfela."
+						: "Zdefiniuj podstawowe parametry i docelową alokację dla nowego portfela inwestycyjnego."}
+				</p>
+			</div> */}
+
+			<Form {...form}>
+				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+					{/* GŁÓWNE DANE */}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+						<FormField
+							control={form.control}
+							name="name"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+										Nazwa Portfela
+									</FormLabel>
+									<FormControl>
+										<Input
+											placeholder="np. Emerytalny"
+											{...field}
+											className={inputStyles}
+										/>
+									</FormControl>
+									<FormMessage className="text-xs text-rose-500" />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							control={form.control}
+							name="goal"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+										Cel finansowy
+									</FormLabel>
+									<FormControl>
+										<div className="relative">
 											<Input
 												type="number"
 												{...field}
 												value={(field.value as number) ?? 0}
-												className={inputStyles}
+												className={cn(inputStyles, "pr-12 font-mono")}
 											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-						</div>
-
-						<FormField
-							control={form.control}
-							name="description"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Opis strategii</FormLabel>
-									<FormControl>
-										<Textarea
-											placeholder="Twoje założenia inwestycyjne..."
-											{...field}
-											// Override the value to ensure it's never null
-											value={field.value ?? ""}
-											className={inputStyles}
-										/>
+											<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary pointer-events-none">
+												PLN
+											</span>
+										</div>
 									</FormControl>
-									<FormMessage />
+									<FormMessage className="text-xs text-rose-500" />
 								</FormItem>
 							)}
 						/>
+					</div>
 
-						{/* Strategy Section */}
-						<div className="mt-8 space-y-4 pt-8 border-t border-border ">
-							<div className="flex justify-between items-center">
-								<div>
-									<h3 className="text-lg font-semibold">
-										Alokacja Celowa (Target Allocation)
-									</h3>
-									<p className="text-sm text-muted-foreground">
-										Zdefiniuj strategię w %
-									</p>
-								</div>
-								<div
-									className={`px-3 py-1 rounded-full text-sm font-bold ${totalAllocation === 100 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
-								>
-									Suma: {totalAllocation}% / 100%
-								</div>
-							</div>
+					<FormField
+						control={form.control}
+						name="description"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+									Opis strategii
+								</FormLabel>
+								<FormControl>
+									<Textarea
+										placeholder="Jakie są Twoje główne założenia inwestycyjne?"
+										{...field}
+										value={field.value ?? ""}
+										className={cn(
+											inputStyles,
+											"min-h-[120px] resize-none py-3",
+										)}
+									/>
+								</FormControl>
+								<FormMessage className="text-xs text-rose-500" />
+							</FormItem>
+						)}
+					/>
 
-							<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-								{renderTargetField("targetDeveloped", "Developed %")}
-								{renderTargetField("targetEmerging", "Emerging %")}
-								{renderTargetField("targetBonds", "Bonds %")}
-								{renderTargetField("targetGold", "Gold %")}
-								{renderTargetField("targetBooster", "Booster %")}
-								{renderTargetField("targetCash", "Cash %")}
-								{renderTargetField("targetCrypto", "Crypto %")}
-								{renderTargetField("targetCommodities", "Commodities %")}
-							</div>
-
-							{totalAllocation !== 100 && (
-								<p className="text-xs text-amber-600 font-medium italic">
-									⚠️ Uwaga: Suma alokacji nie wynosi 100%. Sprawdź swoje
-									założenia.
+					{/* SEKCJA ALOKACJI CELOWEJ */}
+					<div className="mt-8 pt-8 border-t border-t-border-subtle space-y-6">
+						<div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+							<div>
+								<h3 className="text-lg font-bold text-t-text-primary">
+									Alokacja Celowa (Target Allocation)
+								</h3>
+								<p className="text-xs font-medium text-t-text-tertiary mt-1">
+									Zdefiniuj idealny podział procentowy dla Twojego kapitału.
 								</p>
-							)}
+							</div>
+
+							{/* Badzik z sumą (Zgodny z kolorami Systemu) */}
+							<div
+								className={cn(
+									"px-4 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-black border flex items-center justify-center whitespace-nowrap",
+									totalAllocation === 100
+										? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+										: "bg-rose-500/10 text-rose-600 dark:text-rose-500 border-rose-500/20",
+								)}
+							>
+								Suma: {totalAllocation}% / 100%
+							</div>
 						</div>
 
-						<div className="flex justify-end pt-4">
-							<SubmitButton
-								label={isEditMode ? "Aktualizuj Portfel" : "Stwórz Portfel"}
-								isLoading={form.formState.isSubmitting}
-							/>
+						<div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-t-bg-base/30 dark:bg-black/20 p-4 rounded-xl border border-t-border-subtle">
+							{renderTargetField("targetDeveloped", "Developed")}
+							{renderTargetField("targetEmerging", "Emerging")}
+							{renderTargetField("targetBonds", "Obligacje")}
+							{renderTargetField("targetGold", "Złoto")}
+							{renderTargetField("targetBooster", "Booster (Alpha)")}
+							{renderTargetField("targetCash", "Gotówka")}
+							{renderTargetField("targetCrypto", "Krypto")}
+							{renderTargetField("targetCommodities", "Surowce")}
 						</div>
-					</form>
-				</Form>
-			</CardContent>
-		</Card>
+
+						{totalAllocation !== 100 && (
+							<p className="text-[11px] text-rose-500 font-bold uppercase tracking-wider flex items-center gap-1.5 bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">
+								<span className="text-lg">⚠️</span> Suma alokacji musi wynosić
+								dokładnie 100%. Sprawdź swoje założenia.
+							</p>
+						)}
+					</div>
+
+					<div className="flex justify-end pt-6 border-t border-t-border-subtle">
+						{/* Upewnij się, że Twój SubmitButton przyjmuje className lub jest ostylowany tak jak reszta (np. niebieski bg-blue-600) */}
+						<SubmitButton
+							label={isEditMode ? "Aktualizuj Portfel" : "Stwórz Portfel"}
+							isLoading={form.formState.isSubmitting}
+						/>
+					</div>
+				</form>
+			</Form>
+		</div>
 	);
 }

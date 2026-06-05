@@ -133,9 +133,8 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 								Brak aktywności
 							</p>
 							<p className="text-xs text-t-text-tertiary mt-2 max-w-md">
-								nominalValue: bond.currentValue ?? null, Twój portfel obligacji
-								jest obecnie pusty. Kliknij `&quot;`Dodaj Serię`&quot;`, aby
-								zarejestrować pierwszą inwestycję.
+								Twój portfel obligacji jest obecnie pusty. Kliknij &quot;Dodaj
+								Serię&quot;, aby zarejestrować pierwszą inwestycję.
 							</p>
 						</div>
 					) : (

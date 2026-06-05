@@ -1,10 +1,4 @@
-import {
-	Coins,
-	FileText,
-	Form,
-	LibrarySquareIcon,
-	PieChart,
-} from "lucide-react";
+import { Coins, FileText, LibrarySquareIcon } from "lucide-react";
 import {
 	getPortfolioAssets,
 	getPortfolioCategories,
@@ -13,10 +7,7 @@ import {
 import AddAssetForm from "@/components/ui/assets/AddAssetForm";
 import { BondImporter } from "@/components/ui/BondImporter";
 import { QuickDepositForm } from "@/components/ui/QuickDepositForm";
-import { SafeActionButton } from "@/components/ui/SafeActionButton";
-import { SectionHeader } from "@/components/shared/SectionHeader";
 import { SectionLayout } from "@/components/shared/SectionLayout";
-import { SubHeader } from "@/components/shared/SubHeader";
 import { XtbImporter } from "@/components/ui/XtbImporter";
 
 interface Props {
@@ -37,8 +28,6 @@ export default async function AddAssetPage({ params }: Props) {
 		? categoriesResult.categories
 		: [];
 	const assets = assetsResult.success ? assetsResult.data : [];
-	// Pamiętaj o importach ikon, jeśli jakichś brakuje, np.:
-	// import { Coins, FileText, LibrarySquareIcon, UploadCloud } from "lucide-react";
 
 	return (
 		<div className="space-y-12 pb-20">

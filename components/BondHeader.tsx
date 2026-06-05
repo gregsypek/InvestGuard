@@ -8,7 +8,6 @@ import {
 
 import Link from "next/link";
 import { ValueCard } from "./shared/ValueCard";
-import { cn } from "@/lib/utils";
 
 export interface BondHeaderStats {
 	totalInvested: string;

@@ -68,7 +68,7 @@ export const DeleteButton = forwardRef<HTMLButtonElement, DeleteButtonProps>(
 			try {
 				const result = await onDelete(id);
 
-				// Weryfikacja oparta o Twój oryginalny system obiektów { success, error }
+				// Weryfikacja oparta o oryginalny system obiektów { success, error }
 				if (result && result.success) {
 					toast.success("Usunięto pomyślnie!");
 					setIsOpen(false);
@@ -172,5 +172,8 @@ export const DeleteButton = forwardRef<HTMLButtonElement, DeleteButtonProps>(
 		);
 	},
 );
+
+// EN: Adding display name is a good practice for forwardRef components
+// UI: Dodanie displayName to dobra praktyka przy komponentach forwardRef
 
 DeleteButton.displayName = "DeleteButton";

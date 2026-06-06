@@ -26,25 +26,37 @@ export default async function ActivityPage({
 		search?: string;
 		category?: string;
 		sort?: string;
-		portfolio?: string; // <-- ZMIANA 1: Nowy parametr URL
+		portfolio?: string;
 	}>;
 }) {
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
 
-	const portfolios = await db.portfolio.findMany({
+	// =================================================================
+	// 1. OPTYMALIZACJA: Pobieramy tylko ID i Nazwy portfeli (do filtra).
+	// Zero aktywów i historii! (Zapytanie szybsze o 99%)
+	// =================================================================
+	const userPortfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
-		include: { assets: true, transactionHistories: true },
+		select: { id: true, name: true },
 		orderBy: { createdAt: "desc" },
 	});
+
+	// 2. Jeśli nie ma portfeli, rzucamy pusty ekran ZANIM obciążymy bazę historią
+	if (userPortfolios.length === 0) {
+		return <PortfolioEmptyState variant="PORTFOLIOS" />;
+	}
 
 	const resolvedParams = await searchParams;
 	const currentPage = Number(resolvedParams.page) || 1;
 	const search = resolvedParams.search || "";
 	const category = resolvedParams.category || "ALL";
 	const sort = resolvedParams.sort || "date_desc";
-	const portfolioFilter = resolvedParams.portfolio || "ALL"; // <-- ZMIANA 2: Odczyt
+	const portfolioFilter = resolvedParams.portfolio || "ALL";
 
+	// =================================================================
+	// 3. POBIERANIE TRANSAKCJI (Bezpieczne, oparte o sesję)
+	// =================================================================
 	const result = await getTransactionHistory(
 		currentPage,
 		10,
@@ -52,7 +64,7 @@ export default async function ActivityPage({
 		search,
 		category,
 		sort,
-		portfolioFilter, // <-- ZMIANA 3: Wysyłamy do bazy
+		portfolioFilter,
 	);
 
 	if (!result.success || !result.data) {
@@ -65,21 +77,17 @@ export default async function ActivityPage({
 			</div>
 		);
 	}
-	if (portfolios.length === 0) {
-		return <PortfolioEmptyState variant="PORTFOLIOS" />;
-	}
 
-	// ZMIANA: Sprawdzamy, czy użytkownik użył wyszukiwarki lub filtra
-	const hasActiveFilters = search !== "" || category !== "ALL";
+	// ZMIANA: Sprawdzamy wszystkie aktywne filtry (w tym portfolio)
+	const hasActiveFilters =
+		search !== "" || category !== "ALL" || portfolioFilter !== "ALL";
 
-	// Pokazujemy całkowicie pusty stan TYLKO wtedy, gdy wynik to 0 I NIE MA aktywnych filtrów
 	if (result.meta.totalCount === 0 && !hasActiveFilters) {
 		return <PortfolioEmptyState variant="ACTIVITY" />;
 	}
 
 	const { data: transactions, meta } = result;
-	// EN: Helper function to build pagination URLs while preserving current filters
-	// ZMIANA 4: Uzupełniamy funkcję do paginacji o nowy parametr
+
 	const createPageUrl = (pageNumber: number) => {
 		const params = new URLSearchParams();
 		if (resolvedParams.search) params.set("search", resolvedParams.search);
@@ -87,7 +95,7 @@ export default async function ActivityPage({
 			params.set("category", resolvedParams.category);
 		if (resolvedParams.sort) params.set("sort", resolvedParams.sort);
 		if (resolvedParams.portfolio)
-			params.set("portfolio", resolvedParams.portfolio); // Dodane
+			params.set("portfolio", resolvedParams.portfolio);
 		params.set("page", pageNumber.toString());
 		return `/activity?${params.toString()}`;
 	};
@@ -117,7 +125,10 @@ export default async function ActivityPage({
 				description="Tabela zawiera szczegółową historię Twoich zakupów, sprzedaży, wpłat gotówkowych i dywidend. Dzięki niej możesz dokładnie śledzić przepływ kapitału pomiędzy portfelami oraz wyciągać wnioski na podstawie historycznych decyzji (przeglądając notatki)."
 				action={<ExportReport data={transactions} />}
 			>
-				<ActivityTable transactions={transactions} portfolios={portfolios} />
+				<ActivityTable
+					transactions={transactions}
+					portfolios={userPortfolios}
+				/>
 			</SectionLayout>
 
 			{/* PAGINACJA */}

@@ -14,11 +14,7 @@ interface Props {
 	params: Promise<{ id: string }>;
 }
 
-export default async function EditPortfolioPage({
-	params,
-}: {
-	params: Promise<{ id: string }>;
-}) {
+export default async function EditPortfolioPage({ params }: Props) {
 	// 1. Zabezpieczenie sesji
 	const session = await auth();
 	if (!session?.user?.id) {

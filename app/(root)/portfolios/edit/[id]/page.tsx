@@ -1,36 +1,54 @@
 import { ChevronLeft, Settings2 } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
 
 import Link from "next/link";
 import PortfolioForm from "@/components/PortfolioForm";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { SectionLayout } from "@/components/shared/SectionLayout";
+import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getGlobalStats } from "@/lib/calculations";
-import { notFound } from "next/navigation";
 
 interface Props {
 	params: Promise<{ id: string }>;
 }
 
-export default async function EditPortfolioPage({ params }: Props) {
+export default async function EditPortfolioPage({
+	params,
+}: {
+	params: Promise<{ id: string }>;
+}) {
+	// 1. Zabezpieczenie sesji
+	const session = await auth();
+	if (!session?.user?.id) {
+		redirect("/sign-in");
+	}
+
 	const { id } = await params;
 
-	// 1. Fetch the specific portfolio for the form
+	// 2. ZABEZPIECZENIE: Pobieramy portfel TYLKO jeśli należy do tego usera
 	const portfolio = await db.portfolio.findUnique({
-		where: { id },
+		where: {
+			id: id,
+			userId: session.user.id,
+		},
 	});
 
-	// 2. Fetch all portfolios to display global stats in the header
-	const allPortfolios = await db.portfolio.findMany({
-		include: { assets: true, transactionHistories: true },
-	});
-
-	// 3. Handle 404 if portfolio doesn't exist
+	// Jeśli ktoś wpisał losowe ID lub ID cudzego portfela -> 404
 	if (!portfolio) {
 		notFound();
 	}
-	// 4. Calculate global context stats
+
+	// 3. ZABEZPIECZENIE: Pobieramy do statystyk TYLKO portfele tego usera
+	const allPortfolios = await db.portfolio.findMany({
+		where: {
+			userId: session.user.id,
+		},
+		include: { assets: true, transactionHistories: true },
+	});
+
+	// 4. Kalkulacja bezpiecznych danych
 	const { totalValue, portfoliosCount, assetsCount } =
 		getGlobalStats(allPortfolios);
 

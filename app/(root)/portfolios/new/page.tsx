@@ -4,15 +4,29 @@ import Link from "next/link";
 import PortfolioForm from "@/components/PortfolioForm";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { SectionLayout } from "@/components/shared/SectionLayout";
+import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getGlobalStats } from "@/lib/calculations";
+import { redirect } from "next/navigation";
 
 export default async function NewPortfolioPage() {
+	// 1. Zabezpieczenie strony i pobranie ID użytkownika
+	const session = await auth();
+
+	if (!session?.user?.id) {
+		redirect("/sign-in");
+	}
+
+	// 2. Pobranie TYLKO portfeli przypisanych do tego użytkownika
 	const allPortfolios = await db.portfolio.findMany({
+		where: {
+			userId: session.user.id,
+		},
 		include: { assets: true, transactionHistories: true },
 	});
 
+	// Funkcja getGlobalStats dostaje teraz bezpieczne dane!
 	const { totalValue, portfoliosCount, assetsCount } =
 		getGlobalStats(allPortfolios);
 

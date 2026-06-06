@@ -1,7 +1,5 @@
-import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { getActivePortfolioId } from "@/lib/session";
+import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 import { redirect } from "next/navigation";
 
 export default async function DashboardRootPage({
@@ -16,32 +14,21 @@ export default async function DashboardRootPage({
 		redirect("/sign-in");
 	}
 
-	// 2. Pobieramy ID z ciasteczka/URL
-	const rawPortfolioId = await getActivePortfolioId(searchParams);
-
-	// 3. POBIERAMY LISTĘ PORTFELI UŻYTKOWNIKA
-	// To jest kluczowe, by sprawdzić czy ID jest poprawne
-	const userPortfolios = await db.portfolio.findMany({
-		where: { userId: session.user.id },
-		select: { id: true },
+	// 2. Strażnik załatwia WSZYSTKO (sprawdza URL, ciasteczka i czy user ma portfele)
+	const { portfolioId, errorComponent } = await getGuardedPortfolio({
+		searchParams,
+		userId: session.user.id,
 	});
 
-	// 4. WALIDACJA: Czy portfolioId z ciasteczka faktycznie istnieje w bazie?
-	const portfolioExists = userPortfolios.some((p) => p.id === rawPortfolioId);
-	const validPortfolioId = portfolioExists ? rawPortfolioId : null;
-
-	// 5. SCENARIUSZ: Brak jakichkolwiek portfeli
-	if (userPortfolios.length === 0) {
-		return (
-			<main className="container mx-auto">
-				<PortfolioEmptyState variant="PORTFOLIOS" />
-			</main>
-		);
+	// 3. Jeśli brakuje portfela, strażnik wyrzuci idealny ekran (np. PORTFOLIOS)
+	if (errorComponent) {
+		return <main className="container mx-auto">{errorComponent}</main>;
 	}
 
-	// 7. Dopiero gdy mamy PEWNOŚĆ, że ID istnieje w bazie danych, robimy redirect
-	if (validPortfolioId) {
-		redirect(`/dashboard/${validPortfolioId}`);
+	// 4. Dopiero gdy mamy PEWNOŚĆ, że ID istnieje, robimy bezpieczny redirect
+	if (portfolioId) {
+		redirect(`/dashboard/${portfolioId}`);
 	}
+
 	return null;
 }

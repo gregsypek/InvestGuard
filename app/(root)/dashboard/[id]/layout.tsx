@@ -1,9 +1,11 @@
+import { notFound, redirect } from "next/navigation";
+
 import { DashboardBreadcrumbs } from "@/components/DashboardBreadcrumbs";
 import DashboardGoal from "@/components/DashboardGoal";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getPortfolioStats } from "@/lib/calculations";
-import { notFound } from "next/navigation";
 
 export default async function PortfolioLayout({
 	children,
@@ -12,23 +14,29 @@ export default async function PortfolioLayout({
 	children: React.ReactNode;
 	params: Promise<{ id: string }>;
 }) {
+	const session = await auth();
+	if (!session?.user?.id) redirect("/sign-in");
+
 	const { id } = await params;
 
-	// 1. Fetch the portfolio from the database
+	// 1. ZABEZPIECZENIE: Upewniamy się, że portfel należy do TEGO użytkownika
 	const portfolio = await db.portfolio.findUnique({
-		where: { id },
+		where: {
+			id,
+			userId: session.user.id,
+		},
 		include: {
 			assets: true,
 			transactionHistories: true,
 		},
 	});
 
-	// 2. Return notFound if the portfolio does not exist
+	// 2. Jeśli nie istnieje (lub to nie jego portfel) -> wyrzucamy 404
 	if (!portfolio) {
 		notFound();
 	}
 
-	// 3. Calculate portfolio statistics
+	// 3. Obliczenia statystyk
 	const { name, totalValue, progress, remaining, goal } =
 		getPortfolioStats(portfolio);
 

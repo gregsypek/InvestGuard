@@ -10,7 +10,7 @@ import {
 import { CustomCardHeader } from "@/components/shared/CustomCardHeader";
 import HeaderDemo from "@/components/HeaderDemo";
 import { PlanCard } from "@/components/planner/PlanCard";
-import PlannerForm from "@/app/(root)/planner/PlannerForm";
+import PlannerForm from "@/components/planner/PlannerForm";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
 const STRATEGIES = {

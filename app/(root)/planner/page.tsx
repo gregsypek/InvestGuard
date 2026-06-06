@@ -1,14 +1,13 @@
 import { PiggyBank, PlusSquare, TrendingUp } from "lucide-react";
 
 import { GoalProjectionChart } from "@/components/planner/GoalProjectionChart";
-import PlannerForm from "./PlannerForm";
+import PlannerForm from "@/components/planner/PlannerForm";
 import { PlannerHeader } from "@/components/PlanerHeader";
 import { PlannerList } from "@/components/planner/PlanenerList";
-import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { getActivePortfolioId } from "@/lib/session";
+import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 import { redirect } from "next/navigation";
 
 interface Props {
@@ -21,60 +20,58 @@ export default async function PlannerPage({ searchParams }: Props) {
 	if (!session?.user?.id) {
 		redirect("/sign-in");
 	}
-	// 1. Pobieramy tylko portfele zalogowanego użytkownika
-	const portfolios = await db.portfolio.findMany({
-		where: { userId: session.user.id },
-		include: { assets: true }, // Kluczowe dla obliczeń currentPortfolioValue
+
+	// =====================================================================
+	// 1. STRAŻNIK: Pobiera konkretny portfel i obsługuje wszystkie błędy
+	// =====================================================================
+	const { portfolio, errorComponent } = await getGuardedPortfolio({
+		searchParams,
+		userId: session.user.id,
 	});
 
-	// EN: Resolve portfolioId from URL or fallback to cookies for "Add Asset" context
-	const portfolioId = await getActivePortfolioId(searchParams);
-
-	// 2. Obsługa pustego stanu: Jeśli brak portfeli, nie ma gdzie planować
-	if (portfolios.length === 0) {
-		return <PortfolioEmptyState variant="PORTFOLIOS" />;
+	// Jeśli użytkownik nie ma portfeli, nie wybrał żadnego, lub wpisał złe ID -
+	// Strażnik automatycznie zaserwuje odpowiedni wariant <PortfolioEmptyState />
+	if (errorComponent || !portfolio) {
+		return errorComponent;
 	}
 
-	if (!portfolioId) {
-		return <PortfolioEmptyState variant="NOT_SELECTED" />;
-	}
-	// 3. Pobieramy plany przypisane do portfeli użytkownika
+	const allUserPortfolios = await db.portfolio.findMany({
+		where: { userId: session.user.id },
+		select: { id: true, name: true }, // Pobieramy absolutne minimum do dropdownu
+	});
+
+	// =====================================================================
+	// 2. POBIERANIE PLANÓW INWESTYCYJNYCH (Tylko dla tego portfela)
+	// =====================================================================
+	// ZMIANA: Filtrujemy plany stricte po id aktywnego portfela,
+	// aby nie mieszać planów z innych portfeli tego samego użytkownika.
 	const investmentPlans = await db.investmentPlan.findMany({
 		where: {
+			portfolioId: portfolio.id,
 			isExecuted: false,
-			portfolio: {
-				userId: session.user.id, // Filtrowanie planów po właścicielu portfela
-			},
 		},
-		include: { portfolio: true },
 	});
 
+	// =====================================================================
+	// 3. OBLICZENIA DLA WYBRANEGO PORTFELA
+	// =====================================================================
+
+	// Plany i miesięczne wpłaty
 	const totalPlannedValue = investmentPlans.reduce(
-		(sum, plan) => sum + plan.value,
+		(sum, plan) => sum + Number(plan.value),
 		0,
 	);
 	const plannedCount = investmentPlans.length;
+	const monthlyPlanned = totalPlannedValue; // Uproszczenie  kodu
 
-	// 1. Znajdź wybrany portfel
-	const selectedPortfolio =
-		portfolios.find((p) => p.id === portfolioId) || portfolios[0];
-
-	// 2. OBLICZENIA (Poprawione nazwy pól i typowanie)
-
-	// Wartość aktualna
-	const currentPortfolioValue = selectedPortfolio.assets.reduce(
-		(sum: number, a) => sum + Number(a.currentValue),
+	// Wartość aktualna aktywów (Strażnik pobrał już assets w pamięci)
+	const currentPortfolioValue = portfolio.assets.reduce(
+		(sum, a) => sum + Number(a.currentValue),
 		0,
 	);
 
-	// Cel - używamy 'goal' zgodnie z Twoim schematem Zod
-	const goalValue = Number(selectedPortfolio.goal) || 100000;
-
-	// Miesięczne wpłaty - używamy 'value' zamiast 'amount'
-	const monthlyPlanned = investmentPlans.reduce(
-		(sum: number, p) => sum + Number(p.value), // Zmieniono p.amount na p.value
-		0,
-	);
+	// Cel portfela (zabezpieczenie na wypadek braku)
+	const goalValue = Number(portfolio.goal) || 100000;
 
 	return (
 		<div>
@@ -105,8 +102,8 @@ export default async function PlannerPage({ searchParams }: Props) {
 				{/* Delikatny kontener, aby formularz ładnie odcinał się od tła strony */}
 				<div className="bg-white/2 dark:bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 lg:p-8 shadow-sm">
 					<PlannerForm
-						portfolios={portfolios}
-						defaultPortfolioId={portfolioId ?? undefined}
+						portfolios={allUserPortfolios}
+						defaultPortfolioId={portfolio.id}
 					/>
 				</div>
 			</SectionLayout>

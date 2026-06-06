@@ -9,6 +9,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import React from "react";
 
 // EN: Added PLANNER to variants
 // UI: Dodaliśmy PLANNER do dostępnych wariantów
@@ -116,42 +117,59 @@ export default function PortfolioEmptyState({
 		: "/portfolios";
 
 	return (
-		<div className="flex flex-col items-center justify-center h-full  text-center space-y-6 max-w-md mx-auto ">
+		<div className="flex flex-col items-center justify-center min-h-[60vh] w-full px-4 animate-in fade-in zoom-in duration-700">
+			{/* 1. Subtelna sekcja powitalna */}
 			{userName && variant !== "NOT_FOUND" && (
-				<div className="animate-in fade-in slide-in-from-top-4 duration-700">
-					<p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">
-						Witaj, {userName} 👋
+				<div className="mb-8 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+					<p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
+						Witaj, {userName}
 					</p>
 				</div>
 			)}
 
-			<div className="p-5 bg-muted/50 rounded-full animate-in fade-in zoom-in duration-500 shadow-inner">
-				{config.icon}
+			{/* 2. Ikona w nowoczesnym kontenerze */}
+			<div className="mb-8 p-6 bg-t-bg-panel border border-t-border-subtle rounded-3xl shadow-xl shadow-black/5">
+				<div className="text-t-text-secondary">
+					{React.isValidElement(config.icon)
+						? React.cloneElement(
+								config.icon as React.ReactElement<
+									React.SVGProps<SVGSVGElement>
+								>,
+								{
+									className: "h-12 w-12 stroke-[1.5]",
+								},
+							)
+						: config.icon}
+				</div>
 			</div>
 
-			<div className="space-y-2">
-				<h2 className="text-3xl font-black tracking-tighter">{displayTitle}</h2>
-				<p className="text-muted-foreground text-sm leading-relaxed">
+			{/* 3. Tekst z nowoczesną typografią */}
+			<div className="max-w-sm text-center mb-10 space-y-3">
+				<h2 className="text-4xl font-black tracking-tighter text-t-text-primary">
+					{displayTitle}
+				</h2>
+				<p className="text-sm font-medium text-t-text-tertiary leading-relaxed">
 					{displayDescription}
 				</p>
 			</div>
 
-			<div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto pt-4">
+			{/* 4. Przycisk w stylu Premium */}
+			<div className="flex flex-col sm:flex-row gap-3">
 				{(variant === "NOT_SELECTED" ||
 					variant === "NOT_FOUND" ||
 					variant === "PLANNER") && (
 					<Button
 						asChild
-						variant="default"
-						className="gap-2 shadow-lg hover:shadow-xl transition-all"
+						className="h-12 px-8 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-blue-500/20 transition-all hover:scale-105"
 					>
-						<Link href={portfoliosHref}>
-							<Wallet className="h-4 w-4" />
-							Zarządzaj portfelami
-						</Link>
+						<Link href={portfoliosHref}>Zarządzaj Portfelami</Link>
 					</Button>
 				)}
-				{config.showButton}
+
+				{variant === "PORTFOLIOS" && <AddButton />}
+				{variant === "BONDS" && portfolioId && (
+					<AddBondButton portfolioId={portfolioId} />
+				)}
 			</div>
 		</div>
 	);

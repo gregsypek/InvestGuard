@@ -1,33 +1,19 @@
-import {
-	ChartArea,
-	ListOrdered,
-	Rocket,
-	Target,
-	TrendingUp,
-	Wrench,
-} from "lucide-react";
+import { ChartArea, ListOrdered, Rocket, Wrench } from "lucide-react";
 import {
 	getPortfolioAssets,
 	getPortfolioCategories,
 } from "@/lib/actions/portfolio.actions";
 
-import AddButton from "@/components/ui/AddButton";
 import { AlphaHeader } from "@/components/AlphaHeader";
 import AlphaLedgerTable from "@/components/AlphaLedgerTable";
-import { BondStatCard } from "@/components/shared/BondStatCard";
 import { Button } from "@/components/ui/button";
-import { Category } from "@prisma/client";
 // import type { Category } from "@prisma/client";
 import { InteractiveChartSection } from "@/components/InteractiveChartSection";
 import Link from "next/link";
 import { MigrationTool } from "@/components/alpha/MigrationTool";
-import PortfolioEmptyState from "@/components/PortfolioEmptyState";
-import { SectionHeader } from "@/components/shared/SectionHeader";
 import { SectionLayout } from "@/components/shared/SectionLayout";
-import { SubHeader } from "@/components/shared/SubHeader";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { getActivePortfolioId } from "@/lib/session";
+import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 import { redirect } from "next/navigation";
 
 export default async function AlphaSelectionPage({
@@ -35,137 +21,28 @@ export default async function AlphaSelectionPage({
 }: {
 	searchParams: Promise<{ portfolioId?: string }>;
 }) {
-	const activeId = await getActivePortfolioId(searchParams);
-	// if (!activeId) redirect("/dashboard");
-	if (!activeId) {
-		return <PortfolioEmptyState variant="PORTFOLIOS" />;
-	}
-
-	// Jeśli nie ma żadnego portfela, kierujemy do domyślnego dashboardu,
-	// ale zakładamy, że użytkownik Alpha ma już portfel.
-	const targetUrl = activeId
-		? `/dashboard/${activeId}/add-asset?cat=BOOSTER`
-		: "/dashboard";
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
 
-	// 1. SUMA CAŁEGO PORTFELA (Mianownik: Obligacje + Gotówka + Alpha)
-	const globalTotalResult = await db.asset.aggregate({
-		where: { portfolioId: activeId },
-		_sum: { currentValue: true },
-	});
-	const globalTotalValue = globalTotalResult._sum.currentValue || 1;
-
-	// 2. AKTYWA ALPHA (Licznik: Tylko wybrane kategorie w tym portfelu)
-	const alphaCategories = ["BOOSTER"];
-	// console.log("🚀 ~ AlphaSelectionPage ~ alphaCategories:", alphaCategories);
-	const alphaAssets = await db.asset.findMany({
-		where: {
-			portfolioId: activeId,
-			category: { in: alphaCategories as Category[] },
-		},
-		orderBy: { currentValue: "desc" },
+	// =====================================================================
+	// 1. WYWOŁANIE STRAŻNIKA (Pobiera portfel, aktywa i historię za 1 razem!)
+	// =====================================================================
+	const { portfolio, portfolioId, errorComponent } = await getGuardedPortfolio({
+		searchParams,
+		userId: session.user.id,
 	});
 
-	// 3. OBLICZENIA KPI DLA ALPHA
-	const alphaTotalValue = alphaAssets.reduce(
-		(sum, a) => sum + a.currentValue,
-		0,
-	);
-	const alphaTotalInvested = alphaAssets.reduce(
-		(sum, a) => sum + a.investedCapital,
-		0,
-	);
-
-	// REALNY UDZIAŁ: Ile % całego portfela (np. emerytalnego) stanowią "Boostery"
-	const realAlphaShare = (alphaTotalValue / globalTotalValue) * 100;
-
-	const alphaRoi =
-		alphaTotalInvested > 0
-			? ((alphaTotalValue - alphaTotalInvested) / alphaTotalInvested) * 100
-			: 0;
-
-	/// 1. Pobieramy historię (to już masz)
-	const transactions = await db.transactionHistory.findMany({
-		where: {
-			portfolioId: activeId,
-			category: {
-				in: ["BOOSTER"],
-			},
-		},
-		orderBy: { executedAt: "asc" },
-	});
-
-	// 2. AGREGACJA DANYCH (Poprawka: używamy DD.MM, aby uniknąć nakładania się dat)
-	const aggregatedData: Record<string, { name: string; wklad: number }> = {};
-	let cumulative = 0;
-
-	transactions.forEach((t) => {
-		// Używamy dnia i miesiąca, aby każdy dzień był osobnym punktem na wykresie
-		const dateKey = new Date(t.executedAt).toLocaleDateString("pl-PL", {
-			day: "2-digit",
-			month: "2-digit",
-		});
-
-		cumulative += Number(t.executedValue);
-
-		// Zapisujemy skumulowaną wartość dla danego dnia
-		aggregatedData[dateKey] = {
-			name: dateKey,
-			wklad: cumulative,
-		};
-	});
-
-	const [categoriesResult, assetsResult] = await Promise.all([
-		getPortfolioCategories(activeId),
-		getPortfolioAssets(activeId), // Pobieramy aktywa: { id, name, ticker, category }
-	]);
-
-	// 1. Filtrujemy aktywa: wykluczamy obligacje i gotówkę z narzędzia migracji
-	const filteredAssets = assetsResult.success
-		? assetsResult.data.filter(
-				(asset) => asset.category !== "BONDS" && asset.category !== "CASH",
-			)
-		: [];
-
-	const filteredCategories = categoriesResult.success
-		? categoriesResult.categories.filter(
-				(asset) => asset !== "BONDS" && asset !== "CASH",
-			)
-		: [];
-
-	const portfolioId = await getActivePortfolioId(searchParams);
-
-	// if (portfolioId) {
-	// 	return (
-	// 		<PortfolioEmptyState variant="NOT_SELECTED" portfolioId={portfolioId} />
-	// 	);
-	// }
-	if (!portfolioId) {
-		return <PortfolioEmptyState variant="NOT_FOUND" />;
+	if (errorComponent) {
+		return errorComponent;
 	}
 
-	const portfolio = await db.portfolio.findUnique({
-		where: {
-			id: portfolioId,
-			userId: session.user.id,
-		},
-		include: {
-			assets: true,
-			transactionHistories: {
-				orderBy: {
-					executedAt: "asc",
-				},
-			},
-		},
-	});
-	if (!portfolio) {
-		return <PortfolioEmptyState variant="PORTFOLIOS" />;
-	}
+	// Od tego miejsca mamy 100% pewności, że portfolio istnieje
+	const activeId = portfolioId;
+	const targetUrl = `/dashboard/${activeId}/add-asset?cat=BOOSTER`;
 
-	// if (!portfolio) redirect("/dashboard");
-
-	// Przygotowanie danych (rzutowanie Decimal -> Number) dla TS i builda
+	// =====================================================================
+	// 2. PRZYGOTOWANIE DANYCH (Rzutowanie z Decimal do Number)
+	// =====================================================================
 	const formattedAssets = portfolio.assets.map((asset) => ({
 		...asset,
 		investedCapital: Number(asset.investedCapital),
@@ -180,6 +57,83 @@ export default async function AlphaSelectionPage({
 		ticker: tx.ticker || null,
 	}));
 
+	// =====================================================================
+	// 3. OBLICZENIA (Wykonywane błyskawicznie w pamięci RAM, bez DB)
+	// =====================================================================
+
+	// Całkowita wartość portfela (zabezpieczenie na dzielenie przez 0)
+	const globalTotalValue =
+		formattedAssets.reduce((sum, a) => sum + a.currentValue, 0) || 1;
+
+	// Aktywa Alpha
+	const alphaCategories = ["BOOSTER"];
+	const alphaAssets = formattedAssets
+		.filter((a) => alphaCategories.includes(a.category))
+		.sort((a, b) => b.currentValue - a.currentValue);
+
+	// KPI
+	const alphaTotalValue = alphaAssets.reduce(
+		(sum, a) => sum + a.currentValue,
+		0,
+	);
+	const alphaTotalInvested = alphaAssets.reduce(
+		(sum, a) => sum + a.investedCapital,
+		0,
+	);
+
+	const realAlphaShare = (alphaTotalValue / globalTotalValue) * 100;
+
+	const alphaRoi =
+		alphaTotalInvested > 0
+			? ((alphaTotalValue - alphaTotalInvested) / alphaTotalInvested) * 100
+			: 0;
+
+	// =====================================================================
+	// 4. WYKRES: Agregacja transakcji
+	// =====================================================================
+	const boosterTransactions = formattedTransactions.filter(
+		(t) => t.category === "BOOSTER",
+	);
+
+	const aggregatedData: Record<string, { name: string; wklad: number }> = {};
+	let cumulative = 0;
+
+	boosterTransactions.forEach((t) => {
+		const dateKey = new Date(t.executedAt).toLocaleDateString("pl-PL", {
+			day: "2-digit",
+			month: "2-digit",
+		});
+
+		cumulative += t.executedValue;
+		aggregatedData[dateKey] = {
+			name: dateKey,
+			wklad: cumulative,
+		};
+	});
+
+	// =====================================================================
+	// 5. MIGRACJA: Narzędzia do migracji innych aktywów
+	// =====================================================================
+	const [categoriesResult, assetsResult] = await Promise.all([
+		getPortfolioCategories(activeId),
+		getPortfolioAssets(activeId),
+	]);
+
+	const filteredAssets = assetsResult.success
+		? assetsResult.data.filter(
+				(asset) => asset.category !== "BONDS" && asset.category !== "CASH",
+			)
+		: [];
+
+	const filteredCategories = categoriesResult.success
+		? categoriesResult.categories.filter(
+				(cat) => cat !== "BONDS" && cat !== "CASH",
+			)
+		: [];
+
+	// =====================================================================
+	// 6. RENDEROWANIE WIDOKU
+	// =====================================================================
 	return (
 		<div className="">
 			<AlphaHeader

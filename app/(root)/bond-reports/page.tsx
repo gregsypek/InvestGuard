@@ -1,9 +1,5 @@
-// app/(root)/bond-reports/page.tsx
-
-import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { auth } from "@/auth";
-import { db } from "@/lib/db"; // Importuj dostęp do bazy danych
-import { getActivePortfolioId } from "@/lib/session";
+import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 import { redirect } from "next/navigation";
 
 interface Props {
@@ -12,47 +8,22 @@ interface Props {
 
 export default async function BondReportsLanding({ searchParams }: Props) {
 	const session = await auth();
+	if (!session?.user?.id) redirect("/sign-in");
 
-	// 1. Zabezpieczenie sesji
-	if (!session?.user?.id) {
-		redirect("/sign-in");
-	}
-
-	// 2. Pobieramy ID z ciasteczka/URL
-	const rawPortfolioId = await getActivePortfolioId(searchParams);
-
-	// 3. POBIERAMY LISTĘ PORTFELI UŻYTKOWNIKA
-	// To jest kluczowe, by sprawdzić czy ID jest poprawne
-	const userPortfolios = await db.portfolio.findMany({
-		where: { userId: session.user.id },
-		select: { id: true },
+	// 1. Strażnik weryfikuje ciasteczka, bazę i puste konta
+	const { portfolioId, errorComponent } = await getGuardedPortfolio({
+		searchParams,
+		userId: session.user.id,
 	});
 
-	// 4. WALIDACJA: Czy portfolioId z ciasteczka faktycznie istnieje w bazie?
-	const portfolioExists = userPortfolios.some((p) => p.id === rawPortfolioId);
-	const validPortfolioId = portfolioExists ? rawPortfolioId : null;
-
-	// 5. SCENARIUSZ: Brak jakichkolwiek portfeli
-	if (userPortfolios.length === 0) {
-		return (
-			<main className="container mx-auto ">
-				<PortfolioEmptyState variant="PORTFOLIOS" />
-			</main>
-		);
+	// 2. Jeśli brakuje portfela, strażnik wyrzuci idealny ekran (np. PORTFOLIOS)
+	if (errorComponent) {
+		return <main className="container mx-auto">{errorComponent}</main>;
 	}
 
-	// 6. SCENARIUSZ: ID z ciasteczka jest nieprawidłowe (np. usunięte) lub go brak
-	if (!validPortfolioId) {
-		return (
-			<main className="container mx-auto ">
-				<PortfolioEmptyState variant="NOT_SELECTED" />
-			</main>
-		);
-	}
-
-	// 7. Dopiero gdy mamy PEWNOŚĆ, że ID istnieje w bazie danych, robimy redirect
-	if (validPortfolioId) {
-		redirect(`/bond-reports/${validPortfolioId}`);
+	// 3. Przekierowanie do właściwego portfela
+	if (portfolioId) {
+		redirect(`/bond-reports/${portfolioId}`);
 	}
 
 	return null;

@@ -1,26 +1,41 @@
 import { FileText, Form, LibrarySquareIcon } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
 
-import AddAssetForm from "@/components/ui/assets/AddAssetForm";
 import AddBondForm from "@/components/ui/assets/AddBondForm";
 import { BondHeader } from "@/components/BondHeader";
 import { BondImporter } from "@/components/ui/BondImporter";
-import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { SubHeader } from "@/components/shared/SubHeader";
+import { auth } from "@/auth";
 import { getBondsData } from "@/lib/actions/bond-actions";
-import { notFound } from "next/navigation";
+import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
+
+interface Props {
+	params: Promise<{ id: string }>;
+}
 
 interface Props {
 	params: Promise<{ id: string }>;
 }
 
 export default async function AddBondPage({ params }: Props) {
+	const session = await auth();
+	if (!session?.user?.id) redirect("/sign-in");
+
 	const { id } = await params;
-	const data = await getBondsData(id); // Wywołujesz to samo - Next.js to zoptymalizuje
+
+	// 1. Zabezpieczamy formularz
+	const { portfolio, errorComponent } = await getGuardedPortfolio({
+		searchParams: Promise.resolve({ portfolioId: id }),
+		userId: session.user.id,
+	});
+
+	if (errorComponent || !portfolio) return errorComponent;
+
+	// 2. Pobieramy dane obligacji (Next.js automatycznie cachuje to zapytanie)
+	const data = await getBondsData(id);
 	if (!data) return notFound();
-	if (!id) {
-		return <PortfolioEmptyState variant="PORTFOLIOS" />;
-	}
+
 	return (
 		<div className="space-y-10 pb-20">
 			<BondHeader

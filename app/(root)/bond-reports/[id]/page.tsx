@@ -12,90 +12,52 @@ import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getBondsData } from "@/lib/actions/bond-actions";
+import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 
 interface Props {
 	params: Promise<{ id: string }>;
-	searchParams: Promise<{ portfolioId?: string }>; // 🆕 Dodajemy obsługę query params
+	searchParams: Promise<{ portfolioId?: string }>;
 }
 
 export default async function BondReportsPage({ params, searchParams }: Props) {
-	// Fetch the current user session
 	const session = await auth();
+	if (!session?.user?.id) redirect("/sign-in");
 
-	// Redirect to sign-in if the user is not authenticated
-	if (!session?.user?.id) {
-		redirect("/sign-in");
-	}
+	const { id } = await params;
 
+	// =====================================================================
+	// 1. STRAŻNIK: Bezpieczne pobranie portfela (zastępuje findUnique!)
+	// =====================================================================
+	const { portfolio, errorComponent } = await getGuardedPortfolio({
+		searchParams: Promise.resolve({ portfolioId: id }),
+		userId: session.user.id,
+	});
+
+	// Jeśli ktoś wpisze ID cudzego portfela -> dostanie błąd
+	if (errorComponent || !portfolio) return errorComponent;
+
+	// =====================================================================
+	// 2. Pobieranie danych dla tego widoku
+	// =====================================================================
 	const allPortfoliosWithCash = await db.portfolio.findMany({
 		where: {
 			userId: session.user.id,
-			// Szukamy portfeli, które mają zdefiniowany cel na gotówkę większy niż 0%
-			targetCash: {
-				gt: 0,
-			},
+			targetCash: { gt: 0 },
 		},
-		select: {
-			id: true,
-			name: true,
-		},
+		select: { id: true, name: true },
 	});
 
-	// 1. Odczytujemy parametry URL z propsów serwerowych (zamiast useSearchParams)
 	const resolvedParams = await searchParams;
-	console.log("🚀 ~ BondReportsPage ~ resolvedParams:", resolvedParams);
-	const highlightedId = resolvedParams?.portfolioId || null; // To jest ID, które chcemy podświetlić w tabeli (jeśli jest obecne)
+	const highlightedId = resolvedParams?.portfolioId || null;
 
-	const { id: pathId } = await params;
-	// 🚀 DEFINIUJEMY portfolioId na podstawie pathId
-	const portfolioId = pathId;
-	const activeId = pathId; // Jeśli używasz też activeId w Linkach
-	// if (!pathId) return <PortfolioEmptyState variant="NOT_FOUND" />;
-
-	// EN: Fetch bonds again (Next.js automatically deduplicates identical fetch requests in the background)
-	const data = await getBondsData(activeId);
-	// console.log("🚀 ~ BondReportsPage ~ data:", data);
-	if (!data) {
-		return notFound();
-	}
+	// Zostawiamy funkcję do specyficznych kalkulacji obligacji
+	const data = await getBondsData(id);
+	if (!data) return notFound();
 
 	const { bonds, stats, portfolioName } = data;
-
-	// 2. Sortujemy i ucinamy tablicę zwykłym JavaScriptem (na serwerze nie ma potrzeby używania useMemo)
 	const recentBonds = [...bonds].slice(0, 6);
-
 	const isEmpty = bonds.length === 0;
 
-	if (!portfolioId) {
-		return <PortfolioEmptyState variant="PORTFOLIOS" />;
-	}
-
-	// Fetch the specific portfolio ensuring it belongs to the current user
-	const portfolio = await db.portfolio.findUnique({
-		where: {
-			id: portfolioId,
-			userId: session.user.id,
-		},
-		include: {
-			assets: true, // Pobieramy listę aktywów
-			transactionHistories: {
-				orderBy: {
-					executedAt: "desc", // Chcemy najnowsze transakcje na górze listy
-				},
-			},
-		},
-	});
-
-	if (!portfolio || !portfolio.assets) {
-		return (
-			<div className="flex flex-col items-center justify-center p-20 border border-white/5 rounded-2xl bg-slate-900/20 ">
-				<div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
-				<p className="text-slate-400 font-medium tracking-wide text-sm">
-					Wczytywanie danych portfela...
-				</p>
-			</div>
-		);
-	}
 	return (
 		<div>
 			{/* NAGŁÓWEK GŁÓWNY (Z zintegrowanymi statystykami) */}
@@ -117,7 +79,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 						className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-sm transition-colors h-10 px-5"
 					>
 						<Link
-							href={`/bond-reports/${activeId}/add-asset`}
+							href={`/bond-reports/${id}/add-asset`}
 							className="flex items-center gap-2"
 						>
 							<Plus className="w-4 h-4" />
@@ -194,7 +156,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 						className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-sm transition-colors h-10 px-5"
 					>
 						<Link
-							href={`/bond-reports/${activeId}/add-asset`}
+							href={`/bond-reports/${id}/add-asset`}
 							className="flex items-center gap-2"
 						>
 							<Plus className="w-4 h-4" />
@@ -204,12 +166,12 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 				}
 			>
 				{isEmpty ? (
-					<PortfolioEmptyState variant="BONDS" portfolioId={activeId} />
+					<PortfolioEmptyState variant="BONDS" portfolioId={id} />
 				) : (
 					<div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-t-border bg-t-bg-panel shadow-sm p-1 md:p-0">
 						<BondLedgerTable
 							initialBonds={bonds}
-							portfolioId={activeId}
+							portfolioId={id}
 							allPortfolios={allPortfoliosWithCash}
 						/>
 					</div>

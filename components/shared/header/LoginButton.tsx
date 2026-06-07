@@ -1,5 +1,6 @@
 // components/shared/header/LoginButton.tsx
 "use client";
+
 import { signIn } from "next-auth/react";
 
 export function LoginButton() {
@@ -27,7 +28,7 @@ export function LoginButton() {
 					d="M9 3.57c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.47.89 11.43 0 9 0 5.56 0 2.53 2.07 1.05 4.95l2.92 2.32c.71-2.12 2.69-3.7 5.03-3.7z"
 				/>
 			</svg>
-			<span>Zaloguj przez Google</span>
+			<span>Zaloguj</span>
 		</button>
 	);
 }

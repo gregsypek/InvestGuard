@@ -131,8 +131,11 @@ export default function Header({
 	}, [selectedPortfolioId, pathname, urlPortfolioId, idFromPath, router]);
 
 	// WARUNKI STYLOWANIA
+	const isGlobalHome = pathname === "/"; // 1. Wykrywamy stronę główną
+
+	// 2. Alert pojawia się TYLKO, gdy nie jesteśmy w demo i NIE jesteśmy na stronie głównej
 	const hasNoPortfolioSelected =
-		!displayValue && portfolios.length > 0 && !isDemoMode;
+		!displayValue && portfolios.length > 0 && !isDemoMode && !isGlobalHome;
 
 	return (
 		<header className="flex justify-between items-center p-3 md:px-5 border-b border-t-border-subtle sticky top-0 z-50 bg-white/70 dark:bg-t-bg-sticky backdrop-blur-md shadow-sm">
@@ -275,7 +278,12 @@ export default function Header({
 								hasNoPortfolioSelected &&
 									"bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-500 shadow-[0_0_20px_-3px_rgba(245,158,11,0.3)] animate-pulse hover:animate-none hover:bg-amber-500/20",
 
-								// 3. Demo Mode
+								// 3. WIDOK GLOBALNY (Nowy, elegancki stan dla strony głównej)
+								isGlobalHome &&
+									!displayValue &&
+									"bg-blue-600/10 border-blue-500/30 text-blue-500 dark:text-blue-400 shadow-[0_0_15px_-3px_rgba(59,130,246,0.15)]",
+
+								// 4. Demo Mode
 								isDemoMode &&
 									"border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)]",
 							)}
@@ -285,18 +293,23 @@ export default function Header({
 									<GraduationCap className="h-4 w-4 shrink-0 text-emerald-500" />
 								) : hasNoPortfolioSelected ? (
 									<AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+								) : isGlobalHome && !displayValue ? (
+									// IKONA DLA WIDOKU GLOBALNEGO
+									<Wallet2 className="h-4 w-4 shrink-0 text-blue-500" />
 								) : (
 									<WalletCards className="h-4 w-4 shrink-0 text-blue-500" />
 								)}
 
-								<div className="truncate text-left mt-px">
+								<div className="truncate text-left mt-1">
 									<SelectValue
 										placeholder={
 											isDemoMode
 												? "Tryb Edukacyjny"
-												: portfolios.length === 0
-													? "Brak portfeli"
-													: "WYBIERZ PORTFEL..."
+												: isGlobalHome && !displayValue
+													? "WIDOK GLOBALNY" // TEKST DLA WIDOKU GLOBALNEGO
+													: portfolios.length === 0
+														? "Brak portfeli"
+														: "WYBIERZ PORTFEL..."
 										}
 									/>
 								</div>

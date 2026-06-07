@@ -1,6 +1,6 @@
-import { signIn } from "@/auth";
 import { APP_NAME } from "@/lib/constants";
 import Image from "next/image";
+import { signIn } from "@/auth";
 
 export default function SignInPage() {
 	return (
@@ -33,7 +33,7 @@ export default function SignInPage() {
 							width={20}
 							height={20}
 						/>
-						Zaloguj przez Google
+						Zaloguj
 					</button>
 				</form>
 

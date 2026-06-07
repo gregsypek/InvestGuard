@@ -56,6 +56,9 @@ export default function SettingsPage() {
 				<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-t-text-primary mb-2">
 					Ustawienia
 				</h1>
+				<span className="text-2xl uppercase text-t-text-tertiary">
+					Strona w przygotowaniu !
+				</span>
 				<p className="text-sm font-medium text-t-text-tertiary">
 					Zarządzaj swoimi preferencjami, wyglądem aplikacji i bezpieczeństwem.
 				</p>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { MoonIcon, SunIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { SunIcon, MoonIcon } from "lucide-react";
 
 const ModeToggle = () => {
 	const [mounted, setMounted] = useState(false);
@@ -22,7 +22,7 @@ const ModeToggle = () => {
 	return (
 		<Button
 			variant="ghost"
-			className="focus-visible:ring-0 focus-visible:ring-offset-0"
+			className="focus-visible:ring-0 focus-visible:ring-offset-0 hover:cursor-pointer"
 			onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
 		>
 			{theme === "dark" ? <MoonIcon /> : <SunIcon />}

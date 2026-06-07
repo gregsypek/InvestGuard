@@ -20,12 +20,12 @@ const UserButton = async () => {
 	const firstInitial = session.user?.name?.charAt(0).toUpperCase() ?? "U";
 
 	return (
-		<div className="flex gap-2 items-center">
+		<div className="flex gap-2 items-center ">
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="ghost"
-						className="relative w-9 h-9 rounded-full bg-black/5 dark:bg-white/5 hover:bg-blue-500/10 border border-t-border-subtle hover:border-blue-500/30 flex items-center justify-center p-0 transition-all active:scale-95 group"
+						className="relative w-9 h-9 rounded-full bg-black/5 dark:bg-white/5 hover:bg-blue-500/10 border border-t-border-subtle hover:border-blue-500/30 flex items-center justify-center p-0 transition-all active:scale-95 group hover:cursor-pointer"
 					>
 						<span className="text-t-text-secondary group-hover:text-blue-500 font-bold text-md tracking-tighter transition-colors">
 							{firstInitial}
@@ -57,7 +57,7 @@ const UserButton = async () => {
 						asChild
 						className="gap-2 p-2.5 cursor-pointer rounded-lg text-t-text-secondary hover:text-t-text-primary hover:bg-t-hover font-medium text-xs transition-colors"
 					>
-						<Link href="/profile" className="w-full">
+						<Link href="/profile" className="w-full hover:cursor-pointer">
 							<User className="h-4 w-4" />
 							Profil Inwestora
 						</Link>

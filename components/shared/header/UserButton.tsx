@@ -57,7 +57,7 @@ const UserButton = async () => {
 						asChild
 						className="gap-2 p-2.5 cursor-pointer rounded-lg text-t-text-secondary hover:text-t-text-primary hover:bg-t-hover font-medium text-xs transition-colors"
 					>
-						<Link href="/user/profile" className="w-full">
+						<Link href="/profile" className="w-full">
 							<User className="h-4 w-4" />
 							Profil Inwestora
 						</Link>

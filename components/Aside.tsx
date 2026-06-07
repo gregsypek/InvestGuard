@@ -42,14 +42,23 @@ export default function Aside() {
 			{/* Logo */}
 			<div className="p-3 lg:p-6 flex justify-center lg:justify-start">
 				<Link href="/" className="flex items-center gap-3 group">
-					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm border border-t-border-subtle group-hover:scale-105 transition-transform duration-300">
+					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm border border-t-border-subtle   ">
+						{/* 1. Ciemne logo (logo.svg) - WIDOCZNE w jasnym motywie, UKRYTE w ciemnym */}
+						<Image
+							src="/logo.svg"
+							alt="InvestGuard Logo"
+							width={32}
+							height={32}
+							className="block dark:hidden"
+						/>
+
+						{/* 2. Jasne logo (logo-light.svg) - UKRYTE w jasnym motywie, WIDOCZNE w ciemnym */}
 						<Image
 							src="/logo-light.svg"
-							width={28}
-							height={28}
-							loading="lazy"
-							alt="Invest Guard logo"
-							className="h-auto w-auto "
+							alt="InvestGuard Logo"
+							width={32}
+							height={32}
+							className="hidden dark:block"
 						/>
 					</div>
 					<span

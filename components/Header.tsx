@@ -161,11 +161,20 @@ export default function Header({
 							<div className="p-5 border-b border-t-border-subtle flex items-center gap-3 bg-black/5 dark:bg-white/5">
 								<div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm">
 									<Image
+										src="/logo.svg"
+										alt="InvestGuard Logo"
+										width={32}
+										height={32}
+										className="block dark:hidden"
+									/>
+
+									{/* 2. Jasne logo (logo-light.svg) - UKRYTE w jasnym motywie, WIDOCZNE w ciemnym */}
+									<Image
 										src="/logo-light.svg"
-										width={28}
-										height={28}
-										alt="Invest Guard logo"
-										className="h-auto w-auto"
+										alt="InvestGuard Logo"
+										width={32}
+										height={32}
+										className="hidden dark:block"
 									/>
 								</div>
 								<span
@@ -249,7 +258,7 @@ export default function Header({
 								<SheetTrigger asChild>
 									<Link
 										href="/settings"
-										className="p-2.5 rounded-xl text-t-text-tertiary hover:text-t-text-primary hover:bg-black/10 dark:hover:bg-white/10 transition-colors pointer-events-none opacity-40"
+										className="p-2.5 rounded-xl text-t-text-tertiary hover:text-t-text-primary hover:bg-black/10 dark:hover:bg-white/10 transition-colors pointer-events-none opacity-40 hover:cursor-pointer"
 									>
 										<Settings className="w-5 h-5" />
 									</Link>

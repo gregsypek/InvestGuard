@@ -135,7 +135,7 @@ export default function Header({
 		!displayValue && portfolios.length > 0 && !isDemoMode;
 
 	return (
-		<header className="flex justify-between items-center p-3 md:px-5 border-b border-t-border-subtle sticky top-0 z-50 bg-white/70 dark:bg-black/60 backdrop-blur-md shadow-sm">
+		<header className="flex justify-between items-center p-3 md:px-5 border-b border-t-border-subtle sticky top-0 z-50 bg-white/70 dark:bg-t-bg-sticky backdrop-blur-md shadow-sm">
 			{/* LEWA STRONA: Hamburger (Mobile) + Selektor Portfela */}
 			<div className="flex items-center gap-3 flex-1">
 				{/* MOBILNY HAMBURGER */}
@@ -162,7 +162,7 @@ export default function Header({
 										width={28}
 										height={28}
 										alt="Invest Guard logo"
-										className="h-auto w-auto dark:invert"
+										className="h-auto w-auto"
 									/>
 								</div>
 								<span

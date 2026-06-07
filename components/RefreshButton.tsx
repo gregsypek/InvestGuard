@@ -58,16 +58,14 @@ export function RefreshButton({
 				<RefreshCw
 					className={cn(
 						"h-4 w-4 transition-all mr-1.5 md:mr-2", // Margines jest teraz wszędzie
-						isLoading
-							? "animate-spin text-blue-500"
-							: "text-sidebar-foreground md:text-foreground",
+						isLoading ? "animate-spin text-blue-500" : "md:text-foreground",
 					)}
 				/>
 
 				{/* Kontener na tekst przycisku */}
 				<span className="font-medium">
 					{/* Wersja na telefony: krótka, wielkie litery, mała czcionka */}
-					<span className="md:hidden text-[9px] uppercase tracking-wider text-sidebar-foreground">
+					<span className="md:hidden text-[9px] uppercase tracking-wider">
 						Odśwież
 					</span>
 

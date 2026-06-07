@@ -38,34 +38,36 @@ export default function Aside() {
 	const activePortfolioId = idFromParams || getPathId();
 
 	return (
-		<aside className="hidden md:flex flex-col md:w-20 lg:w-64 bg-sidebar text-sidebar-foreground border-r border-slate-800 transition-all duration-300">
+		<aside className="hidden md:flex flex-col md:w-20 lg:w-64 bg-white/40 dark:bg-t-bg-sticky backdrop-blur-xl border-r border-t-border-subtle dark:border-white/10 transition-all duration-300 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] dark:shadow-none z-40">
 			{/* Logo */}
 			<div className="p-3 lg:p-6 flex justify-center lg:justify-start">
-				<Link href="/" className="flex items-center gap-3">
-					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-lg flex items-center justify-center transition-colors">
+				<Link href="/" className="flex items-center gap-3 group">
+					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm border border-t-border-subtle group-hover:scale-105 transition-transform duration-300">
 						<Image
 							src="/logo-light.svg"
-							width={40}
-							height={40}
+							width={28}
+							height={28}
 							loading="lazy"
 							alt="Invest Guard logo"
-							className="h-auto w-auto"
+							className="h-auto w-auto "
 						/>
 					</div>
 					<span
 						className={cn(
-							"text-xl font-black tracking-tighter text-white hidden lg:inline-block",
-							isDemoMode ? "text-emerald-500" : "text-blue-200",
+							"text-xl font-black tracking-tighter hidden lg:inline-block transition-colors",
+							isDemoMode ? "text-emerald-500" : "text-t-text-primary",
 						)}
 					>
 						{APP_NAME}
-						<span className={isDemoMode ? "text-emerald-500" : ""}>.</span>
+						<span className={isDemoMode ? "text-emerald-500" : "text-blue-500"}>
+							.
+						</span>
 					</span>
 				</Link>
 			</div>
 
 			{/* Nawigacja */}
-			<nav className="flex-1 flex flex-col items-center lg:items-stretch px-2 lg:px-4 py-4 space-y-1">
+			<nav className="flex-1 flex flex-col items-center lg:items-stretch px-2 lg:px-4 py-4 space-y-1.5 overflow-y-auto no-scrollbar">
 				{NAV_ITEMS.map((item) => {
 					const isActive = isDemoMode
 						? item.href === "/dashboard"
@@ -80,7 +82,7 @@ export default function Aside() {
 						if (item.href === "/planner") finalHref = "/demo/planner";
 						if (strategy) finalHref += `?s=${strategy}`;
 					} else if (activePortfolioId && !isDemoMode) {
-						// Tryb Normalny: Jeśli mamy aktywne ID, doklejamy je do każdego linku!
+						// Tryb Normalny: Jeśli mamy aktywne ID, doklejamy je do każdego linku
 						finalHref += `?portfolioId=${activePortfolioId}`;
 					}
 
@@ -89,12 +91,12 @@ export default function Aside() {
 							key={item.href}
 							href={finalHref}
 							className={cn(
-								"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3 rounded-lg text-sm font-medium transition-all group",
+								"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
 								isActive
 									? isDemoMode
-										? "bg-emerald-600/10 text-emerald-500 border border-emerald-600/20"
-										: "bg-blue-600/10 text-blue-400 border border-blue-600/20"
-									: "hover:bg-slate-800 hover:text-white",
+										? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm"
+										: "bg-blue-600/10 text-blue-600 dark:text-blue-400 shadow-sm"
+									: "hover:bg-black/5 dark:hover:bg-white/5 text-t-text-secondary hover:text-t-text-primary",
 								isDemoMode &&
 									!["/dashboard", "/portfolios", "/planner"].includes(
 										item.href,
@@ -102,14 +104,24 @@ export default function Aside() {
 									"opacity-30 pointer-events-none",
 							)}
 						>
+							{/* PREMIUM DETAIL: Pionowy akcent dla aktywnego menu */}
+							{isActive && (
+								<div
+									className={cn(
+										"absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1/2 rounded-r-full hidden lg:block",
+										isDemoMode ? "bg-emerald-500" : "bg-blue-500",
+									)}
+								/>
+							)}
+
 							<item.icon
 								className={cn(
-									"w-5 h-5 md:w-6 md:h-6 lg:w-5 lg:h-5 transition-colors",
+									"w-5 h-5 md:w-6 md:h-6 lg:w-5 lg:h-5 transition-transform duration-300 group-hover:scale-110",
 									isActive
 										? isDemoMode
 											? "text-emerald-500"
-											: "text-blue-400"
-										: "text-slate-500 group-hover:text-slate-300",
+											: "text-blue-500"
+										: "text-t-text-tertiary group-hover:text-t-text-primary",
 								)}
 							/>
 							<span className="hidden lg:inline-block">{item.name}</span>
@@ -119,13 +131,13 @@ export default function Aside() {
 			</nav>
 
 			{/* Stopka (Ustawienia) */}
-			<div className="p-4 border-t border-slate-800">
+			<div className="p-4 border-t border-t-border-subtle">
 				<Link
 					href="/settings"
-					className="flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors"
+					className="flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide text-t-text-secondary hover:text-t-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-300 group"
 				>
-					<Settings className="w-5 h-5 text-slate-500" />
-					<span className="hidden lg:inline-block">Settings</span>
+					<Settings className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
+					<span className="hidden lg:inline-block">Ustawienia</span>
 				</Link>
 			</div>
 		</aside>

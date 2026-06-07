@@ -111,16 +111,18 @@ export function InteractiveChartSection({
 						<button
 							key={cat}
 							onClick={() => toggleCategory(cat)}
-							className={`group flex flex-wrap items-center gap-3 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase hover:cursor-pointer tracking-widest transition-all duration-300 border ${
+							className={`group flex flex-wrap items-center gap-3 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase hover:cursor-pointer tracking-widest transition-all duration-300 border opacity-70${
 								isActive
 									? "text-slate-600 "
-									: "border-white/5 text-slate-700 bg-transparent hover:bg-white/2"
+									: "border-white/5   text-slate-700 bg-transparent hover:bg-white/2"
 							}`}
 							style={
 								isActive
 									? {
 											backgroundColor: `${catColor}15`, // Bardzo delikatne tło (15% krycia)
-											borderColor: `${catColor}40`, // Lekko widoczna ramka w kolorze
+											borderColor: `${catColor}10`, // Lekko widoczna
+											// ramka w kolorze
+											color: `${catColor}20`,
 											boxShadow: `0 0 10px ${catColor}10`, // Delikatna poświata przycisku
 										}
 									: {}

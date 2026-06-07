@@ -89,7 +89,7 @@ export function MarketTicker({ data }: MarketTickerProps) {
 			)}
 
 			{/* ZMIANA: Gradient zanikania pod przyciskami płynnie przechodzi od t-bg-base */}
-			<div className="absolute right-0 top-0 h-full flex items-center gap-1 px-4 bg-gradient-to-l from-t-bg-base via-t-bg-base/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+			<div className="absolute right-0 top-0 h-full flex items-center gap-1 px-4 bg-linear-to-l from-t-bg-base via-t-bg-base/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
 				{showControls && isVisible && (
 					<div className="flex items-center gap-4 bg-t-bg-panel border border-t-border p-2 rounded-lg shadow-lg mr-2 animate-in fade-in slide-in-from-right-2">
 						<div className="flex flex-col gap-1 w-24">

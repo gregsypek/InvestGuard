@@ -105,6 +105,8 @@ model Portfolio {
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   investmentPlans      InvestmentPlan[]
   transactionHistories TransactionHistory[]
+  // portfolioSnapshots   PortfolioSnapshot[]
+  snapshots            PortfolioSnapshot[]
 }
 
 model InvestmentPlan {
@@ -206,4 +208,17 @@ model ExchangeRate {
   value     Float // aktualny kurs
   change    Float // zmiana procentowa (dla paska Ticker)
   updatedAt DateTime @updatedAt
+}
+
+model PortfolioSnapshot {
+  id          String    @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  totalValue    Float // Całkowita wartość w danym dniu
+  investedValue Float // Zainwestowany kapitał w danym dniu (do obliczania zysku)
+  date          DateTime @default(now())
+
+  @@index([portfolioId])
+  @@index([date])
 }

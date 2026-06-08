@@ -10,12 +10,20 @@ export default async function HomePage() {
 		return <GuestOnboarding />;
 	}
 
-	// Pobieramy portfele z aktywami
+	//1. Pobieramy portfele z aktywami
 	const portfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
 		include: { assets: true },
 	});
+	// 2. Pobieramy snapshoty dla tych portfeli z ostatnich 30 dni
+	const snapshots = await db.portfolioSnapshot.findMany({
+		where: {
+			portfolioId: { in: portfolios.map((p) => p.id) },
+			date: { gte: new Date(new Date().setDate(new Date().getDate() - 30)) },
+		},
+		orderBy: { date: "asc" },
+	});
 
-	// Przekazujemy surowe dane do komponentu klienckiego
-	return <UserDashboard portfolios={portfolios} />;
+	// 3. Przekazujemy to wszystko do komponentu UserDashboard
+	return <UserDashboard portfolios={portfolios} snapshots={snapshots} />;
 }

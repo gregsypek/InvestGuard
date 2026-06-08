@@ -251,14 +251,14 @@ export default function Header({
 
 							{/* Dolna sekcja mobilna */}
 							<div className="p-5 border-t border-t-border-subtle flex items-center justify-between bg-black/5 dark:bg-white/5">
-								<div className="flex items-center gap-3">
+								<div className="flex items-center gap-3 hover:cursor-pointer">
 									<ModeToggle />
 									{userButton}
 								</div>
 								<SheetTrigger asChild>
 									<Link
 										href="/settings"
-										className="p-2.5 rounded-xl text-t-text-tertiary hover:text-t-text-primary hover:bg-black/10 dark:hover:bg-white/10 transition-colors pointer-events-none opacity-40 hover:cursor-pointer"
+										className="p-2.5 rounded-xl text-t-text-tertiary hover:text-t-text-primary hover:bg-black/10 dark:hover:bg-white/10 transition-colors  opacity-40 hover:cursor-pointer"
 									>
 										<Settings className="w-5 h-5" />
 									</Link>

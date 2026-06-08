@@ -19,7 +19,7 @@ export const PortfoliosHeader = ({
 	customBreadcrumbs,
 }: PortfoliosHeaderProps) => {
 	return (
-		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-900 dark:bg-t-bg-base/15 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
+		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-900  text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
 			{/* --- TEKSTURA SVG (Giełdowe Świece Japońskie z maskowaniem) --- */}
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"

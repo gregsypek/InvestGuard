@@ -1,10 +1,11 @@
 "use client";
 
-import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import { DashboardAsset, Transaction } from "@/lib/types";
 import { useEffect, useMemo, useState } from "react";
 
 import { AlphaChart } from "./alpha/AlphaChart";
+import { CATEGORY_LABELS } from "@/lib/constants";
+import { FilterBadge } from "./shared/FilterBadge";
 import { MonthlyDepositsChart } from "./alpha/MonthlyDepositChart";
 import { prepareChartAnalytics } from "@/lib/chart-helpers";
 
@@ -96,54 +97,23 @@ export function InteractiveChartSection({
 				: [...prev, category],
 		);
 	};
-
 	return (
 		<div className="space-y-6">
 			{/* Selektor Kategorii w stylu Trading UI */}
-			<div className="flex flex-wrap gap-2.5 px-1">
+			<div className="flex flex-wrap items-center gap-x-2 gap-y-2 py-1.5 px-1.5  dark:bg-transparent rounded-2xl w-fit">
 				{availableCategories.map((cat) => {
 					const isActive = selectedCats.includes(cat);
-					// ZMIANA: Zabezpieczenie koloru (fallback na neutralny slate)
-					const catColor = COLORS[cat as keyof typeof COLORS] || "#64748b";
-					const labelKey = cat as keyof typeof CATEGORY_LABELS;
+					const label =
+						CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] || cat;
 
 					return (
-						<button
+						<FilterBadge
 							key={cat}
-							onClick={() => toggleCategory(cat)}
-							className={`group flex flex-wrap items-center gap-3 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase hover:cursor-pointer tracking-widest transition-all duration-300 border opacity-70${
-								isActive
-									? "text-slate-600 "
-									: "border-white/5   text-slate-700 bg-transparent hover:bg-white/2"
-							}`}
-							style={
-								isActive
-									? {
-											backgroundColor: `${catColor}15`, // Bardzo delikatne tło (15% krycia)
-											borderColor: `${catColor}10`, // Lekko widoczna
-											// ramka w kolorze
-											color: `${catColor}20`,
-											boxShadow: `0 0 10px ${catColor}10`, // Delikatna poświata przycisku
-										}
-									: {}
-							}
-						>
-							{/* NEONOWA KROPKA */}
-							<div
-								className="w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-300"
-								style={
-									isActive
-										? {
-												backgroundColor: catColor,
-												boxShadow: `0 0 8px ${catColor}`, // Świecenie kropki
-											}
-										: {
-												backgroundColor: "#334155", // Zgaszona szara kropka dla nieaktywnych
-											}
-								}
-							/>
-							<span>{CATEGORY_LABELS[labelKey] || cat}</span>
-						</button>
+							id={cat}
+							label={label}
+							isSelected={isActive}
+							onToggle={toggleCategory} // Przekazujemy funkcję bezpośrednio
+						/>
 					);
 				})}
 			</div>

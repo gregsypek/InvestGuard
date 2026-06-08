@@ -2,8 +2,6 @@
 
 import {
 	Activity,
-	CheckCircle2,
-	Circle,
 	Container,
 	LineChart,
 	ShieldCheck,
@@ -13,6 +11,7 @@ import {
 import { Asset, Portfolio } from "@/lib/types";
 import { useMemo, useState } from "react";
 
+import { FilterBadge } from "./shared/FilterBadge";
 import { cn } from "@/lib/utils";
 
 // Interfejsy (Dopasuj do swoich typów)
@@ -61,7 +60,7 @@ export function UserDashboard({ portfolios }: UserDashboardProps) {
 			{/* ========================================================= */}
 			{/* GŁÓWNY NAGŁÓWEK (Twój design + Filtry Portfeli) */}
 			{/* ========================================================= */}
-			<header className="relative overflow-hidden flex flex-col gap-8 w-full border-b border-white/10  bg-slate-900 dark:border-t-border rounded-b-2xl  text-slate-100 p-6 md:p-8  transition-colors shadow-lg">
+			<header className="relative overflow-hidden flex flex-col gap-8 w-full border-b border-white/10  bg-slate-900 dark:border-t-border rounded-b-2xl  text-slate-100 p-6 md:p-8  transition-colors shadow-lg ">
 				{/* TEKSTURA SVG */}
 				<div
 					className="absolute inset-0 z-0 pointer-events-none opacity-40 transition-opacity"
@@ -82,31 +81,21 @@ export function UserDashboard({ portfolios }: UserDashboardProps) {
 
 					{/* Interaktywne filtry */}
 					<div className="flex flex-wrap items-center gap-2 mt-2">
-						<span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">
-							Analizowane portfele:
+						<span className="text-xs font-bold text-slate-400 uppercase flex-1 md:grow  tracking-wider mr-2">
+							Analizowane portfele (Wybierz, aby porównać):
 						</span>
-						{portfolios.map((p) => {
-							const isSelected = selectedIds.includes(p.id);
-							return (
-								<button
+						<div className="flex gap-3 flex-wrap">
+						
+							{portfolios.map((p) => (
+								<FilterBadge
 									key={p.id}
-									onClick={() => togglePortfolio(p.id)}
-									className={cn(
-										"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer",
-										isSelected
-											? "bg-blue-500/20 text-blue-300 border-blue-500/30 shadow-sm"
-											: "bg-slate-900/50 text-slate-500 border-slate-700/50 hover:text-slate-300 hover:border-slate-600",
-									)}
-								>
-									{isSelected ? (
-										<CheckCircle2 className="w-3.5 h-3.5" />
-									) : (
-										<Circle className="w-3.5 h-3.5" />
-									)}
-									{p.name}
-								</button>
-							);
-						})}
+									id={p.id}
+									label={p.name}
+									isSelected={selectedIds.includes(p.id)}
+									onToggle={togglePortfolio}
+								/>
+							))}
+						</div>
 					</div>
 				</div>
 

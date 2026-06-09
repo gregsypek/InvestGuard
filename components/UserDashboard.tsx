@@ -1,27 +1,33 @@
 "use client";
 
 import { Activity, Container, ShieldCheck, Wallet2, Zap } from "lucide-react";
-import { Asset, Portfolio } from "@/lib/types";
+import { Asset, PortfolioWithAssets } from "@/lib/types";
 import { useMemo, useState } from "react";
 
+import { DailyPnLChart } from "./dashboard/DailyPnLChart";
 import { FilterBadge } from "./shared/FilterBadge";
 import { PortfolioChart } from "./dashboard/PortfolioCharts";
 import { cn } from "@/lib/utils";
 
-// const aggregatedChartData = [
-// 	{ date: "2026-06-01T00:00:00Z", value: 135000 },
-// 	{ date: "2026-06-02T00:00:00Z", value: 136200 },
-// 	{ date: "2026-06-03T00:00:00Z", value: 134800 },
-// 	{ date: "2026-06-04T00:00:00Z", value: 138000 },
-// 	{ date: "2026-06-05T00:00:00Z", value: 139500 },
-// 	{ date: "2026-06-06T00:00:00Z", value: 141000 },
-// 	{ date: "2026-06-07T00:00:00Z", value: 142500 },
-// ];
+const aggregatedChartDataMockData = [
+	{ date: "2026-06-01", value: 135000, invested: 130000 },
+	{ date: "2026-06-02", value: 136200, invested: 130000 },
+	{ date: "2026-06-03", value: 134800, invested: 130000 },
+	{ date: "2026-06-04", value: 138000, invested: 135000 }, // Tu był "schodek" wpłaty
+	{ date: "2026-06-05", value: 139500, invested: 135000 },
+	{ date: "2026-06-06", value: 141000, invested: 135000 },
+	{ date: "2026-06-07", value: 142500, invested: 135000 },
+];
 
 // Interfejsy (Dopasuj do swoich typów)
 interface UserDashboardProps {
-	portfolios: Portfolio[]; // Możesz podmienić 'any' na swój typ Prisma
-	snapshots: { date: Date; totalValue: number; portfolioId: string }[];
+	portfolios: PortfolioWithAssets[];
+	snapshots: {
+		date: Date;
+		totalValue: number;
+		investedValue: number; // EN: Added missing investedValue property
+		portfolioId: string;
+	}[];
 }
 
 export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
@@ -30,24 +36,100 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 		portfolios.map((p) => p.id),
 	);
 
+	// const aggregatedChartData = useMemo(() => {
+	// 	const grouped: Record<string, number> = {};
+
+	// 	snapshots.forEach((snap) => {
+	// 		if (selectedIds.includes(snap.portfolioId)) {
+	// 			const dateKey = snap.date.toISOString().split("T")[0]; // YYYY-MM-DD
+	// 			grouped[dateKey] = (grouped[dateKey] || 0) + snap.totalValue;
+	// 		}
+	// 	});
+
+	// 	return Object.entries(grouped).map(([date, value]) => ({
+	// 		date,
+	// 		value,
+	// 	}));
+	// }, [snapshots, selectedIds]);
 	const aggregatedChartData = useMemo(() => {
-		// 1. Grupujemy snapshoty po dacie
-		const grouped: Record<string, number> = {};
+		// Struktura: { "2026-06-08": { "portfolio1": { total: 10000, invested: 8000 } } }
+		const dailyPortfolioValues: Record<
+			string,
+			Record<string, { total: number; invested: number }>
+		> = {};
 
 		snapshots.forEach((snap) => {
-			// Uwzględniamy tylko te portfele, które użytkownik zaznaczył w filtrze
 			if (selectedIds.includes(snap.portfolioId)) {
-				const dateKey = snap.date.toISOString().split("T")[0]; // YYYY-MM-DD
-				grouped[dateKey] = (grouped[dateKey] || 0) + snap.totalValue;
+				const dateKey = new Date(snap.date).toISOString().split("T")[0];
+
+				if (!dailyPortfolioValues[dateKey]) {
+					dailyPortfolioValues[dateKey] = {};
+				}
+
+				// Zapisujemy najświeższe wartości z danego dnia
+				dailyPortfolioValues[dateKey][snap.portfolioId] = {
+					total: snap.totalValue,
+					invested: snap.investedValue, // Dodajemy pobieranie wpłaconego kapitału
+				};
 			}
 		});
 
-		// 2. Zamieniamy na format wymagany przez Recharts
-		return Object.entries(grouped).map(([date, value]) => ({
-			date,
-			value,
-		}));
+		// Sumujemy obie wartości dla każdego dnia
+		return Object.entries(dailyPortfolioValues).map(([date, portfoliosMap]) => {
+			let totalForDay = 0;
+			let investedForDay = 0;
+
+			Object.values(portfoliosMap).forEach((vals) => {
+				totalForDay += vals.total;
+				investedForDay += vals.invested;
+			});
+
+			return {
+				date,
+				value: totalForDay,
+				invested: investedForDay,
+			};
+		});
 	}, [snapshots, selectedIds]);
+
+	// Wyliczamy dzienną zmienność (różnica między dniem N a N-1)
+	const dailyPnLData = useMemo(() => {
+		if (!aggregatedChartData || aggregatedChartData.length < 2) return [];
+
+		const result = [];
+		// Zaczynamy od i = 1, bo dla dnia 0 nie mamy dnia wczorajszego do porównania
+		for (let i = 1; i < aggregatedChartData.length; i++) {
+			const prev = aggregatedChartData[i - 1].value;
+			const curr = aggregatedChartData[i].value;
+			const diff = curr - prev;
+
+			result.push({
+				date: aggregatedChartData[i].date,
+				change: diff,
+				isPositive: diff >= 0,
+			});
+		}
+		return result;
+	}, [aggregatedChartData]);
+	const dailyPnLDataMockData = useMemo(() => {
+		if (!aggregatedChartDataMockData || aggregatedChartDataMockData.length < 2)
+			return [];
+
+		const result = [];
+		// Zaczynamy od i = 1, bo dla dnia 0 nie mamy dnia wczorajszego do porównania
+		for (let i = 1; i < aggregatedChartDataMockData.length; i++) {
+			const prev = aggregatedChartDataMockData[i - 1].value;
+			const curr = aggregatedChartDataMockData[i].value;
+			const diff = curr - prev;
+
+			result.push({
+				date: aggregatedChartDataMockData[i].date,
+				change: diff,
+				isPositive: diff >= 0,
+			});
+		}
+		return result;
+	}, []);
 
 	// Funkcja do przełączania portfeli
 	const togglePortfolio = (id: string) => {
@@ -192,16 +274,7 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* LEWA KOLUMNA */}
 				<div className="lg:col-span-2 flex flex-col gap-6">
-					{/* <div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[350px] flex flex-col items-center justify-center border-dashed group">
-						<LineChart className="w-10 h-10 text-t-text-tertiary mb-3 opacity-50 group-hover:scale-110 transition-transform" />
-						<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
-							Wykres Historii Portfela
-						</p>
-						<p className="text-xs text-t-text-tertiary mt-2">
-							Wymaga wdrożenia modułu Snapshottingu.
-						</p>
-					</div> */}
-					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[350px] flex flex-col group">
+					{/* <div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[350px] flex flex-col group">
 						<div className="flex items-center justify-between mb-4">
 							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
 								Historia Wartości (Zaznaczone)
@@ -211,7 +284,54 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 						<div className="flex-1 w-full min-h-[280px]">
 							<PortfolioChart data={aggregatedChartData} />
 						</div>
+					</div> */}
+					{/* GŁÓWNY WYKRES WARTOŚCI */}
+					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[350px] flex flex-col group mb-6">
+						<div className="flex items-center justify-between mb-4">
+							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
+								Historia Wartości Portfela
+							</p>
+						</div>
+						<div className="flex-1 w-full min-h-[280px]">
+							{/* Twój wykres z wczoraj (z opcjonalnym znakiem wodnym) */}
+							<PortfolioChart data={aggregatedChartData} />
+						</div>
 					</div>
+					{/* WYKRES DZIENNEJ ZMIENNOŚCI (P&L) */}
+					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[250px] flex flex-col group">
+						<div className="flex items-center justify-between mb-4">
+							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
+								Dzienna Zmienność (P&L)
+							</p>
+						</div>
+						<div className="flex-1 w-full min-h-[180px]">
+							<DailyPnLChart data={dailyPnLData} />
+						</div>
+					</div>
+					{/* MOCK DATA --- START ---- */}
+					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[350px] flex flex-col group mb-6">
+						<div className="flex items-center justify-between mb-4">
+							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
+								Historia Wartości Portfela - Symulacja
+							</p>
+						</div>
+						<div className="flex-1 w-full min-h-[280px]">
+							{/* Twój wykres z wczoraj (z opcjonalnym znakiem wodnym) */}
+							<PortfolioChart data={aggregatedChartDataMockData} />
+						</div>
+					</div>
+					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[250px] flex flex-col group">
+						<div className="flex items-center justify-between mb-4">
+							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
+								Dzienna Zmienność (P&L) SYMULACJA
+							</p>
+						</div>
+						<div className="flex-1 w-full min-h-[180px]">
+							<DailyPnLChart data={dailyPnLDataMockData} />
+						</div>
+					</div>
+
+					{/* MOCK DATA --- END ---- */}
 
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-5 shadow-sm">

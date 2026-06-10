@@ -19,6 +19,7 @@ export default async function SettingsPage() {
 
 	// EN: Get user role and calculate max limit
 	const userRole = session.user.role || "REGULAR";
+	const userIndices = session.user.observedIndices || [];
 	const maxLimit = ROLE_LIMITS[userRole as keyof typeof ROLE_LIMITS] || 5;
 
 	const portfolios = await db.portfolio.findMany({
@@ -47,5 +48,11 @@ export default async function SettingsPage() {
 	const uniqueAssets = Array.from(uniqueAssetsMap.values());
 
 	// EN: Pass maxLimit down to the client component
-	return <SettingsClient assets={uniqueAssets} maxLimit={maxLimit} />;
+	return (
+		<SettingsClient
+			assets={uniqueAssets}
+			maxLimit={maxLimit}
+			userIndices={userIndices}
+		/>
+	);
 }

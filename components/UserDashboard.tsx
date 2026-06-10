@@ -306,46 +306,6 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 							)}
 						</div>
 					</SectionLayout>
-
-					{/* PODSUMOWANIE STRATEGII (PASYWNA / BOOSTER) */}
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-						<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-5 shadow-sm">
-							<div className="flex items-center gap-2 mb-3">
-								<div className="p-2 bg-blue-500/10 rounded-lg">
-									<ShieldCheck className="w-4 h-4 text-blue-500" />
-								</div>
-								<h4 className="font-bold text-t-text-primary uppercase tracking-wide text-xs">
-									Baza Pasywna
-								</h4>
-							</div>
-							<p className="text-2xl font-black tracking-tighter text-t-text-primary mb-1">
-								~95%
-							</p>
-							<p className="text-[11px] text-t-text-secondary leading-relaxed font-medium">
-								Bezpiecznik portfela. Obligacje, metale szlachetne oraz ETF-y
-								pracują jako fundament stabilności.
-							</p>
-						</div>
-
-						<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-5 shadow-sm relative overflow-hidden">
-							<div className="absolute right-0 top-0 w-24 h-24 bg-blue-500/5 rounded-bl-full pointer-events-none" />
-							<div className="flex items-center gap-2 mb-3">
-								<div className="p-2 bg-amber-500/10 rounded-lg">
-									<Zap className="w-4 h-4 text-amber-500" />
-								</div>
-								<h4 className="font-bold text-amber-500 uppercase tracking-wide text-xs">
-									Alpha Booster
-								</h4>
-							</div>
-							<p className="text-2xl font-black tracking-tighter text-t-text-primary mb-1">
-								~5%
-							</p>
-							<p className="text-[11px] text-t-text-secondary leading-relaxed font-medium">
-								Część spekulacyjna celująca w pobicie rynku. Aktywny przegląd
-								sektorów wzrostowych.
-							</p>
-						</div>
-					</div>
 				</div>
 
 				<div className="flex flex-col gap-6">

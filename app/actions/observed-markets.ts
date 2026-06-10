@@ -10,7 +10,10 @@ const ROLE_LIMITS = {
 	ADMIN: 99,
 };
 
-export async function saveObservedMarkets(selectedAssetNames: string[]) {
+export async function saveObservedMarkets(
+	selectedAssetNames: string[],
+	selectedIndices: string[], // EN: New parameter for global indices
+) {
 	const session = await auth();
 	if (!session?.user?.id) {
 		return { success: false, error: "Unauthorized" };
@@ -19,22 +22,20 @@ export async function saveObservedMarkets(selectedAssetNames: string[]) {
 	const userRole = session.user.role || "REGULAR";
 	const maxLimit = ROLE_LIMITS[userRole as keyof typeof ROLE_LIMITS];
 
-	// 1. Walidacja limitu po stronie serwera (bezpieczeństwo)
 	if (selectedAssetNames.length > maxLimit) {
 		return {
 			success: false,
-			error: `Twój plan pozwala na obserwowanie maksymalnie ${maxLimit} rynków.`,
+			error: `Twój plan pozwala na obserwowanie maksymalnie ${maxLimit} rynków z Twojego portfela.`,
 		};
 	}
 
 	try {
-		// 2. Najpierw "resetujemy" - wyłączamy obserwację dla wszystkich aktywów użytkownika
+		// 1. Zapisz aktywa z portfela (reset i update)
 		await db.asset.updateMany({
 			where: { portfolio: { userId: session.user.id } },
 			data: { isObserved: false },
 		});
 
-		// 3. Włączamy obserwację tylko dla tych z listy
 		if (selectedAssetNames.length > 0) {
 			await db.asset.updateMany({
 				where: {
@@ -44,6 +45,12 @@ export async function saveObservedMarkets(selectedAssetNames: string[]) {
 				data: { isObserved: true },
 			});
 		}
+
+		// 2. Zapisz globalne indeksy w profilu użytkownika
+		await db.user.update({
+			where: { id: session.user.id },
+			data: { observedIndices: selectedIndices },
+		});
 
 		revalidatePath("/dashboard");
 		revalidatePath("/settings");

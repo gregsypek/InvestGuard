@@ -1,23 +1,31 @@
 "use client";
 
-import { Activity, Container, ShieldCheck, Wallet2, Zap } from "lucide-react";
+import {
+	Activity,
+	Container,
+	LineChart,
+	ShieldCheck,
+	Wallet2,
+	Zap,
+} from "lucide-react";
 import { Asset, PortfolioWithAssets } from "@/lib/types";
 import { useMemo, useState } from "react";
 
 import { DailyPnLChart } from "./dashboard/DailyPnLChart";
 import { FilterBadge } from "./shared/FilterBadge";
 import { PortfolioChart } from "./dashboard/PortfolioCharts";
+import { SectionLayout } from "./shared/SectionLayout";
 import { cn } from "@/lib/utils";
 
-const aggregatedChartDataMockData = [
-	{ date: "2026-06-01", value: 135000, invested: 130000 },
-	{ date: "2026-06-02", value: 136200, invested: 130000 },
-	{ date: "2026-06-03", value: 134800, invested: 130000 },
-	{ date: "2026-06-04", value: 138000, invested: 135000 }, // Tu był "schodek" wpłaty
-	{ date: "2026-06-05", value: 139500, invested: 135000 },
-	{ date: "2026-06-06", value: 141000, invested: 135000 },
-	{ date: "2026-06-07", value: 142500, invested: 135000 },
-];
+// const aggregatedChartDataMockData = [
+// 	{ date: "2026-06-01", value: 135000, invested: 130000 },
+// 	{ date: "2026-06-02", value: 136200, invested: 130000 },
+// 	{ date: "2026-06-03", value: 134800, invested: 130000 },
+// 	{ date: "2026-06-04", value: 138000, invested: 135000 }, // Tu był "schodek" wpłaty
+// 	{ date: "2026-06-05", value: 139500, invested: 135000 },
+// 	{ date: "2026-06-06", value: 141000, invested: 135000 },
+// 	{ date: "2026-06-07", value: 142500, invested: 135000 },
+// ];
 
 // Interfejsy (Dopasuj do swoich typów)
 interface UserDashboardProps {
@@ -36,21 +44,6 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 		portfolios.map((p) => p.id),
 	);
 
-	// const aggregatedChartData = useMemo(() => {
-	// 	const grouped: Record<string, number> = {};
-
-	// 	snapshots.forEach((snap) => {
-	// 		if (selectedIds.includes(snap.portfolioId)) {
-	// 			const dateKey = snap.date.toISOString().split("T")[0]; // YYYY-MM-DD
-	// 			grouped[dateKey] = (grouped[dateKey] || 0) + snap.totalValue;
-	// 		}
-	// 	});
-
-	// 	return Object.entries(grouped).map(([date, value]) => ({
-	// 		date,
-	// 		value,
-	// 	}));
-	// }, [snapshots, selectedIds]);
 	const aggregatedChartData = useMemo(() => {
 		// Struktura: { "2026-06-08": { "portfolio1": { total: 10000, invested: 8000 } } }
 		const dailyPortfolioValues: Record<
@@ -111,25 +104,33 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 		}
 		return result;
 	}, [aggregatedChartData]);
-	const dailyPnLDataMockData = useMemo(() => {
-		if (!aggregatedChartDataMockData || aggregatedChartDataMockData.length < 2)
-			return [];
 
-		const result = [];
-		// Zaczynamy od i = 1, bo dla dnia 0 nie mamy dnia wczorajszego do porównania
-		for (let i = 1; i < aggregatedChartDataMockData.length; i++) {
-			const prev = aggregatedChartDataMockData[i - 1].value;
-			const curr = aggregatedChartDataMockData[i].value;
-			const diff = curr - prev;
+	// EN: Extract unique assets for the "Observed Markets" widget, strictly excluding bonds
+	const observedAssets = useMemo(() => {
+		if (!portfolios || portfolios.length === 0) return [];
 
-			result.push({
-				date: aggregatedChartDataMockData[i].date,
-				change: diff,
-				isPositive: diff >= 0,
-			});
+		const allAssets = portfolios.flatMap((p) => p.assets || []);
+
+		// EN: Filter out bonds (adjust 'BONDS' to match your actual Prisma Category enum)
+		const riskAssets = allAssets.filter((a) => a.category !== "BONDS");
+
+		// EN: Remove duplicates so if you hold the same ETF in two portfolios, it shows once
+		const uniqueAssets = [];
+		const seenIdentifiers = new Set();
+
+		for (const asset of riskAssets) {
+			// EN: Prefer ticker for markets, fallback to asset name
+			const identifier = asset.ticker || asset.name;
+
+			if (!seenIdentifiers.has(identifier)) {
+				seenIdentifiers.add(identifier);
+				uniqueAssets.push(asset);
+			}
 		}
-		return result;
-	}, []);
+
+		// EN: Limit to top 5 to keep the sidebar clean and readable
+		return uniqueAssets.slice(0, 5);
+	}, [portfolios]);
 
 	// Funkcja do przełączania portfeli
 	const togglePortfolio = (id: string) => {
@@ -269,70 +270,40 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 			</header>
 
 			{/* ========================================================= */}
-			{/* DOLNA CZĘŚĆ (Zostawiona zgodnie z życzeniem - Layout) */}
+			{/* DOLNA CZĘŚĆ (Ujednolicony Layout z naprawionymi wykresami) */}
 			{/* ========================================================= */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* LEWA KOLUMNA */}
 				<div className="lg:col-span-2 flex flex-col gap-6">
-					{/* <div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[350px] flex flex-col group">
-						<div className="flex items-center justify-between mb-4">
-							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
-								Historia Wartości (Zaznaczone)
-							</p>
-						</div>
+					<SectionLayout
+						title="Historia Wartości Portfela"
+						titleIcon={LineChart}
+						subtitle="Śledź długoterminowy trend swojego majątku oraz dzienną zmienność rynkową."
+						description="Wykres prezentuje wartość rynkową wybranych portfeli (powierzchnia) względem włożonego kapitału (linia przerywana). Dane nie są przeliczane w czasie rzeczywistym – system generuje je w formie automatycznych, nocnych migawek. Transakcje i wpłaty z dnia dzisiejszego zostaną uwzględnione na wykresie jutro rano."
+					>
+						<div className="flex flex-col gap-6">
+							{/* GŁÓWNY WYKRES WARTOŚCI - Nadana sztywna wysokość h-[320px] dla Recharts */}
+							<div className="bg-white/5 dark:bg-t-bg-panel border border-t-border rounded-2xl p-6 h-[320px]">
+								<PortfolioChart data={aggregatedChartData} />
+							</div>
 
-						<div className="flex-1 w-full min-h-[280px]">
-							<PortfolioChart data={aggregatedChartData} />
+							{/* WYKRES DZIENNEJ ZMIENNOŚCI (P&L) - Zastosowany układ flex, by wewnętrzny div poprawnie przekazał wysokość */}
+							{dailyPnLData && dailyPnLData.length > 0 && (
+								<div className="bg-white/5 dark:bg-t-bg-panel border border-t-border rounded-2xl p-6 h-[250px] flex flex-col">
+									<div className="mb-3">
+										<p className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+											Dzienna Zmienność (P&L)
+										</p>
+									</div>
+									<div className="flex-1 w-full">
+										<DailyPnLChart data={dailyPnLData} />
+									</div>
+								</div>
+							)}
 						</div>
-					</div> */}
-					{/* GŁÓWNY WYKRES WARTOŚCI */}
-					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[350px] flex flex-col group mb-6">
-						<div className="flex items-center justify-between mb-4">
-							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
-								Historia Wartości Portfela
-							</p>
-						</div>
-						<div className="flex-1 w-full min-h-[280px]">
-							{/* Twój wykres z wczoraj (z opcjonalnym znakiem wodnym) */}
-							<PortfolioChart data={aggregatedChartData} />
-						</div>
-					</div>
-					{/* WYKRES DZIENNEJ ZMIENNOŚCI (P&L) */}
-					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[250px] flex flex-col group">
-						<div className="flex items-center justify-between mb-4">
-							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
-								Dzienna Zmienność (P&L)
-							</p>
-						</div>
-						<div className="flex-1 w-full min-h-[180px]">
-							<DailyPnLChart data={dailyPnLData} />
-						</div>
-					</div>
-					{/* MOCK DATA --- START ---- */}
-					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[350px] flex flex-col group mb-6">
-						<div className="flex items-center justify-between mb-4">
-							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
-								Historia Wartości Portfela - Symulacja
-							</p>
-						</div>
-						<div className="flex-1 w-full min-h-[280px]">
-							{/* Twój wykres z wczoraj (z opcjonalnym znakiem wodnym) */}
-							<PortfolioChart data={aggregatedChartDataMockData} />
-						</div>
-					</div>
-					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 min-h-[250px] flex flex-col group">
-						<div className="flex items-center justify-between mb-4">
-							<p className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
-								Dzienna Zmienność (P&L) SYMULACJA
-							</p>
-						</div>
-						<div className="flex-1 w-full min-h-[180px]">
-							<DailyPnLChart data={dailyPnLDataMockData} />
-						</div>
-					</div>
+					</SectionLayout>
 
-					{/* MOCK DATA --- END ---- */}
-
+					{/* PODSUMOWANIE STRATEGII (PASYWNA / BOOSTER) */}
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-5 shadow-sm">
 							<div className="flex items-center gap-2 mb-3">
@@ -373,15 +344,45 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 					</div>
 				</div>
 
-				{/* PRAWA KOLUMNA */}
 				<div className="flex flex-col gap-6">
-					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 flex flex-col">
+					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 flex flex-col min-h-[350px]">
 						<h3 className="text-[11px] font-black uppercase tracking-widest text-t-text-primary mb-5 flex items-center gap-2">
 							<Activity className="w-4 h-4 text-blue-500" /> Obserwowane Rynki
 						</h3>
+
 						<div className="space-y-4 flex-1">
-							<MarketRow name="S&P 500" value="+1.20%" isPositive={true} />
-							<MarketRow name="WIG20" value="-0.45%" isPositive={false} />
+							{observedAssets.length > 0 ? (
+								observedAssets.map((asset) => {
+									// EN: Fallback logic for daily change if your DB doesn't have it yet.
+									// You can replace this with actual asset.dailyChange when available.
+									const changeValue = asset.dailyChange || 0;
+									const isPositive = changeValue >= 0;
+									const displayValue =
+										changeValue !== 0
+											? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
+											: "0.00%";
+
+									return (
+										<MarketRow
+											key={asset.id}
+											name={asset.ticker || asset.name}
+											value={displayValue}
+											isPositive={isPositive}
+										/>
+									);
+								})
+							) : (
+								// EN: Empty state if no risk assets are found
+								<div className="flex flex-col items-center justify-center h-full opacity-50 text-center space-y-2">
+									<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
+										Brak aktywów
+									</p>
+									<p className="text-[10px] text-t-text-tertiary px-4">
+										Dodaj akcje, ETF-y lub surowce do portfela, aby śledzić ich
+										zachowanie.
+									</p>
+								</div>
+							)}
 						</div>
 					</div>
 

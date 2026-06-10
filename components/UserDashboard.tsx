@@ -105,22 +105,26 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 		return result;
 	}, [aggregatedChartData]);
 
-	// EN: Extract unique assets for the "Observed Markets" widget, strictly excluding bonds
+	// EN: Extract unique assets for the "Observed Markets" widget
 	const observedAssets = useMemo(() => {
 		if (!portfolios || portfolios.length === 0) return [];
 
 		const allAssets = portfolios.flatMap((p) => p.assets || []);
 
-		// EN: Filter out bonds (adjust 'BONDS' to match your actual Prisma Category enum)
-		const riskAssets = allAssets.filter((a) => a.category !== "BONDS");
+		// EN: Filter out bonds and cash, and strictly include only observed assets
+		const riskAssets = allAssets.filter(
+			(a) =>
+				a.category !== "BONDS" &&
+				a.category !== "CASH" &&
+				a.isObserved === true,
+		);
 
-		// EN: Remove duplicates so if you hold the same ETF in two portfolios, it shows once
 		const uniqueAssets = [];
 		const seenIdentifiers = new Set();
 
 		for (const asset of riskAssets) {
-			// EN: Prefer ticker for markets, fallback to asset name
-			const identifier = asset.ticker || asset.name;
+			// EN: Prioritize name over ticker
+			const identifier = asset.name || asset.ticker;
 
 			if (!seenIdentifiers.has(identifier)) {
 				seenIdentifiers.add(identifier);
@@ -128,8 +132,8 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 			}
 		}
 
-		// EN: Limit to top 5 to keep the sidebar clean and readable
-		return uniqueAssets.slice(0, 5);
+		// EN: Return all unique observed assets since limits are handled in Settings
+		return uniqueAssets;
 	}, [portfolios]);
 
 	// Funkcja do przełączania portfeli
@@ -270,7 +274,7 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 			</header>
 
 			{/* ========================================================= */}
-			{/* DOLNA CZĘŚĆ (Ujednolicony Layout z naprawionymi wykresami) */}
+			{/* DOLNA CZĘŚĆ (Wykresy) */}
 			{/* ========================================================= */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				{/* LEWA KOLUMNA */}
@@ -353,8 +357,6 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 						<div className="space-y-4 flex-1">
 							{observedAssets.length > 0 ? (
 								observedAssets.map((asset) => {
-									// EN: Fallback logic for daily change if your DB doesn't have it yet.
-									// You can replace this with actual asset.dailyChange when available.
 									const changeValue = asset.dailyChange || 0;
 									const isPositive = changeValue >= 0;
 									const displayValue =
@@ -365,7 +367,9 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 									return (
 										<MarketRow
 											key={asset.id}
-											name={asset.ticker || asset.name}
+											name={asset.name} // PL: Zawsze pokazuj nazwę w pierwszej kolejności
+											// Opcjonalnie: Jeśli MarketRow przyjmuje prop 'subtitle' lub 'ticker', możesz go tu przekazać
+											// ticker={asset.ticker}
 											value={displayValue}
 											isPositive={isPositive}
 										/>

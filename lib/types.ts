@@ -29,7 +29,7 @@ export interface Asset {
 	name: string;
 	ticker?: string | null;
 	category: AssetCategory;
-
+	isObserved: boolean; // Nowe pole do oznaczania obserwowanych rynków,
 	// REWOLUCJA FINANSOWA 💰
 	investedCapital: number; // Musi być, by liczyć zysk
 	currentValue: number; // Musi być, by liczyć rebalancing
@@ -55,6 +55,7 @@ export interface Asset {
 	rateType?: string | null; // "FIXED" | "VARIABLE" (opcjonalne, bo nie każde aktywo to obligacja)
 	dailyChange?: number | null;
 	targetPercentage: number;
+	is;
 }
 
 export interface StockPrice {

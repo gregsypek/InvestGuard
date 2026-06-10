@@ -76,6 +76,9 @@ model Asset {
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
+  // POLA DLA OBSERWOWANYCH RYNKÓW
+  isObserved Boolean @default(false) // EN: Toggle to show on dashboard | PL: Flaga wyświetlania w sekcji Obserwowane
+
   dailyChange Float? @default(0) // EN: Percentage change in the last 24h | PL: Zmiana procentowa w 24h
 
   @@unique([portfolioId, ticker]) //unikalny klucz złożony, który uniemożliwi stworzenie dwóch rekordów w tym samym portfelu

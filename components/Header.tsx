@@ -159,39 +159,46 @@ export default function Header({
 
 							{/* Mobilny Nagłówek: Logo */}
 							<div className="p-5 border-b border-t-border-subtle flex items-center gap-3 bg-black/5 dark:bg-white/5">
-								<div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm">
-									<Image
-										src="/logo.svg"
-										alt="InvestGuard Logo"
-										width={32}
-										height={32}
-										className="block dark:hidden"
-									/>
-
-									{/* 2. Jasne logo (logo-light.svg) - UKRYTE w jasnym motywie, WIDOCZNE w ciemnym */}
-									<Image
-										src="/logo-light.svg"
-										alt="InvestGuard Logo"
-										width={32}
-										height={32}
-										className="hidden dark:block"
-									/>
-								</div>
-								<span
-									className={cn(
-										"text-xl font-black tracking-tighter",
-										isDemoMode ? "text-emerald-500" : "text-t-text-primary",
-									)}
-								>
-									{APP_NAME}
-									<span
-										className={
-											isDemoMode ? "text-emerald-500" : "text-blue-500"
-										}
+								{/* Logo owinięte w SheetTrigger */}
+								<SheetTrigger asChild>
+									<Link
+										href="/"
+										className="flex items-center gap-3 group hover:cursor-pointer"
 									>
-										.
-									</span>
-								</span>
+										<div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm">
+											<Image
+												src="/logo.svg"
+												alt="InvestGuard Logo"
+												width={32}
+												height={32}
+												className="block dark:hidden"
+											/>
+
+											<Image
+												src="/logo-light.svg"
+												alt="InvestGuard Logo"
+												width={32}
+												height={32}
+												className="hidden dark:block"
+											/>
+										</div>
+										<span
+											className={cn(
+												"text-xl font-black tracking-tighter",
+												isDemoMode ? "text-emerald-500" : "text-t-text-primary",
+											)}
+										>
+											{APP_NAME}
+											<span
+												className={
+													isDemoMode ? "text-emerald-500" : "text-blue-500"
+												}
+											>
+												.
+											</span>
+										</span>
+									</Link>
+								</SheetTrigger>
 							</div>
 
 							{/* Mobilna Nawigacja */}

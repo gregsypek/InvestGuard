@@ -41,7 +41,10 @@ export default function Aside() {
 		<aside className="hidden md:flex flex-col md:w-20 lg:w-64 bg-white/40 dark:bg-t-bg-sticky backdrop-blur-xl border-r border-t-border-subtle dark:border-white/10 transition-all duration-300 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] dark:shadow-none z-40">
 			{/* Logo */}
 			<div className="p-3 lg:p-6 flex justify-center lg:justify-start">
-				<Link href="/" className="flex items-center gap-3 group">
+				<Link
+					href="/"
+					className="flex items-center gap-3 group hover:cursor-pointer"
+				>
 					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm border border-t-border-subtle   ">
 						{/* 1. Ciemne logo (logo.svg) - WIDOCZNE w jasnym motywie, UKRYTE w ciemnym */}
 						<Image

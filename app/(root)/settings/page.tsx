@@ -1,5 +1,6 @@
 import SettingsClient from "./SettingsClient";
 import { auth } from "@/auth";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 
@@ -17,9 +18,16 @@ export default async function SettingsPage() {
 		redirect("/");
 	}
 
+	const cookieStore = await cookies();
+	const hideBulbTip = cookieStore.get("hide_bulbtip")?.value === "true";
+
 	// EN: Get user role and calculate max limit
 	const userRole = session.user.role || "REGULAR";
-	const userIndices = session.user.observedIndices || [];
+	const dbUser = await db.user.findUnique({
+		where: { id: session.user.id },
+		select: { observedIndices: true },
+	});
+	const userIndices = dbUser?.observedIndices || [];
 	const maxLimit = ROLE_LIMITS[userRole as keyof typeof ROLE_LIMITS] || 5;
 
 	const portfolios = await db.portfolio.findMany({
@@ -53,6 +61,7 @@ export default async function SettingsPage() {
 			assets={uniqueAssets}
 			maxLimit={maxLimit}
 			userIndices={userIndices}
+			initialShowBulbTip={!hideBulbTip}
 		/>
 	);
 }

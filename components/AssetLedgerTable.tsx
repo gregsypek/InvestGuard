@@ -114,7 +114,7 @@ const AssetLedgerTable = ({
 				portfolioId: portfolio.id, // ID portfela, w którym jesteśmy
 				createdAt: new Date(), // Data utworzenia (wirtualna)
 				updatedAt: new Date(), // Data aktualizacji (wirtualna)
-
+				isObserved: false,
 				// Reszta pól opcjonalnych (może być null/0)
 				purchaseDate: new Date(),
 				nominalValue: null,

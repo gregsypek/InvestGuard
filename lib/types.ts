@@ -55,7 +55,6 @@ export interface Asset {
 	rateType?: string | null; // "FIXED" | "VARIABLE" (opcjonalne, bo nie każde aktywo to obligacja)
 	dailyChange?: number | null;
 	targetPercentage: number;
-	is;
 }
 
 export interface StockPrice {

@@ -34,6 +34,7 @@ const createDemoAsset = (data: {
 		category: data.category,
 		ticker: data.ticker ?? null,
 		quantity: data.quantity,
+		isObserved: false,
 		nominalValue: null,
 		dailyChange: 0,
 

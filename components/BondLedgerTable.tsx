@@ -366,6 +366,7 @@ export default function BondLedgerTable({
 																		category: "BONDS",
 																		portfolioId: portfolioId,
 																		targetPercentage: 55,
+																		isObserved: false,
 																		purchaseDate: new Date(bond.purchaseDate),
 																		createdAt: new Date(),
 																		updatedAt: new Date(),

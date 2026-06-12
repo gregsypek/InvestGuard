@@ -227,3 +227,11 @@ model PortfolioSnapshot {
   @@index([portfolioId])
   @@index([date])
 }
+
+model MarketIndex {
+  id          String   @id @default(cuid())
+  symbol      String   @unique // np. "SP500", "WIG20"
+  price       Float    @default(0) // Aktualna cena (przyda się na przyszłość)
+  dailyChange Float    @default(0) // Zmiana procentowa
+  updatedAt   DateTime @updatedAt
+}

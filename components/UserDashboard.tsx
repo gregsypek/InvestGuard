@@ -2,7 +2,9 @@
 
 import {
 	Activity,
+	Briefcase,
 	Container,
+	Globe,
 	LineChart,
 	ShieldCheck,
 	Wallet2,
@@ -16,29 +18,35 @@ import { FilterBadge } from "./shared/FilterBadge";
 import { PortfolioChart } from "./dashboard/PortfolioCharts";
 import { SectionLayout } from "./shared/SectionLayout";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns"; // Dodane dla daty
+import { pl } from "date-fns/locale"; // Dodane dla języka polskiego
 
-// const aggregatedChartDataMockData = [
-// 	{ date: "2026-06-01", value: 135000, invested: 130000 },
-// 	{ date: "2026-06-02", value: 136200, invested: 130000 },
-// 	{ date: "2026-06-03", value: 134800, invested: 130000 },
-// 	{ date: "2026-06-04", value: 138000, invested: 135000 }, // Tu był "schodek" wpłaty
-// 	{ date: "2026-06-05", value: 139500, invested: 135000 },
-// 	{ date: "2026-06-06", value: 141000, invested: 135000 },
-// 	{ date: "2026-06-07", value: 142500, invested: 135000 },
-// ];
+// Słownik indeksów
+const GLOBAL_INDICES_MAP: Record<string, string> = {
+	SP500: "S&P 500",
+	NASDAQ: "NASDAQ 100",
+	WIG20: "WIG20",
+	DAX: "DAX 40",
+	GOLD: "Złoto (XAU/USD)",
+	BTC: "Bitcoin",
+};
 
-// Interfejsy (Dopasuj do swoich typów)
+// Zaktualizowany interfejs (dodane nowe pola)
 interface UserDashboardProps {
 	portfolios: PortfolioWithAssets[];
-	snapshots: {
-		date: Date;
-		totalValue: number;
-		investedValue: number; // EN: Added missing investedValue property
-		portfolioId: string;
-	}[];
+	snapshots: any[];
+	userIndices?: string[];
+	indexQuotes?: Record<string, number>;
+	lastUpdated?: string | null;
 }
 
-export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
+export function UserDashboard({
+	portfolios,
+	snapshots,
+	userIndices = [],
+	indexQuotes = {},
+	lastUpdated = null,
+}: UserDashboardProps) {
 	// 1. STAN: Które portfele są wybrane? Domyślnie wszystkie.
 	const [selectedIds, setSelectedIds] = useState<string[]>(
 		portfolios.map((p) => p.id),
@@ -307,73 +315,98 @@ export function UserDashboard({ portfolios, snapshots }: UserDashboardProps) {
 						</div>
 					</SectionLayout>
 				</div>
-
+				{/* PRAWA KOLUMNA */}
 				<div className="flex flex-col gap-6">
-					<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 flex flex-col min-h-[350px]">
-						<h3 className="text-[11px] font-black uppercase tracking-widest text-t-text-primary mb-5 flex items-center gap-2">
-							<Activity className="w-4 h-4 text-blue-500" /> Obserwowane Rynki
-						</h3>
+					<SectionLayout
+						title="Radar Rynkowy"
+						titleIcon={Activity}
+						subtitle="Śledź kluczowe wskaźniki i wybrane aktywa."
+						description="Zestawienie globalnych indeksów makroekonomicznych oraz wytypowanych walorów z Twojego portfela."
+					>
+						<div className="flex flex-col gap-6">
+							{/* SEKCJA 1: GLOBALNE INDEKSY */}
+							{userIndices && userIndices.length > 0 && (
+								<div className=" bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm">
+									<div className="flex items-center justify-between mb-4">
+										<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+											<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki
+											Makro
+										</h4>
 
-						<div className="space-y-4 flex-1">
-							{observedAssets.length > 0 ? (
-								observedAssets.map((asset) => {
-									const changeValue = asset.dailyChange || 0;
-									const isPositive = changeValue >= 0;
-									const displayValue =
-										changeValue !== 0
-											? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
-											: "0.00%";
+										{/* ZNACZNIK CZASU AKTUALIZACJI */}
+										{lastUpdated && (
+											<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
+												<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse" />
+												{format(new Date(lastUpdated), "HH:mm, dd MMM", {
+													locale: pl,
+												})}
+											</span>
+										)}
+									</div>
 
-									return (
-										<MarketRow
-											key={asset.id}
-											name={asset.name} // PL: Zawsze pokazuj nazwę w pierwszej kolejności
-											// Opcjonalnie: Jeśli MarketRow przyjmuje prop 'subtitle' lub 'ticker', możesz go tu przekazać
-											// ticker={asset.ticker}
-											value={displayValue}
-											isPositive={isPositive}
-										/>
-									);
-								})
-							) : (
-								// EN: Empty state if no risk assets are found
-								<div className="flex flex-col items-center justify-center h-full opacity-50 text-center space-y-2">
-									<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
-										Brak aktywów
-									</p>
-									<p className="text-[10px] text-t-text-tertiary px-4">
-										Dodaj akcje, ETF-y lub surowce do portfela, aby śledzić ich
-										zachowanie.
-									</p>
+									<div className="space-y-4">
+										{userIndices.map((indexId) => {
+											const indexName = GLOBAL_INDICES_MAP[indexId] || indexId;
+											const changeValue = indexQuotes[indexId] || 0;
+											const isPositive = changeValue >= 0;
+											const displayValue =
+												changeValue !== 0
+													? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
+													: "0.00%";
+
+											return (
+												<MarketRow
+													key={indexId}
+													name={indexName}
+													value={displayValue}
+													isPositive={isPositive}
+												/>
+											);
+										})}
+									</div>
 								</div>
 							)}
+
+							{/* SEKCJA 2: AKTYWA Z PORTFELA */}
+							<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm flex-1">
+								<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
+									<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
+									Portfela
+								</h4>
+
+								<div className="space-y-4">
+									{observedAssets.length > 0 ? (
+										observedAssets.map((asset) => {
+											const changeValue = asset.dailyChange || 0;
+											const isPositive = changeValue >= 0;
+											const displayValue =
+												changeValue !== 0
+													? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
+													: "0.00%";
+
+											return (
+												<MarketRow
+													key={asset.id}
+													name={asset.name}
+													value={displayValue}
+													isPositive={isPositive}
+												/>
+											);
+										})
+									) : (
+										<div className="flex flex-col items-center justify-center py-6 opacity-50 text-center space-y-2">
+											<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
+												Brak aktywów
+											</p>
+											<p className="text-[10px] text-t-text-tertiary px-4 leading-relaxed">
+												Przejdź do ustawień, aby wybrać walory do obserwacji.
+											</p>
+										</div>
+									)}
+								</div>
+							</div>
 						</div>
-					</div>
-
-					{/* <div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 border-l-4 border-l-blue-500">
-						<h3 className="text-[11px] font-black uppercase tracking-widest text-t-text-primary mb-3 flex items-center gap-2">
-							<BookOpen className="w-4 h-4 text-blue-500" /> Lekcja Inwestora
-						</h3>
-						<p className="text-xs font-bold text-blue-500 mb-1">
-							Tip dnia: Rebalancing
-						</p>
-						<p className="text-xs text-t-text-secondary leading-relaxed font-medium">
-							Regularne równoważenie kapitału wymusza systematyczną realizację
-							zysków i utrzymanie bezpiecznego poziomu obligacji.
-						</p>
-					</div> */}
-
-					{/* <div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6 border-l-4 border-l-amber-500">
-						<h3 className="text-[11px] font-black uppercase tracking-widest text-t-text-primary mb-3 flex items-center gap-2">
-							<Crosshair className="w-4 h-4 text-amber-500" /> Radar Okazji
-						</h3>
-						<p className="text-xs font-bold text-amber-500 mb-1">
-							Na celowniku: Dino Polska
-						</p>
-						<p className="text-xs text-t-text-secondary leading-relaxed font-medium">
-							Lider polskiego retailu po znacznej korekcie wyceny.
-						</p>
-					</div> */}
+					</SectionLayout>
 				</div>
 			</div>
 		</div>

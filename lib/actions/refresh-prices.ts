@@ -16,6 +16,15 @@ const TICKER_MAP: Record<string, string> = {
 	"EIMI.UK": "EIMI.L",
 	"ALAG.UK": "ALAG.L",
 };
+// EN: Słownik do mapowania globalnych indeksów dla Yahoo
+const GLOBAL_INDICES: Record<string, string> = {
+	SP500: "^GSPC",
+	NASDAQ: "^IXIC",
+	WIG20: "WIG20.WA",
+	DAX: "^GDAXI",
+	GOLD: "GC=F",
+	BTC: "BTC-USD",
+};
 export async function refreshPortfolioPrices(portfolioId: string) {
 	const session = await auth();
 	if (!session?.user?.id) return { error: "Błąd autoryzacji" };
@@ -93,6 +102,46 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 			} catch (err) {
 				console.error(`❌ Error refreshing ${symbol}:`, err);
 			}
+		}
+
+		// === NOWY BLOK: Pobieranie i zapis indeksów globalnych ===
+		try {
+			const indexSymbols = Object.values(GLOBAL_INDICES);
+			const indexResult = await yahooFinance.quote(
+				indexSymbols,
+				{},
+				{ validateResult: false },
+			);
+			const indexQuotes = Array.isArray(indexResult)
+				? indexResult
+				: [indexResult];
+
+			for (const q of indexQuotes) {
+				if (q && q.symbol) {
+					// Tłumaczymy ticker z Yahoo (np. ^GSPC) z powrotem na Twój identyfikator (SP500)
+					const originalId = Object.keys(GLOBAL_INDICES).find(
+						(key) => GLOBAL_INDICES[key] === q.symbol,
+					);
+
+					if (originalId) {
+						await db.marketIndex.upsert({
+							where: { symbol: originalId },
+							update: {
+								price: q.regularMarketPrice || 0,
+								dailyChange: q.regularMarketChangePercent || 0,
+							},
+							create: {
+								symbol: originalId,
+								price: q.regularMarketPrice || 0,
+								dailyChange: q.regularMarketChangePercent || 0,
+							},
+						});
+					}
+				}
+			}
+			console.log("✅ Pomyślnie zaktualizowano indeksy globalne.");
+		} catch (error) {
+			console.error("❌ Błąd aktualizacji indeksów globalnych:", error);
 		}
 
 		revalidatePath("/dashboard");

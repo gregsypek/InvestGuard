@@ -204,6 +204,7 @@ const TIPS_CONFIG: Record<
 		},
 	],
 };
+
 const BulbTip = () => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [activeStep, setActiveStep] = useState(0);
@@ -216,9 +217,7 @@ const BulbTip = () => {
 		setActiveStep(0);
 	}
 
-	// Ta funkcja znajdzie odpowiedni klucz, nawet jeśli ścieżka ma na końcu ID
 	const getPageTips = (path: string) => {
-		// Szukamy klucza, od którego zaczyna się aktualna ścieżka
 		const matchingKey = Object.keys(TIPS_CONFIG).find(
 			(key) => key !== "default" && path.startsWith(key),
 		);
@@ -239,76 +238,74 @@ const BulbTip = () => {
 	const toggleOpen = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
-		console.log("Bulb clicked on Safari/Chrome! State:", !isOpen);
 		setIsOpen(!isOpen);
 	};
 
 	return (
-		// Zmiana: Usunięto pointer-events-none, kontener ma minimalną szerokość
-		<div className="fixed bottom-6 right-6 z-9999 flex flex-col items-end gap-4 ">
+		<div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-4">
 			{isOpen && (
 				<Card
 					style={{ width: "400px", minWidth: "400px" }}
 					className={cn(
-						"shadow-2xl py-4 animate-in slide-in-from-bottom-5 fade-in duration-300 bg-sidebar text-sidebar-foreground",
+						"shadow-2xl shadow-black/40 py-4 animate-in slide-in-from-bottom-5 fade-in duration-300",
+						"bg-t-bg-panel/95 backdrop-blur-xl border border-t-border-subtle", // PREMIUM GLASS LOOK
 					)}
 				>
-					<CardHeader className=" pb-3 relative ">
+					<CardHeader className="pb-3 relative border-b border-t-border-subtle/50 mb-4 mx-6 px-0">
 						<Button
 							variant="ghost"
 							size="icon"
-							type="button" // Safari fix
-							className="absolute right-2 top-2 h-7 w-7 rounded-full hover:bg-amber-500/10 cursor-pointer"
+							type="button"
+							className="absolute right-0 top-0 h-7 w-7 rounded-full hover:bg-amber-500/10 transition-colors"
 							onClick={(e) => {
 								e.stopPropagation();
 								setIsOpen(false);
 							}}
 						>
-							<X className="h-4 w-4 text-amber-600" />
+							<X className="h-4 w-4 text-amber-500" />
 						</Button>
-						<CardTitle className="flex items-center gap-2 text-base font-black tracking-tighter text-amber-600 uppercase">
+						<CardTitle className="flex items-center gap-2 text-[11px] font-black tracking-widest text-amber-500 uppercase">
 							<Icon className="w-4 h-4" />
 							{currentTip.title}
 						</CardTitle>
 					</CardHeader>
-					<CardContent className="pt-6 space-y-4">
+
+					<CardContent className="space-y-5 px-6">
 						<div>
-							<h4 className="font-bold text-[10px] text-amber-600 dark:text-amber-400 uppercase tracking-widest">
-								Funkcja Aplikacji
+							<h4 className="font-bold text-[9px] text-t-text-tertiary uppercase tracking-widest mb-1.5">
+								Kontekst Aplikacji
 							</h4>
-							<p className="font-black text-lg tracking-tight leading-tight">
+							<p className="font-bold text-base text-t-text-primary tracking-tight">
 								{currentTip.indicatorName}
 							</p>
-							<p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+							<p className="text-[11px] text-t-text-secondary mt-1 leading-relaxed">
 								{currentTip.indicatorDesc}
 							</p>
 						</div>
 
-						<div className="h-px bg-border w-full" />
-
-						<div>
-							<h4 className="font-bold text-[10px] text-amber-600 dark:text-amber-400 uppercase tracking-widest">
-								Wskazówka
+						<div className="p-4 rounded-2xl bg-t-bg-sticky border border-t-border shadow-inner">
+							<h4 className="font-bold text-[9px] text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+								<Lightbulb className="w-3 h-3" /> Wskazówka
 							</h4>
-							<p className="font-bold italic mt-1 text-sm">
-								&quot;{currentTip.tipTitle}&quot;
+							<p className="font-bold text-sm text-t-text-primary mb-1">
+								{currentTip.tipTitle}
 							</p>
-							<p className="text-xs mt-2 leading-relaxed italic">
+							<p className="text-xs text-t-text-secondary leading-relaxed italic">
 								&quot;{currentTip.tipDesc}&quot;
 							</p>
 						</div>
 
 						{hasMultiple && (
-							<div className="flex items-center justify-between pt-2 border-t mt-4">
-								<span className="text-[10px] font-bold text-muted-foreground uppercase">
-									Wskazówka {activeStep + 1} z {pageTips.length}
+							<div className="flex items-center justify-between pt-2">
+								<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
+									{activeStep + 1} / {pageTips.length}
 								</span>
-								<div className="flex gap-1 ">
+								<div className="flex gap-1.5">
 									<Button
-										variant="default"
+										variant="ghost"
 										size="icon"
-										type="button" // Safari fix
-										className="h-6 w-6 cursor-pointer"
+										type="button"
+										className="h-7 w-7 rounded-lg border border-t-border hover:bg-black/20 hover:border-blue-500/50 hover:text-blue-500 transition-all"
 										onClick={(e) => {
 											e.stopPropagation();
 											setActiveStep(
@@ -317,16 +314,16 @@ const BulbTip = () => {
 											);
 										}}
 									>
-										<ChevronLeft className="h-3 w-3" />
+										<ChevronLeft className="h-4 w-4" />
 									</Button>
 									<Button
-										variant="default"
+										variant="ghost"
 										size="icon"
-										type="button" // Safari fix
-										className="h-6 w-6 cursor-pointer"
+										type="button"
+										className="h-7 w-7 rounded-lg border border-t-border hover:bg-black/20 hover:border-blue-500/50 hover:text-blue-500 transition-all"
 										onClick={handleNext}
 									>
-										<ChevronRight className="h-3 w-3" />
+										<ChevronRight className="h-4 w-4" />
 									</Button>
 								</div>
 							</div>
@@ -335,29 +332,31 @@ const BulbTip = () => {
 				</Card>
 			)}
 
+			{/* PREMIUM BUTTON */}
 			<button
-				type="button" // Krytyczne dla Safari
+				type="button"
 				onClick={toggleOpen}
 				className={cn(
-					"p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 group relative cursor-pointer", // cursor-pointer dla Safari
-					isOpen ? " rotate-12 border border2" : "bg-amber-500",
+					"p-3.5 rounded-full shadow-lg transition-all duration-300 active:scale-95 group relative cursor-pointer border",
+					isOpen
+						? "bg-t-bg-panel border-amber-500/50 rotate-12"
+						: "bg-t-bg-panel border-t-border hover:border-amber-500/50 hover:bg-amber-500/5 shadow-amber-500/10",
 				)}
 			>
-				<div className="absolute inset-0 bg-amber-400 rounded-full blur-md opacity-0 group-hover:opacity-40 transition-opacity " />
 				<Lightbulb
 					className={cn(
-						"w-5 h-5 text-amber-950/70 dark:text-amber-950/70 relative transition-transform",
-						"shrink", // Zapewnia, że Safari nie ściśnie ikony
-						isOpen && "rotate-12 fill-amber-300", // Opcjonalna animacja rotacji wewnątrz
+						"w-5 h-5 transition-colors duration-300",
+						isOpen
+							? "text-amber-500 fill-amber-500/20"
+							: "text-amber-500/70 group-hover:text-amber-500",
 					)}
 				/>
-
-				{/* {!isOpen && (
-					<span className="absolute top-0 right-0 flex h-3 w-3 ">
-						<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
-						<span className="relative inline-flex rounded-full h-3 w-3 bg-amber-400 "></span>
+				{!isOpen && (
+					<span className="absolute top-0 right-0 flex h-2.5 w-2.5 -mt-0.5 -mr-0.5">
+						<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+						<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500 border border-t-bg-panel"></span>
 					</span>
-				)} */}
+				)}
 			</button>
 		</div>
 	);

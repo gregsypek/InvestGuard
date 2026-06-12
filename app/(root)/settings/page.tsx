@@ -20,6 +20,8 @@ export default async function SettingsPage() {
 
 	const cookieStore = await cookies();
 	const hideBulbTip = cookieStore.get("hide_bulbtip")?.value === "true";
+	const hideMarketTicker =
+		cookieStore.get("hide_market_ticker")?.value === "true";
 
 	// EN: Get user role and calculate max limit
 	const userRole = session.user.role || "REGULAR";
@@ -62,6 +64,7 @@ export default async function SettingsPage() {
 			maxLimit={maxLimit}
 			userIndices={userIndices}
 			initialShowBulbTip={!hideBulbTip}
+			initialShowMarketTicker={!hideMarketTicker}
 		/>
 	);
 }

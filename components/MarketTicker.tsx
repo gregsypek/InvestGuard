@@ -1,168 +1,76 @@
 "use client";
 
-import { EyeIcon, EyeOff, Pause, Play, Settings2 } from "lucide-react";
-import React, { useState } from "react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 
-import { Button } from "./ui/button";
-import { Slider } from "./ui/slider";
-import { TickerIcon } from "./TickerIcon";
 import { cn } from "@/lib/utils";
 
-interface TickerItem {
-	label: string;
-	value: string | number;
-	change: string | number;
-	logo?: string | null;
-}
+// Słownik do ładnego formatowania
+const TICKER_NAMES: Record<string, string> = {
+	SP500: "S&P 500",
+	NASDAQ: "NASDAQ 100",
+	WIG20: "WIG20",
+	DAX: "DAX 40",
+	GOLD: "ZŁOTO",
+	BTC: "BITCOIN",
+};
 
 interface MarketTickerProps {
-	data: TickerItem[];
+	indices: { symbol: string; price: number; dailyChange: number }[];
 }
 
-export function MarketTicker({ data }: MarketTickerProps) {
-	const [speed, setSpeed] = useState(200);
-	const [isVisible, setIsVisible] = useState(true);
-	const [isPaused, setIsPaused] = useState(false);
-	const [showControls, setShowControls] = useState(false);
+export function MarketTicker({ indices }: MarketTickerProps) {
+	if (!indices || indices.length === 0) return null;
 
-	if (!data || data.length === 0) return null;
+	// Klonujemy tablicę 3 razy, żeby stworzyć idealnie płynną pętlę na dużych ekranach
+	const duplicatedIndices = [...indices, ...indices, ...indices];
 
 	return (
-		<div
-			className={cn(
-				// ZMIANA: Zintegrowano tło (bg-t-bg-base), tekst i ramkę (border-t-border)
-				"relative group w-full bg-t-bg-base text-t-text-primary border-b border-t-border overflow-hidden select-none transition-all duration-300",
-				isVisible ? "py-1.5 h-9" : "h-9 py-1.5 bg-transparent border-none",
-			)}
-		>
-			{isVisible && (
-				<div
-					className="flex whitespace-nowrap"
-					style={{
-						animation: isPaused ? "none" : `marquee ${speed}s linear infinite`,
-						display: "inline-flex",
-					}}
-				>
-					{[...data, ...data, ...data].map((item, index) => {
-						const changeStr = String(item.change);
-						const isPositive =
-							changeStr.startsWith("+") ||
-							(!changeStr.startsWith("-") && parseFloat(changeStr) > 0);
-						const isNegative = changeStr.startsWith("-");
+		<div className="w-full bg-t-bg-panel/95 backdrop-blur-xl border-b border-t-border-subtle overflow-hidden flex items-center h-10 z-50 relative">
+			{/* PREMIUM SHADOW: Efekt płynnego zanikania tekstu na krawędziach ekranu */}
+			<div
+				className="absolute inset-0 z-10 pointer-events-none"
+				style={{
+					background:
+						"linear-gradient(90deg, var(--bg-panel) 0%, transparent 5%, transparent 95%, var(--bg-panel) 100%)",
+				}}
+			/>
 
-						return (
-							<div
-								key={index}
-								className="flex items-center space-x-2.5 mx-6 text-[11px] font-medium tracking-wide"
-							>
-								{item.logo ? (
-									<TickerIcon ticker={item.label} logoUrl={item.logo} />
-								) : (
-									<div className="w-4 h-4 rounded-full bg-t-bg-panel flex items-center justify-center text-[8px] font-bold text-t-text-secondary">
-										{item.label[0]}
-									</div>
-								)}
+			{/* Kontener animacji z pauzą po najechaniu myszką */}
+			<div className="flex items-center w-full min-w-max animate-ticker hover:[animation-play-state:paused] cursor-default">
+				{duplicatedIndices.map((idx, i) => {
+					const isPositive = idx.dailyChange >= 0;
+					const name = TICKER_NAMES[idx.symbol] || idx.symbol;
+					const changeStr = `${isPositive ? "+" : ""}${idx.dailyChange.toFixed(2)}%`;
 
-								<span className="text-t-text-secondary uppercase">
-									{item.label}
-								</span>
-								<span className="font-mono text-t-text-primary">
-									{item.value}
-								</span>
-								<span
-									className={cn(
-										"font-mono font-bold",
-										// ZMIANA: Zyski i straty reagują na motyw (neony tylko w nocy)
-										isPositive
-											? "text-emerald-600 dark:text-emerald-400 drop-shadow-none dark:drop-shadow-[0_0_5px_rgba(52,211,153,0.3)]"
-											: isNegative
-												? "text-rose-600 dark:text-rose-500 drop-shadow-none dark:drop-shadow-[0_0_5px_rgba(244,63,94,0.3)]"
-												: "text-t-text-tertiary",
-									)}
-								>
-									{item.change}
-								</span>
-							</div>
-						);
-					})}
-				</div>
-			)}
-
-			{/* ZMIANA: Gradient zanikania pod przyciskami płynnie przechodzi od t-bg-base */}
-			<div className="absolute right-0 top-0 h-full flex items-center gap-1 px-4 bg-linear-to-l from-t-bg-base via-t-bg-base/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-				{showControls && isVisible && (
-					<div className="flex items-center gap-4 bg-t-bg-panel border border-t-border p-2 rounded-lg shadow-lg mr-2 animate-in fade-in slide-in-from-right-2">
-						<div className="flex flex-col gap-1 w-24">
-							<span className="text-[9px] uppercase font-black text-t-text-secondary">
-								Tempo
-							</span>
-							<Slider
-								value={[200 - speed]}
-								max={80}
-								min={5}
-								step={1}
-								onValueChange={(val) => setSpeed(200 - val[0])}
-							/>
-						</div>
-						<div className="h-6 w-px bg-t-border" />
-						<Button
-							variant="ghost"
-							size="icon"
-							className="h-8 w-8 text-t-text-primary hover:bg-t-hover"
-							onClick={() => setIsPaused(!isPaused)}
+					return (
+						<div
+							key={`${idx.symbol}-${i}`}
+							className="flex items-center gap-3 px-8 group transition-opacity duration-300"
 						>
-							{isPaused ? (
-								<Play className="h-4 w-4 fill-current" />
-							) : (
-								<Pause className="h-4 w-4 fill-current" />
-							)}
-						</Button>
-					</div>
-				)}
+							<span className="text-[10px] font-bold uppercase tracking-[0.2em] text-t-text-tertiary group-hover:text-t-text-secondary transition-colors">
+								{name}
+							</span>
 
-				{isVisible && (
-					<Button
-						variant="outline"
-						size="icon"
-						className="h-7 w-7 rounded-full bg-t-bg-panel border border-t-border shadow-sm text-t-text-secondary hover:text-t-text-primary hover:bg-t-hover"
-						onClick={() => setShowControls(!showControls)}
-					>
-						<Settings2
-							className={cn(
-								"h-3.5 w-3.5 transition-transform",
-								showControls && "rotate-90",
-							)}
-						/>
-					</Button>
-				)}
+							<div
+								className={cn(
+									"flex items-center gap-1.5 text-[11px] font-black tracking-wider",
+									isPositive ? "text-emerald-500/90" : "text-rose-500/90",
+								)}
+							>
+								{isPositive ? (
+									<TrendingUp className="w-3 h-3" />
+								) : (
+									<TrendingDown className="w-3 h-3" />
+								)}
+								{changeStr}
+							</div>
 
-				<Button
-					variant="outline"
-					size="icon"
-					className="h-7 w-7 rounded-full bg-t-bg-panel border border-t-border shadow-sm text-t-text-secondary hover:text-t-text-primary hover:bg-t-hover"
-					onClick={() => {
-						setIsVisible(!isVisible);
-						if (isVisible) setShowControls(false);
-					}}
-				>
-					{isVisible ? (
-						<EyeOff className="h-3.5 w-3.5" />
-					) : (
-						<EyeIcon className="h-3.5 w-3.5" />
-					)}
-				</Button>
+							{/* Minimalistyczny separator (kropka) */}
+							<div className="w-1 h-1 rounded-full bg-t-border-subtle ml-8" />
+						</div>
+					);
+				})}
 			</div>
-
-			<style jsx global>{`
-				@keyframes marquee {
-					0% {
-						transform: translateX(0);
-					}
-					100% {
-						transform: translateX(-33.33%);
-					}
-				}
-			`}</style>
 		</div>
 	);
 }

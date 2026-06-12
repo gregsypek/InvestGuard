@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { cookies } from "next/headers"; // Importujemy narzędzie do ciasteczek
 import { db } from "@/lib/db";
 import { getStockLogo } from "@/lib/utils";
+
 export default async function RootLayout({
 	children,
 }: {
@@ -29,6 +30,19 @@ export default async function RootLayout({
 		}
 	}
 
+	const cookieStore = await cookies();
+	const hideMarketTicker =
+		cookieStore.get("hide_market_ticker")?.value === "true";
+
+	// === POBIERANIE DANYCH Z BAZY DO PASKA ===
+	let tickerIndices: { symbol: string; price: number; dailyChange: number }[] =
+		[];
+	if (!hideMarketTicker) {
+		tickerIndices = await db.marketIndex.findMany({
+			select: { symbol: true, price: true, dailyChange: true },
+		});
+	}
+
 	const userRole = session?.user?.role || "REGULAR";
 
 	// const marketRates = await db.exchangeRate.findMany();
@@ -48,7 +62,6 @@ export default async function RootLayout({
 			})
 		: [];
 
-	const cookieStore = await cookies();
 	const selectedPortfolioId =
 		cookieStore.get("selectedPortfolioId")?.value || "";
 
@@ -116,7 +129,10 @@ export default async function RootLayout({
 					lastUpdated={lastUpdated}
 				/>
 				<main className="flex-1 overflow-y-auto">
-					<MarketTicker data={tickerData} />
+					{/* === TUTAJ ZMIANA: Przekazujemy indices z bazy! === */}
+					{!hideMarketTicker && tickerIndices.length > 0 && (
+						<MarketTicker indices={tickerIndices} />
+					)}
 
 					{/* Zamiast sztywnego p-6, używamy responsywnego paddingu, 
               a górny margines (pt-0) pozwala Hero sekcji przylegać do góry */}

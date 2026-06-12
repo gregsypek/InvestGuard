@@ -14,6 +14,7 @@ interface SettingsClientProps {
 	maxLimit: number;
 	userIndices: string[];
 	initialShowBulbTip: boolean;
+	initialShowMarketTicker: boolean;
 }
 
 export default function SettingsClient({
@@ -21,32 +22,42 @@ export default function SettingsClient({
 	maxLimit,
 	userIndices,
 	initialShowBulbTip,
+	initialShowMarketTicker,
 }: SettingsClientProps) {
 	const router = useRouter();
 	const [activeTab, setActiveTab] = useState("dashboard");
 
 	// 2. Inicjujemy stan korzystając z wartości początkowej z serwera
 	const [settings, setSettings] = useState({
-		showMarketTicker: true,
 		showBulbTip: initialShowBulbTip, // <-- Teraz Switch wie, czy ciastko istnieje!
+		showMarketTicker: initialShowMarketTicker, // <-- Teraz Switch wie, czy ciastko istnieje!
 		showPortfolioAssetsInRadar: true,
 	});
-
 	const toggleSetting = (key: keyof typeof settings) => {
-		setSettings((prev) => {
-			const newValue = !prev[key];
+		// EN: 1. Calculate the new value based on the current state
+		const newValue = !settings[key];
 
-			if (key === "showBulbTip") {
-				if (newValue) {
-					Cookies.remove("hide_bulbtip");
-				} else {
-					Cookies.set("hide_bulbtip", "true", { expires: 365 });
-				}
-				router.refresh();
+		// EN: 2. Perform side effects (Cookies & Router) OUTSIDE of setSettings
+		if (key === "showBulbTip") {
+			if (newValue) {
+				Cookies.remove("hide_bulbtip");
+			} else {
+				Cookies.set("hide_bulbtip", "true", { expires: 365 });
 			}
+			router.refresh();
+		}
 
-			return { ...prev, [key]: newValue };
-		});
+		if (key === "showMarketTicker") {
+			if (newValue) {
+				Cookies.remove("hide_market_ticker");
+			} else {
+				Cookies.set("hide_market_ticker", "true", { expires: 365 });
+			}
+			router.refresh();
+		}
+
+		// EN: 3. Update the React state purely at the end
+		setSettings((prev) => ({ ...prev, [key]: newValue }));
 	};
 
 	return (
@@ -55,9 +66,7 @@ export default function SettingsClient({
 				<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-t-text-primary mb-2">
 					Ustawienia
 				</h1>
-				<span className="text-2xl uppercase text-t-text-tertiary">
-					Strona w przygotowaniu !
-				</span>
+
 				<p className="text-sm font-medium text-t-text-tertiary">
 					Zarządzaj swoimi preferencjami, wyglądem aplikacji i bezpieczeństwem.
 				</p>

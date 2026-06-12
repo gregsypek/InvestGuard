@@ -4,17 +4,23 @@
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import { refreshPortfolioPrices } from "@/lib/actions/refresh-prices";
 import { toast } from "sonner";
 import { useState } from "react";
 
+// 1. Definiujemy, co przyjmuje przycisk (dodajemy lastUpdated)
+interface RefreshButtonProps {
+	portfolioId: string;
+	role: string;
+	lastUpdated?: string | null;
+}
+
 export function RefreshButton({
 	portfolioId,
 	role,
-}: {
-	portfolioId: string;
-	role: string;
-}) {
+	lastUpdated, // 2. Odbieramy nową zmienną
+}: RefreshButtonProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const isPremium = role === "ADMIN" || role === "SUBSCRIBER";
 
@@ -24,7 +30,6 @@ export function RefreshButton({
 
 		if (result.success) {
 			toast.success(result.success);
-			// Dodatkowa informacja edukacyjna w toascie dla darmowych użytkowników
 			if (!isPremium) {
 				toast.info(
 					"Pamiętaj: Aktualizacja na koncie darmowym działa raz na 24h.",
@@ -36,13 +41,12 @@ export function RefreshButton({
 		setIsLoading(false);
 	};
 
-	// Tekst wyświetlany w systemowym dymku po najechaniu/przytrzymaniu
 	const tooltipText = isPremium
 		? "Odśwież wyceny (Brak limitu)"
 		: "Odśwież wyceny (Limit: 1x na dobę)";
 
 	return (
-		<div className="flex flex-col items-end gap-1">
+		<div className="flex flex-col items-end gap-0.5">
 			<Button
 				onClick={handleRefresh}
 				disabled={isLoading}
@@ -50,37 +54,32 @@ export function RefreshButton({
 				size="sm"
 				title={tooltipText}
 				className={cn(
-					// Węższy padding na mobile (px-2), normalny na desktopie (md:px-3)
 					"h-9 px-2 md:w-auto md:px-3 transition-all rounded-md bg-muted/30 md:bg-transparent hover:bg-muted",
 					isLoading && "opacity-70 cursor-not-allowed",
 				)}
 			>
 				<RefreshCw
 					className={cn(
-						"h-4 w-4 transition-all mr-1.5 md:mr-2", // Margines jest teraz wszędzie
+						"h-4 w-4 transition-all mr-1.5 md:mr-2",
 						isLoading ? "animate-spin text-blue-500" : "md:text-foreground",
 					)}
 				/>
-
-				{/* Kontener na tekst przycisku */}
 				<span className="font-medium">
-					{/* Wersja na telefony: krótka, wielkie litery, mała czcionka */}
 					<span className="md:hidden text-[9px] uppercase tracking-wider">
 						Odśwież
 					</span>
-
-					{/* Wersja na komputery: pełny tekst */}
 					<span className="hidden md:inline text-sm">
 						{isPremium ? "Aktualizuj kursy" : "Aktualizuj (1x na dobę)"}
 					</span>
 				</span>
 			</Button>
 
-			{/* {!isPremium && (
-				<span className="hidden md:block text-[10px] text-muted-foreground/70 italic text-right -mt-0.5">
-					Limit darmowy: raz na 24h.
+			{/* 3. Wyświetlamy czas pod przyciskiem, jeśli zmienna istnieje */}
+			{lastUpdated && (
+				<span className="text-[8px] md:text-[10px] text-muted-foreground/60 pr-1 tracking-wider uppercase font-medium">
+					Stan z: {format(new Date(lastUpdated), "HH:mm")}
 				</span>
-			)} */}
+			)}
 		</div>
 	);
 }

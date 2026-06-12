@@ -40,6 +40,7 @@ interface HeaderProps {
 	userButton: React.ReactNode;
 	selectedPortfolioId: string;
 	userRole: string;
+	lastUpdated?: string | null;
 }
 
 export default function Header({
@@ -47,6 +48,7 @@ export default function Header({
 	userButton,
 	selectedPortfolioId,
 	userRole,
+	lastUpdated,
 }: HeaderProps) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -106,6 +108,7 @@ export default function Header({
 			router.push(`/dashboard/${id}`);
 		}
 	};
+
 	// EN: Sync cookie with URL/Path to prevent "lost" selection
 	// Synchronizacja ciasteczka z URL
 	useEffect(() => {
@@ -368,7 +371,12 @@ export default function Header({
 
 			{/* PRAWA STRONA */}
 			<div className="flex items-center gap-2 md:gap-3">
-				<RefreshButton portfolioId={displayValue} role={userRole} />
+				{/* <RefreshButton portfolioId={displayValue} role={userRole} /> */}
+				<RefreshButton
+					portfolioId={displayValue}
+					role={userRole}
+					lastUpdated={lastUpdated} // <-- musisz podać tę zmienną do środka
+				/>
 				<Menu userButton={userButton} />
 			</div>
 		</header>

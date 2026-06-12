@@ -13,6 +13,22 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }) {
 	const session = await auth();
+
+	// === SZUKAMY NAJŚWIEŻSZEJ DATY ===
+	let lastUpdated = null;
+
+	if (session?.user?.id) {
+		const latestAsset = await db.asset.findFirst({
+			where: { portfolio: { userId: session.user.id } },
+			orderBy: { updatedAt: "desc" },
+			select: { updatedAt: true },
+		});
+
+		if (latestAsset) {
+			lastUpdated = latestAsset.updatedAt.toISOString();
+		}
+	}
+
 	const userRole = session?.user?.role || "REGULAR";
 
 	// const marketRates = await db.exchangeRate.findMany();
@@ -97,6 +113,7 @@ export default async function RootLayout({
 					portfolios={portfolios}
 					userButton={userControl}
 					userRole={userRole}
+					lastUpdated={lastUpdated}
 				/>
 				<main className="flex-1 overflow-y-auto">
 					<MarketTicker data={tickerData} />

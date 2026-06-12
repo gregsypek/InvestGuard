@@ -2,36 +2,55 @@
 
 import { Globe, LayoutDashboard, Lock, MonitorPlay, User } from "lucide-react";
 
+import Cookies from "js-cookie";
 import { ObservedMarketsManager } from "@/components/settings/ObservedMartektsManager";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-// Usunęliśmy selectedIndices, bo tym zarządza teraz baza danych
-const DEFAULT_SETTINGS = {
-	showMarketTicker: true,
-	showBulbTip: true,
-	showPortfolioAssetsInRadar: true,
-};
-
+// 1. Zmieniamy interfejs, aby przyjmował brakujące dane i stan ciastka z serwera
 interface SettingsClientProps {
 	assets: { name: string; isObserved: boolean; category: string }[];
-	maxLimit: number; //  Dodajemy nowy prop
+	maxLimit: number;
+	userIndices: string[];
+	initialShowBulbTip: boolean;
 }
 
 export default function SettingsClient({
 	assets,
 	maxLimit,
+	userIndices,
+	initialShowBulbTip,
 }: SettingsClientProps) {
+	const router = useRouter();
 	const [activeTab, setActiveTab] = useState("dashboard");
-	const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
-	const toggleSetting = (key: keyof typeof DEFAULT_SETTINGS) => {
-		setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+	// 2. Inicjujemy stan korzystając z wartości początkowej z serwera
+	const [settings, setSettings] = useState({
+		showMarketTicker: true,
+		showBulbTip: initialShowBulbTip, // <-- Teraz Switch wie, czy ciastko istnieje!
+		showPortfolioAssetsInRadar: true,
+	});
+
+	const toggleSetting = (key: keyof typeof settings) => {
+		setSettings((prev) => {
+			const newValue = !prev[key];
+
+			if (key === "showBulbTip") {
+				if (newValue) {
+					Cookies.remove("hide_bulbtip");
+				} else {
+					Cookies.set("hide_bulbtip", "true", { expires: 365 });
+				}
+				router.refresh();
+			}
+
+			return { ...prev, [key]: newValue };
+		});
 	};
 
 	return (
 		<div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
-			{/* Nagłówek Ustawień */}
 			<div className="mb-8">
 				<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-t-text-primary mb-2">
 					Ustawienia
@@ -45,7 +64,6 @@ export default function SettingsClient({
 			</div>
 
 			<div className="flex flex-col md:flex-row gap-8">
-				{/* LEWA KOLUMNA: Nawigacja */}
 				<aside className="w-full md:w-64 shrink-0 space-y-1">
 					<TabButton
 						active={activeTab === "dashboard"}
@@ -72,10 +90,9 @@ export default function SettingsClient({
 						label="Bezpieczeństwo"
 					/>
 				</aside>
-
 				{/* PRAWA KOLUMNA: Zawartość */}
+
 				<main className="flex-1 space-y-8">
-					{/* ZAKŁADKA 1: PULPIT I WYGLĄD */}
 					{activeTab === "dashboard" && (
 						<div className="space-y-6 animate-in slide-in-from-right-4 duration-500 fade-in">
 							<SettingsSection
@@ -94,21 +111,21 @@ export default function SettingsClient({
 									isActive={settings.showBulbTip}
 									onClick={() => toggleSetting("showBulbTip")}
 								/>
-								<ToggleRow
+								{/* <ToggleRow
 									title="Aktywa z portfela w Radarze"
 									desc="Pozwala na wyświetlanie w Radarze Okazji spółek, które już posiadasz."
 									isActive={settings.showPortfolioAssetsInRadar}
 									onClick={() => toggleSetting("showPortfolioAssetsInRadar")}
-								/>
+								/> */}
 							</SettingsSection>
 							{/* === NOWY MODUŁ OBSERWOWANYCH RYNKÓW === */}
 							<ObservedMarketsManager
 								assets={assets}
 								maxLimit={maxLimit}
-							/>{" "}
+								userIndices={userIndices} // <-- To naprawia czerwony błąd!
+							/>
 						</div>
 					)}
-
 					{/* ZAKŁADKA 2: PREFERENCJE */}
 					{activeTab === "preferences" && (
 						<div className="space-y-6 animate-in slide-in-from-right-4 duration-500 fade-in">

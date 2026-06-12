@@ -7,6 +7,7 @@ import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
+import { cookies } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,11 +35,14 @@ export const metadata: Metadata = {
 	metadataBase: new URL(SERVER_URL),
 };
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	// 1. Odczytujemy ciastko na serwerze
+	const cookieStore = await cookies();
+	const hideBulbTip = cookieStore.get("hide_bulbtip")?.value === "true";
 	return (
 		<html lang="en" suppressHydrationWarning className="overflow-y-hidden">
 			<body
@@ -55,7 +59,8 @@ export default function RootLayout({
 				>
 					{children}
 					<Toaster position="bottom-right" richColors />
-					<BulbTip />
+					{/* 2. Wyświetlamy BulbTip TYLKO, gdy ciastko 'hide_bulbtip' nie jest ustawione na 'true' */}
+					{!hideBulbTip && <BulbTip />}
 				</ThemeProvider>
 			</body>
 		</html>

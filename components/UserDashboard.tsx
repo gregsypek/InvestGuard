@@ -282,7 +282,7 @@ export function UserDashboard({
 			{/* ========================================================= */}
 			{/* DOLNA CZĘŚĆ (Wykresy) */}
 			{/* ========================================================= */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+			<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 				{/* LEWA KOLUMNA */}
 				<div className="lg:col-span-2 flex flex-col gap-6">
 					<SectionLayout
@@ -378,11 +378,22 @@ export function UserDashboard({
 							)}
 
 							{/* SEKCJA 2: AKTYWA Z PORTFELA */}
-							<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm flex-1">
-								<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
-									<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
-									Portfela
-								</h4>
+							<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm ">
+								<div className="flex items-center justify-between mb-4">
+									<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500  flex items-center gap-2">
+										<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
+										Portfela
+									</h4>
+									{/* ZNACZNIK CZASU AKTUALIZACJI */}
+									{lastUpdated && (
+										<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
+											<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse " />
+											{format(new Date(lastUpdated), "HH:mm, dd MMM", {
+												locale: pl,
+											})}
+										</span>
+									)}
+								</div>
 
 								<div className="space-y-4">
 									{observedAssets.length > 0 ? (

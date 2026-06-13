@@ -268,7 +268,7 @@ export default function Header({
 								<SheetTrigger asChild>
 									<Link
 										href="/settings"
-										className="p-2.5 rounded-xl text-t-text-tertiary hover:text-t-text-primary hover:bg-black/10 dark:hover:bg-white/10 transition-colors  opacity-40 hover:cursor-pointer"
+										className="p-2.5 rounded-xl text-t-text-tertiary hover:text-t-text-primary hover:bg-black/10 dark:hover:bg-white/10 transition-colors   hover:cursor-pointer"
 									>
 										<Settings className="w-5 h-5" />
 									</Link>

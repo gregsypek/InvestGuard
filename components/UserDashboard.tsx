@@ -6,18 +6,16 @@ import {
 	Container,
 	Globe,
 	LineChart,
-	ShieldCheck,
 	Wallet2,
-	Zap,
 } from "lucide-react";
 import { Asset, PortfolioWithAssets } from "@/lib/types";
+import { cn, getStockLogo } from "@/lib/utils";
 import { useMemo, useState } from "react";
 
 import { DailyPnLChart } from "./dashboard/DailyPnLChart";
 import { FilterBadge } from "./shared/FilterBadge";
 import { PortfolioChart } from "./dashboard/PortfolioCharts";
 import { SectionLayout } from "./shared/SectionLayout";
-import { cn } from "@/lib/utils";
 import { format } from "date-fns"; // Dodane dla daty
 import { pl } from "date-fns/locale"; // Dodane dla języka polskiego
 
@@ -326,9 +324,9 @@ export function UserDashboard({
 						<div className="flex flex-col gap-6">
 							{/* SEKCJA 1: GLOBALNE INDEKSY */}
 							{userIndices && userIndices.length > 0 && (
-								<div className=" bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm">
+								<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm">
 									<div className="flex items-center justify-between mb-4">
-										<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+										<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
 											<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki
 											Makro
 										</h4>
@@ -354,12 +352,24 @@ export function UserDashboard({
 													? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
 													: "0.00%";
 
+											// Wygenerowanie ikony z Favicon dla indeksów globalnych
+											const logoUrl = `https://www.google.com/s2/favicons?domain=${
+												indexId === "SP500"
+													? "spglobal.com"
+													: indexId === "NASDAQ"
+														? "nasdaq.com"
+														: indexId === "BTC"
+															? "bitcoin.org"
+															: "finance.yahoo.com"
+											}&sz=128`;
+
 											return (
 												<MarketRow
 													key={indexId}
 													name={indexName}
 													value={displayValue}
 													isPositive={isPositive}
+													logo={logoUrl} // <--- PRZEKAZUJEMY LOGO
 												/>
 											);
 										})}
@@ -369,7 +379,7 @@ export function UserDashboard({
 
 							{/* SEKCJA 2: AKTYWA Z PORTFELA */}
 							<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm flex-1">
-								<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
+								<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
 									<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
 									Portfela
 								</h4>
@@ -390,6 +400,7 @@ export function UserDashboard({
 													name={asset.name}
 													value={displayValue}
 													isPositive={isPositive}
+													logo={getStockLogo(asset.ticker ?? "")} // <--- Pobieramy logo dla aktywów z portfela
 												/>
 											);
 										})
@@ -451,20 +462,51 @@ function ValueCard({
 	);
 }
 
-function MarketRow({
-	name,
-	value,
-	isPositive,
-}: {
+interface MarketRowProps {
 	name: string;
 	value: string;
 	isPositive: boolean;
-}) {
+	logo?: string | null;
+}
+
+function MarketRow({ name, value, isPositive, logo }: MarketRowProps) {
 	return (
-		<div className="flex justify-between items-center border-b border-t-border-subtle pb-3 last:border-0 last:pb-0">
-			<span className="text-sm font-bold text-t-text-secondary">{name}</span>
+		<div className="flex items-center justify-between group py-1">
+			<div className="flex items-center gap-3">
+				{/* === KONTENER NA LOGO === */}
+				{logo ? (
+					<div className="w-6 h-6 rounded-full overflow-hidden shrink-0  flex items-center justify-center shadow-sm">
+						{/* eslint-disable-next-line @next/next/no-img-element */}
+						<img
+							src={logo}
+							alt={name}
+							className="w-full h-full object-cover p-0.5 rounded-full"
+						/>
+					</div>
+				) : (
+					<div className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+						{/* Fallback - jeśli nie ma logo, pokazujemy pierwszą literę nazwy */}
+						<span className="text-[10px] font-black text-blue-500">
+							{name.charAt(0)}
+						</span>
+					</div>
+				)}
+
+				{/* NAZWA */}
+				<span className="text-xs font-bold text-t-text-secondary group-hover:text-t-text-primary transition-colors">
+					{name}
+				</span>
+			</div>
+
+			{/* WARTOŚĆ (Zmiana procentowa) */}
 			<span
-				className={`font-mono text-sm font-bold ${isPositive ? "text-emerald-500" : "text-rose-500"}`}
+				className={`text-xs font-black tracking-wider ${
+					value === "0.00%"
+						? "text-t-text-tertiary"
+						: isPositive
+							? "text-emerald-500"
+							: "text-rose-500"
+				}`}
 			>
 				{value}
 			</span>

@@ -259,7 +259,7 @@ function ToggleRow({ title, desc, isActive, onClick }: any) {
 
 			<div
 				className={cn(
-					"relative w-11 h-6 rounded-full transition-colors duration-300 shrink-0 border",
+					"relative w-10 h-5 rounded-full transition-colors duration-300 shrink-0 border",
 					isActive
 						? "bg-blue-500 border-blue-500"
 						: "bg-black/10 dark:bg-white/10 border-t-border-subtle",

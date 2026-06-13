@@ -219,13 +219,18 @@
 	0% {
 		transform: translateX(0);
 	}
-	/* Przesuwamy o 1/3 (bo mamy 3 zestawy danych), tworząc perfekcyjną iluzję nieskończoności */
+	/* Przesuwamy o 1/3, bo w komponencie klonujemy tablicę 3 razy */
 	100% {
 		transform: translateX(-33.33%);
 	}
 }
 
 .animate-ticker {
-	/* 40 sekund to tempo idealne do czytania (nie za szybko, nie za wolno) */
-	animation: ticker 40s linear infinite;
+	/* Zwiększamy z 40s na 120s (lub więcej, jeśli wciąż za szybko) */
+	animation: ticker 220s linear infinite;
+}
+
+/* Niezawodne zatrzymanie animacji po najechaniu myszką */
+.animate-ticker:hover {
+	animation-play-state: paused;
 }

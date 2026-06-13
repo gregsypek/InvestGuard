@@ -4,29 +4,24 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-// Słownik do ładnego formatowania
-const TICKER_NAMES: Record<string, string> = {
-	SP500: "S&P 500",
-	NASDAQ: "NASDAQ 100",
-	WIG20: "WIG20",
-	DAX: "DAX 40",
-	GOLD: "ZŁOTO",
-	BTC: "BITCOIN",
-};
-
 interface MarketTickerProps {
-	indices: { symbol: string; price: number; dailyChange: number }[];
+	data: {
+		label: string;
+		value: string;
+		change: string;
+		logo?: string | null;
+	}[];
 }
 
-export function MarketTicker({ indices }: MarketTickerProps) {
-	if (!indices || indices.length === 0) return null;
+export function MarketTicker({ data }: MarketTickerProps) {
+	if (!data || data.length === 0) return null;
 
-	// Klonujemy tablicę 3 razy, żeby stworzyć idealnie płynną pętlę na dużych ekranach
-	const duplicatedIndices = [...indices, ...indices, ...indices];
+	// Klonujemy 3 razy dla perfekcyjnej, nieskończonej pętli na dużych monitorach
+	const duplicatedData = [...data, ...data, ...data];
 
 	return (
 		<div className="w-full bg-t-bg-panel/95 backdrop-blur-xl border-b border-t-border-subtle overflow-hidden flex items-center h-10 z-50 relative">
-			{/* PREMIUM SHADOW: Efekt płynnego zanikania tekstu na krawędziach ekranu */}
+			{/* PREMIUM SHADOW: Płynne zanikanie na brzegach ekranu */}
 			<div
 				className="absolute inset-0 z-10 pointer-events-none"
 				style={{
@@ -35,26 +30,51 @@ export function MarketTicker({ indices }: MarketTickerProps) {
 				}}
 			/>
 
-			{/* Kontener animacji z pauzą po najechaniu myszką */}
-			<div className="flex items-center w-full min-w-max animate-ticker hover:[animation-play-state:paused] cursor-default">
-				{duplicatedIndices.map((idx, i) => {
-					const isPositive = idx.dailyChange >= 0;
-					const name = TICKER_NAMES[idx.symbol] || idx.symbol;
-					const changeStr = `${isPositive ? "+" : ""}${idx.dailyChange.toFixed(2)}%`;
+			{/* Kontener animacji CSS - płynne tempo i pauza na hover */}
+			<div className="flex items-center w-full min-w-max animate-ticker cursor-default">
+				{" "}
+				{duplicatedData.map((item, i) => {
+					// Twój format 'change' ma już plusy i minusy (np. "+1.25%")
+					const isPositive = item.change.startsWith("+");
 
 					return (
 						<div
-							key={`${idx.symbol}-${i}`}
+							key={`${item.label}-${i}`}
 							className="flex items-center gap-3 px-8 group transition-opacity duration-300"
 						>
-							<span className="text-[10px] font-bold uppercase tracking-[0.2em] text-t-text-tertiary group-hover:text-t-text-secondary transition-colors">
-								{name}
+							{/* IKONA / LOGO */}
+							{item.logo ? (
+								<div className="w-4 h-4 rounded-full overflow-hidden shrink-0 bg-white/10 flex items-center justify-center">
+									{/* eslint-disable-next-line @next/next/no-img-element */}
+									<img
+										src={item.logo}
+										alt={item.label}
+										className="w-full h-full object-cover"
+									/>
+								</div>
+							) : (
+								<div className="w-1.5 h-1.5 rounded-full bg-blue-500/50 shrink-0" />
+							)}
+
+							{/* NAZWA (LABEL) */}
+							<span className="text-[10px] font-bold uppercase tracking-[0.15em] text-t-text-tertiary group-hover:text-t-text-secondary transition-colors">
+								{item.label}
 							</span>
 
+							{/* CENA (VALUE) */}
+							<span className="text-[11px] font-medium text-t-text-primary ml-1">
+								{item.value}
+							</span>
+
+							{/* ZMIANA (CHANGE) */}
 							<div
 								className={cn(
-									"flex items-center gap-1.5 text-[11px] font-black tracking-wider",
+									"flex items-center gap-1.5 text-[11px] font-black tracking-wider ml-1",
 									isPositive ? "text-emerald-500/90" : "text-rose-500/90",
+									// Jeśli zmiana wynosi dokładnie "0.00%", pokazujemy na szaro
+									item.change === "0.00%" || item.change === "+0.00%"
+										? "text-t-text-tertiary"
+										: "",
 								)}
 							>
 								{isPositive ? (
@@ -62,10 +82,10 @@ export function MarketTicker({ indices }: MarketTickerProps) {
 								) : (
 									<TrendingDown className="w-3 h-3" />
 								)}
-								{changeStr}
+								{item.change}
 							</div>
 
-							{/* Minimalistyczny separator (kropka) */}
+							{/* Minimalistyczny separator (kropka) na końcu */}
 							<div className="w-1 h-1 rounded-full bg-t-border-subtle ml-8" />
 						</div>
 					);

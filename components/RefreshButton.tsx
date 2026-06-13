@@ -46,7 +46,7 @@ export function RefreshButton({
 		: "Odśwież wyceny (Limit: 1x na dobę)";
 
 	return (
-		<div className="flex flex-col items-end gap-0.5">
+		<div className="flex flex-col items-center gap-0.5 ">
 			<Button
 				onClick={handleRefresh}
 				disabled={isLoading}

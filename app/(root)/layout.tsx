@@ -72,10 +72,13 @@ export default async function RootLayout({
 	const marketAssets = await db.asset.findMany({
 		where: {
 			portfolioId: selectedPortfolioId,
-			NOT: { category: "BONDS" },
+			// EN: Exclude assets that belong to either BONDS or CASH categories
+			category: {
+				notIn: ["BONDS", "CASH"],
+			},
 		},
-		// take: 5, // Pokaż tylko 5 pierwszych, żeby nie przeładować paska
 	});
+
 	// Sformatuj dane dla komponentu
 	const tickerData = [
 		// 1. Kursy walut
@@ -116,6 +119,25 @@ export default async function RootLayout({
 				logo: getStockLogo(asset.ticker),
 			};
 		}),
+		// 2. INDEKSY GLOBALNE Z BAZY (To, co pobrała Prisma!)
+		...tickerIndices.map((idx) => {
+			const isPositive = idx.dailyChange >= 0;
+			return {
+				label: idx.symbol === "GOLD" ? "ZŁOTO" : idx.symbol,
+				value: idx.price.toLocaleString("pl-PL", { maximumFractionDigits: 2 }),
+				change: (isPositive ? "+" : "") + idx.dailyChange.toFixed(2) + "%",
+				// Sprytne dobranie ikonek z Google dla indeksów
+				logo: `https://www.google.com/s2/favicons?domain=${
+					idx.symbol === "SP500"
+						? "spglobal.com"
+						: idx.symbol === "NASDAQ"
+							? "nasdaq.com"
+							: idx.symbol === "BTC"
+								? "bitcoin.org"
+								: "finance.yahoo.com"
+				}&sz=128`,
+			};
+		}),
 	];
 	return (
 		<div className="flex h-screen overflow-hidden bg-background">
@@ -129,9 +151,8 @@ export default async function RootLayout({
 					lastUpdated={lastUpdated}
 				/>
 				<main className="flex-1 overflow-y-auto">
-					{/* === TUTAJ ZMIANA: Przekazujemy indices z bazy! === */}
-					{!hideMarketTicker && tickerIndices.length > 0 && (
-						<MarketTicker indices={tickerIndices} />
+					{!hideMarketTicker && tickerData.length > 0 && (
+						<MarketTicker data={tickerData} />
 					)}
 
 					{/* Zamiast sztywnego p-6, używamy responsywnego paddingu, 

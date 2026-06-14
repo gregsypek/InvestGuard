@@ -3,10 +3,12 @@ import { addDays, differenceInDays, isSameDay, startOfDay } from "date-fns";
 export function generatePortfolioHistory(
 	portfolios: any[],
 	daysBack: number = 30,
+	customEndDate?: Date,
 ) {
 	const history: any[] = [];
-	const today = startOfDay(new Date());
-	const startDate = addDays(today, -daysBack);
+	const actualToday = startOfDay(new Date()); // Prawdziwe "dzisiaj"
+	const chartEndDate = startOfDay(customEndDate || new Date()); // Koniec wykresu (np. z filtra DO)
+	const startDate = addDays(chartEndDate, -daysBack); // Początek wykresu
 
 	let step = 1;
 	if (daysBack > 90) step = 7;
@@ -18,32 +20,28 @@ export function generatePortfolioHistory(
 
 		for (let i = 0; i <= daysBack; i += step) {
 			const currentDate = addDays(startDate, i);
-
-			// EN: Check if the loop reached the present day
-			const isCurrentDayToday = isSameDay(currentDate, today);
+			// Używamy actualToday, żeby wiedzieć, czy narysować twarde dane z bazy
+			const isCurrentDayActualToday = isSameDay(currentDate, actualToday);
 
 			let dailyInvested = 0;
 			let dailyValue = 0;
 
 			portfolio.assets.forEach((asset: any) => {
-				// EN: Use purchaseDate or fallback to createdAt
 				const purchaseDate = startOfDay(
 					new Date(asset.purchaseDate || asset.createdAt),
 				);
 
-				// EN: Skip if the asset was not owned on the current date
 				if (currentDate < purchaseDate) return;
 
 				dailyInvested += asset.investedCapital;
 
-				// EN: If calculating for TODAY, use the exact real value.
-				// EN: Otherwise, interpolate historical values smoothly.
-				if (isCurrentDayToday) {
+				if (isCurrentDayActualToday) {
 					dailyValue += asset.currentValue;
 				} else {
+					// Zysk dzielimy na podstawie prawdziwego czasu posiadania
 					const totalDaysOwned = Math.max(
 						1,
-						differenceInDays(today, purchaseDate),
+						differenceInDays(actualToday, purchaseDate),
 					);
 					const daysOwnedAtCurrentDate = Math.max(
 						0,
@@ -63,7 +61,6 @@ export function generatePortfolioHistory(
 
 			if (i > 0) {
 				const addedCapital = dailyInvested - prevInvested;
-				// EN: Real change = total value growth minus newly injected capital
 				change = dailyValue - prevTotal - addedCapital;
 				isPositive = change >= 0;
 			}

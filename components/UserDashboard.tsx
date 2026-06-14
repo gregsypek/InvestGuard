@@ -8,22 +8,21 @@ import {
 	LineChart,
 	Wallet2,
 } from "lucide-react";
-import { Asset, PortfolioWithAssets } from "@/lib/types";
 import { ChartDataPoint, PortfolioChart } from "./dashboard/PortfolioCharts";
 import { cn, getStockLogo } from "@/lib/utils";
 import { useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { DailyPnLChart } from "./dashboard/DailyPnLChart";
 import { FilterBadge } from "./shared/FilterBadge";
 import { MarketRow } from "./home/MarketRow";
+import { PortfolioWithAssets } from "@/lib/types";
 import { SectionLayout } from "./shared/SectionLayout";
 import { ValueCard } from "./shared/ValueCard";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
-
 const GLOBAL_INDICES_MAP: Record<string, string> = {
 	SP500: "S&P 500",
 	NASDAQ: "NASDAQ 100",
@@ -61,12 +60,15 @@ export function UserDashboard({
 	currentRange = "1M",
 }: UserDashboardProps) {
 	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
 
-	// STANY KOMPONENTU
+	// NATYCHMIASTOWY STAN UI
+	const activeRange = searchParams.get("range") || "1M";
+
 	const [chartMode, setChartMode] = useState<"VALUE" | "PERCENTAGE">("VALUE");
 	const [selectedIds, setSelectedIds] = useState<string[]>(["ALL"]);
 
-	// LOGIKA ZAZNACZANIA PORTFELI
 	const togglePortfolio = (id: string) => {
 		setSelectedIds((prev: string[]) => {
 			if (id === "ALL") return ["ALL"];
@@ -77,22 +79,31 @@ export function UserDashboard({
 		});
 	};
 
-	// LOGIKA FILTRÓW CZASOWYCH
 	const handleRangeChange = (range: string) => {
-		// 1. Zmiana adresu URL (co wyzwala logikę w page.tsx)
-		router.push(`/?range=${range}`, { scroll: false });
-		// 2. Wymuszenie na Next.js odświeżenia danych z serwera
-		router.refresh();
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("range", range);
+		if (range !== "CUSTOM") {
+			params.delete("from");
+			params.delete("to");
+		}
+		router.push(`${pathname}?${params.toString()}`, { scroll: false });
 	};
 
-	// OBLICZENIA DANYCH DLA OBU WYKRESÓW (Główny oraz PnL)
+	const currentFrom = searchParams.get("from") || "";
+	const currentTo = searchParams.get("to") || "";
+
+	const handleCustomDateChange = (type: "from" | "to", value: string) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("range", "CUSTOM");
+		params.set(type, value);
+		router.push(`${pathname}?${params.toString()}`, { scroll: false });
+	};
+
 	const { portfolioChartData, pnlChartData } = useMemo(() => {
-		// 1. Filtrujemy dane wg wybranych portfeli
 		const filteredSnapshots = selectedIds.includes("ALL")
 			? snapshots
 			: snapshots.filter((s) => selectedIds.includes(s.portfolioId));
 
-		// 2. Grupujemy dane po dacie (gdy wybrano kilka portfeli, sumujemy ich wartości w tym samym dniu)
 		const grouped = filteredSnapshots.reduce(
 			(acc, curr) => {
 				const dateStr = new Date(curr.date).toISOString().split("T")[0];
@@ -110,7 +121,6 @@ export function UserDashboard({
 			>,
 		);
 
-		// 3. Konwertujemy do tablicy i sortujemy chronologicznie
 		const baseData = Object.entries(grouped)
 			.sort(
 				([dateA], [dateB]) =>
@@ -124,7 +134,6 @@ export function UserDashboard({
 				isPositive: vals.dailyChange >= 0,
 			}));
 
-		// 4. Rozdzielamy dane na Główny Wykres i Wykres PnL
 		let finalChartData: ChartDataPoint[] = [];
 
 		if (chartMode === "PERCENTAGE") {
@@ -136,7 +145,7 @@ export function UserDashboard({
 				return {
 					date: point.date,
 					value: Number(pct.toFixed(2)),
-					invested: 0, // Na wykresie % linia kapitału spada na dół jako punkt zero
+					invested: 0,
 				};
 			});
 		} else {
@@ -156,7 +165,6 @@ export function UserDashboard({
 		return { portfolioChartData: finalChartData, pnlChartData: finalPnlData };
 	}, [snapshots, selectedIds, chartMode]);
 
-	// STATYSTYKI DO KART NA GÓRZE (Kafelki)
 	const selectedPortfolios = selectedIds.includes("ALL")
 		? portfolios
 		: portfolios.filter((p) => selectedIds.includes(p.id));
@@ -167,41 +175,14 @@ export function UserDashboard({
 			p.assets.reduce((assetSum, a) => assetSum + (a.investedCapital || 0), 0),
 		0,
 	);
-
 	const totalCurrent = selectedPortfolios.reduce(
 		(sum, p) =>
 			sum +
 			p.assets.reduce((assetSum, a) => assetSum + (a.currentValue || 0), 0),
 		0,
 	);
-
 	const totalPnL = totalCurrent - totalInvested;
 	const totalPnLPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
-	const isPositiveOverall = totalPnL >= 0;
-
-	// 2. OBLICZENIA: Reagują na zmianę wybranych portfeli
-	const stats = useMemo(() => {
-		let totalValue = 0;
-		let totalInvested = 0;
-
-		const activePortfolios = portfolios.filter((p) =>
-			selectedIds.includes(p.id),
-		);
-
-		activePortfolios.forEach((portfolio) => {
-			portfolio.assets.forEach((asset: Asset) => {
-				totalValue += Number(asset.currentValue) || 0;
-				totalInvested += Number(asset.investedCapital) || 0;
-			});
-		});
-
-		const profitAmount = totalValue - totalInvested;
-		const profitPercent =
-			totalInvested > 0 ? (profitAmount / totalInvested) * 100 : 0;
-
-		return { totalValue, totalInvested, profitAmount, profitPercent };
-	}, [portfolios, selectedIds]);
-
 	// EN: Extract unique assets for the "Observed Markets" widget
 	const observedAssets = useMemo(() => {
 		if (!portfolios || portfolios.length === 0) return [];
@@ -234,11 +215,9 @@ export function UserDashboard({
 	}, [portfolios]);
 
 	return (
-		<div className="space-y-12 max-w-7xl mx-auto animate-in fade-in duration-500">
-			{/* ========================================================= */}
-			{/* GŁÓWNY NAGŁÓWEK (Twój design + Filtry Portfeli) */}
-			{/* ========================================================= */}
-			<header className="relative overflow-hidden flex flex-col gap-8 w-full border-b border-white/10  bg-slate-900 dark:border-t-border rounded-b-2xl  text-slate-100 p-6 md:p-8  transition-colors shadow-lg ">
+		<div className="space-y-8">
+			{/* 1. SEKCJA:  HEADER  */}
+			<header className="relative overflow-hidden flex flex-col gap-8 w-full border-b border-white/10 bg-slate-900 dark:border-t-border rounded-b-2xl text-slate-100 p-6 md:p-8 transition-colors shadow-lg">
 				{/* TEKSTURA SVG */}
 				<div
 					className="absolute inset-0 z-0 pointer-events-none opacity-40 transition-opacity"
@@ -253,13 +232,13 @@ export function UserDashboard({
 
 				{/* GÓRA: Tytuł i FILTRY PORTFELI */}
 				<div className="relative z-10">
-					<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-sm mb-3 bg-slate-900">
+					<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-sm mb-3 bg-slate-900 w-fit">
 						Przegląd Inwestycji
 					</h1>
 
 					{/* Interaktywne filtry */}
 					<div className="flex flex-wrap items-center gap-2 mt-2">
-						<span className="text-xs font-bold text-slate-400 uppercase flex-1 md:grow  tracking-wider mr-2">
+						<span className="text-xs font-bold text-slate-400 uppercase flex-1 md:grow tracking-wider mr-2">
 							Analizowane portfele (Wybierz, aby porównać):
 						</span>
 						<div className="flex gap-3 flex-wrap">
@@ -352,12 +331,10 @@ export function UserDashboard({
 				title="Analiza Wykresowa"
 				titleIcon={LineChart}
 				subtitle="Sprawdź wyniki swoich inwestycji w czasie"
-				description="Wykres prezentuje wartość rynkową wybranych portfeli (powierzchnia) względem włożonego kapitału (linia przerywana)."
+				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela."
 			>
 				<div className="flex flex-col gap-4 mb-6 mt-4">
-					{/* PANEL STEROWANIA WYKRESEM */}
 					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm">
-						{/* Przełącznik PLN / % */}
 						<div className="flex items-center gap-2">
 							<FilterBadge
 								id="VALUE"
@@ -373,7 +350,6 @@ export function UserDashboard({
 							/>
 						</div>
 
-						{/* Zakresy czasowe i Przycisk Kalendarza */}
 						<div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide">
 							{TIME_RANGES.map((range) => (
 								<button
@@ -381,7 +357,7 @@ export function UserDashboard({
 									onClick={() => handleRangeChange(range)}
 									className={cn(
 										"px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
-										currentRange === range
+										activeRange === range
 											? "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-sm"
 											: "bg-transparent text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50",
 									)}
@@ -390,41 +366,54 @@ export function UserDashboard({
 								</button>
 							))}
 
-							{/* Natywny przycisk Date Pickera (Wizualny styl podobny do reszty) */}
-							<div className="relative group ml-2 pl-2 border-l border-t-border-subtle flex items-center">
-								<input
-									type="date"
-									className="absolute inset-0 opacity-0 cursor-pointer w-full"
-									onChange={(e) => {
-										// W przyszłości obsłużysz tu dokładne parametry od-do
-										if (e.target.value) {
-											console.log("Wybrano datę startową:", e.target.value);
+							<div className="flex items-center gap-2 ml-2 pl-3 border-l border-t-border-subtle">
+								<div className="flex items-center bg-slate-900/50 border border-t-border-subtle rounded-lg px-2 py-1 focus-within:border-blue-500/50 transition-colors">
+									<span className="text-[10px] font-bold text-slate-500 mr-2">
+										OD
+									</span>
+									<input
+										type="date"
+										value={currentFrom}
+										max={currentTo || undefined}
+										onChange={(e) =>
+											handleCustomDateChange("from", e.target.value)
 										}
-									}}
-								/>
-								<button className="px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider bg-transparent text-slate-400 border border-transparent hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
-									OD-DO 📅
-								</button>
+										className="bg-transparent text-[11px] font-bold text-slate-300 outline-none cursor-pointer [color-scheme:dark]"
+									/>
+								</div>
+
+								<div className="flex items-center bg-slate-900/50 border border-t-border-subtle rounded-lg px-2 py-1 focus-within:border-blue-500/50 transition-colors">
+									<span className="text-[10px] font-bold text-slate-500 mr-2">
+										DO
+									</span>
+									<input
+										type="date"
+										value={currentTo}
+										min={currentFrom || undefined}
+										onChange={(e) =>
+											handleCustomDateChange("to", e.target.value)
+										}
+										className="bg-transparent text-[11px] font-bold text-slate-300 outline-none cursor-pointer [color-scheme:dark]"
+									/>
+								</div>
 							</div>
 						</div>
 					</div>
 
-					{/* Główny Wykres */}
 					<div className="h-96 w-full">
 						<PortfolioChart data={portfolioChartData} mode={chartMode} />
 					</div>
 				</div>
 			</SectionLayout>
 
-			{/* 3. SEKCJA: WYKRES DZIENNYCH ZYSKÓW */}
+			{/* 3. SEKCJA: WYKRES PnL */}
 			<SectionLayout
 				title="Dzienny Zysk/Strata (PnL)"
 				titleIcon={Activity}
 				subtitle="Analiza dziennej zmienności portfela w PLN"
-				description="Wykres prezentuje róźnicę wartości wybranych portfeli względem dnia poprzedniego"
+				description="Ten wykres obrazuje czysty zysk lub stratę wygenerowaną w danym dniu (Time-Weighted Return). System automatycznie filtruje i pomija momenty, w których dopłacasz lub wypłacasz kapitał, pokazując wyłącznie faktyczną pracę Twoich pieniędzy na rynku."
 			>
 				<div className="h-64 mt-6">
-					{/* Przekazujemy przefiltrowane pnlChartData! */}
 					<DailyPnLChart data={pnlChartData} />
 				</div>
 			</SectionLayout>

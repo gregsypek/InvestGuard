@@ -4,12 +4,16 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { generatePortfolioHistory } from "../lib/history-engine";
 
-// 1. Odbieramy searchParams z Next.js
-export default async function HomePage({
-	searchParams,
-}: {
-	searchParams: { range?: string };
-}) {
+// WYMUSZENIE ODŚWIEŻANIA Z BAZY DANYCH (Wyłącza agresywny cache Next.js)
+export const dynamic = "force-dynamic";
+
+// Zabezpieczenie asynchronicznych parametrów dla Next.js 15
+type SearchParams = Promise<{ [key: string]: string | undefined }>;
+
+export default async function HomePage(props: { searchParams: SearchParams }) {
+	// ODKODOWANIE URL - TO NAPRAWIA ZAWIESZANIE SIĘ APLIKACJI!
+	const searchParams = await props.searchParams;
+
 	const session = await auth();
 
 	if (!session?.user?.id) {
@@ -23,9 +27,10 @@ export default async function HomePage({
 
 	const allAssets = portfolios.flatMap((p) => p.assets);
 
-	// 2. Logika zakresów czasowych (Filtry)
-	const range = searchParams.range || "1M"; // Domyślnie 1 miesiąc
+	// Logika zakresów czasowych z URL
+	const range = searchParams.range || "1M";
 	let daysBack = 30;
+	let endDate = new Date();
 	const today = new Date();
 
 	switch (range) {
@@ -54,7 +59,6 @@ export default async function HomePage({
 			daysBack = 1825;
 			break;
 		case "MAX":
-			// Znajdujemy najstarsze aktywo w portfelu, aby określić początek historii
 			const oldestDate = allAssets.reduce((oldest, asset) => {
 				const assetDate = new Date(asset.purchaseDate || asset.createdAt);
 				return assetDate < oldest ? assetDate : oldest;
@@ -62,21 +66,33 @@ export default async function HomePage({
 			daysBack = Math.ceil(
 				(today.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24),
 			);
-			daysBack = Math.max(30, daysBack + 5); // Minimum 30 dni + mały bufor
+			daysBack = Math.max(30, daysBack + 5);
+			break;
+		case "CUSTOM":
+			if (searchParams.to) endDate = new Date(searchParams.to);
+			if (searchParams.from) {
+				const fromDate = new Date(searchParams.from);
+				daysBack = Math.ceil(
+					(endDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24),
+				);
+				daysBack = Math.max(1, daysBack);
+			}
 			break;
 	}
 
-	// 3. Generujemy historię z dynamiczną liczbą dni
-	const simulatedSnapshots = generatePortfolioHistory(portfolios, daysBack);
+	// Silnik Historii (z datą OD i DO)
+	const simulatedSnapshots = generatePortfolioHistory(
+		portfolios,
+		daysBack,
+		endDate,
+	);
 
-	// 3. Pobieramy listę indeksów z profilu usera
 	const dbUser = await db.user.findUnique({
 		where: { id: session.user.id },
 		select: { observedIndices: true },
 	});
 	const userIndices = dbUser?.observedIndices || [];
 
-	// 4. Pobieramy gotowe wyceny indeksów
 	const dbIndices = await db.marketIndex.findMany({
 		where: { symbol: { in: userIndices } },
 	});
@@ -86,14 +102,13 @@ export default async function HomePage({
 		indexQuotes[idx.symbol] = idx.dailyChange;
 	});
 
-	// 5. Wyciągamy czas ostatniej aktualizacji
 	let latestUpdate = new Date(0);
 	portfolios.forEach((a) => {
 		if (a.updatedAt > latestUpdate) latestUpdate = a.updatedAt;
 	});
-
 	const lastUpdated =
 		latestUpdate.getTime() > 0 ? latestUpdate.toISOString() : null;
+
 	return (
 		<UserDashboard
 			portfolios={portfolios}
@@ -101,7 +116,7 @@ export default async function HomePage({
 			userIndices={userIndices}
 			indexQuotes={indexQuotes}
 			lastUpdated={lastUpdated}
-			currentRange={range} // <--- Przekazujemy obecny zakres do klienta
+			currentRange={range}
 		/>
 	);
 }

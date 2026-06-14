@@ -9,17 +9,21 @@ import {
 	Wallet2,
 } from "lucide-react";
 import { Asset, PortfolioWithAssets } from "@/lib/types";
+import { ChartDataPoint, PortfolioChart } from "./dashboard/PortfolioCharts";
 import { cn, getStockLogo } from "@/lib/utils";
 import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { DailyPnLChart } from "./dashboard/DailyPnLChart";
 import { FilterBadge } from "./shared/FilterBadge";
-import { PortfolioChart } from "./dashboard/PortfolioCharts";
+import { MarketRow } from "./home/MarketRow";
 import { SectionLayout } from "./shared/SectionLayout";
-import { format } from "date-fns"; // Dodane dla daty
-import { pl } from "date-fns/locale"; // Dodane dla języka polskiego
+import { ValueCard } from "./shared/ValueCard";
+import { format } from "date-fns";
+import { pl } from "date-fns/locale";
 
-// Słownik indeksów
+const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
+
 const GLOBAL_INDICES_MAP: Record<string, string> = {
 	SP500: "S&P 500",
 	NASDAQ: "NASDAQ 100",
@@ -29,13 +33,23 @@ const GLOBAL_INDICES_MAP: Record<string, string> = {
 	BTC: "Bitcoin",
 };
 
-// Zaktualizowany interfejs (dodane nowe pola)
+export interface SimulatedSnapshot {
+	id: string;
+	portfolioId: string;
+	date: string | Date;
+	totalValue: number;
+	investedValue: number;
+	dailyChange: number;
+	isPositive: boolean;
+}
+
 interface UserDashboardProps {
 	portfolios: PortfolioWithAssets[];
-	snapshots: any[];
+	snapshots: SimulatedSnapshot[];
 	userIndices?: string[];
 	indexQuotes?: Record<string, number>;
 	lastUpdated?: string | null;
+	currentRange?: string;
 }
 
 export function UserDashboard({
@@ -44,72 +58,149 @@ export function UserDashboard({
 	userIndices = [],
 	indexQuotes = {},
 	lastUpdated = null,
+	currentRange = "1M",
 }: UserDashboardProps) {
-	// 1. STAN: Które portfele są wybrane? Domyślnie wszystkie.
-	const [selectedIds, setSelectedIds] = useState<string[]>(
-		portfolios.map((p) => p.id),
+	const router = useRouter();
+
+	// STANY KOMPONENTU
+	const [chartMode, setChartMode] = useState<"VALUE" | "PERCENTAGE">("VALUE");
+	const [selectedIds, setSelectedIds] = useState<string[]>(["ALL"]);
+
+	// LOGIKA ZAZNACZANIA PORTFELI
+	const togglePortfolio = (id: string) => {
+		setSelectedIds((prev: string[]) => {
+			if (id === "ALL") return ["ALL"];
+			const newIds = prev.includes(id)
+				? prev.filter((p) => p !== id)
+				: [...prev.filter((p) => p !== "ALL"), id];
+			return newIds.length === 0 ? ["ALL"] : newIds;
+		});
+	};
+
+	// LOGIKA FILTRÓW CZASOWYCH
+	const handleRangeChange = (range: string) => {
+		// 1. Zmiana adresu URL (co wyzwala logikę w page.tsx)
+		router.push(`/?range=${range}`, { scroll: false });
+		// 2. Wymuszenie na Next.js odświeżenia danych z serwera
+		router.refresh();
+	};
+
+	// OBLICZENIA DANYCH DLA OBU WYKRESÓW (Główny oraz PnL)
+	const { portfolioChartData, pnlChartData } = useMemo(() => {
+		// 1. Filtrujemy dane wg wybranych portfeli
+		const filteredSnapshots = selectedIds.includes("ALL")
+			? snapshots
+			: snapshots.filter((s) => selectedIds.includes(s.portfolioId));
+
+		// 2. Grupujemy dane po dacie (gdy wybrano kilka portfeli, sumujemy ich wartości w tym samym dniu)
+		const grouped = filteredSnapshots.reduce(
+			(acc, curr) => {
+				const dateStr = new Date(curr.date).toISOString().split("T")[0];
+				if (!acc[dateStr]) {
+					acc[dateStr] = { totalValue: 0, investedValue: 0, dailyChange: 0 };
+				}
+				acc[dateStr].totalValue += curr.totalValue;
+				acc[dateStr].investedValue += curr.investedValue;
+				acc[dateStr].dailyChange += curr.dailyChange;
+				return acc;
+			},
+			{} as Record<
+				string,
+				{ totalValue: number; investedValue: number; dailyChange: number }
+			>,
+		);
+
+		// 3. Konwertujemy do tablicy i sortujemy chronologicznie
+		const baseData = Object.entries(grouped)
+			.sort(
+				([dateA], [dateB]) =>
+					new Date(dateA).getTime() - new Date(dateB).getTime(),
+			)
+			.map(([date, vals]) => ({
+				date,
+				value: vals.totalValue,
+				invested: vals.investedValue,
+				change: Number(vals.dailyChange.toFixed(2)),
+				isPositive: vals.dailyChange >= 0,
+			}));
+
+		// 4. Rozdzielamy dane na Główny Wykres i Wykres PnL
+		let finalChartData: ChartDataPoint[] = [];
+
+		if (chartMode === "PERCENTAGE") {
+			finalChartData = baseData.map((point) => {
+				const pct =
+					point.invested > 0
+						? ((point.value - point.invested) / point.invested) * 100
+						: 0;
+				return {
+					date: point.date,
+					value: Number(pct.toFixed(2)),
+					invested: 0, // Na wykresie % linia kapitału spada na dół jako punkt zero
+				};
+			});
+		} else {
+			finalChartData = baseData.map((point) => ({
+				date: point.date,
+				value: point.value,
+				invested: point.invested,
+			}));
+		}
+
+		const finalPnlData = baseData.map((point) => ({
+			date: point.date,
+			change: point.change,
+			isPositive: point.isPositive,
+		}));
+
+		return { portfolioChartData: finalChartData, pnlChartData: finalPnlData };
+	}, [snapshots, selectedIds, chartMode]);
+
+	// STATYSTYKI DO KART NA GÓRZE (Kafelki)
+	const selectedPortfolios = selectedIds.includes("ALL")
+		? portfolios
+		: portfolios.filter((p) => selectedIds.includes(p.id));
+
+	const totalInvested = selectedPortfolios.reduce(
+		(sum, p) =>
+			sum +
+			p.assets.reduce((assetSum, a) => assetSum + (a.investedCapital || 0), 0),
+		0,
 	);
 
-	const aggregatedChartData = useMemo(() => {
-		// Struktura: { "2026-06-08": { "portfolio1": { total: 10000, invested: 8000 } } }
-		const dailyPortfolioValues: Record<
-			string,
-			Record<string, { total: number; invested: number }>
-		> = {};
+	const totalCurrent = selectedPortfolios.reduce(
+		(sum, p) =>
+			sum +
+			p.assets.reduce((assetSum, a) => assetSum + (a.currentValue || 0), 0),
+		0,
+	);
 
-		snapshots.forEach((snap) => {
-			if (selectedIds.includes(snap.portfolioId)) {
-				const dateKey = new Date(snap.date).toISOString().split("T")[0];
+	const totalPnL = totalCurrent - totalInvested;
+	const totalPnLPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
+	const isPositiveOverall = totalPnL >= 0;
 
-				if (!dailyPortfolioValues[dateKey]) {
-					dailyPortfolioValues[dateKey] = {};
-				}
+	// 2. OBLICZENIA: Reagują na zmianę wybranych portfeli
+	const stats = useMemo(() => {
+		let totalValue = 0;
+		let totalInvested = 0;
 
-				// Zapisujemy najświeższe wartości z danego dnia
-				dailyPortfolioValues[dateKey][snap.portfolioId] = {
-					total: snap.totalValue,
-					invested: snap.investedValue, // Dodajemy pobieranie wpłaconego kapitału
-				};
-			}
+		const activePortfolios = portfolios.filter((p) =>
+			selectedIds.includes(p.id),
+		);
+
+		activePortfolios.forEach((portfolio) => {
+			portfolio.assets.forEach((asset: Asset) => {
+				totalValue += Number(asset.currentValue) || 0;
+				totalInvested += Number(asset.investedCapital) || 0;
+			});
 		});
 
-		// Sumujemy obie wartości dla każdego dnia
-		return Object.entries(dailyPortfolioValues).map(([date, portfoliosMap]) => {
-			let totalForDay = 0;
-			let investedForDay = 0;
+		const profitAmount = totalValue - totalInvested;
+		const profitPercent =
+			totalInvested > 0 ? (profitAmount / totalInvested) * 100 : 0;
 
-			Object.values(portfoliosMap).forEach((vals) => {
-				totalForDay += vals.total;
-				investedForDay += vals.invested;
-			});
-
-			return {
-				date,
-				value: totalForDay,
-				invested: investedForDay,
-			};
-		});
-	}, [snapshots, selectedIds]);
-
-	// Wyliczamy dzienną zmienność (różnica między dniem N a N-1)
-	const dailyPnLData = useMemo(() => {
-		if (!aggregatedChartData || aggregatedChartData.length < 2) return [];
-
-		const result = [];
-		// Zaczynamy od i = 1, bo dla dnia 0 nie mamy dnia wczorajszego do porównania
-		for (let i = 1; i < aggregatedChartData.length; i++) {
-			const prev = aggregatedChartData[i - 1].value;
-			const curr = aggregatedChartData[i].value;
-			const diff = curr - prev;
-
-			result.push({
-				date: aggregatedChartData[i].date,
-				change: diff,
-				isPositive: diff >= 0,
-			});
-		}
-		return result;
-	}, [aggregatedChartData]);
+		return { totalValue, totalInvested, profitAmount, profitPercent };
+	}, [portfolios, selectedIds]);
 
 	// EN: Extract unique assets for the "Observed Markets" widget
 	const observedAssets = useMemo(() => {
@@ -142,36 +233,6 @@ export function UserDashboard({
 		return uniqueAssets;
 	}, [portfolios]);
 
-	// Funkcja do przełączania portfeli
-	const togglePortfolio = (id: string) => {
-		setSelectedIds((prev) =>
-			prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id],
-		);
-	};
-
-	// 2. OBLICZENIA: Reagują na zmianę wybranych portfeli
-	const stats = useMemo(() => {
-		let totalValue = 0;
-		let totalInvested = 0;
-
-		const activePortfolios = portfolios.filter((p) =>
-			selectedIds.includes(p.id),
-		);
-
-		activePortfolios.forEach((portfolio) => {
-			portfolio.assets.forEach((asset: Asset) => {
-				totalValue += Number(asset.currentValue) || 0;
-				totalInvested += Number(asset.investedCapital) || 0;
-			});
-		});
-
-		const profitAmount = totalValue - totalInvested;
-		const profitPercent =
-			totalInvested > 0 ? (profitAmount / totalInvested) * 100 : 0;
-
-		return { totalValue, totalInvested, profitAmount, profitPercent };
-	}, [portfolios, selectedIds]);
-
 	return (
 		<div className="space-y-12 max-w-7xl mx-auto animate-in fade-in duration-500">
 			{/* ========================================================= */}
@@ -202,6 +263,12 @@ export function UserDashboard({
 							Analizowane portfele (Wybierz, aby porównać):
 						</span>
 						<div className="flex gap-3 flex-wrap">
+							<FilterBadge
+								id="ALL"
+								label="Wszystkie Portfele"
+								isSelected={selectedIds.includes("ALL")}
+								onToggle={togglePortfolio}
+							/>
 							{portfolios.map((p) => (
 								<FilterBadge
 									key={p.id}
@@ -224,7 +291,7 @@ export function UserDashboard({
 						</div>
 						<div className="flex items-baseline gap-2">
 							<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
-								{stats.totalValue.toLocaleString("pl-PL", {
+								{totalCurrent.toLocaleString("pl-PL", {
 									minimumFractionDigits: 2,
 									maximumFractionDigits: 2,
 								})}
@@ -239,7 +306,7 @@ export function UserDashboard({
 						<ValueCard
 							label="Zainwestowany kapitał"
 							icon={Container}
-							value={stats.totalInvested}
+							value={totalInvested}
 							formatString
 							suffix="PLN"
 						/>
@@ -248,30 +315,31 @@ export function UserDashboard({
 								<span
 									className={cn(
 										"text-xl font-bold tracking-tight transition-colors",
-										stats.profitAmount > 0
+										totalPnL > 0
 											? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]"
-											: stats.profitAmount < 0
+											: totalPnL < 0
 												? "text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]"
 												: "text-slate-400",
 									)}
 								>
-									{stats.profitAmount > 0 ? "+" : ""}
-									{stats.profitAmount.toLocaleString("pl-PL", {
+									{totalPnL > 0 ? "+" : ""}
+									{totalPnL.toLocaleString("pl-PL", {
 										minimumFractionDigits: 2,
 									})}
 								</span>
+
 								<span
 									className={cn(
 										"flex items-center text-xs font-bold px-2 py-0.5 rounded-sm transition-colors",
-										stats.profitPercent > 0
+										totalPnLPct > 0
 											? "bg-emerald-500/10 text-emerald-400"
-											: stats.profitPercent < 0
+											: totalPnLPct < 0
 												? "bg-rose-500/10 text-rose-500"
 												: "bg-white/10 text-slate-300",
 									)}
 								>
-									{stats.profitPercent > 0 ? "+" : ""}
-									{stats.profitPercent.toFixed(2)}%
+									{totalPnLPct > 0 ? "+" : ""}
+									{totalPnLPct.toFixed(2)}%
 								</span>
 							</div>
 						</ValueCard>
@@ -279,49 +347,96 @@ export function UserDashboard({
 				</div>
 			</header>
 
-			{/* ========================================================= */}
-			{/* DOLNA CZĘŚĆ (Wykresy) */}
-			{/* ========================================================= */}
-			<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-				{/* LEWA KOLUMNA */}
-				<div className="lg:col-span-2 flex flex-col gap-6">
-					<SectionLayout
-						title="Historia Wartości Portfela"
-						titleIcon={LineChart}
-						subtitle="Śledź długoterminowy trend swojego majątku oraz dzienną zmienność rynkową."
-						description="Wykres prezentuje wartość rynkową wybranych portfeli (powierzchnia) względem włożonego kapitału (linia przerywana). Dane nie są przeliczane w czasie rzeczywistym – system generuje je w formie automatycznych, nocnych migawek. Transakcje i wpłaty z dnia dzisiejszego zostaną uwzględnione na wykresie jutro rano."
-					>
-						<div className="flex flex-col gap-6">
-							{/* GŁÓWNY WYKRES WARTOŚCI - Nadana sztywna wysokość h-[320px] dla Recharts */}
-							<div className="bg-white/5 dark:bg-t-bg-panel border border-t-border rounded-2xl p-6 h-[320px]">
-								<PortfolioChart data={aggregatedChartData} />
-							</div>
-
-							{/* WYKRES DZIENNEJ ZMIENNOŚCI (P&L) - Zastosowany układ flex, by wewnętrzny div poprawnie przekazał wysokość */}
-							{dailyPnLData && dailyPnLData.length > 0 && (
-								<div className="bg-white/5 dark:bg-t-bg-panel border border-t-border rounded-2xl p-6 h-[250px] flex flex-col">
-									<div className="mb-3">
-										<p className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-											Dzienna Zmienność (P&L)
-										</p>
-									</div>
-									<div className="flex-1 w-full">
-										<DailyPnLChart data={dailyPnLData} />
-									</div>
-								</div>
-							)}
+			{/* 2. SEKCJA: WYKRES GŁÓWNY Z FILTRAMI */}
+			<SectionLayout
+				title="Analiza Wykresowa"
+				titleIcon={LineChart}
+				subtitle="Sprawdź wyniki swoich inwestycji w czasie"
+				description="Wykres prezentuje wartość rynkową wybranych portfeli (powierzchnia) względem włożonego kapitału (linia przerywana)."
+			>
+				<div className="flex flex-col gap-4 mb-6 mt-4">
+					{/* PANEL STEROWANIA WYKRESEM */}
+					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm">
+						{/* Przełącznik PLN / % */}
+						<div className="flex items-center gap-2">
+							<FilterBadge
+								id="VALUE"
+								label="Wartość (PLN)"
+								isSelected={chartMode === "VALUE"}
+								onToggle={() => setChartMode("VALUE")}
+							/>
+							<FilterBadge
+								id="PERCENTAGE"
+								label="Zwrot (%)"
+								isSelected={chartMode === "PERCENTAGE"}
+								onToggle={() => setChartMode("PERCENTAGE")}
+							/>
 						</div>
-					</SectionLayout>
+
+						{/* Zakresy czasowe i Przycisk Kalendarza */}
+						<div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide">
+							{TIME_RANGES.map((range) => (
+								<button
+									key={range}
+									onClick={() => handleRangeChange(range)}
+									className={cn(
+										"px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
+										currentRange === range
+											? "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-sm"
+											: "bg-transparent text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50",
+									)}
+								>
+									{range}
+								</button>
+							))}
+
+							{/* Natywny przycisk Date Pickera (Wizualny styl podobny do reszty) */}
+							<div className="relative group ml-2 pl-2 border-l border-t-border-subtle flex items-center">
+								<input
+									type="date"
+									className="absolute inset-0 opacity-0 cursor-pointer w-full"
+									onChange={(e) => {
+										// W przyszłości obsłużysz tu dokładne parametry od-do
+										if (e.target.value) {
+											console.log("Wybrano datę startową:", e.target.value);
+										}
+									}}
+								/>
+								<button className="px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider bg-transparent text-slate-400 border border-transparent hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-2">
+									OD-DO 📅
+								</button>
+							</div>
+						</div>
+					</div>
+
+					{/* Główny Wykres */}
+					<div className="h-96 w-full">
+						<PortfolioChart data={portfolioChartData} mode={chartMode} />
+					</div>
 				</div>
-				{/* PRAWA KOLUMNA */}
-				<div className="flex flex-col gap-6">
-					<SectionLayout
-						title="Radar Rynkowy"
-						titleIcon={Activity}
-						subtitle="Śledź kluczowe wskaźniki i wybrane aktywa."
-						description="Zestawienie globalnych indeksów makroekonomicznych oraz wytypowanych walorów z Twojego portfela."
-					>
-						<div className="flex flex-col gap-6">
+			</SectionLayout>
+
+			{/* 3. SEKCJA: WYKRES DZIENNYCH ZYSKÓW */}
+			<SectionLayout
+				title="Dzienny Zysk/Strata (PnL)"
+				titleIcon={Activity}
+				subtitle="Analiza dziennej zmienności portfela w PLN"
+				description="Wykres prezentuje róźnicę wartości wybranych portfeli względem dnia poprzedniego"
+			>
+				<div className="h-64 mt-6">
+					{/* Przekazujemy przefiltrowane pnlChartData! */}
+					<DailyPnLChart data={pnlChartData} />
+				</div>
+			</SectionLayout>
+			<div className=" flex gap-6 ">
+				<SectionLayout
+					title="Radar Rynkowy"
+					titleIcon={Activity}
+					subtitle="Śledź kluczowe wskaźniki i wybrane aktywa."
+					description="Zestawienie globalnych indeksów makroekonomicznych oraz wytypowanych walorów z Twojego portfela."
+				>
+					<div className="flex flex-col md:flex-row gap-6  ">
+						<div className="flex-1">
 							{/* SEKCJA 1: GLOBALNE INDEKSY */}
 							{userIndices && userIndices.length > 0 && (
 								<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm">
@@ -376,151 +491,61 @@ export function UserDashboard({
 									</div>
 								</div>
 							)}
+						</div>
 
-							{/* SEKCJA 2: AKTYWA Z PORTFELA */}
-							<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm ">
-								<div className="flex items-center justify-between mb-4">
-									<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500  flex items-center gap-2">
-										<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
-										Portfela
-									</h4>
-									{/* ZNACZNIK CZASU AKTUALIZACJI */}
-									{lastUpdated && (
-										<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
-											<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse " />
-											{format(new Date(lastUpdated), "HH:mm, dd MMM", {
-												locale: pl,
-											})}
-										</span>
-									)}
-								</div>
+						{/* SEKCJA 2: AKTYWA Z PORTFELA */}
+						<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm  flex-1">
+							<div className="flex items-center justify-between mb-4">
+								<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500  flex items-center gap-2">
+									<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
+									Portfela
+								</h4>
+								{/* ZNACZNIK CZASU AKTUALIZACJI */}
+								{lastUpdated && (
+									<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
+										<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse " />
+										{format(new Date(lastUpdated), "HH:mm, dd MMM", {
+											locale: pl,
+										})}
+									</span>
+								)}
+							</div>
 
-								<div className="space-y-4">
-									{observedAssets.length > 0 ? (
-										observedAssets.map((asset) => {
-											const changeValue = asset.dailyChange || 0;
-											const isPositive = changeValue >= 0;
-											const displayValue =
-												changeValue !== 0
-													? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
-													: "0.00%";
+							<div className="space-y-4">
+								{observedAssets.length > 0 ? (
+									observedAssets.map((asset) => {
+										const changeValue = asset.dailyChange || 0;
+										const isPositive = changeValue >= 0;
+										const displayValue =
+											changeValue !== 0
+												? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
+												: "0.00%";
 
-											return (
-												<MarketRow
-													key={asset.id}
-													name={asset.name}
-													value={displayValue}
-													isPositive={isPositive}
-													logo={getStockLogo(asset.ticker ?? "")} // <--- Pobieramy logo dla aktywów z portfela
-												/>
-											);
-										})
-									) : (
-										<div className="flex flex-col items-center justify-center py-6 opacity-50 text-center space-y-2">
-											<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
-												Brak aktywów
-											</p>
-											<p className="text-[10px] text-t-text-tertiary px-4 leading-relaxed">
-												Przejdź do ustawień, aby wybrać walory do obserwacji.
-											</p>
-										</div>
-									)}
-								</div>
+										return (
+											<MarketRow
+												key={asset.id}
+												name={asset.name}
+												value={displayValue}
+												isPositive={isPositive}
+												logo={getStockLogo(asset.ticker ?? "")} // <--- Pobieramy logo dla aktywów z portfela
+											/>
+										);
+									})
+								) : (
+									<div className="flex flex-col items-center justify-center py-6 opacity-50 text-center space-y-2">
+										<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
+											Brak aktywów
+										</p>
+										<p className="text-[10px] text-t-text-tertiary px-4 leading-relaxed">
+											Przejdź do ustawień, aby wybrać walory do obserwacji.
+										</p>
+									</div>
+								)}
 							</div>
 						</div>
-					</SectionLayout>
-				</div>
-			</div>
-		</div>
-	);
-}
-
-// =========================================================
-// POMOCNICZE KOMPONENTY
-// =========================================================
-function ValueCard({
-	label,
-	icon: Icon,
-	value,
-	formatString,
-	suffix,
-	children,
-}: any) {
-	return (
-		<div className="space-y-1">
-			<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[10px] uppercase mb-1">
-				{Icon && <Icon className="w-3.5 h-3.5" />}
-				<span>{label}</span>
-			</div>
-			{children ? (
-				children
-			) : (
-				<div className="flex items-baseline gap-1.5">
-					<span className="text-xl md:text-2xl font-bold text-white tracking-tight">
-						{formatString
-							? Number(value).toLocaleString("pl-PL", {
-									minimumFractionDigits: 2,
-									maximumFractionDigits: 2,
-								})
-							: value}
-					</span>
-					{suffix && (
-						<span className="text-xs text-slate-500 font-bold">{suffix}</span>
-					)}
-				</div>
-			)}
-		</div>
-	);
-}
-
-interface MarketRowProps {
-	name: string;
-	value: string;
-	isPositive: boolean;
-	logo?: string | null;
-}
-
-function MarketRow({ name, value, isPositive, logo }: MarketRowProps) {
-	return (
-		<div className="flex items-center justify-between group py-1">
-			<div className="flex items-center gap-3">
-				{/* === KONTENER NA LOGO === */}
-				{logo ? (
-					<div className="w-6 h-6 rounded-full overflow-hidden shrink-0  flex items-center justify-center shadow-sm">
-						{/* eslint-disable-next-line @next/next/no-img-element */}
-						<img
-							src={logo}
-							alt={name}
-							className="w-full h-full object-cover p-0.5 rounded-full"
-						/>
 					</div>
-				) : (
-					<div className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-						{/* Fallback - jeśli nie ma logo, pokazujemy pierwszą literę nazwy */}
-						<span className="text-[10px] font-black text-blue-500">
-							{name.charAt(0)}
-						</span>
-					</div>
-				)}
-
-				{/* NAZWA */}
-				<span className="text-xs font-bold text-t-text-secondary group-hover:text-t-text-primary transition-colors">
-					{name}
-				</span>
+				</SectionLayout>
 			</div>
-
-			{/* WARTOŚĆ (Zmiana procentowa) */}
-			<span
-				className={`text-xs font-black tracking-wider ${
-					value === "0.00%"
-						? "text-t-text-tertiary"
-						: isPositive
-							? "text-emerald-500"
-							: "text-rose-500"
-				}`}
-			>
-				{value}
-			</span>
 		</div>
 	);
 }

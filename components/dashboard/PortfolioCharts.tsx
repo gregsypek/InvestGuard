@@ -15,17 +15,30 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 
-interface ChartDataPoint {
+export interface ChartDataPoint {
 	date: string;
-	value: number; // Wartość rynkowa
+	value: number; // Wartość rynkowa LUB procentowa
 	invested: number; // Wpłacony kapitał
 }
 
 interface PortfolioChartProps {
 	data: ChartDataPoint[];
+	mode?: "VALUE" | "PERCENTAGE";
 }
 
-export function PortfolioChart({ data }: PortfolioChartProps) {
+// Otypowanie dla propsów dostarczanych przez Recharts do Tooltipa
+interface CustomTooltipProps {
+	active?: boolean;
+	payload?: Array<{
+		value: number;
+		dataKey: string;
+		payload: ChartDataPoint;
+	}>;
+	label?: string;
+	mode?: "VALUE" | "PERCENTAGE";
+}
+
+export function PortfolioChart({ data, mode = "VALUE" }: PortfolioChartProps) {
 	if (!data || data.length === 0) {
 		return (
 			<div className="flex flex-col items-center justify-center h-full text-center space-y-2 opacity-60">
@@ -38,7 +51,6 @@ export function PortfolioChart({ data }: PortfolioChartProps) {
 
 	return (
 		<div className="relative w-full h-full">
-			{/* Znak wodny w tle */}
 			<div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
 				<div className="relative w-32 h-32 md:w-48 md:h-48 opacity-[0.03] dark:opacity-5 grayscale">
 					<Image
@@ -83,7 +95,7 @@ export function PortfolioChart({ data }: PortfolioChartProps) {
 						<YAxis hide domain={["auto", "auto"]} />
 
 						<Tooltip
-							content={<CustomTooltip />}
+							content={<CustomTooltip mode={mode} />}
 							cursor={{
 								stroke: "rgba(255,255,255,0.1)",
 								strokeWidth: 1,
@@ -91,7 +103,6 @@ export function PortfolioChart({ data }: PortfolioChartProps) {
 							}}
 						/>
 
-						{/* Warstwa 1: Główna wartość portfela (z gradientem) */}
 						<Area
 							type="monotone"
 							dataKey="value"
@@ -107,13 +118,13 @@ export function PortfolioChart({ data }: PortfolioChartProps) {
 							}}
 						/>
 
-						{/* Warstwa 2: Przerywana linia włożonego kapitału */}
+						{/* Linia kapitału (W trybie PERCENTAGE będzie leżeć na 0) */}
 						<Line
-							type="stepAfter" // Kształt 'schodków', bo kapitał wpłacamy skokowo
+							type="stepAfter"
 							dataKey="invested"
-							stroke="#64748b" // Kolor szary/slate
+							stroke="#64748b"
 							strokeWidth={2}
-							strokeDasharray="5 5" // Efekt przerywanej linii
+							strokeDasharray="5 5"
 							dot={false}
 							activeDot={false}
 						/>
@@ -125,67 +136,79 @@ export function PortfolioChart({ data }: PortfolioChartProps) {
 }
 
 // ----------------------------------------------------------------------
-// Rozbudowany szklany Tooltip z wyliczeniem zysku
+// Otypowany Tooltip dostosowujący się do trybu (PLN / %)
 // ----------------------------------------------------------------------
-function CustomTooltip({ active, payload, label }: any) {
-	if (active && payload && payload.length) {
-		const valueData = payload.find((p: any) => p.dataKey === "value");
-		const investedData = payload.find((p: any) => p.dataKey === "invested");
+function CustomTooltip({
+	active,
+	payload,
+	label,
+	mode = "VALUE",
+}: CustomTooltipProps) {
+	if (active && payload && payload.length && label) {
+		const value = payload.find((p) => p.dataKey === "value")?.value || 0;
+		const invested = payload.find((p) => p.dataKey === "invested")?.value || 0;
 
-		const value = valueData?.value || 0;
-		const invested = investedData?.value || 0;
+		const formatVal = (val: number) => {
+			if (mode === "PERCENTAGE") {
+				return `${val > 0 ? "+" : ""}${val.toFixed(2)}%`;
+			}
+			return new Intl.NumberFormat("pl-PL", {
+				style: "currency",
+				currency: "PLN",
+			}).format(val);
+		};
 
-		const profit = value - invested;
-		const profitPercent = invested > 0 ? (profit / invested) * 100 : 0;
-		const isProfit = profit >= 0;
+		const isProfit = value >= invested;
+		const difference = value - invested;
 
 		return (
-			<div className="bg-slate-900/95 backdrop-blur-md border border-white/10 rounded-xl p-4 shadow-2xl min-w-[200px]">
+			<div className="bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl p-4 shadow-xl min-w-[220px]">
 				<p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">
 					{format(new Date(label), "dd MMMM yyyy", { locale: pl })}
 				</p>
 
 				<div className="space-y-2 mb-3">
 					<div className="flex justify-between items-center text-xs">
-						<span className="text-slate-400">Wartość portfela:</span>
-						<span className="font-bold text-white ">
-							{new Intl.NumberFormat("pl-PL", {
-								style: "currency",
-								currency: "PLN",
-							}).format(value)}
+						<span className="text-slate-400">
+							{mode === "PERCENTAGE"
+								? "Zwrot z inwestycji:"
+								: "Wartość portfela:"}
+						</span>
+						<span
+							className={
+								mode === "PERCENTAGE" && isProfit
+									? "font-bold text-emerald-400"
+									: "font-bold text-white"
+							}
+						>
+							{formatVal(value)}
 						</span>
 					</div>
 
-					<div className="flex justify-between items-center text-xs">
-						<span className="text-slate-400">Zainwestowano:</span>
-						<span className="font-bold text-white">
-							{new Intl.NumberFormat("pl-PL", {
-								style: "currency",
-								currency: "PLN",
-							}).format(invested)}
-						</span>
-					</div>
-				</div>
-
-				<div className="pt-2 border-t border-white/10 flex justify-between items-center">
-					<span className="text-xs font-bold text-slate-400">
-						Całkowity wynik:
-					</span>
-					<div
-						className={`text-right ${isProfit ? "text-emerald-400" : "text-rose-400"}`}
-					>
-						<p className="text-sm font-black">
-							{isProfit ? "+" : ""}
-							{new Intl.NumberFormat("pl-PL", {
-								style: "currency",
-								currency: "PLN",
-							}).format(profit)}
-						</p>
-						<p className="text-[10px] font-bold">
-							{isProfit ? "+" : ""}
-							{profitPercent.toFixed(2)}%
-						</p>
-					</div>
+					{/* Ukrywamy sekcję zainwestowanego kapitału i wyniku, gdy oglądamy tylko procenty */}
+					{mode === "VALUE" && (
+						<>
+							<div className="flex justify-between items-center text-xs">
+								<span className="text-slate-400">Zainwestowano:</span>
+								<span className="font-bold text-white">
+									{formatVal(invested)}
+								</span>
+							</div>
+							<div className="pt-3 mt-3 border-t border-white/10 flex justify-between items-center">
+								<span className="text-xs font-bold text-slate-400">
+									Całkowity wynik:
+								</span>
+								<div
+									className={`text-right ${isProfit ? "text-emerald-400" : "text-rose-400"}`}
+								>
+									<p className="text-sm font-black">
+										{isProfit ? "+" : ""}
+										{formatVal(difference)}
+									</p>
+								</div>
+							</div>
+						</>
+					)}
 				</div>
 			</div>
 		);

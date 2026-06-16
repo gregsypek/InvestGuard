@@ -37,6 +37,7 @@ import {
 
 import { AdjustAssetModal } from "./AdjustAssetModal";
 import { AssetLogo } from "./shared/AssetLogo";
+import { FilterBadge } from "./shared/FilterBadge";
 import Link from "next/link";
 import PaginatedBar from "./shared/PaginatedBar";
 import { PortfolioWithAssets } from "@/lib/types";
@@ -155,11 +156,35 @@ const AssetLedgerTable = ({
 		});
 	}, [assets, portfolio]);
 	// console.log("🚀 ~ AssetLedgerTable ~ assetsWithPL:", assetsWithPL);
-
-	const paginatedAssets = assetsWithPL.slice(
-		(currentPage - 1) * PAGE_ITEMS,
-		currentPage * PAGE_ITEMS,
+	// EN: 1. State for controlling filters and sorting
+	const [hideClosed, setHideClosed] = useState(true);
+	const [sortBy, setSortBy] = useState<"DEFAULT" | "ALPHA" | "VALUE">(
+		"DEFAULT",
 	);
+	// 2. NAJPIERW FILTRUJEMY I SORTUJEMY (zanim potniemy na strony!)
+	const filteredAndSortedAssets = useMemo(() => {
+		let result = [...assetsWithPL];
+
+		if (hideClosed) {
+			result = result.filter(
+				(asset) => asset.quantity > 0 || asset.id === "bonds-summary-id",
+			);
+		}
+
+		if (sortBy === "ALPHA") {
+			result.sort((a, b) => a.name.localeCompare(b.name));
+		} else if (sortBy === "VALUE") {
+			result.sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0));
+		}
+
+		return result;
+	}, [assetsWithPL, hideClosed, sortBy]);
+
+	const startIndex = (currentPage - 1) * PAGE_ITEMS;
+	const endIndex = startIndex + PAGE_ITEMS;
+
+	// 4. WYCINAMY ELEMENTY NA OBECNĄ STRONĘ (korzystając z przefiltrowanej listy)
+	const paginatedAssets = filteredAndSortedAssets.slice(startIndex, endIndex);
 
 	const totalPortfolioValue = useMemo(
 		() => assets.reduce((sum, asset) => sum + asset.currentValue, 0),
@@ -225,6 +250,48 @@ const AssetLedgerTable = ({
 
 	return (
 		<>
+			{/* EN: 4. The Controls Panel (FilterBadges) added above the table */}
+			<div className="flex flex-col md:flex-row items-start md:items-center gap-3 dark:bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm mb-4">
+				<div className="flex items-center gap-2">
+					<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-1">
+						Widok:
+					</span>
+					<FilterBadge
+						id="HIDE_CLOSED"
+						label="Ukryj zamknięte"
+						isSelected={hideClosed}
+						onToggle={() => setHideClosed(!hideClosed)}
+					/>
+				</div>
+
+				{/* EN: Desktop divider */}
+				<div className="hidden md:block w-px h-6 bg-slate-700/50 mx-1" />
+
+				<div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
+					<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-1">
+						Sortuj:
+					</span>
+					<FilterBadge
+						id="DEFAULT"
+						label="Kolejność"
+						isSelected={sortBy === "DEFAULT"}
+						onToggle={() => setSortBy("DEFAULT")}
+					/>
+					<FilterBadge
+						id="ALPHA"
+						label="A-Z"
+						isSelected={sortBy === "ALPHA"}
+						onToggle={() => setSortBy("ALPHA")}
+					/>
+					<FilterBadge
+						id="VALUE"
+						label="Wartość"
+						isSelected={sortBy === "VALUE"}
+						onToggle={() => setSortBy("VALUE")}
+					/>
+				</div>
+			</div>
+
 			<div className="w-full overflow-x-auto no-scrollbar pb-4">
 				<Table className="min-w-[700px] sm:min-w-[800px]">
 					<TableHeader>
@@ -808,8 +875,9 @@ const AssetLedgerTable = ({
 				</Table>
 			</div>
 
+			{/* EN: 5. Update the PaginatedBar to use the newly filtered array so the page count is correct */}
 			<PaginatedBar
-				items={assetsWithPL}
+				items={filteredAndSortedAssets}
 				currentPage={currentPage}
 				onClick={setCurrentPage}
 			/>

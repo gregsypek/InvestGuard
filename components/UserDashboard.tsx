@@ -267,6 +267,7 @@ export function UserDashboard({
 								label="Wszystkie Portfele"
 								isSelected={selectedIds.includes("ALL")}
 								onToggle={togglePortfolio}
+								className="text-blue-300"
 							/>
 							{portfolios.map((p) => (
 								<FilterBadge
@@ -275,6 +276,7 @@ export function UserDashboard({
 									label={p.name}
 									isSelected={selectedIds.includes(p.id)}
 									onToggle={togglePortfolio}
+									className="text-blue-300"
 								/>
 							))}
 						</div>
@@ -354,7 +356,7 @@ export function UserDashboard({
 				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela."
 			>
 				<div className="flex flex-col gap-4 mb-6 mt-4">
-					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm">
+					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 dark:bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm">
 						<div className="flex items-center gap-2">
 							<FilterBadge
 								id="VALUE"
@@ -370,28 +372,32 @@ export function UserDashboard({
 							/>
 						</div>
 
-						<div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide">
-							{TIME_RANGES.map((range) => (
-								<button
-									key={range}
-									onClick={() => handleRangeChange(range)}
-									className={cn(
-										"px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
-										activeRange === range
-											? "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-sm"
-											: "bg-transparent text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50",
-									)}
-								>
-									{range}
-								</button>
-							))}
+						<div className="flex flex-col md:flex-row items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide">
+							<div>
+								{TIME_RANGES.map((range) => (
+									<button
+										key={range}
+										onClick={() => handleRangeChange(range)}
+										className={cn(
+											"px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap hover:cursor-pointer",
+											activeRange === range
+												? "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-sm"
+												: "bg-transparent text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50",
+										)}
+									>
+										{range}
+									</button>
+								))}
+							</div>
 
 							{/* === NOWOCZESNY KALENDARZ SHADCN OD-DO === */}
-							<DatePickerWithRange
-								from={fromDate}
-								to={toDate}
-								onSelect={handleDateRangeSelect}
-							/>
+							<div>
+								<DatePickerWithRange
+									from={fromDate}
+									to={toDate}
+									onSelect={handleDateRangeSelect}
+								/>
+							</div>
 						</div>
 					</div>
 

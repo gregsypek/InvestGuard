@@ -8,6 +8,7 @@ interface FilterBadgeProps {
 	id: string; // ID potrzebne do funkcji toggle
 	isSelected: boolean;
 	onToggle: (id: string) => void;
+	className?: string;
 }
 
 export function FilterBadge({
@@ -15,6 +16,7 @@ export function FilterBadge({
 	id,
 	isSelected,
 	onToggle,
+	className,
 }: FilterBadgeProps) {
 	return (
 		<button
@@ -22,8 +24,9 @@ export function FilterBadge({
 			className={cn(
 				"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer",
 				isSelected
-					? "bg-blue-500/20 text-blue-400 border-blue-500/30 shadow-sm hover:bg-blue-600/10"
-					: "bg-slate-900/20 text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400",
+					? "bg-blue-500/10 text-blue-600 dark:text-blue-300 border-blue-500/30 shadow-sm hover:border-blue-500"
+					: "bg-slate-600/20   text-slate-500 border-none",
+				className ? className : "",
 			)}
 		>
 			{isSelected ? (

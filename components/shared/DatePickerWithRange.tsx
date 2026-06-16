@@ -1,19 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { format } from "date-fns";
-import { pl } from "date-fns/locale";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { DateRange } from "react-day-picker";
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { DateRange } from "react-day-picker";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { pl } from "date-fns/locale";
 
 interface DatePickerWithRangeProps {
 	className?: string;
@@ -51,9 +52,9 @@ export function DatePickerWithRange({
 						id="date"
 						variant={"outline"}
 						className={cn(
-							"w-fit justify-start text-left font-bold text-[11px] tracking-wider transition-all duration-300",
-							"bg-slate-900/50 border-t-border-subtle hover:bg-slate-800/80 hover:text-slate-100 text-slate-400 rounded-lg h-8 px-3 ml-2 border-l border-t-border-subtle",
-							!date && "text-slate-500",
+							"w-fit justify-start text-left font-bold text-[11px] tracking-wider transition-all duration-300 hover:cursor-pointer",
+							" border-t-border-subtle bg-slate-800/80 hover:bg-slate-800/20 text-slate-300 dark:text-slate-400 hover:text-slate-100 rounded-lg h-8 px-3 ml-2 border-l",
+							!date && "text-slate-500 ",
 						)}
 					>
 						<CalendarIcon className="mr-2 h-3.5 w-3.5" />

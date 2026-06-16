@@ -14,6 +14,8 @@ import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { DailyPnLChart } from "./dashboard/DailyPnLChart";
+import { DatePickerWithRange } from "./shared/DatePickerWithRange";
+import { DateRange } from "react-day-picker";
 import { FilterBadge } from "./shared/FilterBadge";
 import { MarketRow } from "./home/MarketRow";
 import { PortfolioWithAssets } from "@/lib/types";
@@ -92,10 +94,28 @@ export function UserDashboard({
 	const currentFrom = searchParams.get("from") || "";
 	const currentTo = searchParams.get("to") || "";
 
-	const handleCustomDateChange = (type: "from" | "to", value: string) => {
+	// Konwertujemy stringi z URL na obiekty Date dla nowego kalendarza
+	const fromDate = currentFrom ? new Date(currentFrom) : undefined;
+	const toDate = currentTo ? new Date(currentTo) : undefined;
+
+	// Nowa potężna funkcja aktualizująca obie daty naraz
+	const handleDateRangeSelect = (range: DateRange | undefined) => {
 		const params = new URLSearchParams(searchParams.toString());
-		params.set("range", "CUSTOM");
-		params.set(type, value);
+
+		if (range?.from) {
+			params.set("range", "CUSTOM");
+			// formatujemy do YYYY-MM-DD bezpiecznie dla stref czasowych
+			params.set("from", format(range.from, "yyyy-MM-dd"));
+		} else {
+			params.delete("from");
+		}
+
+		if (range?.to) {
+			params.set("to", format(range.to, "yyyy-MM-dd"));
+		} else {
+			params.delete("to");
+		}
+
 		router.push(`${pathname}?${params.toString()}`, { scroll: false });
 	};
 
@@ -366,37 +386,12 @@ export function UserDashboard({
 								</button>
 							))}
 
-							<div className="flex items-center gap-2 ml-2 pl-3 border-l border-t-border-subtle">
-								<div className="flex items-center bg-slate-900/50 border border-t-border-subtle rounded-lg px-2 py-1 focus-within:border-blue-500/50 transition-colors">
-									<span className="text-[10px] font-bold text-slate-500 mr-2">
-										OD
-									</span>
-									<input
-										type="date"
-										value={currentFrom}
-										max={currentTo || undefined}
-										onChange={(e) =>
-											handleCustomDateChange("from", e.target.value)
-										}
-										className="bg-transparent text-[11px] font-bold text-slate-300 outline-none cursor-pointer [color-scheme:dark]"
-									/>
-								</div>
-
-								<div className="flex items-center bg-slate-900/50 border border-t-border-subtle rounded-lg px-2 py-1 focus-within:border-blue-500/50 transition-colors">
-									<span className="text-[10px] font-bold text-slate-500 mr-2">
-										DO
-									</span>
-									<input
-										type="date"
-										value={currentTo}
-										min={currentFrom || undefined}
-										onChange={(e) =>
-											handleCustomDateChange("to", e.target.value)
-										}
-										className="bg-transparent text-[11px] font-bold text-slate-300 outline-none cursor-pointer [color-scheme:dark]"
-									/>
-								</div>
-							</div>
+							{/* === NOWOCZESNY KALENDARZ SHADCN OD-DO === */}
+							<DatePickerWithRange
+								from={fromDate}
+								to={toDate}
+								onSelect={handleDateRangeSelect}
+							/>
 						</div>
 					</div>
 
@@ -417,124 +412,120 @@ export function UserDashboard({
 					<DailyPnLChart data={pnlChartData} />
 				</div>
 			</SectionLayout>
-			<div className=" flex gap-6 ">
-				<SectionLayout
-					title="Radar Rynkowy"
-					titleIcon={Activity}
-					subtitle="Śledź kluczowe wskaźniki i wybrane aktywa."
-					description="Zestawienie globalnych indeksów makroekonomicznych oraz wytypowanych walorów z Twojego portfela."
-				>
-					<div className="flex flex-col md:flex-row gap-6  ">
-						<div className="flex-1">
-							{/* SEKCJA 1: GLOBALNE INDEKSY */}
-							{userIndices && userIndices.length > 0 && (
-								<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm">
-									<div className="flex items-center justify-between mb-4">
-										<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-											<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki
-											Makro
-										</h4>
-
-										{/* ZNACZNIK CZASU AKTUALIZACJI */}
-										{lastUpdated && (
-											<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
-												<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse" />
-												{format(new Date(lastUpdated), "HH:mm, dd MMM", {
-													locale: pl,
-												})}
-											</span>
-										)}
-									</div>
-
-									<div className="space-y-4">
-										{userIndices.map((indexId) => {
-											const indexName = GLOBAL_INDICES_MAP[indexId] || indexId;
-											const changeValue = indexQuotes[indexId] || 0;
-											const isPositive = changeValue >= 0;
-											const displayValue =
-												changeValue !== 0
-													? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
-													: "0.00%";
-
-											// Wygenerowanie ikony z Favicon dla indeksów globalnych
-											const logoUrl = `https://www.google.com/s2/favicons?domain=${
-												indexId === "SP500"
-													? "spglobal.com"
-													: indexId === "NASDAQ"
-														? "nasdaq.com"
-														: indexId === "BTC"
-															? "bitcoin.org"
-															: "finance.yahoo.com"
-											}&sz=128`;
-
-											return (
-												<MarketRow
-													key={indexId}
-													name={indexName}
-													value={displayValue}
-													isPositive={isPositive}
-													logo={logoUrl} // <--- PRZEKAZUJEMY LOGO
-												/>
-											);
-										})}
-									</div>
-								</div>
+			<SectionLayout
+				title="Radar Rynkowy"
+				titleIcon={Activity}
+				subtitle="Śledź kluczowe wskaźniki i wybrane aktywa."
+				description="Zestawienie globalnych indeksów makroekonomicznych oraz wytypowanych walorów z Twojego portfela."
+			>
+				<div className="flex flex-col md:flex-row gap-6  ">
+					{/* SEKCJA 2: AKTYWA Z PORTFELA */}
+					<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm  flex-1">
+						<div className="flex items-center justify-between mb-4">
+							<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500  flex items-center gap-2">
+								<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
+								Portfela
+							</h4>
+							{/* ZNACZNIK CZASU AKTUALIZACJI */}
+							{lastUpdated && (
+								<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
+									<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse " />
+									{format(new Date(lastUpdated), "HH:mm, dd MMM", {
+										locale: pl,
+									})}
+								</span>
 							)}
 						</div>
 
-						{/* SEKCJA 2: AKTYWA Z PORTFELA */}
-						<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm  flex-1">
-							<div className="flex items-center justify-between mb-4">
-								<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500  flex items-center gap-2">
-									<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
-									Portfela
-								</h4>
-								{/* ZNACZNIK CZASU AKTUALIZACJI */}
-								{lastUpdated && (
-									<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
-										<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse " />
-										{format(new Date(lastUpdated), "HH:mm, dd MMM", {
-											locale: pl,
-										})}
-									</span>
-								)}
-							</div>
+						<div className="space-y-4">
+							{observedAssets.length > 0 ? (
+								observedAssets.map((asset) => {
+									const changeValue = asset.dailyChange || 0;
+									const isPositive = changeValue >= 0;
+									const displayValue =
+										changeValue !== 0
+											? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
+											: "0.00%";
 
-							<div className="space-y-4">
-								{observedAssets.length > 0 ? (
-									observedAssets.map((asset) => {
-										const changeValue = asset.dailyChange || 0;
+									return (
+										<MarketRow
+											key={asset.id}
+											name={asset.name}
+											value={displayValue}
+											isPositive={isPositive}
+											logo={getStockLogo(asset.ticker ?? "")} // <--- Pobieramy logo dla aktywów z portfela
+										/>
+									);
+								})
+							) : (
+								<div className="flex flex-col items-center justify-center py-6 opacity-50 text-center space-y-2">
+									<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
+										Brak aktywów
+									</p>
+									<p className="text-[10px] text-t-text-tertiary px-4 leading-relaxed">
+										Przejdź do ustawień, aby wybrać walory do obserwacji.
+									</p>
+								</div>
+							)}
+						</div>
+					</div>
+					<div className="flex-1">
+						{/* SEKCJA 1: GLOBALNE INDEKSY */}
+						{userIndices && userIndices.length > 0 && (
+							<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm">
+								<div className="flex items-center justify-between mb-4">
+									<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+										<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
+									</h4>
+
+									{/* ZNACZNIK CZASU AKTUALIZACJI */}
+									{lastUpdated && (
+										<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
+											<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse" />
+											{format(new Date(lastUpdated), "HH:mm, dd MMM", {
+												locale: pl,
+											})}
+										</span>
+									)}
+								</div>
+
+								<div className="space-y-4">
+									{userIndices.map((indexId) => {
+										const indexName = GLOBAL_INDICES_MAP[indexId] || indexId;
+										const changeValue = indexQuotes[indexId] || 0;
 										const isPositive = changeValue >= 0;
 										const displayValue =
 											changeValue !== 0
 												? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
 												: "0.00%";
 
+										// Wygenerowanie ikony z Favicon dla indeksów globalnych
+										const logoUrl = `https://www.google.com/s2/favicons?domain=${
+											indexId === "SP500"
+												? "spglobal.com"
+												: indexId === "NASDAQ"
+													? "nasdaq.com"
+													: indexId === "BTC"
+														? "bitcoin.org"
+														: "finance.yahoo.com"
+										}&sz=128`;
+
 										return (
 											<MarketRow
-												key={asset.id}
-												name={asset.name}
+												key={indexId}
+												name={indexName}
 												value={displayValue}
 												isPositive={isPositive}
-												logo={getStockLogo(asset.ticker ?? "")} // <--- Pobieramy logo dla aktywów z portfela
+												logo={logoUrl} // <--- PRZEKAZUJEMY LOGO
 											/>
 										);
-									})
-								) : (
-									<div className="flex flex-col items-center justify-center py-6 opacity-50 text-center space-y-2">
-										<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
-											Brak aktywów
-										</p>
-										<p className="text-[10px] text-t-text-tertiary px-4 leading-relaxed">
-											Przejdź do ustawień, aby wybrać walory do obserwacji.
-										</p>
-									</div>
-								)}
+									})}
+								</div>
 							</div>
-						</div>
+						)}
 					</div>
-				</SectionLayout>
-			</div>
+				</div>
+			</SectionLayout>
 		</div>
 	);
 }

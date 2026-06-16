@@ -102,10 +102,19 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 		indexQuotes[idx.symbol] = idx.dailyChange;
 	});
 
+	// 5. Wyciągamy czas ostatniej aktualizacji (sprawdzamy aktywa ORAZ indeksy)
 	let latestUpdate = new Date(0);
-	portfolios.forEach((a) => {
-		if (a.updatedAt > latestUpdate) latestUpdate = a.updatedAt;
+
+	// A. Sprawdzamy daty z Twoich aktywów w portfelu
+	allAssets.forEach((asset) => {
+		if (asset.updatedAt > latestUpdate) latestUpdate = asset.updatedAt;
 	});
+
+	// B. Sprawdzamy daty z pobranych wskaźników Makro (dbIndices)
+	dbIndices.forEach((idx) => {
+		if (idx.updatedAt > latestUpdate) latestUpdate = idx.updatedAt;
+	});
+
 	const lastUpdated =
 		latestUpdate.getTime() > 0 ? latestUpdate.toISOString() : null;
 

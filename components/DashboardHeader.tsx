@@ -1,6 +1,13 @@
 "use client";
 
-import { ChevronLeft, Container, Wallet2 } from "lucide-react";
+import {
+	ArrowLeft,
+	ChevronLeft,
+	Container,
+	Settings,
+	Wallet2,
+	Wrench,
+} from "lucide-react";
 
 import Link from "next/link";
 import { PortfolioWithAssets } from "@/lib/types";
@@ -25,6 +32,7 @@ export const DashboardHeader = ({
 	const pathname = usePathname(); // EN: Get current URL path
 	// EN: Check if we are currently on the add-asset subpage
 	const isAddAssetPage = pathname.endsWith("/add-asset");
+	const isSettingsPage = pathname.endsWith("/settings");
 	// 1. Hooki (zawsze na górze)
 	const assets = useMemo(() => portfolio?.assets || [], [portfolio?.assets]);
 	const assetsWithPL = useMemo(() => {
@@ -98,18 +106,54 @@ export const DashboardHeader = ({
 				}}
 			/>
 
-			{/* GÓRA: Zawsze widoczna (Zawiń istniejący kod w relative z-10, aby był nad teksturą) */}
+			{/* GÓRA: Zawsze widoczna */}
 			<div className="relative z-10">
 				{customBreadcrumbs || defaultBreadcrumbs}
-				<div className="mt-2">
-					<h1 className="text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">
-						{name}
-					</h1>
-					<p className="text-slate-400 font-medium mt-1 text-sm md:text-base">
-						{isAddAssetPage
-							? "Zarządzaj składem swojego portfela"
-							: "Zarządzaj portfelem i kontroluj strategie"}
-					</p>
+
+				{/* Kontener flex, który rozsuwa tytuł i przycisk na boki */}
+				<div className="mt-2 flex items-start justify-between gap-4">
+					<div>
+						<h1 className="text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">
+							{name}
+						</h1>
+						<p className="text-slate-400 font-medium mt-1 text-sm md:text-base">
+							{isAddAssetPage
+								? "Zarządzaj składem swojego portfela"
+								: "Zarządzaj portfelem i kontroluj strategie"}
+						</p>
+					</div>
+
+					{/* === PORTFOLIO MANAGEMENT BUTTON === */}
+					{!isAddAssetPage && portfolio.id && (
+						<Link
+							// EN: If on settings page, clicking goes back to dashboard. Otherwise, go to settings.
+							href={
+								isSettingsPage
+									? `/dashboard/${portfolio.id}`
+									: `/dashboard/${portfolio.id}/settings`
+							}
+							className={cn(
+								"group flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 shadow-sm border",
+								isSettingsPage
+									? // EN: Neutral style for "Go Back" action
+										"bg-slate-800/40 hover:bg-slate-700/60 border-slate-700/50 text-slate-300 hover:text-white"
+									: // EN: Highlighted style for "Manage" action
+										"bg-blue-900/20 hover:bg-blue-800/40 border-blue-500/30 hover:border-blue-400/60 text-blue-400 hover:text-blue-300",
+							)}
+						>
+							{isSettingsPage ? (
+								// EN: Arrow left when acting as a return button
+								<ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
+							) : (
+								// EN: Wrench when acting as the entry to management
+								<Wrench className="w-4 h-4 group-hover:-rotate-12 transition-transform duration-300" />
+							)}
+
+							<span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest">
+								{isSettingsPage ? "Powrót" : "Zarządzanie"}
+							</span>
+						</Link>
+					)}
 				</div>
 			</div>
 

@@ -47,7 +47,7 @@ export function HardEraseTool({ assets }: HardEraseToolProps) {
 			} else {
 				toast.error(res.error || "Nie udało się wymazać aktywa.");
 			}
-		} catch (err) {
+		} catch {
 			toast.error("Wystąpił błąd krytyczny.");
 		} finally {
 			setLoading(false);

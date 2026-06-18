@@ -6,11 +6,11 @@ import {
 
 import { AlphaHeader } from "@/components/AlphaHeader";
 import AlphaLedgerTable from "@/components/AlphaLedgerTable";
+import { BulkMigrationTool } from "@/components/alpha/MigrationTool";
 import { Button } from "@/components/ui/button";
 // import type { Category } from "@prisma/client";
 import { InteractiveChartSection } from "@/components/InteractiveChartSection";
 import Link from "next/link";
-import { MigrationTool } from "@/components/alpha/MigrationTool";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
@@ -187,7 +187,7 @@ export default async function AlphaSelectionPage({
 				subtitle="Konserwacja danych"
 				description="Narzędzie pozwala na masową korektę błędnie przypisanych kategorii dla konkretnego aktywa, aktualizując jednocześnie całą historię jego transakcji."
 			>
-				<MigrationTool
+				<BulkMigrationTool
 					assets={filteredAssets}
 					categories={filteredCategories}
 					portfolioId={portfolioId}

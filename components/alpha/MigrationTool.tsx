@@ -1,6 +1,12 @@
 "use client";
 
-import { ArrowRight, Loader2, Wrench } from "lucide-react";
+import {
+	AlertCircle,
+	ArrowRight,
+	CheckSquare,
+	Loader2,
+	Square,
+} from "lucide-react";
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import {
 	Select,
@@ -12,6 +18,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import type { Category } from "@prisma/client";
+import { cn } from "@/lib/utils";
 import { migrateAssetCategory } from "@/lib/actions/cleanup.actions";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -23,140 +30,165 @@ interface SimpleAsset {
 	ticker: string | null;
 }
 
-interface MigrationToolProps {
+interface BulkMigrationToolProps {
 	assets: SimpleAsset[];
 	categories: Category[];
 	portfolioId: string;
 }
 
-export function MigrationTool({
+export function BulkMigrationTool({
 	assets,
 	categories,
 	portfolioId,
-}: MigrationToolProps) {
-	const [selectedAssetId, setSelectedAssetId] = useState<string>("");
+}: BulkMigrationToolProps) {
+	// Stan dla zaznaczonych aktywów
+	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const [targetCat, setTargetCat] = useState<Category>("BOOSTER");
 	const [loading, setLoading] = useState(false);
 
-	const currentAsset = assets.find((a) => a.id === selectedAssetId);
+	const toggleAsset = (id: string) => {
+		setSelectedIds((prev) =>
+			prev.includes(id) ? prev.filter((aId) => aId !== id) : [...prev, id],
+		);
+	};
+
+	const selectAll = () => {
+		if (selectedIds.length === assets.length) setSelectedIds([]);
+		else setSelectedIds(assets.map((a) => a.id));
+	};
 
 	const handleMigrate = async () => {
-		if (!currentAsset) return toast.error("Wybierz aktywo z listy");
+		if (selectedIds.length === 0)
+			return toast.error("Zaznacz minimum jedno aktywo");
 
 		setLoading(true);
 		try {
-			const res = await migrateAssetCategory(
-				currentAsset.name,
-				targetCat,
-				portfolioId,
-			);
-			if (res.success) {
-				toast.success(`Zaktualizowano ${currentAsset.name} do ${targetCat}`);
-				setSelectedAssetId("");
+			// Wykonujemy migrację dla wszystkich zaznaczonych asseetów równolegle
+			const promises = selectedIds.map((id) => {
+				const asset = assets.find((a) => a.id === id);
+				if (!asset) return Promise.resolve(null);
+				return migrateAssetCategory(asset.name, targetCat, portfolioId);
+			});
+
+			const results = await Promise.all(promises);
+
+			const successCount = results.filter((r) => r && r.success).length;
+
+			if (successCount > 0) {
+				toast.success(`Pomyślnie zmigrowano ${successCount} aktywów!`);
+				setSelectedIds([]); // Czyścimy po sukcesie
+			} else {
+				toast.error("Migracja się nie powiodła.");
 			}
-		} catch {
-			toast.error("Błąd zapisu danych");
+		} catch (error) {
+			toast.error("Wystąpił błąd podczas migracji");
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	return (
-		<div className="bg-t-bg-panel border border-t-border rounded-2xl p-6 shadow-sm mb-8">
-			<div className="flex items-center gap-2 mb-6 text-amber-500 font-bold text-[10px] uppercase tracking-widest">
-				<Wrench size={14} className="text-amber-500" />
-				Narzędzie systemowe: Porządkowanie kategorii
+		<div className="bg-t-bg-panel border border-t-border rounded-2xl p-5 space-y-5 shadow-sm">
+			<div className="flex items-center justify-between">
+				<h3 className="text-sm font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
+					<ArrowRight className="w-4 h-4 text-blue-500" /> Masowa Migracja
+					Kategorii
+				</h3>
+				<button
+					onClick={selectAll}
+					className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-200"
+				>
+					{selectedIds.length === assets.length
+						? "Odznacz wszystkie"
+						: "Zaznacz wszystkie"}
+				</button>
 			</div>
 
-			<div className="flex flex-col md:flex-row items-center gap-4 w-full">
-				{/* SELECT 1: WYBÓR AKTYWA */}
-				<div className="flex-1 w-full">
-					<Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-						<SelectTrigger className="h-12 rounded-xl bg-black/5 dark:bg-t-bg-base border-t-border text-t-text-primary">
-							<SelectValue placeholder="Wybierz aktywo do migracji..." />
-						</SelectTrigger>
-						<SelectContent>
-							{assets.map((asset) => (
-								<SelectItem key={asset.id} value={asset.id}>
-									<div className="flex items-center gap-3 py-1">
-										<div
-											className="w-2 h-2 rounded-full shrink-0 border border-t-border-subtle"
-											style={{
-												backgroundColor:
-													COLORS[asset.category as keyof typeof COLORS],
-											}}
-										/>
-										<div className="flex flex-col items-start leading-tight">
-											<span className="text-xs font-bold text-t-text-primary">
-												{asset.name}
-											</span>
-											<span className="text-[9px] font-medium text-t-text-tertiary uppercase tracking-wider mt-0.5">
-												Aktualnie:{" "}
-												{CATEGORY_LABELS[
-													asset.category as keyof typeof CATEGORY_LABELS
-												] || asset.category}
-											</span>
-										</div>
-									</div>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
+			{/* Lista checkboxów */}
+			<div className="max-h-64 overflow-y-auto pr-2 space-y-1.5 custom-scrollbar">
+				{assets.length === 0 ? (
+					<p className="text-xs text-slate-500 italic py-4 text-center">
+						Brak aktywów do migracji.
+					</p>
+				) : (
+					assets.map((asset) => {
+						const isSelected = selectedIds.includes(asset.id);
+						const categoryColor =
+							COLORS[asset.category as keyof typeof COLORS] || "#0a0a0a";
 
-				<ArrowRight
-					size={18}
-					className="text-t-text-tertiary hidden md:block shrink-0"
-				/>
+						return (
+							<div
+								key={asset.id}
+								onClick={() => toggleAsset(asset.id)}
+								className={cn(
+									"flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors",
+									isSelected
+										? "bg-blue-500/10 border-blue-500/30"
+										: "bg-t-bg-sticky border-t-border-subtle hover:border-t-border",
+								)}
+							>
+								<div className="flex items-center gap-3">
+									{isSelected ? (
+										<CheckSquare className="w-4 h-4 text-blue-500" />
+									) : (
+										// EN: Using a theme-aware color for the unselected checkbox
+										<Square className="w-4 h-4 text-t-text-tertiary" />
+									)}
+									{/* EN: Using primary text color so it adapts to light/dark mode */}
+									<span className="text-sm font-bold text-t-text-primary">
+										{asset.name}
+									</span>
+								</div>
+								<div className="flex items-center gap-2">
+									<div
+										className="w-2 h-2 rounded-full"
+										style={{ backgroundColor: categoryColor }}
+									/>
+									{/* EN: Using tertiary text color for the category label */}
+									<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
+										{CATEGORY_LABELS[
+											asset.category as keyof typeof CATEGORY_LABELS
+										] || asset.category}
+									</span>
+								</div>
+							</div>
+						);
+					})
+				)}
+			</div>
 
-				{/* SELECT 2: WYBÓR DOCELOWEJ KATEGORII */}
-				<div className="w-full md:w-auto">
+			{/* Panel akcji */}
+			<div className="flex flex-col md:flex-row gap-4 items-center pt-4 border-t border-t-border">
+				<div className="flex-1 w-full flex items-center gap-3">
+					<span className="text-xs font-bold text-slate-500 whitespace-nowrap">
+						Nowa kategoria:
+					</span>
 					<Select
 						value={targetCat}
-						onValueChange={(v) => setTargetCat(v as Category)}
+						onValueChange={(val) => setTargetCat(val as Category)}
 					>
-						<SelectTrigger className="h-12 md:w-[220px] rounded-xl bg-black/5 dark:bg-t-bg-base border-t-border text-t-text-primary font-bold text-xs">
+						<SelectTrigger className="w-full bg-slate-900 border-slate-700 text-slate-200 font-bold text-xs">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
 							{categories.map((c) => (
 								<SelectItem key={c} value={c}>
-									<div className="flex items-center gap-2">
-										<div
-											className="w-2 h-2 rounded-full border border-t-border-subtle"
-											style={{
-												backgroundColor: COLORS[c as keyof typeof COLORS],
-											}}
-										/>
-										<span className="text-xs font-bold uppercase tracking-wider text-t-text-secondary">
-											{CATEGORY_LABELS[c as keyof typeof CATEGORY_LABELS] || c}
-										</span>
-									</div>
+									{CATEGORY_LABELS[c as keyof typeof CATEGORY_LABELS] || c}
 								</SelectItem>
 							))}
 						</SelectContent>
 					</Select>
 				</div>
 
-				<div className="w-full md:w-auto">
-					<Button
-						onClick={handleMigrate}
-						disabled={loading || !selectedAssetId}
-						className="w-full md:w-auto h-12 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest bg-amber-600 hover:bg-amber-600 text-slate-950 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						{loading ? (
-							<Loader2 className="w-4 h-4 animate-spin" />
-						) : (
-							"Uruchom migrację"
-						)}
-					</Button>
-				</div>
+				<Button
+					onClick={handleMigrate}
+					disabled={loading || selectedIds.length === 0}
+					className="w-full md:w-auto h-10 px-6 rounded-lg font-black uppercase text-[10px] tracking-widest bg-amber-600 hover:bg-amber-500 text-slate-950 disabled:opacity-50"
+				>
+					{loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+					Zmigruj ({selectedIds.length})
+				</Button>
 			</div>
-
-			<p className="mt-4 text-[10px] text-t-text-tertiary uppercase tracking-widest font-bold">
-				* Uwaga: Operacja zaktualizuje kategorię aktywa oraz wszystkich
-				powiązanych wpisów w historii transakcji.
-			</p>
 		</div>
 	);
 }

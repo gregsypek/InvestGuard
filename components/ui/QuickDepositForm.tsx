@@ -70,7 +70,7 @@ export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
 					onSubmit={handleSubmit}
 					className="flex flex-col sm:flex-row items-center w-full md:w-auto gap-3"
 				>
-					<div className="relative w-full sm:w-56 shrink-0">
+					<div className="relative w-full sm:w-56 min-w-80 flex flex-1 shrink-0">
 						<span className="absolute left-4 top-1/2 -translate-y-1/2 text-t-text-tertiary">
 							<Banknote className="w-4 h-4" />
 						</span>

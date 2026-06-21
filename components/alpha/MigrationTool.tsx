@@ -105,7 +105,7 @@ export function BulkMigrationTool({
 			</div>
 
 			{/* Lista checkboxów */}
-			<div className="max-h-64 overflow-y-auto pr-2 space-y-1.5 custom-scrollbar">
+			<div className="max-h-80 overflow-y-auto pr-2 space-y-1.5 custom-scrollbar">
 				{assets.length === 0 ? (
 					<p className="text-xs text-slate-500 italic py-4 text-center">
 						Brak aktywów do migracji.

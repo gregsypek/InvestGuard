@@ -80,30 +80,66 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 			break;
 	}
 
-	// Silnik Historii (z datą OD i DO)
+	// 1. Obliczamy dokładną datę początkową dla filtra Rzeczywistego
+	const startDate = new Date(endDate);
+	startDate.setDate(endDate.getDate() - daysBack);
+
+	// 2. Silnik Symulacji (Wsteczny)
 	const simulatedSnapshots = generatePortfolioHistory(
 		portfolios,
 		daysBack,
 		endDate,
 	);
 
+	// 3. Pobieramy Zrzuty Rzeczywiste (z CRON) Z FILTREM DATY! (To naprawi legendę)
+	const realDbSnapshots = await db.portfolioSnapshot.findMany({
+		where: {
+			portfolioId: { in: portfolios.map((p) => p.id) },
+			date: {
+				gte: startDate, // Musi być od tej daty
+				lte: endDate, // Do tej daty
+			},
+		},
+		orderBy: { date: "asc" },
+	});
+
+	// Mapujemy dane bazy na ten sam uniwersalny interfejs co symulacja
+	const realSnapshots = realDbSnapshots.map((s) => ({
+		id: s.id,
+		portfolioId: s.portfolioId,
+		date: s.date,
+		totalValue: Number(s.totalValue),
+		investedValue: Number(s.investedValue),
+		dailyChange: 0, // Ignorujemy to pole - AbsoluteDailyPnL wyliczy wszystko z gotówki
+		isPositive: true,
+	}));
+
 	const dbUser = await db.user.findUnique({
 		where: { id: session.user.id },
 		select: { observedIndices: true },
 	});
+
 	const userIndices = dbUser?.observedIndices || [];
 
+	let latestUpdate = new Date(0);
+	allAssets.forEach((asset) => {
+		if (asset.updatedAt > latestUpdate) latestUpdate = asset.updatedAt;
+	});
 	const dbIndices = await db.marketIndex.findMany({
 		where: { symbol: { in: userIndices } },
 	});
+
+	dbIndices.forEach((idx) => {
+		if (idx.updatedAt > latestUpdate) latestUpdate = idx.updatedAt;
+	});
+
+	const lastUpdated =
+		latestUpdate.getTime() > 0 ? latestUpdate.toISOString() : null;
 
 	const indexQuotes: Record<string, number> = {};
 	dbIndices.forEach((idx) => {
 		indexQuotes[idx.symbol] = idx.dailyChange;
 	});
-
-	// 5. Wyciągamy czas ostatniej aktualizacji (sprawdzamy aktywa ORAZ indeksy)
-	let latestUpdate = new Date(0);
 
 	// A. Sprawdzamy daty z Twoich aktywów w portfelu
 	allAssets.forEach((asset) => {
@@ -115,13 +151,11 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 		if (idx.updatedAt > latestUpdate) latestUpdate = idx.updatedAt;
 	});
 
-	const lastUpdated =
-		latestUpdate.getTime() > 0 ? latestUpdate.toISOString() : null;
-
 	return (
 		<UserDashboard
 			portfolios={portfolios}
-			snapshots={simulatedSnapshots}
+			snapshots={simulatedSnapshots} //  Tu wrzucamy symulację!
+			realSnapshots={realSnapshots} // Tu wrzucamy prawdziwe dane z bazy
 			userIndices={userIndices}
 			indexQuotes={indexQuotes}
 			lastUpdated={lastUpdated}

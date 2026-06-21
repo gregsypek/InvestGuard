@@ -25,7 +25,7 @@ export const SectionLayout = ({
 	children,
 }: SectionLayoutProps) => (
 	// ZMIANA: border-white/5 -> border-t-border
-	<section className="flex flex-col gap-5 md:gap-6 py-10 md:py-12 xl:py-18  p-2 md:p-4 ">
+	<section className="flex flex-col gap-5 md:gap-6 md:py-12 xl:py-18  p-2 md:p-4 ">
 		<div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
 			<div>
 				<SectionHeader title={title} icon={titleIcon} className="mb-2" />

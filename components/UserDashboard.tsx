@@ -2,6 +2,7 @@
 
 import {
 	Activity,
+	Banknote,
 	Briefcase,
 	Container,
 	Globe,
@@ -13,7 +14,7 @@ import { cn, getStockLogo } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { DailyPnLChart } from "./dashboard/DailyPnLChart";
+import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
 import { DatePickerWithRange } from "./shared/DatePickerWithRange";
 import { DateRange } from "react-day-picker";
 import { FilterBadge } from "./shared/FilterBadge";
@@ -43,10 +44,10 @@ export interface SimulatedSnapshot {
 	dailyChange: number;
 	isPositive: boolean;
 }
-
 interface UserDashboardProps {
 	portfolios: PortfolioWithAssets[];
-	snapshots: SimulatedSnapshot[];
+	snapshots: SimulatedSnapshot[]; // To jest nasza symulacja
+	realSnapshots?: SimulatedSnapshot[]; // Gotowość na przyjęcie bazy danych
 	userIndices?: string[];
 	indexQuotes?: Record<string, number>;
 	lastUpdated?: string | null;
@@ -56,6 +57,7 @@ interface UserDashboardProps {
 export function UserDashboard({
 	portfolios,
 	snapshots,
+	realSnapshots = [], //  Domyślnie pusta tablica
 	userIndices = [],
 	indexQuotes = {},
 	lastUpdated = null,
@@ -68,9 +70,10 @@ export function UserDashboard({
 	// NATYCHMIASTOWY STAN UI
 	const activeRange = searchParams.get("range") || "1M";
 
+	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("REAL");
 	const [chartMode, setChartMode] = useState<"VALUE" | "PERCENTAGE">("VALUE");
 	const [selectedIds, setSelectedIds] = useState<string[]>(["ALL"]);
-
+	// NOWY STAN: Wybór źródła danych (Domyślnie bierzemy prawdziwe z bazy, chyba że ich nie ma)
 	const togglePortfolio = (id: string) => {
 		setSelectedIds((prev: string[]) => {
 			if (id === "ALL") return ["ALL"];
@@ -119,10 +122,14 @@ export function UserDashboard({
 		router.push(`${pathname}?${params.toString()}`, { scroll: false });
 	};
 
-	const { portfolioChartData, pnlChartData } = useMemo(() => {
+	const { portfolioChartData, absoluteChartData } = useMemo(() => {
+		// MAGIA UX: WYBIERAMY ŹRÓDŁO DANYCH
+		const activeSnapshots =
+			dataMode === "SIMULATED" ? snapshots : realSnapshots;
+
 		const filteredSnapshots = selectedIds.includes("ALL")
-			? snapshots
-			: snapshots.filter((s) => selectedIds.includes(s.portfolioId));
+			? activeSnapshots
+			: activeSnapshots.filter((s) => selectedIds.includes(s.portfolioId));
 
 		const grouped = filteredSnapshots.reduce(
 			(acc, curr) => {
@@ -182,8 +189,28 @@ export function UserDashboard({
 			isPositive: point.isPositive,
 		}));
 
-		return { portfolioChartData: finalChartData, pnlChartData: finalPnlData };
-	}, [snapshots, selectedIds, chartMode]);
+		// Prawdziwy, Nominalny Wynik Dzienny!
+		const finalAbsoluteData = [];
+		for (let i = 1; i < baseData.length; i++) {
+			const today = baseData[i];
+			const yesterday = baseData[i - 1];
+			// Odcinamy wpłaty od wyceny, by zobaczyć CZYSTY zysk
+			const netCashFlow = today.invested - yesterday.invested;
+			const exactChangePLN = today.value - yesterday.value - netCashFlow;
+
+			finalAbsoluteData.push({
+				date: today.date,
+				exactChangePLN: Number(exactChangePLN.toFixed(2)),
+				totalPortfolioValue: today.value,
+			});
+		}
+
+		return {
+			portfolioChartData: finalChartData,
+			pnlChartData: finalPnlData,
+			absoluteChartData: finalAbsoluteData,
+		};
+	}, [snapshots, realSnapshots, selectedIds, chartMode, dataMode]);
 
 	const selectedPortfolios = selectedIds.includes("ALL")
 		? portfolios
@@ -349,6 +376,7 @@ export function UserDashboard({
 			</header>
 
 			{/* 2. SEKCJA: WYKRES GŁÓWNY Z FILTRAMI */}
+
 			<SectionLayout
 				title="Analiza Wykresowa"
 				titleIcon={LineChart}
@@ -356,20 +384,53 @@ export function UserDashboard({
 				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela."
 			>
 				<div className="flex flex-col gap-4 mb-6 mt-4">
-					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 dark:bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm">
-						<div className="flex items-center gap-2">
-							<FilterBadge
-								id="VALUE"
-								label="Wartość (PLN)"
-								isSelected={chartMode === "VALUE"}
-								onToggle={() => setChartMode("VALUE")}
-							/>
-							<FilterBadge
-								id="PERCENTAGE"
-								label="Zwrot (%)"
-								isSelected={chartMode === "PERCENTAGE"}
-								onToggle={() => setChartMode("PERCENTAGE")}
-							/>
+					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm">
+						{/* LEWA STRONA (Filtry walut i ŹRÓDŁO DANYCH) */}
+						<div className="flex flex-wrap items-center gap-4">
+							<div className="flex items-center gap-2">
+								<FilterBadge
+									id="VALUE"
+									label="Wartość (PLN)"
+									isSelected={chartMode === "VALUE"}
+									onToggle={() => setChartMode("VALUE")}
+								/>
+								<FilterBadge
+									id="PERCENTAGE"
+									label="Zwrot (%)"
+									isSelected={chartMode === "PERCENTAGE"}
+									onToggle={() => setChartMode("PERCENTAGE")}
+								/>
+							</div>
+							{/* NOWY PRZEŁĄCZNIK ŹRÓDŁA */}
+							<div className="hidden md:block w-px h-6 bg-slate-700/50" />
+
+							<div className="flex items-center gap-2">
+								<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">
+									Dane:
+								</span>
+								<FilterBadge
+									id="REAL"
+									label="Rzeczywiste"
+									isSelected={dataMode === "REAL"}
+									onToggle={() => setDataMode("REAL")}
+									className={
+										dataMode === "REAL"
+											? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20"
+											: ""
+									}
+								/>
+								<FilterBadge
+									id="SIMULATED"
+									label="Symulacja"
+									isSelected={dataMode === "SIMULATED"}
+									onToggle={() => setDataMode("SIMULATED")}
+									className={
+										dataMode === "SIMULATED"
+											? "text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
+											: ""
+									}
+								/>
+							</div>
 						</div>
 
 						<div className="flex flex-col md:flex-row items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide">
@@ -407,17 +468,17 @@ export function UserDashboard({
 				</div>
 			</SectionLayout>
 
-			{/* 3. SEKCJA: WYKRES PnL */}
 			<SectionLayout
-				title="Dzienny Zysk/Strata (PnL)"
-				titleIcon={Activity}
-				subtitle="Analiza dziennej zmienności portfela w PLN"
-				description="Ten wykres obrazuje czysty zysk lub stratę wygenerowaną w danym dniu (Time-Weighted Return). System automatycznie filtruje i pomija momenty, w których dopłacasz lub wypłacasz kapitał, pokazując wyłącznie faktyczną pracę Twoich pieniędzy na rynku."
+				title="Nominalny Wynik Dzienny"
+				titleIcon={Banknote} // EN: You can import Banknote from lucide-react
+				subtitle="Faktyczna kwota wypracowana na rynku"
+				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
 			>
 				<div className="h-64 mt-6">
-					<DailyPnLChart data={pnlChartData} />
+					<AbsoluteDailyPnLChart data={absoluteChartData} />
 				</div>
 			</SectionLayout>
+
 			<SectionLayout
 				title="Radar Rynkowy"
 				titleIcon={Activity}

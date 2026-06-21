@@ -54,16 +54,16 @@ export default async function PortfolioSettingsPage(props: {
 		<div className="max-w-7xl mx-auto w-full space-y-10 animate-in fade-in duration-500 pb-24">
 			{/* === HEADER SECTION === */}
 			{/* EN: Integrated Back button right next to the title for a cleaner look */}
-			<div className="flex items-start gap-4 border-b border-t-border pb-6 bg-t-bg-sticky rounded-2xl p-4">
+			<div className="flex gap-4 border-b border-t-border pb-6 bg-t-bg-sticky rounded-2xl p-4 ">
 				<Link
 					href={`/dashboard/${portfolioId}`}
-					className="mt-1 p-2 bg-slate-800/50 hover:bg-slate-700 border border-slate-700/50 rounded-xl text-slate-400 hover:text-white transition-all duration-300"
+					className="mt-1 p-2 aspect-square flex items-center  bg-slate-700 border border-slate-700/50 rounded-xl text-slate-400 hover:text-white transition-all duration-300"
 					title="Powrót do portfela"
 				>
 					<ArrowLeft className="w-6 h-6" />
 				</Link>
 
-				<div>
+				<div className=" flex flex-1 align-middle flex-wrap justify-between">
 					<h1 className="text-2xl md:text-3xl font-black flex items-center gap-3 tracking-tight">
 						<Wrench className="w-7 h-7 text-blue-500" />
 						Zarządzanie Portfelem
@@ -78,7 +78,7 @@ export default async function PortfolioSettingsPage(props: {
 			</div>
 
 			{/* === TOOLS SECTION (Using SectionLayout) === */}
-			<div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+			<div className="grid grid-cols-1 3xl:grid-cols-2 gap-8 items-start">
 				{/* EN: Left Column */}
 				<div className="space-y-8 min-w-0 w-full">
 					<SectionLayout
@@ -116,7 +116,7 @@ export default async function PortfolioSettingsPage(props: {
 							<HardEraseTool assets={portfolio.assets} />
 
 							{/* EN: Extra system info neatly placed inside the SectionLayout */}
-							<div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 shadow-sm">
+							<div className="bg-blue-500/5 border border-blue-500/20 rounded-xl mt-20 p-4 shadow-sm">
 								<p className="text-[11px] text-slate-400 leading-relaxed font-medium">
 									<strong className="text-blue-400 uppercase tracking-wider text-[10px] block mb-1">
 										Ważna informacja

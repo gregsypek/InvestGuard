@@ -20,7 +20,7 @@ export function generatePortfolioHistory(
 
 		for (let i = 0; i <= daysBack; i += step) {
 			const currentDate = addDays(startDate, i);
-			// Używamy actualToday, żeby wiedzieć, czy narysować twarde dane z bazy
+			// Używamy actualToday, żeby wiedzieć, czy narysować twarde dane z bazy dla ryzykownych aktywów
 			const isCurrentDayActualToday = isSameDay(currentDate, actualToday);
 
 			let dailyInvested = 0;
@@ -31,28 +31,51 @@ export function generatePortfolioHistory(
 					new Date(asset.purchaseDate || asset.createdAt),
 				);
 
+				// Jeśli aktywa nie było w danym dniu w historii -> pomijamy
 				if (currentDate < purchaseDate) return;
 
 				dailyInvested += asset.investedCapital;
 
-				if (isCurrentDayActualToday) {
-					dailyValue += asset.currentValue;
-				} else {
-					// Zysk dzielimy na podstawie prawdziwego czasu posiadania
-					const totalDaysOwned = Math.max(
-						1,
-						differenceInDays(actualToday, purchaseDate),
-					);
+				// =========================================================
+				// 1. OBLIGACJE (Symulujemy zawsze, ignorujemy bazę dla wykresu,
+				// by uniknąć sztucznego spadku "dzisiaj")
+				// =========================================================
+				if (asset.category === "BONDS" && Number(asset.interestRate) > 0) {
 					const daysOwnedAtCurrentDate = Math.max(
 						0,
 						differenceInDays(currentDate, purchaseDate),
 					);
+					// Zysk z odsetek np: 6% w skali roku to 0.06 / 365 dziennie
+					const dailyRate = (Number(asset.interestRate) || 0) / 100 / 365;
+					const accruedForDay =
+						asset.investedCapital * dailyRate * daysOwnedAtCurrentDate;
 
-					const totalProfit = asset.currentValue - asset.investedCapital;
-					const profitPerDay = totalProfit / totalDaysOwned;
+					dailyValue += asset.investedCapital + accruedForDay;
+				}
+				// =========================================================
+				// 2. POZOSTAŁE AKTYWA (Akcje, Krypto, Złoto)
+				// =========================================================
+				else {
+					if (isCurrentDayActualToday) {
+						// Na dzisiaj bierzemy to, co podaje rynek
+						dailyValue += asset.currentValue;
+					} else {
+						// Na przeszłość rozkładamy całkowity zysk liniowo
+						const totalDaysOwned = Math.max(
+							1,
+							differenceInDays(actualToday, purchaseDate),
+						);
+						const daysOwnedAtCurrentDate = Math.max(
+							0,
+							differenceInDays(currentDate, purchaseDate),
+						);
 
-					dailyValue +=
-						asset.investedCapital + profitPerDay * daysOwnedAtCurrentDate;
+						const totalProfit = asset.currentValue - asset.investedCapital;
+						const profitPerDay = totalProfit / totalDaysOwned;
+
+						dailyValue +=
+							asset.investedCapital + profitPerDay * daysOwnedAtCurrentDate;
+					}
 				}
 			});
 
@@ -61,6 +84,7 @@ export function generatePortfolioHistory(
 
 			if (i > 0) {
 				const addedCapital = dailyInvested - prevInvested;
+				// PnL: Zmiana całkowitej wartości minus wpłacony kapitał w tym dniu
 				change = dailyValue - prevTotal - addedCapital;
 				isPositive = change >= 0;
 			}
@@ -73,8 +97,8 @@ export function generatePortfolioHistory(
 				portfolioId: portfolio.id,
 				date: currentDate,
 				totalValue: Number(dailyValue.toFixed(2)),
-				investedValue: Number(dailyInvested.toFixed(2)),
-				dailyChange: Number(change.toFixed(2)),
+				investedValue: dailyInvested,
+				dailyChange: change,
 				isPositive,
 			});
 		}

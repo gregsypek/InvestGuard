@@ -20,7 +20,8 @@ export default function SignInPage() {
 							alt="InvestGuard Logo"
 							width={32}
 							height={32}
-							className="block dark:hidden"
+							className="block dark:hidden object-contain"
+							style={{ width: "auto", height: "auto" }}
 						/>
 
 						{/* 2. Jasne logo (logo-light.svg) - UKRYTE w jasnym motywie, WIDOCZNE w ciemnym */}
@@ -29,7 +30,8 @@ export default function SignInPage() {
 							alt="InvestGuard Logo"
 							width={32}
 							height={32}
-							className="hidden dark:block"
+							className="hidden dark:block object-contain"
+							style={{ width: "auto", height: "auto" }}
 						/>
 					</div>
 					<h1 className="text-3xl font-black tracking-tighter text-t-text-primary">

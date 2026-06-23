@@ -36,6 +36,7 @@ import {
 } from "@/lib/actions/asset-actions";
 
 import { AdjustAssetModal } from "./AdjustAssetModal";
+import { AssetHistoryChart } from "./history/AssetHistoryChart";
 import { AssetLogo } from "./shared/AssetLogo";
 import { FilterBadge } from "./shared/FilterBadge";
 import Link from "next/link";
@@ -661,7 +662,6 @@ const AssetLedgerTable = ({
 														isLastRow && "rounded-b-xl",
 													)}
 												>
-													{/* ZMIANA 2: Główny div historii otrzymuje ukrywanie nadmiaru (overflow-hidden) i zaokrąglenie */}
 													<div
 														className={cn(
 															"animate-in fade-in slide-in-from-top-2 duration-300",
@@ -867,6 +867,57 @@ const AssetLedgerTable = ({
 												</TableCell>
 											</TableRow>
 										)}
+										{/* ========================================================= */}
+										{/* ROZWIJANY WYKRES Z HISTORIĄ DLA AKTYWA  */}
+										{/* ========================================================= */}
+										{expandedAssetId === asset.id &&
+											asset.ticker &&
+											asset.category !== "BONDS" &&
+											asset.category !== "CASH" && (
+												<TableRow className="bg-t-bg-base/80 dark:bg-t-bg-base/50 border-b border-t-border-subtle hover:bg-t-bg-base/80">
+													<TableCell colSpan={7} className="p-0 border-none">
+														<div className="animate-in fade-in slide-in-from-top-2 duration-300 p-4 md:p-6 bg-gradient-to-b from-black/5 dark:from-black/20 to-transparent shadow-inner">
+															<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 pl-4 md:pl-10 gap-3">
+																<div>
+																	<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+																		Zaawansowana Analiza Techniczna:{" "}
+																		<span className="text-blue-400">
+																			{asset.ticker}
+																		</span>
+																	</h4>
+																	<p className="text-xs text-slate-400 mt-1">
+																		Wykres rynkowy z naniesionymi punktami
+																		wejścia/wyjścia (z Twojej bazy)
+																	</p>
+																</div>
+															</div>
+
+															<div className="pl-2 pr-4 md:pl-8 md:pr-8">
+																<AssetHistoryChart
+																	ticker={asset.ticker}
+																	transactions={assetHistory.map((tx) => ({
+																		date: new Date(tx.executedAt)
+																			.toISOString()
+																			.split("T")[0],
+																		// W tabeli głównej mapujemy Wpłaty/Kupno jako BUY, żeby wykres wiedział o zielonej kropce
+																		type:
+																			tx.type === "BUY" || tx.type === "DEPOSIT"
+																				? "BUY"
+																				: "SELL",
+																		// Wyliczamy cenę jednostkową na moment wykonania transakcji
+																		price:
+																			tx.quantity !== 0
+																				? Math.abs(
+																						tx.executedValue / tx.quantity,
+																					)
+																				: 0,
+																	}))}
+																/>
+															</div>
+														</div>
+													</TableCell>
+												</TableRow>
+											)}
 									</React.Fragment>
 								);
 							})

@@ -183,3 +183,7 @@ export interface XtbExcelRow {
 	Comment: string;
 	Amount: number;
 }
+// Definicja typu dla pojedynczej transakcji
+export interface SimpleTransaction {
+	type: "BUY" | "SELL" | "DEPOSIT" | "WITHDRAWAL" | string;
+}

@@ -17,6 +17,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
 import { DatePickerWithRange } from "./shared/DatePickerWithRange";
 import { DateRange } from "react-day-picker";
+import { ExpandableMainChart } from "./dashboard/ExpandableMainChart";
 import { FilterBadge } from "./shared/FilterBadge";
 import { MarketRow } from "./home/MarketRow";
 import { PortfolioWithAssets } from "@/lib/types";
@@ -67,6 +68,10 @@ export function UserDashboard({
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
+	// Pobieramy wszystkie transakcje ze wszystkich portfeli
+	const allTransactions = useMemo(() => {
+		return portfolios.flatMap((p) => p.transactionHistories || []);
+	}, [portfolios]);
 	// NATYCHMIASTOWY STAN UI
 	const activeRange = searchParams.get("range") || "1M";
 
@@ -467,7 +472,13 @@ export function UserDashboard({
 					</div>
 				</div>
 			</SectionLayout>
-
+			<div className="h-64 mt-6">
+				<ExpandableMainChart
+					data={portfolioChartData}
+					transactions={allTransactions}
+					chartMode={chartMode}
+				/>
+			</div>
 			<SectionLayout
 				title="Nominalny Wynik Dzienny"
 				titleIcon={Banknote} // EN: You can import Banknote from lucide-react

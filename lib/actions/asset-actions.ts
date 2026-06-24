@@ -115,6 +115,15 @@ export async function addAssetAction(formData: FormData) {
 
 		// 3. AKTUALIZACJA LUB TWORZENIE
 		if (!isBond && targetAssetId && targetAssetId !== "new") {
+			// Najpierw pobieramy obecne aktywo, by sprawdzić jego datę
+			const existingAssetForDate = await db.asset.findUnique({
+				where: { id: targetAssetId },
+			});
+
+			// Jeśli nowa data operacji (executedAt) jest starsza niż obecne purchaseDate, aktualizujemy purchaseDate
+			const shouldUpdateDate =
+				existingAssetForDate && executedAt < existingAssetForDate.purchaseDate;
+
 			await db.asset.update({
 				where: { id: targetAssetId },
 				data: {
@@ -123,6 +132,7 @@ export async function addAssetAction(formData: FormData) {
 					currentValue: { increment: currentValue },
 					conviction: conviction !== null ? conviction : undefined,
 					rationale: rationale || undefined,
+					...(shouldUpdateDate && { purchaseDate: executedAt }), // Magia! Cofa datę startową, jeśli to konieczne
 				},
 			});
 		} else {

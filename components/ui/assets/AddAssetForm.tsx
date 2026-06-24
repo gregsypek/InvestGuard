@@ -53,8 +53,11 @@ export default function AddAssetForm({
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const [isPending, setIsPending] = useState(false);
-	// const [viewMode, setViewMode] = useState<"asset" | "bond">("asset");
+	// NOWE: Stan dla daty transakcji (domyślnie dzisiaj w formacie YYYY-MM-DD)
 
+	const [transactionDate, setTransactionDate] = useState(
+		new Date().toISOString().split("T")[0],
+	);
 	// --- 1. FILTROWANIE DANYCH ---
 	const filteredCategories = useMemo(
 		() => allowedCategories.filter((cat) => cat !== "BONDS"),
@@ -157,7 +160,7 @@ export default function AddAssetForm({
 				formData.append(key, value.toString());
 		});
 		formData.append("currentValue", data.investedCapital.toString());
-
+		formData.append("executedAt", transactionDate);
 		const result = await addAssetAction(formData);
 		if (result.success) {
 			toast.success(result.message);
@@ -439,6 +442,22 @@ export default function AddAssetForm({
 									</FormItem>
 								)}
 							/>
+							{/* TODO: USE FORMFIELD AND CHANGE VALIDATION IN ZOD */}
+							{/* NOWE: DATA TRANSAKCJI (Backdating) */}
+							<div className="col-span-1">
+								<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary block mb-3">
+									Data operacji
+								</label>
+								<Input
+									type="date"
+									value={transactionDate}
+									onChange={(e) => setTransactionDate(e.target.value)}
+									className={cn(
+										inputStyles,
+										"w-full font-mono text-t-text-primary",
+									)}
+								/>
+							</div>
 
 							{/* PRZYCISK DODAJ */}
 							<div className="col-span-1 md:col-span-2 lg:col-span-1 flex justify-end h-[48px]">

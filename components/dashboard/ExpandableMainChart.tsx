@@ -23,6 +23,12 @@ interface ExpandableMainChartProps {
 	chartMode: "VALUE" | "PERCENTAGE";
 }
 
+// Pomocnicza funkcja do ustalania końca dnia z formatu YYYY-MM-DD
+const getEndOfDayTime = (dateStr: string) => {
+	const [year, month, day] = dateStr.split("-").map(Number);
+	return new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
+};
+
 export function ExpandableMainChart({
 	data,
 	transactions = [],
@@ -33,18 +39,42 @@ export function ExpandableMainChart({
 	const mergedData = useMemo(() => {
 		if (!data || data.length === 0) return [];
 
-		return data.map((point) => {
-			const dayTxs = transactions.filter((t) => {
-				const txDate = new Date(t.executedAt || t.date)
-					.toISOString()
-					.split("T")[0];
-				return txDate === point.date;
+		// Dla optymalizacji parsujemy timestampy i ładne formaty dat raz
+		const txsWithTime = transactions.map((t) => {
+			const txDateStr = t.executedAt || t.date;
+			return {
+				...t,
+				parsedTime: txDateStr ? new Date(txDateStr).getTime() : 0,
+				formattedDate: txDateStr
+					? format(new Date(txDateStr), "dd MMM yyyy", { locale: pl })
+					: "",
+			};
+		});
+
+		return data.map((point, index) => {
+			// Ustalamy koniec okna czasowego (koniec obecnego dnia na wykresie)
+			const currentPointTime = getEndOfDayTime(point.date);
+
+			// Ustalamy początek okna czasowego
+			let prevPointTime = 0;
+			if (index > 0) {
+				prevPointTime = getEndOfDayTime(data[index - 1].date);
+			} else {
+				// Dla pierwszego punktu sprawdzamy tylko ten jeden dzień (od północy)
+				const [year, month, day] = point.date.split("-").map(Number);
+				prevPointTime =
+					new Date(year, month - 1, day, 0, 0, 0, 0).getTime() - 1;
+			}
+
+			// MAGIA: Szukamy transakcji, które wydarzyły się POMIĘDZY poprzednim a obecnym punktem (Okno Czasowe)
+			const periodTxs = txsWithTime.filter((t) => {
+				return t.parsedTime > prevPointTime && t.parsedTime <= currentPointTime;
 			});
 
-			const hasBuy = dayTxs.some(
+			const hasBuy = periodTxs.some(
 				(t) => t.type === "BUY" || t.type === "DEPOSIT",
 			);
-			const hasSell = dayTxs.some(
+			const hasSell = periodTxs.some(
 				(t) => t.type === "SELL" || t.type === "WITHDRAWAL",
 			);
 
@@ -52,12 +82,32 @@ export function ExpandableMainChart({
 				...point,
 				buyEvent: hasBuy ? point.value : null,
 				sellEvent: hasSell ? point.value : null,
-				txDetails: dayTxs.length > 0 ? dayTxs : null,
+				txDetails: periodTxs.length > 0 ? periodTxs : null,
 			};
 		});
 	}, [data, transactions]);
 
-	// Komponent Legendy (Używamy go w obu widokach)
+	// Komponent Legendy
+	// const ChartLegend = () => (
+	// 	<div className="flex flex-wrap items-center gap-3 sm:gap-6 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3 pl-2">
+	// 		<div className="flex items-center gap-1.5">
+	// 			<div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+	// 			{chartMode === "VALUE" ? "Wartość Portfela" : "Zwrot Portfela"}
+	// 		</div>
+	// 		{transactions.length > 0 && (
+	// 			<>
+	// 				<div className="flex items-center gap-1.5">
+	// 					<div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+	// 					Kupno / Wpłata
+	// 				</div>
+	// 				<div className="flex items-center gap-1.5">
+	// 					<div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+	// 					Sprzedaż / Wypłata
+	// 				</div>
+	// 			</>
+	// 		)}
+	// 	</div>
+	// );
 
 	const chartContentElement = (
 		<ResponsiveContainer width="100%" height="100%" minHeight={200}>
@@ -86,8 +136,6 @@ export function ExpandableMainChart({
 					axisLine={false}
 					minTickGap={30}
 				/>
-				{/* <YAxis hide domain={["auto", "auto"]} />
-				 */}
 				<YAxis
 					domain={["auto", "auto"]}
 					tickFormatter={(val) =>
@@ -193,29 +241,32 @@ function CustomChartTooltip({ active, payload, label, chartMode }: any) {
 				{data.txDetails && data.txDetails.length > 0 && (
 					<div className="mt-3 pt-3 border-t border-slate-800/80 border-dashed space-y-2">
 						<p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-							Zdarzenia w tym dniu:
+							Zdarzenia w tym okresie:
 						</p>
 						{data.txDetails.map((tx: any, idx: number) => {
 							const isBuy = tx.type === "BUY" || tx.type === "DEPOSIT";
 							return (
-								<div
-									key={idx}
-									className="flex justify-between items-center gap-4 text-xs"
-								>
-									<span
-										className={
-											isBuy
-												? "text-emerald-400 font-bold"
-												: "text-rose-400 font-bold"
-										}
-									>
-										{isBuy ? "KUPNO" : "SPRZEDAŻ"} {tx.ticker || tx.assetName}
-									</span>
-									<span className="text-slate-300 font-mono">
-										{Math.abs(tx.executedValue).toLocaleString("pl-PL", {
-											minimumFractionDigits: 2,
-										})}{" "}
-										PLN
+								<div key={idx} className="flex flex-col mb-2 last:mb-0">
+									<div className="flex justify-between items-center gap-4 text-xs">
+										<span
+											className={
+												isBuy
+													? "text-emerald-400 font-bold"
+													: "text-rose-400 font-bold"
+											}
+										>
+											{isBuy ? "KUPNO" : "SPRZEDAŻ"} {tx.ticker || tx.assetName}
+										</span>
+										<span className="text-slate-300 font-mono">
+											{Math.abs(tx.executedValue || 0).toLocaleString("pl-PL", {
+												minimumFractionDigits: 2,
+											})}{" "}
+											PLN
+										</span>
+									</div>
+									{/* Nowość: Data ukrytej transakcji w Tooltipie */}
+									<span className="text-[9px] text-slate-500 mt-0.5">
+										{tx.formattedDate}
 									</span>
 								</div>
 							);

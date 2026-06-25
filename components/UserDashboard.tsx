@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { ChartDataPoint, PortfolioChart } from "./dashboard/PortfolioCharts";
 import { cn, getStockLogo } from "@/lib/utils";
+import { differenceInDays, startOfYear } from "date-fns";
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -72,12 +73,20 @@ export function UserDashboard({
 	const allTransactions = useMemo(() => {
 		return portfolios.flatMap((p) => p.transactionHistories || []);
 	}, [portfolios]);
+
 	// NATYCHMIASTOWY STAN UI
 	const activeRange = searchParams.get("range") || "1M";
 
-	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("REAL");
+	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("SIMULATED");
 	const [chartMode, setChartMode] = useState<"VALUE" | "PERCENTAGE">("VALUE");
 	const [selectedIds, setSelectedIds] = useState<string[]>(["ALL"]);
+
+	// FILTROWANIE TRANSAKCJI DLA WYKRESU (magia ukrywania kropek)
+	const filteredTransactions = useMemo(() => {
+		if (selectedIds.includes("ALL")) return allTransactions;
+		return allTransactions.filter((tx) => selectedIds.includes(tx.portfolioId));
+	}, [allTransactions, selectedIds]);
+
 	// NOWY STAN: Wybór źródła danych (Domyślnie bierzemy prawdziwe z bazy, chyba że ich nie ma)
 	const togglePortfolio = (id: string) => {
 		setSelectedIds((prev: string[]) => {
@@ -266,6 +275,41 @@ export function UserDashboard({
 		return uniqueAssets;
 	}, [portfolios]);
 
+	// SZUKAMY DATY NAJSTARSZEGO SNAPSHOTU RZECZYWISTEGO
+	const oldestRealSnapshotDate = useMemo(() => {
+		if (!realSnapshots || realSnapshots.length === 0) return new Date();
+		const oldestTime = realSnapshots.reduce((min, s) => {
+			const sDate = new Date(s.date).getTime();
+			return sDate < min ? sDate : min;
+		}, new Date().getTime());
+		return new Date(oldestTime);
+	}, [realSnapshots]);
+
+	// FUNKCJA BLOKUJĄCA PRZYCISKI CZASU
+	const isRangeDisabled = (range: string) => {
+		// W trybie SYMULACJI pozwalamy na wszystko (silnik sobie policzy wstecz)
+		if (dataMode === "SIMULATED") return false;
+
+		const daysAvailable = differenceInDays(new Date(), oldestRealSnapshotDate);
+
+		switch (range) {
+			case "3M":
+				return daysAvailable < 30; // Wyłącz 3M, jeśli mamy mniej niż miesiąc historii
+			case "YTD": {
+				const daysYtd = differenceInDays(new Date(), startOfYear(new Date()));
+				return daysAvailable < Math.min(30, daysYtd);
+			}
+			case "1Y":
+				return daysAvailable < 90; // Wyłącz 1Y, jeśli nie mamy chociaż 3 miesięcy
+			case "3Y":
+				return daysAvailable < 365;
+			case "5Y":
+				return daysAvailable < 1095;
+			default:
+				return false; // 1W, 1M oraz MAX zostawiamy zawsze włączone (żeby coś się wyświetlało)
+		}
+	};
+
 	return (
 		<div className="space-y-8">
 			{/* 1. SEKCJA:  HEADER  */}
@@ -380,116 +424,6 @@ export function UserDashboard({
 				</div>
 			</header>
 
-			{/* 2. SEKCJA: WYKRES GŁÓWNY Z FILTRAMI */}
-
-			<SectionLayout
-				title="Analiza Wykresowa"
-				titleIcon={LineChart}
-				subtitle="Sprawdź wyniki swoich inwestycji w czasie"
-				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela."
-			>
-				<div className="flex flex-col gap-4 mb-6 mt-4">
-					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm">
-						{/* LEWA STRONA (Filtry walut i ŹRÓDŁO DANYCH) */}
-						<div className="flex flex-wrap items-center gap-4">
-							<div className="flex items-center gap-2">
-								<FilterBadge
-									id="VALUE"
-									label="Wartość (PLN)"
-									isSelected={chartMode === "VALUE"}
-									onToggle={() => setChartMode("VALUE")}
-								/>
-								<FilterBadge
-									id="PERCENTAGE"
-									label="Zwrot (%)"
-									isSelected={chartMode === "PERCENTAGE"}
-									onToggle={() => setChartMode("PERCENTAGE")}
-								/>
-							</div>
-							{/* NOWY PRZEŁĄCZNIK ŹRÓDŁA */}
-							<div className="hidden md:block w-px h-6 bg-slate-700/50" />
-
-							<div className="flex items-center gap-2">
-								<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">
-									Dane:
-								</span>
-								<FilterBadge
-									id="REAL"
-									label="Rzeczywiste"
-									isSelected={dataMode === "REAL"}
-									onToggle={() => setDataMode("REAL")}
-									className={
-										dataMode === "REAL"
-											? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20"
-											: ""
-									}
-								/>
-								<FilterBadge
-									id="SIMULATED"
-									label="Symulacja"
-									isSelected={dataMode === "SIMULATED"}
-									onToggle={() => setDataMode("SIMULATED")}
-									className={
-										dataMode === "SIMULATED"
-											? "text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
-											: ""
-									}
-								/>
-							</div>
-						</div>
-
-						<div className="flex flex-col md:flex-row items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide">
-							<div>
-								{TIME_RANGES.map((range) => (
-									<button
-										key={range}
-										onClick={() => handleRangeChange(range)}
-										className={cn(
-											"px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap hover:cursor-pointer",
-											activeRange === range
-												? "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-sm"
-												: "bg-transparent text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50",
-										)}
-									>
-										{range}
-									</button>
-								))}
-							</div>
-
-							{/* === NOWOCZESNY KALENDARZ SHADCN OD-DO === */}
-							<div>
-								<DatePickerWithRange
-									from={fromDate}
-									to={toDate}
-									onSelect={handleDateRangeSelect}
-								/>
-							</div>
-						</div>
-					</div>
-
-					<div className="h-96 w-full">
-						<PortfolioChart data={portfolioChartData} mode={chartMode} />
-					</div>
-				</div>
-			</SectionLayout>
-			<div className="h-64 mt-6">
-				<ExpandableMainChart
-					data={portfolioChartData}
-					transactions={allTransactions}
-					chartMode={chartMode}
-				/>
-			</div>
-			<SectionLayout
-				title="Nominalny Wynik Dzienny"
-				titleIcon={Banknote} // EN: You can import Banknote from lucide-react
-				subtitle="Faktyczna kwota wypracowana na rynku"
-				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
-			>
-				<div className="h-64 mt-6">
-					<AbsoluteDailyPnLChart data={absoluteChartData} />
-				</div>
-			</SectionLayout>
-
 			<SectionLayout
 				title="Radar Rynkowy"
 				titleIcon={Activity}
@@ -602,6 +536,128 @@ export function UserDashboard({
 							</div>
 						)}
 					</div>
+				</div>
+			</SectionLayout>
+
+			{/* 2. SEKCJA: WYKRES GŁÓWNY Z FILTRAMI */}
+
+			<SectionLayout
+				title="Analiza Wykresowa"
+				titleIcon={LineChart}
+				subtitle="Sprawdź wyniki swoich inwestycji w czasie"
+				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela."
+			>
+				<div className="flex flex-col gap-4 mb-6 mt-4">
+					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm">
+						{/* LEWA STRONA (Filtry walut i ŹRÓDŁO DANYCH) */}
+						<div className="flex flex-wrap items-center gap-4">
+							<div className="flex items-center gap-2">
+								<FilterBadge
+									id="VALUE"
+									label="Wartość (PLN)"
+									isSelected={chartMode === "VALUE"}
+									onToggle={() => setChartMode("VALUE")}
+								/>
+								<FilterBadge
+									id="PERCENTAGE"
+									label="Zwrot (%)"
+									isSelected={chartMode === "PERCENTAGE"}
+									onToggle={() => setChartMode("PERCENTAGE")}
+								/>
+							</div>
+							{/* NOWY PRZEŁĄCZNIK ŹRÓDŁA */}
+							<div className="hidden md:block w-px h-6 bg-slate-700/50" />
+
+							<div className="flex items-center gap-2">
+								<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">
+									Dane:
+								</span>
+								<FilterBadge
+									id="REAL"
+									label="Rzeczywiste"
+									isSelected={dataMode === "REAL"}
+									onToggle={() => setDataMode("REAL")}
+									className={
+										dataMode === "REAL"
+											? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20"
+											: ""
+									}
+								/>
+								<FilterBadge
+									id="SIMULATED"
+									label="Symulacja"
+									isSelected={dataMode === "SIMULATED"}
+									onToggle={() => setDataMode("SIMULATED")}
+									className={
+										dataMode === "SIMULATED"
+											? "text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
+											: ""
+									}
+								/>
+							</div>
+						</div>
+
+						<div className="flex flex-col md:flex-row items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide">
+							<div>
+								{TIME_RANGES.map((range) => {
+									const disabled = isRangeDisabled(range);
+
+									return (
+										<button
+											key={range}
+											onClick={() => !disabled && handleRangeChange(range)}
+											disabled={disabled}
+											title={
+												disabled
+													? "Zbyt mało danych rzeczywistych dla tego okresu"
+													: ""
+											}
+											className={cn(
+												"px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
+												disabled
+													? "opacity-30 cursor-not-allowed bg-transparent text-slate-600 border-transparent"
+													: activeRange === range
+														? "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-sm hover:cursor-pointer"
+														: "bg-transparent text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50 hover:cursor-pointer",
+											)}
+										>
+											{range}
+										</button>
+									);
+								})}
+							</div>
+
+							{/* === NOWOCZESNY KALENDARZ SHADCN OD-DO === */}
+							<div>
+								<DatePickerWithRange
+									from={fromDate}
+									to={toDate}
+									onSelect={handleDateRangeSelect}
+								/>
+							</div>
+						</div>
+					</div>
+
+					<div className="h-96 w-full">
+						<PortfolioChart data={portfolioChartData} mode={chartMode} />
+					</div>
+				</div>
+			</SectionLayout>
+			<div className="h-64 mt-6">
+				<ExpandableMainChart
+					data={portfolioChartData}
+					transactions={filteredTransactions} // <--- TO JEST WAŻNE
+					chartMode={chartMode}
+				/>
+			</div>
+			<SectionLayout
+				title="Nominalny Wynik Dzienny"
+				titleIcon={Banknote} // EN: You can import Banknote from lucide-react
+				subtitle="Faktyczna kwota wypracowana na rynku"
+				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
+			>
+				<div className="h-64 mt-6">
+					<AbsoluteDailyPnLChart data={absoluteChartData} />
 				</div>
 			</SectionLayout>
 		</div>

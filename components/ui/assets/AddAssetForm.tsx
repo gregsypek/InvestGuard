@@ -3,7 +3,15 @@
 import * as z from "zod";
 
 import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
-import { Coins, Landmark, PlusCircle, Recycle, TrendingUp } from "lucide-react";
+import {
+	Coins,
+	Landmark,
+	Loader2,
+	PlusCircle,
+	Recycle,
+	TrendingUp,
+	Wand2,
+} from "lucide-react";
 import {
 	Form,
 	FormControl,
@@ -31,6 +39,7 @@ import { SubmitButton } from "../SubmitButton";
 import { Textarea } from "@/components/ui/textarea";
 import { addAssetAction } from "@/lib/actions/asset-actions";
 import { cn } from "@/lib/utils";
+import { fetchMagicFillData } from "@/lib/actions/magic-actions";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -40,6 +49,7 @@ export default function AddAssetForm({
 	portfolioId,
 	allowedCategories = [],
 	existingAssets = [],
+	userRole, // <--- NOWY PROP
 }: {
 	portfolioId: string;
 	allowedCategories?: AssetCategory[];
@@ -48,13 +58,14 @@ export default function AddAssetForm({
 		name: string;
 		ticker: string | null;
 		category: string;
+		userRole: "ADMIN" | "SUBSCRIBER" | "REGULAR"; // <--- TYPOWANIE
 	}>;
 }) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const [isPending, setIsPending] = useState(false);
+	const [isMagicLoading, setIsMagicLoading] = useState(false);
 	// NOWE: Stan dla daty transakcji (domyślnie dzisiaj w formacie YYYY-MM-DD)
-
 	const [transactionDate, setTransactionDate] = useState(
 		new Date().toISOString().split("T")[0],
 	);
@@ -151,6 +162,36 @@ export default function AddAssetForm({
 			}
 		}
 	}, [selectedAssetId, existingAssets, form]);
+
+	const handleMagicFill = async () => {
+		const currentTicker = form.getValues("ticker");
+		const currentQty = form.getValues("quantity");
+
+		if (!currentTicker || currentQty <= 0) {
+			toast.error("Wpisz Ticker i Ilość, aby użyć magii!");
+			return;
+		}
+
+		setIsMagicLoading(true);
+
+		// Używamy daty wybranej w nowym kalendarzu!
+		const result = await fetchMagicFillData(
+			currentTicker,
+			transactionDate,
+			currentQty,
+		);
+
+		if (result.success && result.data) {
+			form.setValue("investedCapital", Number(result.data.investedCapitalPln));
+			toast.success(
+				`Znaleziono kurs! Cena: ${result.data.originalPrice.toFixed(2)} ${result.data.originalCurrency} | Kurs NBP: ${result.data.exchangeRate.toFixed(4)}`,
+			);
+		} else {
+			toast.error(result.message);
+		}
+
+		setIsMagicLoading(false);
+	};
 
 	const onSubmit = async (data: AddAssetFormValues) => {
 		setIsPending(true);
@@ -442,6 +483,25 @@ export default function AddAssetForm({
 									</FormItem>
 								)}
 							/>
+							{/* MAGIC FILL BUTTON (Premium Only) */}
+							{(userRole === "ADMIN" || userRole === "SUBSCRIBER") &&
+								!isCash && (
+									<div className="col-span-1 md:col-span-2 lg:col-span-3 flex justify-end -mt-4 mb-2">
+										<button
+											type="button"
+											onClick={handleMagicFill}
+											disabled={isMagicLoading}
+											className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg transition-colors"
+										>
+											{isMagicLoading ? (
+												<Loader2 className="w-3.5 h-3.5 animate-spin" />
+											) : (
+												<Wand2 className="w-3.5 h-3.5" />
+											)}
+											Auto-Kalkulator (NBP)
+										</button>
+									</div>
+								)}
 							{/* TODO: USE FORMFIELD AND CHANGE VALIDATION IN ZOD */}
 							{/* NOWE: DATA TRANSAKCJI (Backdating) */}
 							<div className="col-span-1">

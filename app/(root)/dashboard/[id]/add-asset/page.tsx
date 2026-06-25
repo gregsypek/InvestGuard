@@ -9,6 +9,7 @@ import { BondImporter } from "@/components/ui/BondImporter";
 import { QuickDepositForm } from "@/components/ui/QuickDepositForm";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { XtbImporter } from "@/components/ui/XtbImporter";
+import { auth } from "@/auth";
 
 interface Props {
 	params: Promise<{ id: string }>;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default async function AddAssetPage({ params }: Props) {
+	const session = await auth();
 	// Pobieramy ID wyłącznie z trasy - to jest jedyne słuszne źródło
 	const { id } = await params;
 	// Pobieramy dane równolegle, żeby było szybciej ⚡
@@ -43,6 +45,7 @@ export default async function AddAssetPage({ params }: Props) {
 						portfolioId={id}
 						allowedCategories={categories}
 						existingAssets={assets}
+						userRole={session?.user?.role || "REGULAR"}
 					/>
 				</div>
 			</SectionLayout>

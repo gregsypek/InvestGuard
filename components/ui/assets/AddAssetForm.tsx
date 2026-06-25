@@ -58,17 +58,23 @@ export default function AddAssetForm({
 		name: string;
 		ticker: string | null;
 		category: string;
-		userRole: "ADMIN" | "SUBSCRIBER" | "REGULAR"; // <--- TYPOWANIE
 	}>;
+	userRole: "ADMIN" | "SUBSCRIBER" | "REGULAR"; // <--- TYPOWANIE
 }) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const [isPending, setIsPending] = useState(false);
 	const [isMagicLoading, setIsMagicLoading] = useState(false);
-	// NOWE: Stan dla daty transakcji (domyślnie dzisiaj w formacie YYYY-MM-DD)
+
+	// Dodajemy stan dla spreadu (domyślnie wyłączony, z wartością 0.5)
+	const [applySpread, setApplySpread] = useState(false);
+	const [spreadValue, setSpreadValue] = useState(0.5);
+	// NOWE: Zapamiętuje czystą wartość pobraną z API
+	const [rawMagicValue, setRawMagicValue] = useState<number | null>(null);
 	const [transactionDate, setTransactionDate] = useState(
 		new Date().toISOString().split("T")[0],
 	);
+
 	// --- 1. FILTROWANIE DANYCH ---
 	const filteredCategories = useMemo(
 		() => allowedCategories.filter((cat) => cat !== "BONDS"),
@@ -163,9 +169,20 @@ export default function AddAssetForm({
 		}
 	}, [selectedAssetId, existingAssets, form]);
 
+	// NOWE: Automatyczne przeliczanie wkładu w locie przy klikaniu switcha
+	useEffect(() => {
+		if (rawMagicValue !== null) {
+			const finalValue = applySpread
+				? rawMagicValue * (1 + spreadValue / 100)
+				: rawMagicValue;
+			form.setValue("investedCapital", Number(finalValue.toFixed(2)));
+		}
+	}, [applySpread, spreadValue, rawMagicValue, form]);
+
 	const handleMagicFill = async () => {
 		const currentTicker = form.getValues("ticker");
-		const currentQty = form.getValues("quantity");
+		// NAPRAWA: Wymuszamy twardy typ liczbowy
+		const currentQty = Number(form.getValues("quantity"));
 
 		if (!currentTicker || currentQty <= 0) {
 			toast.error("Wpisz Ticker i Ilość, aby użyć magii!");
@@ -173,24 +190,29 @@ export default function AddAssetForm({
 		}
 
 		setIsMagicLoading(true);
-
-		// Używamy daty wybranej w nowym kalendarzu!
-		const result = await fetchMagicFillData(
-			currentTicker,
-			transactionDate,
-			currentQty,
-		);
-
-		if (result.success && result.data) {
-			form.setValue("investedCapital", Number(result.data.investedCapitalPln));
-			toast.success(
-				`Znaleziono kurs! Cena: ${result.data.originalPrice.toFixed(2)} ${result.data.originalCurrency} | Kurs NBP: ${result.data.exchangeRate.toFixed(4)}`,
+		try {
+			const result = await fetchMagicFillData(
+				currentTicker,
+				transactionDate,
+				currentQty,
 			);
-		} else {
-			toast.error(result.message);
-		}
 
-		setIsMagicLoading(false);
+			if (result.success && result.data) {
+				// Zapisujemy tylko do "pamięci", resztę zrobi nasz nowy useEffect!
+				setRawMagicValue(Number(result.data.investedCapitalPln));
+
+				toast.success(
+					`Pobrano: ${result.data.originalPrice.toFixed(2)} ${result.data.originalCurrency} | NBP: ${result.data.exchangeRate.toFixed(4)}`,
+				);
+			} else {
+				toast.error(result.message);
+			}
+		} catch {
+			toast.error("Wystąpił błąd komunikacji z API.");
+		} finally {
+			// NAPRAWA: Zawsze wyłączaj kręcenie się przycisku!
+			setIsMagicLoading(false);
+		}
 	};
 
 	const onSubmit = async (data: AddAssetFormValues) => {
@@ -483,25 +505,58 @@ export default function AddAssetForm({
 									</FormItem>
 								)}
 							/>
-							{/* MAGIC FILL BUTTON (Premium Only) */}
-							{(userRole === "ADMIN" || userRole === "SUBSCRIBER") &&
-								!isCash && (
-									<div className="col-span-1 md:col-span-2 lg:col-span-3 flex justify-end -mt-4 mb-2">
+							{/* MAGIC FILL & SPREAD PANEL */}
+							{!isCash && (
+								<div className="col-span-1 md:col-span-2 lg:col-span-3 flex justify-end mt-2 mb-2">
+									<div className="flex flex-wrap items-center justify-end gap-4 p-2.5 bg-indigo-500/5 rounded-xl border border-indigo-500/20 shadow-inner">
+										{/* Switch (Checkbox) */}
+										<label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors">
+											<input
+												type="checkbox"
+												checked={applySpread}
+												onChange={(e) => setApplySpread(e.target.checked)}
+												className="rounded border-indigo-500/30 bg-t-bg-panel text-indigo-500 w-4 h-4 cursor-pointer accent-indigo-500"
+											/>
+											Dolicz spread
+										</label>
+
+										{/* Input do spreadu (Animowane pojawianie) */}
+										{applySpread && (
+											<div className="flex items-center gap-1 animate-in slide-in-from-right-2 fade-in duration-200">
+												<Input
+													type="number"
+													step="0.1"
+													value={spreadValue}
+													onChange={(e) =>
+														setSpreadValue(Number(e.target.value))
+													}
+													className="w-16 h-9 text-xs text-center font-mono bg-black/20 border-indigo-500/30 text-indigo-300 focus:border-indigo-400 rounded-lg"
+												/>
+												<span className="text-[10px] font-black text-indigo-400/70">
+													%
+												</span>
+											</div>
+										)}
+
+										<div className="w-px h-6 bg-indigo-500/20 mx-1 hidden sm:block"></div>
+
+										{/* Przycisk */}
 										<button
 											type="button"
 											onClick={handleMagicFill}
 											disabled={isMagicLoading}
-											className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg transition-colors"
+											className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 rounded-lg transition-colors shadow-sm disabled:opacity-50"
 										>
 											{isMagicLoading ? (
-												<Loader2 className="w-3.5 h-3.5 animate-spin" />
+												<Loader2 className="w-4 h-4 animate-spin" />
 											) : (
-												<Wand2 className="w-3.5 h-3.5" />
+												<Wand2 className="w-4 h-4" />
 											)}
-											Auto-Kalkulator (NBP)
+											Auto-Kalkulator
 										</button>
 									</div>
-								)}
+								</div>
+							)}
 							{/* TODO: USE FORMFIELD AND CHANGE VALIDATION IN ZOD */}
 							{/* NOWE: DATA TRANSAKCJI (Backdating) */}
 							<div className="col-span-1">

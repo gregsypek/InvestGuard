@@ -62,7 +62,7 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 				const worksheet = workbook.Sheets[sheetName];
 
 				// EN: Convert worksheet to raw rows typed safely as multidimensional unknown array
-				// PL: Konwertujemy arkusz na surowe wiersze z bezpiecznym typowaniem unknown[][] zamiast any[][]
+				// PL: Konwertujemy arkusz na surowe wiersze z bezpiecznym typowaniem unknown[][]
 				const rowsRaw = XLSX.utils.sheet_to_json(worksheet, {
 					header: 1,
 				}) as unknown[][];
@@ -120,12 +120,29 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 					[],
 				);
 
-				// 🚀 ZMIANA 2: TUTAJ WCHODZI NASZA NOWA LOGIKA UCZENIA SIĘ
+				// 🚀 ZMIANA 1.5 (NOWA): Zabezpieczenie przed rozbitymi zleceniami w ułamku sekundy
+				// PL: Gwarantuje, że "paczki" z XTB nie nadpiszą się w bazie danych
+				const keyCounts: Record<string, number> = {};
+				const deduplicatedData = groupedData.map((tx) => {
+					// Baza klucza to stary klucz + ilość + kwota
+					const baseKey = `${tx.uniqueKey}_${tx.quantity}_${tx.amountPLN}`;
 
-				// EN: Extract unique tickers from the grouped data
-				// PL: 1. Pobieramy unikalne tickery z pogrupowanych danych
+					if (keyCounts[baseKey]) {
+						keyCounts[baseKey]++;
+						tx.uniqueKey = `${baseKey}_${keyCounts[baseKey]}`; // np. ..._10_4900_2
+					} else {
+						keyCounts[baseKey] = 1;
+						tx.uniqueKey = baseKey; // np. ..._10_4900
+					}
+					return tx;
+				});
+
+				// 🚀 ZMIANA 2: TUTAJ WCHODZI NASZA NOWA LOGIKA UCZENIA SIĘ (używamy deduplicatedData)
+
+				// EN: Extract unique tickers from the deduplicated data
+				// PL: 1. Pobieramy unikalne tickery
 				const uniqueTickers = Array.from(
-					new Set(groupedData.map((tx) => tx.ticker).filter(Boolean)),
+					new Set(deduplicatedData.map((tx) => tx.ticker).filter(Boolean)),
 				) as string[];
 
 				// EN: Fetch learned categories from the database
@@ -137,14 +154,14 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 
 				// EN: Override parsed categories with learned ones
 				// PL: 3. Nadpisujemy kategorie tymi wyciągniętymi z bazy
-				const formattedPreview = groupedData.map((tx) => {
+				const formattedPreview = deduplicatedData.map((tx) => {
 					if (tx.ticker && learnedCategories[tx.ticker]) {
 						return { ...tx, category: learnedCategories[tx.ticker] };
 					}
 					return tx;
 				});
 
-				// 🚀 ZMIANA 3: Używamy 'formattedPreview' zamiast starego 'groupedData'
+				// 🚀 ZMIANA 3: Używamy 'formattedPreview' do wyświetlenia
 				setPreviewData(formattedPreview);
 				setSelectedIndices(formattedPreview.map((_, i) => i));
 			} catch (err: unknown) {

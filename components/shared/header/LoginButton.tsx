@@ -7,7 +7,7 @@ export function LoginButton() {
 	return (
 		<button
 			onClick={() => signIn("google")}
-			className="flex items-center gap-3 px-4 py-2 border border-border2 bg-background hover:bg-muted/50 transition-all rounded-md text-[11px] font-bold uppercase tracking-widest shadow-sm hover:cursor-pointer"
+			className="flex items-center gap-3 px-4 py-2  bg-background hover:bg-muted/50 transition-all rounded-md text-[11px] font-bold uppercase tracking-widest shadow-sm hover:cursor-pointer"
 		>
 			{/* Kolorowa ikona Google */}
 			<svg width="18" height="18" viewBox="0 0 18 18">

@@ -157,8 +157,15 @@ export default async function RootLayout({
 
 					{/* Zamiast sztywnego p-6, używamy responsywnego paddingu, 
               a górny margines (pt-0) pozwala Hero sekcji przylegać do góry */}
-					<div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
+					{/* <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
 						{children}
+					</div> */}
+					{/* 1. Główny wrapper rozciągnięty na pełny ekran z tłem systemowym */}
+					<div className="w-full min-h-screen bg-t-bg-base transition-colors duration-300">
+						{/* 2. Wewnętrzny kontener trzymający strukturę i szerokość treści */}
+						<div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
+							{children}
+						</div>
 					</div>
 				</main>
 			</div>

@@ -44,7 +44,7 @@ export default async function RootLayout({
 	const cookieStore = await cookies();
 	const hideBulbTip = cookieStore.get("hide_bulbtip")?.value === "true";
 	return (
-		<html lang="en" suppressHydrationWarning className="overflow-y-hidden">
+		<html lang="pl" suppressHydrationWarning className="overflow-y-hidden">
 			<body
 				className={`${inter.className} antialiased overflow-x-hidden`}
 				suppressHydrationWarning

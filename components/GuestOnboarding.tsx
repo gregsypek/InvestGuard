@@ -110,7 +110,11 @@ export default function GuestOnboarding() {
 					</div>
 
 					<h1 className="text-6xl md:text-7xl lg:text-8xl leading-[1.1] mb-6 font-black tracking-tighter text-t-text-primary">
-						Twój portfel.
+						Twój
+						<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500">
+							{" "}
+							portfel.
+						</span>
 						<br /> Pod kontrolą.
 					</h1>
 					<p className="text-md md:text-xl text-t-text-secondary max-w-2xl mx-auto font-medium leading-relaxed mb-10">
@@ -123,7 +127,7 @@ export default function GuestOnboarding() {
 							asChild
 							className="h-14 px-8 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 font-bold uppercase tracking-widest text-xs transition-all hover:scale-105 border-0"
 						>
-							<Link href="/register">
+							<Link href="/sign-in">
 								Rozpocznij Inwestowanie <ArrowRight className="ml-2 h-4 w-4" />
 							</Link>
 						</Button>
@@ -429,9 +433,14 @@ export default function GuestOnboarding() {
 
 				{/* Dolny pasek (Copyright & Przełączniki) */}
 				<div className="max-w-6xl mx-auto pt-8 border-t border-t-border-subtle flex flex-col md:flex-row justify-between items-center gap-6">
-					<p className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary text-center md:text-left">
-						&copy; 2026 {APP_NAME}. Wszelkie prawa zastrzeżone.
-					</p>
+					<div>
+						<p className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary text-center md:text-left">
+							&copy; 2026 {APP_NAME}. Wszelkie prawa zastrzeżone.
+						</p>
+						{/* <p className="text-[8px] font-bold  tracking-widest text-t-text-tertiary text-center md:text-left">
+							project created by gregsypek.
+						</p> */}
+					</div>
 
 					<div className="flex items-center gap-4">
 						{/* Przyszły przełącznik języka */}

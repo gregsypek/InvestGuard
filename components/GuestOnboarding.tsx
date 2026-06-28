@@ -111,7 +111,7 @@ export default function GuestOnboarding() {
 
 					<h1 className="text-6xl md:text-7xl lg:text-8xl leading-[1.1] mb-6 font-black tracking-tighter text-t-text-primary">
 						Twój
-						<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500">
+						<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-500">
 							{" "}
 							portfel.
 						</span>
@@ -140,7 +140,6 @@ export default function GuestOnboarding() {
 						</Button>
 					</div>
 				</section>
-
 				{/* ========================================= */}
 				{/* 2. SHOWCASE (ZDJĘCIE APLIKACJI) */}
 				{/* ========================================= */}
@@ -170,122 +169,309 @@ export default function GuestOnboarding() {
 						/>
 					</div>
 				</section>
-
 				{/* ========================================= */}
-				{/* 3. BENTO GRID (FUNKCJONALNOŚCI) */}
+				{/* BENTO GRID - GŁÓWNA SIATKA FUNKCJI */}
 				{/* ========================================= */}
-				<section className="w-full max-w-6xl mx-auto px-4 py-24">
-					<div className="text-center mb-16">
-						<h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-t-text-primary mb-4">
-							Architektura Majątku
-						</h2>
-						<p className="text-t-text-secondary max-w-2xl mx-auto">
-							Zaprojektowane przez inwestorów dla inwestorów. Porzuć arkusze
-							kalkulacyjne na rzecz zautomatyzowanego ekosystemu.
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+					{/* 1. IMPORT & AUTOMATYZACJA (Tekst) */}
+					<div className="lg:col-span-1 bg-gradient-to-br from-t-bg-panel to-t-bg-base p-6 sm:p-8 rounded-3xl border border-t-border hover:border-blue-500/30 transition-colors relative overflow-hidden group flex flex-col justify-center">
+						<div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors pointer-events-none" />
+						<UploadCloud className="w-10 h-10 text-blue-500 dark:text-blue-400 mb-6" />
+						<h3 className="text-2xl font-black text-t-text-primary mb-3">
+							Inteligentny Import & Automatyzacja
+						</h3>
+						<p className="text-t-text-secondary leading-relaxed">
+							Wygeneruj raport CSV z <strong>XTB</strong> lub zestawienie
+							obligacji z <strong>PKO BP</strong>. Nasz parser automatycznie
+							rozpozna transakcje, zaktualizuje kategorie i precyzyjnie wyliczy
+							saldo, oszczędzając Ci godzin ręcznej pracy.
 						</p>
 					</div>
 
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-						{/* DUŻA KARTA: Automatyzacja */}
-						<div className="md:col-span-2 bg-gradient-to-br from-t-bg-panel to-t-bg-base p-8 rounded-3xl border border-t-border hover:border-blue-500/30 transition-colors relative overflow-hidden group">
-							<div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors" />
-							<UploadCloud className="w-10 h-10 text-blue-500 dark:text-blue-400 mb-6" />
-							<h3 className="text-2xl font-black text-t-text-primary mb-3">
-								Inteligentny Import & Automatyzacja
-							</h3>
-							<p className="text-t-text-secondary leading-relaxed max-w-md">
-								Wygeneruj raport CSV z <strong>XTB</strong> lub zestawienie
-								obligacji z <strong>PKO BP</strong>. Nasz parser automatycznie
-								rozpozna transakcje, połączy rozbite zlecenia, zaktualizuje
-								kategorie i precyzyjnie wyliczy saldo w PLN, oszczędzając Ci
-								godzin ręcznej pracy.
-							</p>
-						</div>
+					{/* 2. XTB DASHBOARD (Zdjęcie) */}
+					<div className="lg:col-span-2 min-h-[350px] bg-gradient-to-br from-t-bg-panel to-t-bg-base p-4 sm:p-5 rounded-3xl border border-t-border hover:border-blue-500/30 transition-colors group flex flex-col">
+						<div className="relative w-full h-full grow min-h-[220px] sm:min-h-[280px] rounded-2xl overflow-hidden border border-t-border-subtle shadow-sm bg-t-bg-base">
+							<div className="absolute inset-0 bg-gradient-to-t from-t-bg-base/90 via-transparent to-transparent z-10 pointer-events-none" />
 
-						{/* MAŁA KARTA: Rebalancing */}
-						<div className="bg-t-bg-panel p-8 rounded-3xl border border-t-border hover:border-cyan-500/30 transition-colors">
-							<PieChart className="w-10 h-10 text-cyan-500 dark:text-cyan-400 mb-6" />
-							<h3 className="text-xl font-black text-t-text-primary mb-3">
-								Precyzyjny Rebalancing
-							</h3>
-							<p className="text-sm text-t-text-tertiary leading-relaxed">
-								Porównaj obecną strukturę portfeli z Twoim celem. Zobacz na żywo
-								modelową alokację w zestawieniu z rzeczywistym stanem
-								posiadania.
-							</p>
-						</div>
-
-						{/* MAŁA KARTA: Obligacje */}
-						<div className="bg-t-bg-panel p-8 rounded-3xl border border-t-border hover:border-emerald-500/30 transition-colors">
-							<ShieldCheck className="w-10 h-10 text-emerald-500 dark:text-emerald-400 mb-6" />
-							<h3 className="text-xl font-black text-t-text-primary mb-3">
-								Silnik Obligacji Skarbowych
-							</h3>
-							<p className="text-sm text-t-text-tertiary leading-relaxed">
-								Specjalistyczne podejście do papierów EDO/DOS. Analiza
-								bezpiecznych aktywów uwzględniająca narosłe odsetki i historię
-								zakupów.
-							</p>
-						</div>
-
-						{/* DUŻA KARTA: Planner */}
-						<div className="md:col-span-2 bg-t-bg-panel p-8 rounded-3xl border border-t-border hover:border-indigo-500/30 transition-colors flex flex-col justify-between">
-							<div>
-								<Target className="w-10 h-10 text-indigo-500 dark:text-indigo-400 mb-6" />
-								<h3 className="text-2xl font-black text-t-text-primary mb-3">
-									Planner & Projekcje Celu
-								</h3>
-								<p className="text-t-text-secondary leading-relaxed max-w-lg mb-6">
-									Kontroluj przepływ gotówki planując nadchodzące zakupy. System
-									wizualizuje Twoje oczekujące realizacje i symuluje osiągnięcie
-									celu finansowego, zakładając historyczne stopy zwrotu.
-								</p>
-							</div>
-							<div className="flex gap-4 flex-wrap">
-								<span className="px-3 py-1 bg-black/5 dark:bg-black/30 border border-t-border-subtle rounded-lg text-[10px] uppercase font-bold text-t-text-secondary">
-									Planowanie Alokacji
-								</span>
-								<span className="px-3 py-1 bg-black/5 dark:bg-black/30 border border-t-border-subtle rounded-lg text-[10px] uppercase font-bold text-t-text-secondary">
-									Symulacja 7%
-								</span>
-								<span className="px-3 py-1 bg-black/5 dark:bg-black/30 border border-t-border-subtle rounded-lg text-[10px] uppercase font-bold text-t-text-secondary">
-									Oczekujące Zlecenia
-								</span>
-							</div>
-						</div>
-
-						{/* MAŁA KARTA: Alpha */}
-						<div className="bg-t-bg-panel p-8 rounded-3xl border border-t-border hover:border-rose-500/30 transition-colors">
-							<Rocket className="w-10 h-10 text-rose-500 dark:text-rose-400 mb-6" />
-							<h3 className="text-xl font-black text-t-text-primary mb-3">
-								Analityka Alpha (Booster)
-							</h3>
-							<p className="text-sm text-t-text-tertiary leading-relaxed">
-								Wizualizacja trendu i wydajności wyłącznie dla kapitału
-								podwyższonego ryzyka. Monitoruj, czy Twoje ryzykowne tezy się
-								sprawdzają.
-							</p>
-						</div>
-
-						{/* MAŁA KARTA: Personalizacja */}
-						<div className="md:col-span-3 bg-gradient-to-r from-t-bg-base via-t-bg-panel to-t-bg-base p-8 rounded-3xl border border-t-border hover:border-blue-500/20 transition-colors flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-							<Settings2 className="w-12 h-12 text-t-text-tertiary shrink-0" />
-							<div>
-								<h3 className="text-xl font-black text-t-text-primary mb-2">
-									Skrojony na Twoją miarę
-								</h3>
-								<p className="text-sm text-t-text-secondary max-w-3xl">
-									Wybierz moduły na stronie głównej. Włącz pływający{" "}
-									<strong>Pasek Rynkowy</strong>, śledź wybrane indeksy lub
-									rozwijaj wiedzę dzięki codziennym{" "}
-									<strong>Lekcjom Inwestora</strong> na swoim pulpicie. Dokładny
-									zapis każdej operacji i notatki w Rejestrze Transakcji.
-								</p>
-							</div>
+							<Image
+								src="/screenshots/GuestBoard/xtb_light.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="block dark:hidden object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+							/>
+							<Image
+								src="/screenshots/GuestBoard/xtb_dark.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="hidden dark:block object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+							/>
 						</div>
 					</div>
-				</section>
 
+					{/* 3. REJESTR TRANSAKCJI (Zdjęcie) */}
+					<div className="lg:col-span-3 min-h-[400px] sm:min-h-[450px] bg-gradient-to-br from-t-bg-panel to-t-bg-base p-4 sm:p-5 rounded-3xl border border-t-border hover:border-indigo-500/30 transition-colors group flex flex-col">
+						<div className="px-2 pt-2 pb-6">
+							<div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-4 border border-indigo-500/20 group-hover:scale-110 transition-transform">
+								<LineChart className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+							</div>
+							<h3 className="text-2xl font-black text-t-text-primary mb-3">
+								Rejestr Transakcji & Raportowanie
+							</h3>
+							<p className="text-t-text-secondary leading-relaxed max-w-2xl mb-5">
+								Wykres precyzyjnie wizualizuje punkty Twoich zakupów i sprzedaży
+								na tle późniejszego zachowania ceny. Wyciągaj wnioski z własnych
+								decyzji i generuj przejrzyste raporty okresowe.
+							</p>
+							<div className="flex gap-2 sm:gap-3 flex-wrap">
+								<span className="px-3 py-1 bg-black/5 dark:bg-black/30 border border-t-border-subtle rounded-lg text-[10px] uppercase font-bold text-t-text-secondary shadow-sm">
+									Punkty Wejścia
+								</span>
+								<span className="px-3 py-1 bg-black/5 dark:bg-black/30 border border-t-border-subtle rounded-lg text-[10px] uppercase font-bold text-t-text-secondary shadow-sm">
+									Zaawansowane Filtry
+								</span>
+							</div>
+						</div>
+
+						<div className="relative w-full h-full grow min-h-[220px] sm:min-h-[260px] rounded-2xl overflow-hidden border border-t-border-subtle shadow-sm bg-t-bg-base">
+							<div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-t-bg-base/90 via-t-bg-base/40 to-transparent z-10 pointer-events-none" />
+							<Image
+								src="/screenshots/GuestBoard/history_light.png"
+								alt="Historia i Rejestr Transakcji"
+								fill
+								priority
+								className="block dark:hidden object-cover object-top transition-transform duration-700 group-hover:scale-[1.02]"
+							/>
+							<Image
+								src="/screenshots/GuestBoard/history_dark.png"
+								alt="Historia i Rejestr Transakcji"
+								fill
+								priority
+								className="hidden dark:block object-cover object-top transition-transform duration-700 group-hover:scale-[1.02]"
+							/>
+						</div>
+					</div>
+
+					{/* MAŁA KARTA: Rebalancing - LEFT PHOTO */}
+					<div className="bg-gradient-to-br from-t-bg-panel to-t-bg-base p-3 sm:p-4 rounded-3xl border border-t-border hover:border-blue-500/30 transition-colors group flex flex-col min-h-[260px] md:min-h-[300px]">
+						<div className="relative w-full h-full grow rounded-2xl overflow-hidden border border-t-border-subtle shadow-sm bg-t-bg-base flex items-center justify-center p-2">
+							<div className="absolute inset-0 bg-gradient-to-t from-t-bg-base/90 via-transparent to-transparent z-10 pointer-events-none" />
+
+							{/* 🚀 ZMIANA: object-contain zamienia ucinanie na skalowanie całości */}
+							<Image
+								src="/screenshots/GuestBoard/pieChart_light_left.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="block dark:hidden object-contain object-center transition-transform duration-700 group-hover:scale-[1.02] p-2"
+							/>
+							<Image
+								src="/screenshots/GuestBoard/pieChart_dark_left.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="hidden dark:block object-contain object-center transition-transform duration-700 group-hover:scale-[1.02] p-2"
+							/>
+						</div>
+					</div>
+
+					{/*  MAŁA KARTA: Rebalancing - TEXT) */}
+					<div className="bg-t-bg-panel p-8 rounded-3xl border border-t-border hover:border-cyan-500/30 transition-colors">
+						<PieChart className="w-10 h-10 text-cyan-500 dark:text-cyan-400 mb-6" />
+						<h3 className="text-xl font-black text-t-text-primary mb-3">
+							Precyzyjny Rebalancing
+						</h3>
+						<p className="text-sm text-t-text-tertiary leading-relaxed">
+							Porównaj obecną strukturę portfeli z Twoim celem. Zobacz na żywo
+							modelową alokację w zestawieniu z rzeczywistym stanem posiadania.
+						</p>
+					</div>
+
+					{/* MAŁA KARTA: Rebalancing - RIGHT PHOTO */}
+					<div className="bg-gradient-to-br from-t-bg-panel to-t-bg-base p-3 sm:p-4 rounded-3xl border border-t-border hover:border-blue-500/30 transition-colors group flex flex-col min-h-[260px] md:min-h-[300px]">
+						<div className="relative w-full h-full grow rounded-2xl overflow-hidden border border-t-border-subtle shadow-sm bg-t-bg-base flex items-center justify-center p-2">
+							<div className="absolute inset-0 bg-gradient-to-t from-t-bg-base/90 via-transparent to-transparent z-10 pointer-events-none" />
+
+							{/* 🚀 ZMIANA: object-contain zamienia ucinanie na skalowanie całości */}
+							<Image
+								src="/screenshots/GuestBoard/pieChart_light_right.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="block dark:hidden object-contain sm:object-cover object-center transition-transform duration-700 group-hover:scale-[1.02] p-2"
+							/>
+							<Image
+								src="/screenshots/GuestBoard/pieChart_dark_right.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="hidden dark:block object-contain sm:object-cover object-center transition-transform duration-700 group-hover:scale-[1.02] p-2"
+							/>
+						</div>
+					</div>
+
+					{/* MAŁA KARTA: Rebalancing - LEFT PHOTO */}
+					<div className="sm:col-span-1  md:min-h-[300px] bg-gradient-to-br from-t-bg-panel to-t-bg-base p-4 rounded-3xl border border-t-border hover:border-blue-500/30 transition-colors group flex flex-col">
+						{/* 🚀 ZMIANA: Wewnętrzny kontener, który automatycznie szanuje padding (p-4) rodzica. 
+														Używamy overflow-hidden, aby zdjęcie i gradient idealnie zamykały się w zaokrąglonych rogach. */}
+						<div className="relative w-full h-full grow md:min-h-[260px] rounded-2xl overflow-hidden border border-t-border-subtle shadow-sm bg-t-bg-base">
+							{/* Gradient maskujący nałożony wewnątrz wrappera bezpośrednio na zdjęcie */}
+							<div className="absolute inset-0 bg-gradient-to-t from-t-bg-base/90 via-transparent to-transparent z-10 pointer-events-none" />
+
+							{/* 🚀 ZMIANA: Używamy atrybutu "fill" z Next.js zamiast width/height. 
+															Automatycznie wypełni on kontener zachowując proporcje dzięki object-cover */}
+							{/* Wersja dla jasnego motywu */}
+							<Image
+								src="/screenshots/GuestBoard/pieChart_light_left.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="block dark:hidden object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+							/>
+
+							{/* Wersja dla ciemnego motywu */}
+							<Image
+								src="/screenshots/GuestBoard/pieChart_dark_left.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="hidden dark:block object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+							/>
+						</div>
+					</div>
+
+					{/* MAŁA KARTA: Rebalancing */}
+					<div className="bg-t-bg-panel p-8 rounded-3xl border border-t-border hover:border-cyan-500/30 transition-colors">
+						<PieChart className="w-10 h-10 text-cyan-500 dark:text-cyan-400 mb-6" />
+						<h3 className="text-xl font-black text-t-text-primary mb-3">
+							Precyzyjny Rebalancing
+						</h3>
+						<p className="text-sm text-t-text-tertiary leading-relaxed">
+							Porównaj obecną strukturę portfeli z Twoim celem. Zobacz na żywo
+							modelową alokację w zestawieniu z rzeczywistym stanem posiadania.
+						</p>
+					</div>
+					{/* MAŁA KARTA: Rebalancing - RIGHT PHOTO */}
+					<div className="sm:col-span-1 min-h-[300px] bg-gradient-to-br from-t-bg-panel to-t-bg-base p-4 rounded-3xl border border-t-border hover:border-blue-500/30 transition-colors group flex flex-col">
+						{/* 🚀 ZMIANA: Wewnętrzny kontener, który automatycznie szanuje padding (p-4) rodzica. 
+														Używamy overflow-hidden, aby zdjęcie i gradient idealnie zamykały się w zaokrąglonych rogach. */}
+						<div className="relative w-full h-full grow min-h-[260px] rounded-2xl overflow-hidden border border-t-border-subtle shadow-sm bg-t-bg-base">
+							{/* Gradient maskujący nałożony wewnątrz wrappera bezpośrednio na zdjęcie */}
+							<div className="absolute inset-0 bg-gradient-to-t from-t-bg-base/90 via-transparent to-transparent z-10 pointer-events-none" />
+
+							{/* 🚀 ZMIANA: Używamy atrybutu "fill" z Next.js zamiast width/height. 
+															Automatycznie wypełni on kontener zachowując proporcje dzięki object-cover */}
+							{/* Wersja dla jasnego motywu */}
+							<Image
+								src="/screenshots/GuestBoard/pieChart_light_right.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="block dark:hidden object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+							/>
+
+							{/* Wersja dla ciemnego motywu */}
+							<Image
+								src="/screenshots/GuestBoard/pieChart_dark_right.png"
+								alt="InvestGuard Dashboard"
+								fill
+								priority
+								className="hidden dark:block object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+							/>
+						</div>
+					</div>
+
+					{/* 4. PRZEWODNIK REBALANSOWANIA (Zdjęcie - Zastępuje starą kartę PieChart) */}
+					<div className="lg:col-span-3 min-h-[400px] sm:min-h-[450px] bg-gradient-to-br from-t-bg-panel to-t-bg-base p-4 sm:p-5 rounded-3xl border border-t-border hover:border-cyan-500/30 transition-colors group flex flex-col">
+						<div className="px-2 pt-2 pb-4">
+							<div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center mb-4 border border-cyan-500/20 group-hover:scale-110 transition-transform">
+								<PieChart className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
+							</div>
+							<h3 className="text-xl font-black text-t-text-primary mb-2 tracking-tight">
+								Przewodnik Rebalansowania
+							</h3>
+							<p className="text-sm text-t-text-secondary leading-relaxed">
+								Od razu wiesz co robić. Kalkulator precyzyjnie wylicza, ile
+								aktywów musisz kupić lub sprzedać, by przywrócić idealną
+								alokację.
+							</p>
+						</div>
+
+						<div className="relative w-full h-full grow min-h-[180px] sm:min-h-[220px] rounded-2xl overflow-hidden border border-t-border-subtle shadow-sm bg-t-bg-base mt-2">
+							<div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-t-bg-base via-t-bg-base/50 to-transparent z-10 pointer-events-none" />
+							<Image
+								src="/screenshots/GuestBoard/healthTable_light2.png"
+								alt="Tabela Rebalancingu"
+								fill
+								priority
+								className="block dark:hidden object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
+							/>
+							<Image
+								src="/screenshots/GuestBoard/healthTable_dark2.png"
+								alt="Tabela Rebalancingu"
+								fill
+								priority
+								className="hidden dark:block object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
+							/>
+						</div>
+					</div>
+
+					{/* 5. PLANNER (Tekst) */}
+					<div className="bg-t-bg-panel p-6 sm:p-8 rounded-3xl border border-t-border hover:border-purple-500/30 transition-colors">
+						<Target className="w-10 h-10 text-purple-500 dark:text-purple-400 mb-6" />
+						<h3 className="text-xl font-black text-t-text-primary mb-3">
+							Planner & Projekcje
+						</h3>
+						<p className="text-sm text-t-text-secondary leading-relaxed">
+							Kontroluj przepływ gotówki planując nadchodzące zakupy. System
+							wizualizuje oczekujące realizacje i symuluje osiągnięcie celu.
+						</p>
+					</div>
+
+					{/* 6. OBLIGACJE (Tekst) */}
+					<div className="bg-t-bg-panel p-6 sm:p-8 rounded-3xl border border-t-border hover:border-emerald-500/30 transition-colors">
+						<ShieldCheck className="w-10 h-10 text-emerald-500 dark:text-emerald-400 mb-6" />
+						<h3 className="text-xl font-black text-t-text-primary mb-3">
+							Silnik Obligacji
+						</h3>
+						<p className="text-sm text-t-text-secondary leading-relaxed">
+							Specjalistyczne podejście do papierów skarbowych. Analiza
+							uwzględniająca narosłe odsetki i historię depozytów.
+						</p>
+					</div>
+
+					{/* 7. ALPHA (Tekst) */}
+					<div className="bg-t-bg-panel p-6 sm:p-8 rounded-3xl border border-t-border hover:border-rose-500/30 transition-colors">
+						<Rocket className="w-10 h-10 text-rose-500 dark:text-rose-400 mb-6" />
+						<h3 className="text-xl font-black text-t-text-primary mb-3">
+							Analityka Alpha
+						</h3>
+						<p className="text-sm text-t-text-secondary leading-relaxed">
+							Wizualizacja trendu dla kapitału podwyższonego ryzyka. Monitoruj
+							oddzielnie, czy Twoje ryzykowne tezy się sprawdzają.
+						</p>
+					</div>
+
+					{/* 8. PERSONALIZACJA (Szeroki pasek na dole) */}
+					<div className="lg:col-span-3 bg-gradient-to-r from-t-bg-base via-t-bg-panel to-t-bg-base p-6 sm:p-8 rounded-3xl border border-t-border hover:border-slate-500/30 transition-colors flex flex-col md:flex-row items-center gap-6 sm:gap-8 text-center md:text-left">
+						<Settings2 className="w-12 h-12 text-t-text-tertiary shrink-0" />
+						<div>
+							<h3 className="text-xl font-black text-t-text-primary mb-2">
+								Skrojony na Twoją miarę
+							</h3>
+							<p className="text-sm text-t-text-secondary max-w-3xl">
+								Wybierz moduły na stronie głównej. Włącz pływający{" "}
+								<strong className="text-t-text-primary">Pasek Rynkowy</strong>,
+								śledź wybrane indeksy lub rozwijaj wiedzę dzięki codziennym{" "}
+								<strong className="text-t-text-primary">
+									Lekcjom Inwestora
+								</strong>
+								.
+							</p>
+						</div>
+					</div>
+				</div>
 				{/* ========================================= */}
 				{/* 4. SEKCJA WIDEO (INSTRUKTAŻ) */}
 				{/* ========================================= */}

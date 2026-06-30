@@ -4,7 +4,7 @@ import ModeToggle from "./header/ModeToggle";
 
 interface MenuProps {
 	// Definiujemy prop jako React.ReactNode, aby mógł przyjąć dowolny komponent
-	userButton: React.ReactNode;
+	userButton?: React.ReactNode;
 }
 const Menu = ({ userButton }: MenuProps) => {
 	return (
@@ -12,7 +12,7 @@ const Menu = ({ userButton }: MenuProps) => {
 		<div className="hidden md:flex justify-end gap-3 items-center">
 			<nav className="flex w-full max-w-xs gap-1">
 				<ModeToggle />
-				{userButton}
+				{userButton && userButton}
 			</nav>
 		</div>
 	);

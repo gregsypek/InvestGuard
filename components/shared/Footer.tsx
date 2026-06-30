@@ -1,11 +1,9 @@
-import { Globe, Moon } from "lucide-react";
-
 import { APP_NAME } from "@/lib/constants";
 import { Button } from "../ui/button";
+import { Globe } from "lucide-react";
 import { Input } from "../ui/input";
 import Link from "next/link";
 import Menu from "./Menu";
-import React from "react";
 
 function Footer() {
 	return (

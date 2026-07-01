@@ -548,7 +548,7 @@ export function UserDashboard({
 				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela."
 			>
 				<div className="flex flex-col gap-4 mb-6 mt-4">
-					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm">
+					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
 						{/* LEWA STRONA (Filtry walut i ŹRÓDŁO DANYCH) */}
 						<div className="flex flex-wrap items-center gap-4">
 							<div className="flex items-center gap-2">
@@ -597,7 +597,7 @@ export function UserDashboard({
 							</div>
 						</div>
 
-						<div className="flex flex-col md:flex-row items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide">
+						<div className="flex flex-col md:flex-row items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide justify-end">
 							<div>
 								{TIME_RANGES.map((range) => {
 									const disabled = isRangeDisabled(range);
@@ -626,15 +626,16 @@ export function UserDashboard({
 									);
 								})}
 							</div>
+							<div className="hidden md:block w-px h-6 bg-slate-700/50" />
 
 							{/* === NOWOCZESNY KALENDARZ SHADCN OD-DO === */}
-							<div>
-								<DatePickerWithRange
-									from={fromDate}
-									to={toDate}
-									onSelect={handleDateRangeSelect}
-								/>
-							</div>
+							{/* <div> */}
+							<DatePickerWithRange
+								from={fromDate}
+								to={toDate}
+								onSelect={handleDateRangeSelect}
+							/>
+							{/* </div> */}
 						</div>
 					</div>
 

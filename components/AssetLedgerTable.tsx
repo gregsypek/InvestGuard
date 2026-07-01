@@ -252,7 +252,7 @@ const AssetLedgerTable = ({
 	return (
 		<>
 			{/* EN: 4. The Controls Panel (FilterBadges) added above the table */}
-			<div className="flex flex-col md:flex-row items-start md:items-center gap-3 dark:bg-t-bg-sticky p-4 rounded-2xl border border-t-border shadow-sm mb-4">
+			<div className="flex flex-col md:flex-row items-start md:items-center gap-3   mb-4">
 				<div className="flex items-center gap-2">
 					<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-1">
 						Widok:

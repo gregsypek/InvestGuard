@@ -25,7 +25,7 @@ export function FilterBadge({
 				"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer",
 				isSelected
 					? "bg-blue-500/20 text-blue-400 border-blue-500/30 shadow-sm hover:bg-blue-600/10"
-					: "bg-slate-900/20 text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400",
+					: " text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400",
 				className,
 			)}
 		>

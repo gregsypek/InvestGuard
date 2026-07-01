@@ -1,9 +1,9 @@
 import { APP_NAME } from "@/lib/constants";
 import { Button } from "../ui/button";
+import DesktopNav from "./DesktopNav";
 import { Globe } from "lucide-react";
 import { Input } from "../ui/input";
 import Link from "next/link";
-import Menu from "./Menu";
 
 function Footer() {
 	return (
@@ -106,10 +106,10 @@ function Footer() {
 					</button>
 					<div className="w-px h-4 bg-t-border" />
 					{/* Przyszły przełącznik motywu (już masz ciemny, to na przyszłość) */}
-					<button className="flex items-center gap-2 text-t-text-tertiary hover:text-t-text-primary transition-colors text-xs font-bold uppercase tracking-widest">
-						{/* <Moon className="w-4 h-4" /> Dark */}
-						<Menu />
-					</button>
+					{/* <button className="flex items-center gap-2 text-t-text-tertiary hover:text-t-text-primary transition-colors text-xs font-bold uppercase tracking-widest"> */}
+					{/* <Moon className="w-4 h-4" /> Dark */}
+					<DesktopNav />
+					{/* </button> */}
 				</div>
 			</div>
 		</footer>

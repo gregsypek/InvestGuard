@@ -29,7 +29,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
-import Menu from "./shared/Menu";
+import Menu from "./shared/DesktopNav";
 import ModeToggle from "./shared/header/ModeToggle";
 import { RefreshButton } from "./RefreshButton";
 import { cn } from "@/lib/utils";

@@ -21,6 +21,7 @@ import { DateRange } from "react-day-picker";
 import { ExpandableMainChart } from "./dashboard/ExpandableMainChart";
 import { FilterBadge } from "./shared/FilterBadge";
 import { MarketRow } from "./home/MarketRow";
+import { PortfolioBenchmarkChart } from "./dashboard/PortfolioBenchmarkChart";
 import { PortfolioWithAssets } from "@/lib/types";
 import { SectionLayout } from "./shared/SectionLayout";
 import { ValueCard } from "./shared/ValueCard";
@@ -136,7 +137,12 @@ export function UserDashboard({
 		router.push(`${pathname}?${params.toString()}`, { scroll: false });
 	};
 
-	const { portfolioChartData, absoluteChartData } = useMemo(() => {
+	const {
+		portfolioChartData,
+		pnlChartData, // EN: Dodane, żeby uniknąć błędu braku zmiennej, jeśli jej używasz
+		absoluteChartData,
+		benchmarkChartData, // EN: TUTAJ wyciągamy naszą nową zmienną!
+	} = useMemo(() => {
 		// EN: SELECT DATA SOURCE
 		const activeSnapshots =
 			dataMode === "SIMULATED" ? snapshots : realSnapshots;
@@ -160,12 +166,12 @@ export function UserDashboard({
 
 		const lastKnownState: Record<string, { value: number; invested: number }> =
 			{};
-		// EN: NEW - Track if we are seeing a portfolio for the very first time
 		const seenPortfolios = new Set<string>();
 
 		const baseData: any[] = [];
 		const finalAbsoluteData: any[] = [];
 
+		// === KROK 1: Najpierw budujemy bazowe dane naszego portfela (baseData) ===
 		allDates.forEach((dateStr) => {
 			const snapsToday = sortedSnapshots.filter(
 				(s) =>
@@ -180,23 +186,16 @@ export function UserDashboard({
 			let dayNetCashFlow = 0;
 			let dayExactChangePLN = 0;
 
-			// EN: Process today's snapshots to accurately isolate deposits and market profits per portfolio
 			snapsToday.forEach((snap) => {
 				dayDailyChangeFromDB += snap.dailyChange;
 
 				const isFirstTime = !seenPortfolios.has(snap.portfolioId);
 
 				if (isFirstTime) {
-					// EN: Portfolio appears for the first time (or after re-import).
 					seenPortfolios.add(snap.portfolioId);
-
-					// EN: We DO NOT treat its entire historical capital as today's deposit.
 					dayNetCashFlow += 0;
-
-					// EN: We take the actual daily market change from the DB, bypassing zero-based calculation.
 					dayExactChangePLN += snap.dailyChange || 0;
 				} else {
-					// EN: Portfolio existed yesterday - calculate normal daily differences
 					const prevState = lastKnownState[snap.portfolioId];
 					const portfolioCashFlow = snap.investedValue - prevState.invested;
 					const portfolioExactChange =
@@ -206,14 +205,12 @@ export function UserDashboard({
 					dayExactChangePLN += portfolioExactChange;
 				}
 
-				// EN: Update memory for tomorrow
 				lastKnownState[snap.portfolioId] = {
 					value: snap.totalValue,
 					invested: snap.investedValue,
 				};
 			});
 
-			// EN: Sum up overall state using memory (Forward-fill for dormant portfolios)
 			activePortfolioIds.forEach((pId) => {
 				if (lastKnownState[pId]) {
 					dayTotalValue += lastKnownState[pId].value;
@@ -221,7 +218,6 @@ export function UserDashboard({
 				}
 			});
 
-			// EN: Save data for main charts
 			baseData.push({
 				date: dateStr,
 				value: Number(dayTotalValue.toFixed(2)),
@@ -230,7 +226,6 @@ export function UserDashboard({
 				isPositive: dayDailyChangeFromDB >= 0,
 			});
 
-			// EN: Save cleaned data exclusively for the Absolute PnL Chart
 			finalAbsoluteData.push({
 				date: dateStr,
 				exactChangePLN: Number(dayExactChangePLN.toFixed(2)),
@@ -239,6 +234,82 @@ export function UserDashboard({
 			});
 		});
 
+		// === KROK 2: Dopiero teraz budujemy wykres Benchmark, gdy baseData jest pełne ===
+
+		// === KROK 2: Dopiero teraz budujemy wykres Benchmark, gdy baseData jest pełne ===
+
+		// EN: Simulated historical data for ALL dynamic user indices
+		const mockIndexHistory: Record<string, Record<string, number>> = {};
+		const fakePrices: Record<string, number> = {};
+
+		// EN: Initialize starting values for whatever indices the user has (BTC, GOLD, etc.)
+		userIndices.forEach((idx) => {
+			fakePrices[idx] = 1000;
+			mockIndexHistory[idx] = {};
+		});
+
+		allDates.forEach((date, index) => {
+			userIndices.forEach((idx, i) => {
+				// EN: Generate a unique fake wave for each index so they don't overlap on the chart
+				fakePrices[idx] += Math.sin(index + i * 2) * 15 + i * 1.5;
+				mockIndexHistory[idx][date] = fakePrices[idx];
+			});
+		});
+
+		const finalBenchmarkData = [];
+
+		const firstDay = baseData[0];
+		const initialPortfolioValue = firstDay ? firstDay.value : 0;
+		const initialPortfolioInvested = firstDay ? firstDay.invested : 0;
+
+		const basePortfolioPct =
+			initialPortfolioInvested > 0
+				? ((initialPortfolioValue - initialPortfolioInvested) /
+						initialPortfolioInvested) *
+					100
+				: 0;
+
+		// EN: Get base values for all indices on day 1
+		const baseIndexValues: Record<string, number> = {};
+		userIndices.forEach((idx) => {
+			baseIndexValues[idx] =
+				firstDay && mockIndexHistory[idx][firstDay.date]
+					? mockIndexHistory[idx][firstDay.date]
+					: 0;
+		});
+
+		for (let i = 0; i < baseData.length; i++) {
+			const today = baseData[i];
+
+			let currentPortfolioPct = 0;
+			if (today.invested > 0) {
+				const rawPct = ((today.value - today.invested) / today.invested) * 100;
+				currentPortfolioPct = rawPct - basePortfolioPct;
+			}
+
+			// EN: Create the base data point with the portfolio's performance
+			const dataPoint: any = {
+				date: today.date,
+				portfolioPct: Number(currentPortfolioPct.toFixed(2)),
+			};
+
+			// EN: Loop through each index and calculate its relative performance
+			userIndices.forEach((idx) => {
+				let idxPct = 0;
+				const todayValue = mockIndexHistory[idx][today.date];
+				const baseValue = baseIndexValues[idx];
+
+				if (baseValue > 0) {
+					idxPct = ((todayValue - baseValue) / baseValue) * 100;
+				}
+				// EN: Add the dynamic key (e.g., BTC: 2.45) to the object
+				dataPoint[idx] = Number(idxPct.toFixed(2));
+			});
+
+			finalBenchmarkData.push(dataPoint);
+		}
+
+		// === KROK 3: Mapowanie pozostałych wykresów i zwracanie danych ===
 		let finalChartData: ChartDataPoint[] = [];
 
 		if (chartMode === "PERCENTAGE") {
@@ -270,9 +341,10 @@ export function UserDashboard({
 		return {
 			portfolioChartData: finalChartData,
 			pnlChartData: finalPnlData,
-			absoluteChartData: finalAbsoluteData, // EN: Return the pre-calculated, spike-free array
+			absoluteChartData: finalAbsoluteData,
+			benchmarkChartData: finalBenchmarkData, // EN: Zwracamy zmienną z hooka!
 		};
-	}, [snapshots, realSnapshots, selectedIds, chartMode, dataMode]);
+	}, [snapshots, realSnapshots, selectedIds, chartMode, dataMode, userIndices]);
 
 	const selectedPortfolios = selectedIds.includes("ALL")
 		? portfolios
@@ -708,6 +780,20 @@ export function UserDashboard({
 				<div className="h-64 mt-6">
 					<AbsoluteDailyPnLChart data={absoluteChartData} />
 					{/* <AbsoluteDailyPnLChart data={dummyChartData} /> */}
+				</div>
+			</SectionLayout>
+			{/* NOWA SEKCJA BENCHMARK */}
+			<SectionLayout
+				title="Porównanie z Rynkiem"
+				titleIcon={Globe}
+				subtitle="Portfel vs Indeksy"
+				description="Wykres przedstawia skumulowaną stopę zwrotu Twojego portfela w wybranym czasie, porównaną z wybranymi przez Ciebie indeksami światowymi. Wszystkie wartości startują od zera, co pozwala na obiektywną ocenę siły Twoich inwestycji względem szerokiego rynku."
+			>
+				<div className="h-72 mt-6">
+					<PortfolioBenchmarkChart
+						data={benchmarkChartData}
+						userIndices={userIndices} // EN: Replace with the actual prop from dbUser
+					/>
 				</div>
 			</SectionLayout>
 		</div>

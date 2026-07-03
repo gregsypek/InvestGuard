@@ -137,43 +137,107 @@ export function UserDashboard({
 	};
 
 	const { portfolioChartData, absoluteChartData } = useMemo(() => {
-		// MAGIA UX: WYBIERAMY ŹRÓDŁO DANYCH
+		// EN: SELECT DATA SOURCE
 		const activeSnapshots =
 			dataMode === "SIMULATED" ? snapshots : realSnapshots;
 
-		const filteredSnapshots = selectedIds.includes("ALL")
-			? activeSnapshots
-			: activeSnapshots.filter((s) => selectedIds.includes(s.portfolioId));
+		const getDateStr = (d: string | Date) => {
+			const dateObj = new Date(d);
+			return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
+		};
 
-		const grouped = filteredSnapshots.reduce(
-			(acc, curr) => {
-				const dateStr = new Date(curr.date).toISOString().split("T")[0];
-				if (!acc[dateStr]) {
-					acc[dateStr] = { totalValue: 0, investedValue: 0, dailyChange: 0 };
-				}
-				acc[dateStr].totalValue += curr.totalValue;
-				acc[dateStr].investedValue += curr.investedValue;
-				acc[dateStr].dailyChange += curr.dailyChange;
-				return acc;
-			},
-			{} as Record<
-				string,
-				{ totalValue: number; investedValue: number; dailyChange: number }
-			>,
+		const sortedSnapshots = [...activeSnapshots].sort(
+			(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 		);
 
-		const baseData = Object.entries(grouped)
-			.sort(
-				([dateA], [dateB]) =>
-					new Date(dateA).getTime() - new Date(dateB).getTime(),
-			)
-			.map(([date, vals]) => ({
-				date,
-				value: vals.totalValue,
-				invested: vals.investedValue,
-				change: Number(vals.dailyChange.toFixed(2)),
-				isPositive: vals.dailyChange >= 0,
-			}));
+		const allDates = Array.from(
+			new Set(sortedSnapshots.map((s) => getDateStr(s.date))),
+		);
+
+		const activePortfolioIds = selectedIds.includes("ALL")
+			? Array.from(new Set(activeSnapshots.map((s) => s.portfolioId)))
+			: selectedIds;
+
+		const lastKnownState: Record<string, { value: number; invested: number }> =
+			{};
+		// EN: NEW - Track if we are seeing a portfolio for the very first time
+		const seenPortfolios = new Set<string>();
+
+		const baseData: any[] = [];
+		const finalAbsoluteData: any[] = [];
+
+		allDates.forEach((dateStr) => {
+			const snapsToday = sortedSnapshots.filter(
+				(s) =>
+					getDateStr(s.date) === dateStr &&
+					activePortfolioIds.includes(s.portfolioId),
+			);
+
+			let dayTotalValue = 0;
+			let dayInvestedValue = 0;
+			let dayDailyChangeFromDB = 0;
+
+			let dayNetCashFlow = 0;
+			let dayExactChangePLN = 0;
+
+			// EN: Process today's snapshots to accurately isolate deposits and market profits per portfolio
+			snapsToday.forEach((snap) => {
+				dayDailyChangeFromDB += snap.dailyChange;
+
+				const isFirstTime = !seenPortfolios.has(snap.portfolioId);
+
+				if (isFirstTime) {
+					// EN: Portfolio appears for the first time (or after re-import).
+					seenPortfolios.add(snap.portfolioId);
+
+					// EN: We DO NOT treat its entire historical capital as today's deposit.
+					dayNetCashFlow += 0;
+
+					// EN: We take the actual daily market change from the DB, bypassing zero-based calculation.
+					dayExactChangePLN += snap.dailyChange || 0;
+				} else {
+					// EN: Portfolio existed yesterday - calculate normal daily differences
+					const prevState = lastKnownState[snap.portfolioId];
+					const portfolioCashFlow = snap.investedValue - prevState.invested;
+					const portfolioExactChange =
+						snap.totalValue - prevState.value - portfolioCashFlow;
+
+					dayNetCashFlow += portfolioCashFlow;
+					dayExactChangePLN += portfolioExactChange;
+				}
+
+				// EN: Update memory for tomorrow
+				lastKnownState[snap.portfolioId] = {
+					value: snap.totalValue,
+					invested: snap.investedValue,
+				};
+			});
+
+			// EN: Sum up overall state using memory (Forward-fill for dormant portfolios)
+			activePortfolioIds.forEach((pId) => {
+				if (lastKnownState[pId]) {
+					dayTotalValue += lastKnownState[pId].value;
+					dayInvestedValue += lastKnownState[pId].invested;
+				}
+			});
+
+			// EN: Save data for main charts
+			baseData.push({
+				date: dateStr,
+				value: Number(dayTotalValue.toFixed(2)),
+				invested: Number(dayInvestedValue.toFixed(2)),
+				change: Number(dayDailyChangeFromDB.toFixed(2)),
+				isPositive: dayDailyChangeFromDB >= 0,
+			});
+
+			// EN: Save cleaned data exclusively for the Absolute PnL Chart
+			finalAbsoluteData.push({
+				date: dateStr,
+				exactChangePLN: Number(dayExactChangePLN.toFixed(2)),
+				totalPortfolioValue: Number(dayTotalValue.toFixed(2)),
+				netCashFlow: Number(dayNetCashFlow.toFixed(2)),
+			});
+		});
 
 		let finalChartData: ChartDataPoint[] = [];
 
@@ -203,26 +267,10 @@ export function UserDashboard({
 			isPositive: point.isPositive,
 		}));
 
-		// Prawdziwy, Nominalny Wynik Dzienny!
-		const finalAbsoluteData = [];
-		for (let i = 1; i < baseData.length; i++) {
-			const today = baseData[i];
-			const yesterday = baseData[i - 1];
-			// Odcinamy wpłaty od wyceny, by zobaczyć CZYSTY zysk
-			const netCashFlow = today.invested - yesterday.invested;
-			const exactChangePLN = today.value - yesterday.value - netCashFlow;
-
-			finalAbsoluteData.push({
-				date: today.date,
-				exactChangePLN: Number(exactChangePLN.toFixed(2)),
-				totalPortfolioValue: today.value,
-			});
-		}
-
 		return {
 			portfolioChartData: finalChartData,
 			pnlChartData: finalPnlData,
-			absoluteChartData: finalAbsoluteData,
+			absoluteChartData: finalAbsoluteData, // EN: Return the pre-calculated, spike-free array
 		};
 	}, [snapshots, realSnapshots, selectedIds, chartMode, dataMode]);
 
@@ -659,6 +707,7 @@ export function UserDashboard({
 			>
 				<div className="h-64 mt-6">
 					<AbsoluteDailyPnLChart data={absoluteChartData} />
+					{/* <AbsoluteDailyPnLChart data={dummyChartData} /> */}
 				</div>
 			</SectionLayout>
 		</div>

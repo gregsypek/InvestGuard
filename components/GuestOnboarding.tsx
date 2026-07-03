@@ -85,7 +85,7 @@ export default function GuestOnboarding() {
 				{/* ========================================= */}
 				{/* 1. HERO SECTION */}
 				{/* ========================================= */}
-				<section className="relative flex flex-col items-center justify-center pt-8 xl:pt-24 px-4 w-full max-w-5xl mx-auto text-center animate-in slide-in-from-bottom-8 fade-in duration-1000">
+				<section className="relative flex flex-col items-center justify-center pt-8 py-24 xl:pt-24 px-4 w-full max-w-5xl mx-auto text-center animate-in slide-in-from-bottom-8 fade-in duration-1000 ">
 					<div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-500 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest mb-8 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
 						<span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
 						Terminal Inwestycyjny

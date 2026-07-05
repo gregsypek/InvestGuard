@@ -1,8 +1,17 @@
 "use client";
 
-import { Globe, LayoutDashboard, Lock, MonitorPlay, User } from "lucide-react";
+import {
+	AlertTriangle,
+	Globe,
+	LayoutDashboard,
+	Lock,
+	MonitorPlay,
+	User,
+} from "lucide-react";
 
 import Cookies from "js-cookie";
+import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
+import { DeleteAccountTool } from "./DeleteAccountTool";
 import { ObservedMarketsManager } from "@/components/settings/ObservedMartektsManager";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -179,17 +188,97 @@ export default function SettingsClient({
 						</div>
 					)}
 
-					{/* POZOSTAŁE ZAKŁADKI */}
-					{(activeTab === "account" || activeTab === "security") && (
-						<div className="flex flex-col items-center justify-center p-12 bg-t-bg-panel border border-t-border-subtle rounded-3xl border-dashed">
-							<MonitorPlay className="w-12 h-12 text-t-text-tertiary mb-4 opacity-50" />
-							<h3 className="text-lg font-bold text-t-text-secondary">
-								Moduł w przygotowaniu
-							</h3>
-							<p className="text-sm text-t-text-tertiary text-center mt-2 max-w-sm">
-								Pracujemy nad integracją zaawansowanych funkcji bezpieczeństwa i
-								zarządzania profilem.
-							</p>
+					{activeTab === "account" && (
+						<div className="space-y-8 animate-in fade-in duration-300">
+							{/* SEKCJA 1: INFORMACJE O KONCIE */}
+							<section className="space-y-4">
+								<div>
+									<h2 className="text-lg font-black tracking-tighter text-t-text-primary">
+										Profil Użytkownika
+									</h2>
+									<p className="text-xs font-medium text-t-text-tertiary mt-1">
+										Twoje podstawowe dane (opcja edycji wkrótce).
+									</p>
+								</div>
+
+								<div className="flex items-center justify-between p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle">
+									<div className="flex items-center gap-4">
+										<div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 flex items-center justify-center">
+											<User className="w-6 h-6" />
+										</div>
+										<div>
+											<p className="text-sm font-bold text-t-text-primary">
+												Dane logowania
+											</p>
+											<p className="text-xs text-t-text-tertiary mt-0.5">
+												Zalogowano za pomocą ustawień systemu
+											</p>
+										</div>
+									</div>
+									<button
+										disabled
+										className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg text-xs font-bold text-t-text-tertiary opacity-50 cursor-not-allowed"
+									>
+										Zmień hasło
+									</button>
+								</div>
+							</section>
+
+							{/* SEKCJA 2: EKSPORT DANYCH (MOCKUP) */}
+							<section className="space-y-4">
+								<div>
+									<h2 className="text-lg font-black tracking-tighter text-t-text-primary">
+										Twoje Dane
+									</h2>
+									<p className="text-xs font-medium text-t-text-tertiary mt-1">
+										Zarządzaj swoimi danymi zgodnie z RODO.
+									</p>
+								</div>
+								<div className="p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+									<div>
+										<p className="text-sm font-bold text-t-text-primary">
+											Eksportuj portfele
+										</p>
+										<p className="text-xs text-t-text-tertiary mt-0.5">
+											Pobierz kopię swoich danych w formacie JSON.
+										</p>
+									</div>
+									<button
+										disabled
+										className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg text-xs font-bold text-t-text-tertiary opacity-50 cursor-not-allowed whitespace-nowrap"
+									>
+										Pobierz dane
+									</button>
+								</div>
+							</section>
+
+							{/* SEKCJA 3: STREFA NIEBEZPIECZNA (DANGER ZONE) WZOROWANA NA HARD ERASE TOOL */}
+							<section className="space-y-4 pt-6 border-t border-rose-500/10">
+								<div>
+									<h2 className="text-lg font-black tracking-tighter text-rose-500 flex items-center gap-2">
+										<AlertTriangle className="w-5 h-5" />
+										Strefa Niebezpieczna
+									</h2>
+									<p className="text-xs font-medium text-t-text-tertiary mt-1">
+										Działania wykonane w tej sekcji są nieodwracalne.
+									</p>
+								</div>
+
+								<div className="p-5 border border-rose-500/30 bg-rose-500/5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+									<div className="space-y-1 pr-4">
+										<p className="text-sm font-bold text-rose-500">
+											Trwałe usunięcie konta
+										</p>
+										<p className="text-xs font-medium text-rose-500/70 leading-relaxed">
+											Ta operacja natychmiastowo i nieodwracalnie skasuje Twoje
+											konto, wszystkie utworzone portfele, historię transakcji
+											oraz aktywa.
+										</p>
+									</div>
+
+									<DeleteAccountTool />
+								</div>
+							</section>
 						</div>
 					)}
 				</main>

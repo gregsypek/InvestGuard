@@ -5,12 +5,11 @@ import {
 	Globe,
 	LayoutDashboard,
 	Lock,
-	MonitorPlay,
 	User,
 } from "lucide-react";
 
+import { ChangePasswordModal } from "./ChangePasswordModal";
 import Cookies from "js-cookie";
-import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
 import { DeleteAccountTool } from "./DeleteAccountTool";
 import { ObservedMarketsManager } from "@/components/settings/ObservedMartektsManager";
 import { cn } from "@/lib/utils";
@@ -24,6 +23,7 @@ interface SettingsClientProps {
 	userIndices: string[];
 	initialShowBulbTip: boolean;
 	initialShowMarketTicker: boolean;
+	hasPassword: boolean;
 }
 
 export default function SettingsClient({
@@ -32,6 +32,7 @@ export default function SettingsClient({
 	userIndices,
 	initialShowBulbTip,
 	initialShowMarketTicker,
+	hasPassword,
 }: SettingsClientProps) {
 	const router = useRouter();
 	const [activeTab, setActiveTab] = useState("dashboard");
@@ -215,12 +216,7 @@ export default function SettingsClient({
 											</p>
 										</div>
 									</div>
-									<button
-										disabled
-										className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg text-xs font-bold text-t-text-tertiary opacity-50 cursor-not-allowed"
-									>
-										Zmień hasło
-									</button>
+									<ChangePasswordModal hasPassword={hasPassword} />
 								</div>
 							</section>
 

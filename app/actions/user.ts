@@ -1,18 +1,53 @@
 "use server";
 
+import * as OTPAuth from "otpauth";
+
 import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
-export async function deleteMyAccount() {
+// ============================================================================
+// 1. USUWANIE KONTA (Kaskadowe, zabezpieczone 2FA lub hasłem)
+// ============================================================================
+export async function deleteMyAccount(confirmValue: string) {
 	const session = await auth();
+	if (!session?.user?.id) throw new Error("Brak autoryzacji");
 
-	// EN: Ensure only authenticated users can delete their own accounts
-	if (!session?.user?.id) {
-		throw new Error("Brak autoryzacji");
+	const user = await db.user.findUnique({
+		where: { id: session.user.id },
+		select: {
+			password: true,
+			isTwoFactorEnabled: true,
+			twoFactorSecret: true,
+		},
+	});
+
+	if (!user) throw new Error("Nie znaleziono użytkownika");
+
+	// PRIORYTET 1: 2FA
+	if (user.isTwoFactorEnabled && user.twoFactorSecret) {
+		if (!confirmValue)
+			throw new Error("Musisz podać kod 2FA, aby usunąć konto.");
+
+		const totp = new OTPAuth.TOTP({
+			algorithm: "SHA1",
+			digits: 6,
+			period: 30,
+			secret: OTPAuth.Secret.fromBase32(user.twoFactorSecret),
+		});
+
+		const delta = totp.validate({ token: confirmValue, window: 1 });
+		if (delta === null) throw new Error("Podany kod 2FA jest nieprawidłowy.");
+	}
+	// PRIORYTET 2: HASŁO
+	else if (user.password) {
+		if (!confirmValue) throw new Error("Musisz podać hasło, aby usunąć konto.");
+
+		const isPasswordValid = await bcrypt.compare(confirmValue, user.password);
+		if (!isPasswordValid)
+			throw new Error("Wprowadzone hasło jest nieprawidłowe.");
 	}
 
-	// EN: Delete the user from the database. Prisma will cascade and delete their portfolios/assets if relations are set up correctly.
 	await db.user.delete({
 		where: { id: session.user.id },
 	});
@@ -20,6 +55,9 @@ export async function deleteMyAccount() {
 	return { success: true };
 }
 
+// ============================================================================
+// 2. ZMIANA HASŁA (Dla kont e-mail)
+// ============================================================================
 export async function changeUserPassword(
 	oldPassword: string,
 	newPassword: string,
@@ -33,19 +71,17 @@ export async function changeUserPassword(
 
 	if (!user) throw new Error("Nie znaleziono użytkownika");
 
-	// Jeśli użytkownik ma konto tylko przez Google
 	if (!user.password) {
 		throw new Error(
 			"Twoje konto jest połączone z Google. Nie możesz zmienić hasła.",
 		);
 	}
 
-	// Weryfikacja starego hasła
 	const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
 	if (!isOldPasswordValid) {
 		throw new Error("Obecne hasło jest nieprawidłowe.");
 	}
-	// Hashowanie i zapis nowego hasła
+
 	const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 	await db.user.update({
 		where: { id: user.id },
@@ -55,18 +91,19 @@ export async function changeUserPassword(
 	return { success: true };
 }
 
+// ============================================================================
+// 3. EKSPORT DANYCH (RODO / GDPR)
+// ============================================================================
 export async function exportUserData() {
 	const session = await auth();
 	if (!session?.user?.id) throw new Error("Brak autoryzacji");
 
-	// Pobieramy użytkownika wraz z jego portfelami, aktywami i historią
 	const userData = await db.user.findUnique({
 		where: { id: session.user.id },
 		include: {
 			portfolios: {
 				include: {
 					assets: true,
-					// Jeśli masz inne powiązane tabele (np. transakcje), możesz je tu dodać
 				},
 			},
 		},
@@ -74,8 +111,8 @@ export async function exportUserData() {
 
 	if (!userData) throw new Error("Nie znaleziono użytkownika");
 
-	// Usuwamy poufne dane (zahashowane hasło) przed wysłaniem do użytkownika
-	const { password, ...safeUserData } = userData;
+	// Usuwamy zahashowane hasło i sekret 2FA przed wysłaniem pliku do użytkownika!
+	const { password, twoFactorSecret, ...safeUserData } = userData;
 
 	return safeUserData;
 }

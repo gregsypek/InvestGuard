@@ -13,6 +13,7 @@ import Cookies from "js-cookie";
 import { DeleteAccountTool } from "./DeleteAccountTool";
 import { ExportDataButton } from "@/components/settings/ExportDataButton";
 import { ObservedMarketsManager } from "@/components/settings/ObservedMartektsManager";
+import { TwoFactorManager } from "@/components/settings/TwoFactorManager";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -25,6 +26,7 @@ interface SettingsClientProps {
 	initialShowBulbTip: boolean;
 	initialShowMarketTicker: boolean;
 	hasPassword: boolean;
+	isTwoFactorEnabled: boolean;
 }
 
 export default function SettingsClient({
@@ -34,6 +36,7 @@ export default function SettingsClient({
 	initialShowBulbTip,
 	initialShowMarketTicker,
 	hasPassword,
+	isTwoFactorEnabled,
 }: SettingsClientProps) {
 	const router = useRouter();
 	const [activeTab, setActiveTab] = useState("dashboard");
@@ -268,7 +271,45 @@ export default function SettingsClient({
 										</p>
 									</div>
 
-									<DeleteAccountTool />
+									<DeleteAccountTool
+										hasPassword={hasPassword}
+										isTwoFactorEnabled={isTwoFactorEnabled}
+									/>
+								</div>
+							</section>
+						</div>
+					)}
+
+					{activeTab === "security" && (
+						<div className="space-y-8 animate-in fade-in duration-300">
+							<section className="space-y-4">
+								<div>
+									<h2 className="text-lg font-black tracking-tighter text-t-text-primary">
+										Zabezpieczenia Konta
+									</h2>
+									<p className="text-xs font-medium text-t-text-tertiary mt-1">
+										Zarządzaj dodatkowymi warstwami ochrony Twoich danych.
+									</p>
+								</div>
+
+								<div className="space-y-3">
+									{/* Tutaj przenosimy 2FA */}
+									<TwoFactorManager initialEnabled={false} />
+
+									{/* Tu w przyszłości dodasz np. listę aktywnych sesji */}
+									<div className="p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle flex items-center justify-between">
+										<div>
+											<p className="text-sm font-bold text-t-text-primary">
+												Aktywne sesje
+											</p>
+											<p className="text-xs text-t-text-tertiary">
+												Zarządzaj urządzeniami, na których jesteś zalogowany.
+											</p>
+										</div>
+										<button className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg text-xs font-bold text-t-text-tertiary">
+											Zobacz listę
+										</button>
+									</div>
 								</div>
 							</section>
 						</div>

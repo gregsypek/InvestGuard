@@ -163,15 +163,19 @@ model TransactionHistory {
 }
 
 model User {
-  id            String      @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String?     @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
   password      String? // NOWE POLE: Hasło (zahashowane)
-  accounts      Account[]
-  sessions      Session[]
-  portfolios    Portfolio[] // Twoja relacja do portfeli
+
+  isTwoFactorEnabled Boolean @default(false)
+  twoFactorSecret    String? // Tutaj w przyszłości zapiszemy klucz dla Google Authenticator
+
+  accounts   Account[]
+  sessions   Session[]
+  portfolios Portfolio[] // Twoja relacja do portfeli
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

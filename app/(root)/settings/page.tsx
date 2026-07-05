@@ -27,11 +27,11 @@ export default async function SettingsPage() {
 	const userRole = session.user.role || "REGULAR";
 	const dbUser = await db.user.findUnique({
 		where: { id: session.user.id },
-		select: { observedIndices: true, password: true }, // Wyciągamy tylko hasło, żeby było szybko
+		select: { observedIndices: true, password: true, isTwoFactorEnabled: true }, // Wyciągamy tylko hasło, żeby było szybko
 	});
 
 	const hasPassword = !!dbUser?.password; // Zamieniamy to na boolean (true jeśli ma hasło, false jeśli null)
-
+	const isTwoFactorEnabled = !!dbUser?.isTwoFactorEnabled;
 	const userIndices = dbUser?.observedIndices || [];
 	const maxLimit = ROLE_LIMITS[userRole as keyof typeof ROLE_LIMITS] || 5;
 
@@ -69,6 +69,7 @@ export default async function SettingsPage() {
 			initialShowBulbTip={!hideBulbTip}
 			initialShowMarketTicker={!hideMarketTicker}
 			hasPassword={hasPassword}
+			isTwoFactorEnabled={isTwoFactorEnabled}
 		/>
 	);
 }

@@ -1,46 +1,68 @@
+import CredentialsProvider from "next-auth/providers/credentials";
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { Role } from "@prisma/client";
-import { authConfig } from "./auth.config"; // Importujemy lekki szkielet
+import { authConfig } from "./auth.config";
+import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
 	adapter: PrismaAdapter(db),
 	session: { strategy: "jwt" },
-	...authConfig, // Rozpakowujemy dostawców (Google) i strony
-	callbacks: {
-		// 1. Najpierw dopisujemy ID do tokena JWT
-		async jwt({ token, user }) {
-			// Jeśli nie mamy id użytkownika w tokenie, nic nie robimy
-			if (!token.sub) return token;
+	...authConfig,
+	providers: [
+		...authConfig.providers, // Pobiera Google z auth.config.ts
+		CredentialsProvider({
+			name: "Email",
+			credentials: {
+				email: { label: "Email", type: "email" },
+				password: { label: "Hasło", type: "password" },
+			},
+			async authorize(credentials) {
+				if (!credentials?.email || !credentials?.password) {
+					throw new Error("Brakujące dane logowania.");
+				}
 
-			// Pobieramy użytkownika z bazy, aby mieć pewność, że rola jest aktualna
+				const user = await db.user.findUnique({
+					where: { email: credentials.email as string },
+				});
+
+				if (!user || !user.password) {
+					throw new Error(
+						"Nie znaleziono użytkownika lub użyto logowania przez Google.",
+					);
+				}
+
+				const isValid = await bcrypt.compare(
+					credentials.password as string,
+					user.password,
+				);
+
+				if (!isValid) throw new Error("Nieprawidłowe hasło.");
+
+				return user;
+			},
+		}),
+	],
+	callbacks: {
+		async jwt({ token, user }) {
+			if (!token.sub) return token;
 			const existingUser = await db.user.findUnique({
 				where: { id: token.sub },
 			});
 
-			if (!existingUser) return token;
-
-			// Zapisujemy rolę w tokenie 🔑
+			// EN: CRITICAL FIX - If user was deleted from DB, destroy their JWT token
+			if (!existingUser) return null; // Zwrócenie null natychmiast niszczy sesję!
 			token.role = existingUser.role;
-			if (user) {
-				token.id = user.id;
-			}
+			if (user) token.id = user.id;
 			return token;
 		},
-		// 2. Potem przekazujemy to ID z tokena do sesji widocznej w aplikacji
 		async session({ session, token }) {
-			// Przepisujemy rolę z tokena do sesji, aby była dostępna w UI 🖼️
 			if (token.role && session.user) {
 				session.user.role = (token.role as Role) ?? "REGULAR";
+				session.user.id = token.sub as string;
 			}
-
-			if (session.user && token.sub) {
-				session.user.id = token.sub;
-			}
-
 			return session;
 		},
 	},
 });
-
-//TODO: dopisać do swojego adresu bazy w .env:?sslmode=verify-full (jeśli  dostawca bazy to obsługuje).

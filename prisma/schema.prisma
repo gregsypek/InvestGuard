@@ -168,6 +168,7 @@ model User {
   email         String?     @unique
   emailVerified DateTime?
   image         String?
+  password      String? // NOWE POLE: Hasło (zahashowane)
   accounts      Account[]
   sessions      Session[]
   portfolios    Portfolio[] // Twoja relacja do portfeli

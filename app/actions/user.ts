@@ -54,3 +54,28 @@ export async function changeUserPassword(
 
 	return { success: true };
 }
+
+export async function exportUserData() {
+	const session = await auth();
+	if (!session?.user?.id) throw new Error("Brak autoryzacji");
+
+	// Pobieramy użytkownika wraz z jego portfelami, aktywami i historią
+	const userData = await db.user.findUnique({
+		where: { id: session.user.id },
+		include: {
+			portfolios: {
+				include: {
+					assets: true,
+					// Jeśli masz inne powiązane tabele (np. transakcje), możesz je tu dodać
+				},
+			},
+		},
+	});
+
+	if (!userData) throw new Error("Nie znaleziono użytkownika");
+
+	// Usuwamy poufne dane (zahashowane hasło) przed wysłaniem do użytkownika
+	const { password, ...safeUserData } = userData;
+
+	return safeUserData;
+}

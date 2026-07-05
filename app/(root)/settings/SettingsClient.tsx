@@ -11,6 +11,7 @@ import {
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import Cookies from "js-cookie";
 import { DeleteAccountTool } from "./DeleteAccountTool";
+import { ExportDataButton } from "@/components/settings/ExportDataButton";
 import { ObservedMarketsManager } from "@/components/settings/ObservedMartektsManager";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -239,12 +240,7 @@ export default function SettingsClient({
 											Pobierz kopię swoich danych w formacie JSON.
 										</p>
 									</div>
-									<button
-										disabled
-										className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg text-xs font-bold text-t-text-tertiary opacity-50 cursor-not-allowed whitespace-nowrap"
-									>
-										Pobierz dane
-									</button>
+									<ExportDataButton />
 								</div>
 							</section>
 

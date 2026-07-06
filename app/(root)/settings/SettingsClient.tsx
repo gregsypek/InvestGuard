@@ -8,6 +8,7 @@ import {
 	User,
 } from "lucide-react";
 
+import { ActiveSessions } from "@/components/settings/ActiveSessions";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import Cookies from "js-cookie";
 import { DeleteAccountTool } from "./DeleteAccountTool";
@@ -296,20 +297,8 @@ export default function SettingsClient({
 									{/* Tutaj przenosimy 2FA */}
 									<TwoFactorManager initialEnabled={isTwoFactorEnabled} />
 
-									{/* Tu w przyszłości dodasz np. listę aktywnych sesji */}
-									<div className="p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle flex items-center justify-between">
-										<div>
-											<p className="text-sm font-bold text-t-text-primary">
-												Aktywne sesje
-											</p>
-											<p className="text-xs text-t-text-tertiary">
-												Zarządzaj urządzeniami, na których jesteś zalogowany.
-											</p>
-										</div>
-										<button className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg text-xs font-bold text-t-text-tertiary">
-											Zobacz listę
-										</button>
-									</div>
+									{/* Tabela aktywnych urządzeń */}
+									<ActiveSessions />
 								</div>
 							</section>
 						</div>

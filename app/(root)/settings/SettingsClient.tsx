@@ -294,7 +294,7 @@ export default function SettingsClient({
 
 								<div className="space-y-3">
 									{/* Tutaj przenosimy 2FA */}
-									<TwoFactorManager initialEnabled={false} />
+									<TwoFactorManager initialEnabled={isTwoFactorEnabled} />
 
 									{/* Tu w przyszłości dodasz np. listę aktywnych sesji */}
 									<div className="p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle flex items-center justify-between">

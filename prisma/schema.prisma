@@ -180,9 +180,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  role            Role     @default(REGULAR)
+  role            Role            @default(REGULAR)
   // EN: Array of global indices (tickers/IDs) selected by the user
-  observedIndices String[] @default([])
+  observedIndices String[]        @default([])
+  deviceSessions  DeviceSession[]
 }
 
 model Account {
@@ -239,4 +240,16 @@ model MarketIndex {
   price       Float    @default(0) // Aktualna cena (przyda się na przyszłość)
   dailyChange Float    @default(0) // Zmiana procentowa
   updatedAt   DateTime @updatedAt
+}
+
+// EN: Tracks active sessions for JWT invalidation and security audits
+model DeviceSession {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress  String // EN: The IP address of the login
+  userAgent  String // EN: The raw browser/device string
+  createdAt  DateTime @default(now())
+  lastActive DateTime @default(now())
+  isValid    Boolean  @default(true) // EN: Set to false when user clicks "Revoke"
 }

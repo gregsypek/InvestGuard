@@ -339,6 +339,7 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 									<th className="p-4 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary whitespace-nowrap">
 										Data
 									</th>
+									<th className="p-3 text-left">Typ operacji</th>{" "}
 									<th className="p-4 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 										Aktywo
 									</th>
@@ -378,6 +379,18 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 											</td>
 											<td className="p-4 text-[11px] font-bold tracking-widest uppercase text-t-text-secondary whitespace-nowrap">
 												{new Date(tx.date).toLocaleDateString("pl-PL")}
+											</td>
+											{/* NOWA KOLUMNA Z ODPOWIEDNIM KOLOREM */}
+											<td className="p-3 font-bold">
+												{tx.type === "BUY" ? (
+													<span className="text-emerald-500">Kupno</span>
+												) : tx.type === "SELL" ? (
+													<span className="text-rose-500">Sprzedaż</span>
+												) : tx.type === "DEPOSIT" ? (
+													<span className="text-blue-500">Wpłata</span>
+												) : (
+													<span className="text-slate-500">{tx.type}</span>
+												)}
 											</td>
 											<td className="p-4">
 												<div className="font-bold text-sm text-t-text-primary whitespace-nowrap">

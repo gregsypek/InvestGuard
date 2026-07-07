@@ -92,9 +92,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 					select: { isValid: true },
 				});
 
-				// EN: Return null to destroy the token if session was invalidated
+				// EN: Return empty object to destroy the token gracefully
 				if (!activeSession || !activeSession.isValid) {
-					return null;
+					return {} as any;
 				}
 			}
 

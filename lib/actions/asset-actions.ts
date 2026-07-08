@@ -385,6 +385,7 @@ export async function syncPortfolioAssets(portfolioId: string) {
 		console.error("❌ syncPortfolioAssets: portfolioId is missing or invalid!");
 		return { success: false, error: "Missing portfolio ID" };
 	}
+
 	const transactions = await db.transactionHistory.findMany({
 		where: { portfolioId },
 		orderBy: { executedAt: "asc" },
@@ -403,37 +404,32 @@ export async function syncPortfolioAssets(portfolioId: string) {
 	});
 
 	for (const tx of transactions) {
-		const isCashTx = tx.ticker === "CASH" || tx.category === "CASH";
+		// Dodaliśmy warunek: jeśli to odsetki/dywidenda, potraktuj to jako operację gotówkową
+		const isCashTx =
+			tx.ticker === "CASH" || tx.category === "CASH" || tx.type === "INTEREST";
 		const cashAsset = assetMap.get("CASH");
 
 		if (isCashTx) {
-			// 1. WPŁATY I PRZEWALUTOWANIA (Twoje realne pieniądze z zewnątrz)
+			// 1. WPŁATY I PRZEWALUTOWANIA
 			if (tx.type === "DEPOSIT" || tx.type === "BUY") {
-				// EN: Funds from bank account or currency exchange - increases both spendable cash and capital base
 				cashAsset.totalQuantity += tx.executedValue;
 				cashAsset.totalInvested += tx.executedValue;
 			}
-
-			// 2. ODSETKI I DYWIDENDY (Pieniądze wypracowane przez rynek)
+			// 2. ODSETKI I DYWIDENDY
 			else if (tx.type === "INTEREST") {
-				// EN: Interest/Dividends increase spendable cash, but are NOT part of user's personal investment base
 				cashAsset.totalQuantity += tx.executedValue;
+				cashAsset.totalInvested += tx.executedValue; // 🚀 NOWOŚĆ: Dodajemy tę linijkę!
 			}
-
-			// 3. WYPŁATY ŚRODKÓW (Zmniejszenie kapitału)
+			// 3. WYPŁATY ŚRODKÓW
 			else if (tx.type === "SELL") {
-				// EN: Withdrawal to bank account - decreases both spendable cash and capital base
 				cashAsset.totalQuantity -= tx.executedValue;
 				cashAsset.totalInvested -= tx.executedValue;
 			}
-
-			// 4. KOREKTY RĘCZNE (Np. wyrównanie salda)
+			// 4. KOREKTY RĘCZNE
 			else if (tx.type === "UPDATE") {
-				// EN: Manual corrections usually only adjust the current balance
 				cashAsset.totalQuantity += tx.executedValue;
 			}
-
-			continue; // Idziemy do następnej transakcji
+			continue;
 		}
 
 		// 2. Inicjalizacja aktywa (jeśli kupujemy coś po raz pierwszy)
@@ -455,85 +451,76 @@ export async function syncPortfolioAssets(portfolioId: string) {
 			asset.totalQuantity += tx.quantity;
 			asset.totalInvested += tx.executedValue;
 
-			// ...B. ale PŁACIMY za to naszą gotówką (CASH spada)
+			// B. ale PŁACIMY za to naszą gotówką (CASH spada)
 			cashAsset.totalQuantity -= tx.executedValue;
 			cashAsset.totalInvested -= tx.executedValue;
 		} else if (asset && tx.type === "SELL") {
 			// A. Sprzedajemy akcje: maleje ilość aktywa...
-			const ratio = tx.quantity / (asset.totalQuantity + tx.quantity);
+			// (Używamy bezpiecznego dzielenia, by uniknąć NaN)
+			const currentTotal = asset.totalQuantity + tx.quantity;
+			// Obliczamy ile % całości kapitału musimy zdjąć w stosunku do posiadanych sztuk
+			const ratio =
+				asset.totalQuantity > 0 ? tx.quantity / asset.totalQuantity : 1;
 			asset.totalQuantity -= tx.quantity;
 			asset.totalInvested -= asset.totalInvested * ratio;
 
-			// ...B. ale gotówka z transakcji wraca na nasze konto (CASH rośnie)
+			// B. ale gotówka z transakcji wraca na nasze konto (CASH rośnie)
 			cashAsset.totalQuantity += tx.executedValue;
 			cashAsset.totalInvested += tx.executedValue;
 		}
 	}
 
-	// 3. Pobieramy obecne stany z bazy, aby mądrze kalkulować tymczasowe wyceny (placeholdery)
 	const existingAssets = await db.asset.findMany({ where: { portfolioId } });
 	const existingMap = new Map(existingAssets.map((a) => [a.ticker, a]));
 
-	// 4. Zapis do bazy danych
 	for (const [ticker, data] of assetMap) {
-		// Jeśli sprzedaliśmy wszystkie sztuki, po prostu wpisujemy 0, żeby mieć czystą historię
 		if (data.totalQuantity <= 0 && ticker !== "CASH") {
 			data.totalQuantity = 0;
 			data.totalInvested = 0;
 		}
 
-		// 🚀 BLOK KODU ZAPOBIEGAJĄCY UJEMNEJ GOTÓWCE
-		// EN: Prevent negative cash balances when testing stock imports without logging initial cash deposits
+		// Zabezpieczenie przed ujemną gotówką w przypadku braku pełnej historii wpłat z XTB
 		if (ticker === "CASH") {
 			if (data.totalQuantity < 0) data.totalQuantity = 0;
-			if (data.totalInvested < 0) data.totalInvested = 0;
+
+			// 🚀 NOWOŚĆ: Wymuszamy, żeby zainwestowany kapitał gotówki ZAWSZE był równy jej ilości
+			data.totalInvested = data.totalQuantity;
 		}
 
-		// 🚀 NOWOŚĆ: Logika "inteligentnego placeholdera" dla wyceny bieżącej (currentValue)
-		// EN: Smart placeholder logic for currentValue before Yahoo API updates it
 		const existingAsset = existingMap.get(ticker);
 		let nextCurrentValue = existingAsset
 			? Number(existingAsset.currentValue)
 			: data.totalInvested;
 
+		// 🚀 NOWOŚĆ: Wartość rynkowa gotówki to ZAWSZE jej fizyczna ilość
 		if (ticker === "CASH") {
-			nextCurrentValue = data.totalInvested;
+			nextCurrentValue = data.totalQuantity;
 		} else if (existingAsset) {
 			if (existingAsset.quantity === 0 && data.totalQuantity > 0) {
-				// A. Było 0 sztuk, teraz są (nowa/odnowiona pozycja) -> wycena to nasz kapitał
 				nextCurrentValue = data.totalInvested;
 			} else if (data.totalQuantity > existingAsset.quantity) {
-				// B. Dokupienie akcji -> sztucznie podbijamy wycenę o nowy wkład, by nie pokazać straty
 				const investedDifference =
 					data.totalInvested - Number(existingAsset.investedCapital);
-				if (investedDifference > 0) {
-					nextCurrentValue += investedDifference;
-				}
+				if (investedDifference > 0) nextCurrentValue += investedDifference;
 			} else if (
 				data.totalQuantity < existingAsset.quantity &&
 				data.totalQuantity > 0
 			) {
-				// C. Sprzedaż części akcji -> pomniejszamy wycenę proporcjonalnie
 				const ratio = data.totalQuantity / existingAsset.quantity;
 				nextCurrentValue = nextCurrentValue * ratio;
 			} else if (data.totalQuantity === 0) {
-				// D. Całkowita sprzedaż -> zerujemy wycenę
 				nextCurrentValue = 0;
 			}
 		}
 
 		await db.asset.upsert({
 			where: {
-				portfolioId_ticker: {
-					portfolioId,
-					ticker,
-				},
+				portfolioId_ticker: { portfolioId, ticker },
 			},
 			update: {
 				name: data.name,
 				quantity: data.totalQuantity,
 				investedCapital: data.totalInvested,
-				// 🚀 Podpinamy nasz wyliczony tymczasowy placeholder!
 				currentValue: nextCurrentValue,
 				category: data.category,
 			},
@@ -543,7 +530,7 @@ export async function syncPortfolioAssets(portfolioId: string) {
 				name: data.name,
 				quantity: data.totalQuantity,
 				investedCapital: data.totalInvested,
-				currentValue: nextCurrentValue, // Cena startowa
+				currentValue: nextCurrentValue,
 				category: data.category,
 				purchaseDate: data.firstPurchase || new Date(),
 			},

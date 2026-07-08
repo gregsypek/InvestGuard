@@ -287,37 +287,55 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 											</TableCell>
 
 											{/* 5. KOLUMNA: WARTOŚĆ I ILOŚĆ */}
-											<TableCell className="text-right font-mono py-4 md:pr-8 border-none">
-												<div
-													className={cn(
-														"font-bold text-sm whitespace-nowrap",
-														isCorrection
-															? t.executedValue >= 0
-																? "text-blue-600 dark:text-blue-400"
-																: "text-rose-600 dark:text-rose-500"
-															: isPositive
-																? "text-emerald-600 dark:text-emerald-400"
-																: "text-rose-600 dark:text-rose-500",
+											<TableCell className="text-right pr-6 py-4 border-none">
+												<div className="flex flex-col items-end">
+													<span
+														className={cn(
+															"text-sm font-black tracking-tight",
+															t.type === "BUY"
+																? "text-rose-500"
+																: t.type === "INTEREST" && t.executedValue < 0
+																	? "text-orange-500"
+																	: t.type === "INTEREST" && t.executedValue > 0
+																		? "text-purple-500"
+																		: "text-emerald-500",
+														)}
+													>
+														{t.type === "BUY" ||
+														(t.type === "INTEREST" && t.executedValue < 0)
+															? "-"
+															: "+"}
+														{Math.abs(t.executedValue).toLocaleString("pl-PL", {
+															style: "currency",
+															currency: "PLN",
+														})}
+													</span>
+
+													{/* Wyjaśnienia pod kwotą dla różnych typów zasilających/pomniejszających gotówkę */}
+													{t.type === "SELL" && (
+														<span className="text-[9px] text-emerald-500/80 font-bold uppercase tracking-widest mt-0.5">
+															(Zasila gotówkę)
+														</span>
 													)}
-												>
-													{isCorrection
-														? t.executedValue > 0
-															? "+"
-															: ""
-														: isPositive
-															? "+"
-															: "-"}
-													{Math.abs(t.executedValue).toLocaleString("pl-PL", {
-														minimumFractionDigits: 2,
-													})}{" "}
-													PLN
-												</div>
-												<div className="text-[10px] text-t-text-tertiary font-bold tracking-widest uppercase mt-0.5 whitespace-nowrap">
-													{isCorrection
-														? "0.0000"
-														: (isPositive ? "+" : "-") +
-															t.quantity.toFixed(4)}{" "}
-													szt.
+
+													{t.type === "INTEREST" && t.executedValue > 0 && (
+														<span className="text-[9px] text-purple-500/80 font-bold uppercase tracking-widest mt-0.5">
+															(Dywidenda / Gotówka)
+														</span>
+													)}
+
+													{t.type === "INTEREST" && t.executedValue < 0 && (
+														<span className="text-[9px] text-orange-500/80 font-bold uppercase tracking-widest mt-0.5">
+															(Podatek)
+														</span>
+													)}
+
+													{/* Ilość (pokazujemy tylko dla akcji, ukrywamy dla dywidend i podatków, które mają 0 szt.) */}
+													{t.quantity > 0 && (
+														<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest mt-1">
+															{t.quantity} szt.
+														</span>
+													)}
 												</div>
 											</TableCell>
 

@@ -760,6 +760,7 @@ const AssetLedgerTable = ({
 																		(t: TransactionHistory) => {
 																			const isBuy = t.type === "BUY";
 																			const isCorrection = t.type === "UPDATE";
+																			const isInterest = t.type === "INTEREST";
 																			const txUnitPrice =
 																				t.quantity !== 0
 																					? Math.abs(
@@ -780,19 +781,27 @@ const AssetLedgerTable = ({
 																						</span>
 																						<span
 																							className={cn(
-																								"px-2 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-widest border",
+																								"px-2 py-0.5 rounded-sm font-black text-[9px] uppercase tracking-widest border whitespace-nowrap",
 																								isCorrection
 																									? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
 																									: isBuy
 																										? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-																										: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+																										: isInterest
+																											? t.executedValue > 0
+																												? "bg-purple-500/10 text-purple-600 border-purple-500/20"
+																												: "bg-orange-500/10 text-orange-600 border-orange-500/20"
+																											: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
 																							)}
 																						>
 																							{isCorrection
 																								? "Korekta"
 																								: isBuy
 																									? "Kupno"
-																									: "Sprzedaż"}
+																									: isInterest
+																										? t.executedValue > 0
+																											? "Dywidenda"
+																											: "Podatek"
+																										: "Sprzedaż"}
 																						</span>
 																						{isAggregatedBond && (
 																							<span className="font-bold text-[10px] text-t-text-tertiary uppercase tracking-widest">
@@ -812,7 +821,11 @@ const AssetLedgerTable = ({
 																											: "text-rose-600 dark:text-rose-400"
 																										: isBuy
 																											? "text-emerald-600 dark:text-emerald-400"
-																											: "text-orange-600 dark:text-orange-400",
+																											: isInterest
+																												? t.executedValue > 0
+																													? "text-purple-600"
+																													: "text-orange-600"
+																												: "text-rose-600 dark:text-rose-400",
 																								)}
 																							>
 																								{isCorrection
@@ -821,7 +834,11 @@ const AssetLedgerTable = ({
 																										: ""
 																									: isBuy
 																										? "+"
-																										: "-"}
+																										: isInterest
+																											? t.executedValue > 0
+																												? "+"
+																												: "-"
+																											: "-"}
 																								{Math.abs(
 																									t.executedValue,
 																								).toLocaleString(undefined, {
@@ -830,24 +847,28 @@ const AssetLedgerTable = ({
 																								})}{" "}
 																								PLN
 																							</span>
-																							{!isCorrection && (
+																							{!isCorrection && !isInterest && (
 																								<span className="text-[9px] text-t-text-tertiary font-medium tracking-tighter">
 																									@ {txUnitPrice.toFixed(2)} /
 																									szt.
 																								</span>
 																							)}
 																						</div>
-																						<span className="min-w-[70px] font-bold text-t-text-secondary text-xs">
-																							{isCorrection
-																								? "0.0000"
-																								: (isBuy ? "+" : "-") +
-																									Math.abs(t.quantity).toFixed(
-																										4,
-																									)}{" "}
-																							<span className="text-[9px] text-t-text-tertiary">
-																								szt.
+
+																						{/* Ukrywamy ilość sztuk dla dywidend, bo wynosi 0 */}
+																						{!isInterest && (
+																							<span className="min-w-[70px] font-bold text-t-text-secondary text-xs">
+																								{isCorrection
+																									? "0.0000"
+																									: (isBuy ? "+" : "-") +
+																										Math.abs(
+																											t.quantity,
+																										).toFixed(4)}{" "}
+																								<span className="text-[9px] text-t-text-tertiary ml-1">
+																									szt.
+																								</span>
 																							</span>
-																						</span>
+																						)}
 																					</div>
 																				</div>
 																			);

@@ -1,11 +1,11 @@
 "use client";
 
 import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
+import { Settings, Wrench } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 import Image from "next/image";
 import Link from "next/link";
-import { Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function Aside() {
@@ -83,11 +83,15 @@ export default function Aside() {
 			{/* Nawigacja */}
 			<nav className="flex-1 flex flex-col items-center lg:items-stretch px-2 lg:px-4 py-4 space-y-1.5 overflow-y-auto no-scrollbar">
 				{NAV_ITEMS.map((item) => {
+					// 🚀 ZMIANA: Zabezpieczenie przed podwójnym podświetlaniem Dashboardu i Ustawień
 					const isActive = isDemoMode
 						? item.href === "/dashboard"
 							? pathname === "/demo"
 							: pathname.startsWith(`/demo${item.href}`)
-						: pathname.startsWith(item.href);
+						: item.href === "/dashboard"
+							? pathname.startsWith("/dashboard") &&
+								!pathname.includes("/settings")
+							: pathname.startsWith(item.href);
 
 					let finalHref = item.href;
 					if (isDemoMode) {
@@ -144,19 +148,87 @@ export default function Aside() {
 				})}
 			</nav>
 
-			{/* Stopka (Ustawienia) */}
-			<div className="p-4 border-t border-t-border-subtle">
-				<Link
-					href="/settings"
-					className={cn(
-						"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide text-t-text-secondary hover:text-t-text-primary hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-300 group",
-						// 🚀 ZMIANA: Jeśli jesteśmy w trybie demo, wyłączamy ustawienia dokładnie tak jak inne moduły!
-						isDemoMode && "opacity-30 pointer-events-none",
-					)}
-				>
-					<Settings className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
-					<span className="hidden lg:inline-block">Ustawienia</span>
-				</Link>
+			{/* Stopka (Narzędzia i Ustawienia) */}
+			<div className="p-4 border-t border-t-border-subtle flex flex-col gap-2">
+				{/* === NARZĘDZIA PORTFELA === */}
+				{activePortfolioId &&
+					!isDemoMode &&
+					(() => {
+						const toolsHref = `/dashboard/${activePortfolioId}/settings`;
+						const isToolsActive = pathname.startsWith(toolsHref);
+
+						return (
+							<Link
+								href={toolsHref}
+								className={cn(
+									"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
+									isToolsActive
+										? "bg-blue-600/10 text-blue-600 dark:text-blue-400 shadow-sm"
+										: "hover:bg-black/5 dark:hover:bg-white/5 text-t-text-secondary hover:text-t-text-primary",
+								)}
+							>
+								{/* Pionowy akcent aktywnej zakładki */}
+								{isToolsActive && (
+									<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1/2 rounded-r-full hidden lg:block bg-blue-500" />
+								)}
+								<Wrench
+									className={cn(
+										"w-5 h-5 transition-transform duration-300 group-hover:-rotate-12",
+										isToolsActive
+											? "text-blue-500"
+											: "text-t-text-tertiary group-hover:text-t-text-primary",
+									)}
+								/>
+								<span className="hidden lg:inline-block">Narzędzia</span>
+							</Link>
+						);
+					})()}
+
+				{/* === GŁÓWNE USTAWIENIA APLIKACJI === */}
+				{(() => {
+					let settingsHref = "/settings";
+					// Jeśli jesteśmy w portfelu, przekazujemy jego ID do ustawień, żeby Narzędzia nie zniknęły
+					if (activePortfolioId && !isDemoMode) {
+						settingsHref += `?portfolioId=${activePortfolioId}`;
+					}
+					const isSettingsActive = pathname.startsWith("/settings");
+
+					return (
+						<Link
+							href={settingsHref}
+							className={cn(
+								"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
+								isSettingsActive
+									? isDemoMode
+										? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-sm"
+										: "bg-blue-600/10 text-blue-600 dark:text-blue-400 shadow-sm"
+									: "hover:bg-black/5 dark:hover:bg-white/5 text-t-text-secondary hover:text-t-text-primary",
+								isDemoMode && "opacity-30 pointer-events-none",
+							)}
+						>
+							{/* Pionowy akcent aktywnej zakładki */}
+							{isSettingsActive && (
+								<div
+									className={cn(
+										"absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1/2 rounded-r-full hidden lg:block",
+										isDemoMode ? "bg-emerald-500" : "bg-blue-500",
+									)}
+								/>
+							)}
+							<Settings
+								className={cn(
+									"w-5 h-5 transition-transform duration-300 group-hover:rotate-90",
+									isSettingsActive
+										? isDemoMode
+											? "text-emerald-500"
+											: "text-blue-500"
+										: "text-t-text-tertiary group-hover:text-t-text-primary",
+								)}
+							/>
+							<span className="hidden lg:inline-block">Ustawienia</span>
+						</Link>
+					);
+				})()}
 			</div>
 		</aside>
 	);

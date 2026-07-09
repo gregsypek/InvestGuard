@@ -183,7 +183,7 @@ export default function Header({
 												alt="InvestGuard Logo"
 												width={32}
 												height={32}
-												className="hidden dark:bloc object-contain"
+												className="hidden dark:block object-contain"
 												style={{ width: "auto", height: "auto" }}
 											/>
 										</div>

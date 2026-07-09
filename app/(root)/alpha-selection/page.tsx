@@ -180,19 +180,6 @@ export default async function AlphaSelectionPage({
 					/>
 				</div>
 			</SectionLayout>
-			{/* SEKCJA NARZĘDZIA (Tymczasowo tutaj, gotowe na przeniesienie w przyszłości) */}
-			<SectionLayout
-				title="Narzędzia Administracyjne"
-				titleIcon={Wrench}
-				subtitle="Konserwacja danych"
-				description="Narzędzie pozwala na masową korektę błędnie przypisanych kategorii dla konkretnego aktywa, aktualizując jednocześnie całą historię jego transakcji."
-			>
-				<BulkMigrationTool
-					assets={filteredAssets}
-					categories={filteredCategories}
-					portfolioId={portfolioId}
-				/>
-			</SectionLayout>
 
 			{/* SEKCJA TABELA LEDGERA */}
 			<SectionLayout

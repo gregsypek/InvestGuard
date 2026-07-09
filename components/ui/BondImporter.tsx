@@ -27,7 +27,8 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
-
+	// 🚀 NOWOŚĆ: Stan przełącznika (domyślnie włączony, by chronić gotówkę)
+	const [autoFundCash, setAutoFundCash] = useState(true);
 	// EN: Local fallback API dictionary providing latest Polish Treasury Bond interest rates
 	const inferDefaultBondRate = (ticker: string): number => {
 		const prefix = ticker.substring(0, 3).toUpperCase();
@@ -124,6 +125,36 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 					category: "BONDS" as const,
 					comment: `Automatyczny import: Wykup ${dateStr}`,
 				};
+
+				// 🚀 NOWOŚĆ: Automatyczne zasilenie gotówki (jeśli switch jest włączony)
+				if (autoFundCash) {
+					const fundPayload = {
+						uniqueKey: `BOND_FUND_${bond.ticker}_${dateStr}`, // Unikalny klucz wpłaty
+						type: "DEPOSIT" as const,
+						assetName: "Wpłata pod obligacje skarbowe",
+						ticker: "CASH",
+						quantity: bond.investedValue,
+						date: bond.purchaseDate || inferredPurchaseDate,
+						amountPLN: bond.investedValue,
+						originalPrice: 1,
+						currency: "PLN",
+						exchangeRate: 1,
+						category: "CASH" as const,
+						comment: `Auto-zasilenie chroniące saldo dla ${bond.ticker}`,
+					};
+
+					try {
+						// Zapisujemy wpłatę przed zakupem obligacji
+						await saveXtbTransaction(fundPayload, portfolioId);
+					} catch (fundErr: any) {
+						// Ignorujemy błąd duplikatu dla wpłaty, jeśli już kiedyś ją dodano
+						if (
+							fundErr?.message?.toLowerCase().includes("istnieje") === false
+						) {
+							console.error("Błąd zapisu zasilenia:", fundErr);
+						}
+					}
+				}
 
 				await saveXtbTransaction(txPayload, portfolioId);
 				count++;
@@ -408,7 +439,7 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 					{/* 4. PASEK AKCJI (FOOTER TABELI) */}
 					{/* ========================================= */}
 					<div className="p-6 bg-t-bg-base/30 dark:bg-black/20 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-t-border-subtle">
-						<div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+						{/* <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
 							<p className="text-[11px] font-black uppercase tracking-widest text-t-text-primary">
 								Wybrano:{" "}
 								<span className="text-blue-500">{selectedIndices.length}</span>{" "}
@@ -417,6 +448,37 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 							<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest font-bold mt-1">
 								Tylko zaznaczone obligacje zostaną dodane do portfela.
 							</p>
+						</div> */}
+
+						{/* ========================================= */}
+						{/* 4. PASEK AKCJI (FOOTER TABELI) */}
+						{/* ========================================= */}
+						<div className="p-6 bg-t-bg-base/30 dark:bg-black/20 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-t-border-subtle">
+							<div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+								<p className="text-[11px] font-black uppercase tracking-widest text-t-text-primary">
+									Wybrano:{" "}
+									<span className="text-blue-500">
+										{selectedIndices.length}
+									</span>{" "}
+									z {preview.length}
+								</p>
+								<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest font-bold mt-1">
+									Tylko zaznaczone obligacje zostaną dodane do portfela.
+								</p>
+
+								{/* 🚀 NOWOŚĆ: Nasz Switch / Checkbox */}
+								<label className="flex items-center gap-2 mt-3 cursor-pointer group">
+									<input
+										type="checkbox"
+										checked={autoFundCash}
+										onChange={(e) => setAutoFundCash(e.target.checked)}
+										className="rounded border-t-border-subtle text-blue-600 focus:ring-blue-500 h-4 w-4 bg-black/5 dark:bg-white/5 cursor-pointer"
+									/>
+									<span className="text-[10px] uppercase tracking-widest font-bold text-t-text-secondary group-hover:text-t-text-primary transition-colors">
+										Automatycznie zaksięguj wpłatę gotówki (chroni obecne saldo)
+									</span>
+								</label>
+							</div>
 						</div>
 
 						<button

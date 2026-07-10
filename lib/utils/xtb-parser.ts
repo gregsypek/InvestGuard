@@ -159,6 +159,25 @@ export function parseXtbRow(row: any): ParsedXtbTransaction | null {
 			if (rawVolume !== 0) finalQuantity = Math.abs(rawVolume);
 		}
 
+		// 🚀 NOWOŚĆ: Automatyczne rozpoznawanie waluty i wyliczanie kursu historycznego
+		let originalCurrency = "PLN";
+		if (finalTicker.endsWith(".US")) originalCurrency = "USD";
+		else if (finalTicker.endsWith(".UK")) originalCurrency = "GBP";
+		else if (/[.](DE|FR|NL|ES|IT|EU)$/.test(finalTicker))
+			originalCurrency = "EUR";
+
+		let fxOriginalPrice = Math.abs(amount) / (finalQuantity || 1); // Domyślnie cena w PLN
+		let computedExchangeRate = 1.0;
+
+		// Szukamy ceny w walucie obcej po znaku @ (np. z "OPEN BUY 1/1.1361 @ 114.07")
+		const priceMatch = comment.match(/@\s*([0-9.]+)/);
+		if (priceMatch && originalCurrency !== "PLN") {
+			fxOriginalPrice = Number(priceMatch[1]);
+			// Kurs historyczny = Kwota w PLN / (Ilość sztuk * Cena w oryginalnej walucie)
+			computedExchangeRate =
+				Math.abs(amount) / ((finalQuantity || 1) * fxOriginalPrice);
+		}
+
 		return {
 			type: txType,
 			date: new Date(time),
@@ -166,9 +185,9 @@ export function parseXtbRow(row: any): ParsedXtbTransaction | null {
 			assetName: finalName,
 			ticker: finalTicker,
 			quantity: finalQuantity,
-			originalPrice: Math.abs(amount) / (finalQuantity || 1),
-			currency: "PLN",
-			exchangeRate: 1.0,
+			originalPrice: fxOriginalPrice, // 🚀 ZAPISZEMY: Cenę w walucie oryginalnej (np. 114.07)
+			currency: originalCurrency, // 🚀 ZAPISZEMY: Prawdziwą walutę (np. USD)
+			exchangeRate: computedExchangeRate, // 🚀 ZAPISZEMY: Wyliczony kurs historyczny (np. 3.6769)
 			category: TICKER_TO_CATEGORY[finalTicker] || Category.UNKNOWN,
 			uniqueKey: `${time}--${amount}`,
 			comment: row.Comment || "",

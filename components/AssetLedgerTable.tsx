@@ -849,8 +849,48 @@ const AssetLedgerTable = ({
 																							</span>
 																							{!isCorrection && !isInterest && (
 																								<span className="text-[9px] text-t-text-tertiary font-medium tracking-tighter">
-																									@ {txUnitPrice.toFixed(2)} /
-																									szt.
+																									{/* @ {txUnitPrice.toFixed(2)} /
+																									szt. */}
+																									{!isCorrection &&
+																										!isInterest && (
+																											<span className="text-[9px] text-t-text-tertiary font-medium tracking-tighter block mt-0.5">
+																												@{" "}
+																												{(
+																													t.originalPrice ?? 0
+																												).toLocaleString(
+																													undefined,
+																													{
+																														minimumFractionDigits: 2,
+																														maximumFractionDigits: 4,
+																													},
+																												)}{" "}
+																												{t.originalCurrency ||
+																													"PLN"}{" "}
+																												/ szt.
+																												{/* Jeśli transakcja była w walucie obcej, doklejamy historyczny kurs */}
+																												{t.originalCurrency &&
+																													t.originalCurrency !==
+																														"PLN" &&
+																													t.exchangeRate &&
+																													t.exchangeRate !==
+																														1 && (
+																														<span className="ml-1 text-blue-500/90 dark:text-blue-400/70 font-semibold">
+																															(Kurs:{" "}
+																															{(
+																																t.exchangeRate ??
+																																1
+																															).toLocaleString(
+																																undefined,
+																																{
+																																	minimumFractionDigits: 4,
+																																	maximumFractionDigits: 4,
+																																},
+																															)}{" "}
+																															PLN)
+																														</span>
+																													)}
+																											</span>
+																										)}
 																								</span>
 																							)}
 																						</div>

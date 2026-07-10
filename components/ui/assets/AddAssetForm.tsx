@@ -575,7 +575,7 @@ export default function AddAssetForm({
 							</div>
 
 							{/* PRZYCISK DODAJ */}
-							<div className="col-span-1 md:col-span-2 lg:col-span-1 flex justify-end h-[48px]">
+							<div className="col-span-1 md:col-span-2  flex justify-end h-[48px]">
 								<SubmitButton
 									label={
 										isCash

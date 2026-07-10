@@ -48,29 +48,30 @@ export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
 
 	return (
 		<div className="flex flex-col gap-4 p-6 md:p-8 bg-t-bg-base/30 dark:bg-black/20 rounded-2xl border border-t-border-subtle animate-in fade-in duration-300">
-			{/* GŁÓWNY PASEK AKCJI (Poziomy) */}
-			<div className="flex flex-col md:flex-row items-center gap-6">
+			{/* GŁÓWNY PASEK AKCJI (Poziomy na dużych ekranach, pionowy na małych) */}
+			<div className="flex flex-col sm:flex-row flex-wrap  items-center gap-6">
 				{/* Ikona Portfela */}
 				<div className="flex shrink-0 items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 shadow-inner">
 					<Wallet className="w-8 h-8 text-emerald-500" />
 				</div>
 
 				{/* Tekst zachęcający */}
-				<div className="flex flex-col flex-1 w-full gap-1 text-center md:text-left">
+				<div className="flex flex-col flex-1 w-full gap-1 text-center sm:text-left min-w-[140px]">
 					<h3 className="text-sm font-bold uppercase tracking-widest text-t-text-primary">
 						Wpłata Gotówkowa
 					</h3>
-					<p className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
+					<p className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest leading-relaxed">
 						Zasil portfel wolnymi środkami
 					</p>
 				</div>
 
-				{/* Formularz wpłaty (Tylko pełne kwoty) */}
+				{/* Formularz wpłaty (Elastyczny) */}
 				<form
 					onSubmit={handleSubmit}
-					className="flex flex-col sm:flex-row items-center w-full md:w-auto gap-3"
+					className="flex flex-col sm:flex-row items-center w-full sm:w-auto gap-3 shrink-0"
 				>
-					<div className="relative w-full sm:w-56 min-w-80 flex flex-1 shrink-0">
+					{/* ZMIANA: Usunięto min-w-80 i shrink-0, dodano elastyczną szerokość */}
+					<div className="relative w-full sm:w-48 lg:w-56 flex-1">
 						<span className="absolute left-4 top-1/2 -translate-y-1/2 text-t-text-tertiary">
 							<Banknote className="w-4 h-4" />
 						</span>
@@ -85,7 +86,7 @@ export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
 								const onlyNumbers = e.target.value.replace(/[^0-9]/g, "");
 								setAmount(onlyNumbers);
 							}}
-							className={cn(inputStyles, "pl-11 pr-14 font-mono")}
+							className={cn(inputStyles, "pl-11 pr-14 font-mono w-full")}
 						/>
 						<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 							PLN
@@ -107,7 +108,7 @@ export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
 				</form>
 			</div>
 
-			{/* KOMUNIKATY ZWROTNE (Pokazują się tylko gdy jest błąd lub sukces) */}
+			{/* KOMUNIKATY ZWROTNE */}
 			{(error || success) && (
 				<div className="w-full pt-4 mt-2 border-t border-t-border-subtle animate-in slide-in-from-top-2">
 					{error && (

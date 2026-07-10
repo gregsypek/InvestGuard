@@ -1,4 +1,4 @@
-import { Loader2, Save } from "lucide-react";
+import { Hourglass, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ interface SubmitButtonProps {
 	className?: string;
 	icon?: React.ReactNode;
 }
+
 export function SubmitButton({
 	label,
 	isLoading,
@@ -38,10 +39,11 @@ export function SubmitButton({
 			)}
 		>
 			{isDisabled ? (
-				<>
-					<Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-400" />
+				<div className="px-6 flex ">
+					{/* Używamy statycznej ikony zamiast animacji dla lepszego UX/A11y */}
+					<Hourglass className="mr-2 h-4 w-4 text-blue-400" />
 					Uzupełnij dane ...
-				</>
+				</div>
 			) : (
 				<>
 					{icon || <Save className="mr-2 h-4 w-4" />}

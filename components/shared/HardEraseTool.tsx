@@ -73,7 +73,7 @@ export function HardEraseTool({ assets }: HardEraseToolProps) {
 			<div className="flex flex-col xl:flex-row gap-4 pt-2">
 				<div className="flex-1 min-w-0">
 					<Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-						<SelectTrigger className="w-full bg-slate-900/80 border-slate-800 text-slate-200">
+						<SelectTrigger className="w-full dark:bg-slate-900/80 dark:border-slate-800 text-slate-200">
 							<SelectValue placeholder="Wybierz aktywo do wymazania..." />
 						</SelectTrigger>
 						<SelectContent>

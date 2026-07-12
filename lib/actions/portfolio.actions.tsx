@@ -161,6 +161,8 @@ export async function getPortfolioCategories(id: string) {
 				targetCash: true,
 				targetCrypto: true,
 				targetCommodities: true,
+				targetRealEstate: true,
+				targetCustom: true,
 			},
 		});
 		// console.log("🚀 ~ getPortfolioCategories ~ portfolio:", portfolio);

@@ -38,6 +38,9 @@ export const PortfolioSchema = z.object({
 	targetCash: z.coerce.number().min(0).max(100).default(0),
 	targetCrypto: z.coerce.number().min(0).max(100).default(0),
 	targetCommodities: z.coerce.number().min(0).max(100).default(0),
+	// 🚀 NOWE:
+	targetRealEstate: z.coerce.number().min(0).max(100).default(0),
+	targetCustom: z.coerce.number().min(0).max(100).default(0),
 });
 
 // THIS IS KEY: Export the type inferred from the schema

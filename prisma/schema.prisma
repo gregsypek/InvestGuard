@@ -25,6 +25,8 @@ enum Category {
   CRYPTO
   COMMODITIES
   UNKNOWN
+  REAL_ESTATE // 🚀 Nieruchomości, działki, mieszkania
+  CUSTOM // 🚀 Aktywa alternatywne (Wino, Sztuka, Zegarki, Samochody)
 }
 
 enum TimeHorizon {
@@ -102,6 +104,8 @@ model Portfolio {
   targetCash        Int @default(0) // ✅ Traktujemy jak każde inne aktywo
   targetCrypto      Int @default(0)
   targetCommodities Int @default(0)
+  targetRealEstate  Int @default(0) // 🚀 Docelowy % w nieruchomościach
+  targetCustom      Int @default(0) // 🚀 Docelowy % w aktywach alternatywnych
 
   assets               Asset[] // Relation: One portfolio can house many assets
   userId               String

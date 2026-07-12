@@ -93,6 +93,8 @@
 	--color-border: var(--border);
 	--color-card: var(--card);
 	--color-cash: var(--cash);
+	--color-portfolio-real-estate: var(--portfolio-real-estate);
+	--color-portfolio-custom: var(--portfolio-custom);
 }
 
 :root {
@@ -116,6 +118,10 @@
 	--portfolio-crypto: oklch(0.68 0.14 195); /* Purple */
 	--portfolio-booster: oklch(0.65 0.2 30); /* Red/Pink */
 	--portfolio-commodities: oklch(0.5 0.1 50); /* Brown/Earth */
+	--portfolio-real-estate: oklch(
+		0.55 0.08 230
+	); /* Muted Indigo / Stalowy niebieski */
+	--portfolio-custom: oklch(0.65 0.15 330); /* Fuchsia / Głęboki róż */
 
 	--primary: oklch(0.6 0.18 250);
 	--switch-off: oklch(0.82 0 0);

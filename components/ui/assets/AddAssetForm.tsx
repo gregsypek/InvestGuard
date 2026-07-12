@@ -2,7 +2,7 @@
 
 import * as z from "zod";
 
-import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
+import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import {
 	Coins,
 	Landmark,
@@ -49,7 +49,7 @@ export default function AddAssetForm({
 	portfolioId,
 	allowedCategories = [],
 	existingAssets = [],
-	userRole, // <--- NOWY PROP
+	userRole,
 }: {
 	portfolioId: string;
 	allowedCategories?: AssetCategory[];
@@ -59,16 +59,16 @@ export default function AddAssetForm({
 		ticker: string | null;
 		category: string;
 	}>;
-	userRole: "ADMIN" | "SUBSCRIBER" | "REGULAR"; // <--- TYPOWANIE
+	userRole: "ADMIN" | "SUBSCRIBER" | "REGULAR";
 }) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const [isPending, setIsPending] = useState(false);
 	const [isMagicLoading, setIsMagicLoading] = useState(false);
-
 	// Dodajemy stan dla spreadu (domyślnie wyłączony, z wartością 0.5)
 	const [applySpread, setApplySpread] = useState(false);
 	const [spreadValue, setSpreadValue] = useState(0.5);
+
 	// NOWE: Zapamiętuje czystą wartość pobraną z API
 	const [rawMagicValue, setRawMagicValue] = useState<number | null>(null);
 	const [transactionDate, setTransactionDate] = useState(
@@ -88,7 +88,6 @@ export default function AddAssetForm({
 	// --- 2. INTELIGENTNA KATEGORIA POCZĄTKOWA ---
 	const initialCategory = useMemo(() => {
 		const catFromUrl = searchParams.get("cat");
-		console.log("🚀 ~ AddAssetForm ~ catFromUrl:", catFromUrl);
 		if (
 			catFromUrl &&
 			allowedCategories.includes(catFromUrl as keyof typeof CATEGORY_LABELS)
@@ -131,21 +130,14 @@ export default function AddAssetForm({
 	const isAddingNew = selectedAssetId === "new";
 	const isCash = selectedCategory === "CASH";
 	const isBooster = selectedCategory === "BOOSTER";
+
+	// 🚀 NOWE: Identyfikujemy czy to majątek trwały
+	const isManualAsset =
+		selectedCategory === "REAL_ESTATE" || selectedCategory === "CUSTOM";
+
 	const isBondOnly =
 		allowedCategories.includes("BONDS") && filteredCategories.length === 0;
 
-	// // --- 4. OBSŁUGA ZMIANY WIDOKU (URL -> STATE) ---
-	// useEffect(() => {
-	// 	const view = searchParams.get("view");
-
-	// 	if (view === "bond" || isBondOnly) {
-	// 		setViewMode("bond");
-	// 	} else {
-	// 		setViewMode("asset");
-	// 	}
-	// }, [searchParams, allowedCategories, filteredCategories, isBondOnly]);
-
-	// ✅ To jest teraz  "stan" - obliczany w locie przy każdym renderze
 	const viewMode =
 		searchParams.get("view") === "bond" || isBondOnly ? "bond" : "asset";
 
@@ -158,6 +150,21 @@ export default function AddAssetForm({
 		}
 	}, [isCash, quantityValue, form]);
 
+	// 🚀 NOWE: Automatyczna obsługa logiki dla nieruchomości i aktywów alternatywnych
+	useEffect(() => {
+		if (isManualAsset && isAddingNew) {
+			const currentTicker = form.getValues("ticker");
+			// Generujemy bezpieczny unikalny Ticker w tle, żeby zadowolić bazę danych
+			if (!currentTicker || !currentTicker.startsWith("MANUAL_")) {
+				form.setValue("ticker", `MANUAL_${Date.now()}`);
+			}
+			// Dla wygody domyślnie ustawiamy 1 sztukę (np. 1 Mieszkanie, 1 Zegarek)
+			if (form.getValues("quantity") === 0) {
+				form.setValue("quantity", 1);
+			}
+		}
+	}, [isManualAsset, isAddingNew, form]);
+
 	useEffect(() => {
 		if (selectedAssetId !== "new") {
 			const asset = existingAssets.find((a) => a.id === selectedAssetId);
@@ -168,7 +175,6 @@ export default function AddAssetForm({
 			}
 		}
 	}, [selectedAssetId, existingAssets, form]);
-
 	// NOWE: Automatyczne przeliczanie wkładu w locie przy klikaniu switcha
 	useEffect(() => {
 		if (rawMagicValue !== null) {
@@ -200,7 +206,6 @@ export default function AddAssetForm({
 			if (result.success && result.data) {
 				// Zapisujemy tylko do "pamięci", resztę zrobi nasz nowy useEffect!
 				setRawMagicValue(Number(result.data.investedCapitalPln));
-
 				toast.success(
 					`Pobrano: ${result.data.originalPrice.toFixed(2)} ${result.data.originalCurrency} | NBP: ${result.data.exchangeRate.toFixed(4)}`,
 				);
@@ -222,8 +227,11 @@ export default function AddAssetForm({
 			if (value !== null && value !== undefined)
 				formData.append(key, value.toString());
 		});
+
+		// Docelowo dla aktywów ręcznych, kwota początkowa staje się pierwszą wyceną rynkową
 		formData.append("currentValue", data.investedCapital.toString());
 		formData.append("executedAt", transactionDate);
+
 		const result = await addAssetAction(formData);
 		if (result.success) {
 			toast.success(result.message);
@@ -257,8 +265,8 @@ export default function AddAssetForm({
 						className={cn(
 							"flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
 							viewMode === "asset" && isAddingNew
-								? "bg-t-bg-panel shadow-sm text-t-text-primary border border-t-border" // Aktywny (Wypukły)
-								: "text-t-text-tertiary border border-transparent hover:text-t-text-primary", // Nieaktywny
+								? "bg-t-bg-panel shadow-sm text-t-text-primary border border-t-border"
+								: "text-t-text-tertiary border border-transparent hover:text-t-text-primary",
 						)}
 					>
 						<PlusCircle size={14} /> Nowe Aktywo / Gotówka
@@ -336,13 +344,14 @@ export default function AddAssetForm({
 																		backgroundColor:
 																			COLORS[
 																				asset.category as keyof typeof COLORS
-																			],
+																			] || COLORS.UNKNOWN,
 																	}}
 																/>
 																<div className="flex flex-col items-start leading-tight">
 																	<span className="text-xs font-bold text-t-text-primary">
 																		{asset.name}{" "}
 																		{asset.ticker &&
+																			!asset.ticker.startsWith("MANUAL_") &&
 																			`(${asset.ticker.split("_")[0]})`}
 																	</span>
 																	<span className="text-[9px] uppercase tracking-widest text-t-text-tertiary mt-0.5">
@@ -388,15 +397,14 @@ export default function AddAssetForm({
 																className="h-2 w-2 rounded-full"
 																style={{
 																	backgroundColor:
-																		COLORS[cat as keyof typeof COLORS],
+																		COLORS[cat as keyof typeof COLORS] ||
+																		COLORS.UNKNOWN,
 																}}
 															/>
 															<span className="text-xs font-bold text-t-text-secondary uppercase tracking-wider">
-																{
-																	CATEGORY_LABELS[
-																		cat as keyof typeof CATEGORY_LABELS
-																	]
-																}
+																{CATEGORY_LABELS[
+																	cat as keyof typeof CATEGORY_LABELS
+																] || cat}
 															</span>
 														</div>
 													</SelectItem>
@@ -407,42 +415,55 @@ export default function AddAssetForm({
 								)}
 							/>
 
-							{/* TICKER */}
-							<FormField
-								control={form.control}
-								name="ticker"
-								render={({ field }) => (
-									<FormItem className="col-span-1">
-										<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-											Ticker
-										</FormLabel>
-										<FormControl>
-											<Input
-												{...field}
-												disabled={isCash || !isAddingNew}
-												className={cn(inputStyles, "uppercase font-mono")}
-												placeholder="np. AAPL"
-											/>
-										</FormControl>
-									</FormItem>
-								)}
-							/>
+							{/* 🚀 TICKER (Ukryty jeśli ręczne aktywo) */}
+							{!isManualAsset && (
+								<FormField
+									control={form.control}
+									name="ticker"
+									render={({ field }) => (
+										<FormItem className="col-span-1">
+											<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+												Ticker
+											</FormLabel>
+											<FormControl>
+												<Input
+													{...field}
+													disabled={isCash || !isAddingNew}
+													className={cn(inputStyles, "uppercase font-mono")}
+													placeholder="np. AAPL"
+												/>
+											</FormControl>
+										</FormItem>
+									)}
+								/>
+							)}
 
-							{/* NAZWA */}
+							{/* NAZWA (Dostosowana szerokość) */}
 							<FormField
 								control={form.control}
 								name="name"
 								render={({ field }) => (
-									<FormItem className="col-span-1">
+									<FormItem
+										className={cn(
+											"col-span-1",
+											isManualAsset && "md:col-span-2",
+										)}
+									>
 										<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-											Nazwa
+											{isManualAsset
+												? "Nazwa (np. Rolex, Kawalerka W-wa)"
+												: "Nazwa"}
 										</FormLabel>
 										<FormControl>
 											<Input
 												{...field}
 												disabled={isCash || !isAddingNew}
 												className={inputStyles}
-												placeholder="Pełna nazwa aktywa"
+												placeholder={
+													isManualAsset
+														? "Wpisz nazwę własną..."
+														: "Pełna nazwa aktywa"
+												}
 											/>
 										</FormControl>
 									</FormItem>
@@ -456,7 +477,11 @@ export default function AddAssetForm({
 								render={({ field }) => (
 									<FormItem className="col-span-1">
 										<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-											{isCash ? "Kwota" : "Liczba jednostek"}
+											{isCash
+												? "Kwota"
+												: isManualAsset
+													? "Ilość"
+													: "Liczba jednostek"}
 										</FormLabel>
 										<FormControl>
 											<div className="relative">
@@ -484,7 +509,7 @@ export default function AddAssetForm({
 								render={({ field }) => (
 									<FormItem className="col-span-1">
 										<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-											Wkład własny
+											{isManualAsset ? "Wartość Początkowa" : "Wkład własny"}
 										</FormLabel>
 										<FormControl>
 											<div className="relative">
@@ -505,11 +530,11 @@ export default function AddAssetForm({
 									</FormItem>
 								)}
 							/>
-							{/* MAGIC FILL & SPREAD PANEL */}
-							{!isCash && (
+
+							{/* MAGIC FILL & SPREAD PANEL (Tylko dla aktywów giełdowych) */}
+							{!isCash && !isManualAsset && (
 								<div className="col-span-1 md:col-span-2 lg:col-span-3 flex justify-end mt-2 mb-2">
 									<div className="flex flex-wrap items-center justify-end gap-4 p-2.5 bg-indigo-500/5 rounded-xl border border-indigo-500/20 shadow-inner">
-										{/* Switch (Checkbox) */}
 										<label className="flex items-center gap-2 cursor-pointer text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors">
 											<input
 												type="checkbox"
@@ -520,7 +545,6 @@ export default function AddAssetForm({
 											Dolicz spread
 										</label>
 
-										{/* Input do spreadu (Animowane pojawianie) */}
 										{applySpread && (
 											<div className="flex items-center gap-1 animate-in slide-in-from-right-2 fade-in duration-200">
 												<Input
@@ -540,7 +564,6 @@ export default function AddAssetForm({
 
 										<div className="w-px h-6 bg-indigo-500/20 mx-1 hidden sm:block"></div>
 
-										{/* Przycisk */}
 										<button
 											type="button"
 											onClick={handleMagicFill}
@@ -558,7 +581,7 @@ export default function AddAssetForm({
 								</div>
 							)}
 							{/* TODO: USE FORMFIELD AND CHANGE VALIDATION IN ZOD */}
-							{/* NOWE: DATA TRANSAKCJI (Backdating) */}
+							{/* DATA TRANSAKCJI */}
 							<div className="col-span-1">
 								<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary block mb-3">
 									Data operacji
@@ -575,7 +598,7 @@ export default function AddAssetForm({
 							</div>
 
 							{/* PRZYCISK DODAJ */}
-							<div className="col-span-1 md:col-span-2  flex justify-end h-[48px]">
+							<div className="col-span-1 md:col-span-2 flex justify-end h-[48px]">
 								<SubmitButton
 									label={
 										isCash
@@ -590,7 +613,7 @@ export default function AddAssetForm({
 								/>
 							</div>
 
-							{/* SEKCJA ALPHA / BOOSTER (Motyw Rubinowy) */}
+							{/* SEKCJA ALPHA / BOOSTER */}
 							{isBooster && (
 								<div className="col-span-1 md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8 p-6 lg:p-8 mt-4 bg-rose-500/5 rounded-2xl border border-rose-500/20 animate-in slide-in-from-top duration-500 shadow-inner">
 									<div className="md:col-span-2 flex items-center gap-2 mb-2 border-b border-rose-500/20 pb-4">

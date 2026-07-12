@@ -9,7 +9,9 @@ export type AssetCategory =
 	| "CASH"
 	| "CRYPTO"
 	| "COMMODITIES"
-	| "UNKNOWN";
+	| "UNKNOWN"
+	| "REAL_ESTATE"
+	| "CUSTOM";
 
 export type Role = "ADMIN" | "SUBSCRIBER" | "REGULAR";
 
@@ -22,8 +24,9 @@ export const MODEL_ALLOCATION = [
 	{ name: "Cash", weight: 0, color: "bg-portfolio-cash" },
 	{ name: "Crypto", weight: 0, color: "bg-portfolio-crypto" },
 	{ name: "Commodities", weight: 0, color: "bg-portfolio-commodities" },
+	{ name: "Real Estate", weight: 0, color: "bg-portfolio-real-estate" },
+	{ name: "Custom", weight: 0, color: "bg-portfolio-custom" },
 ];
-
 export interface Asset {
 	id: string;
 	name: string;
@@ -116,6 +119,8 @@ export interface Portfolio {
 	targetCash: number;
 	targetCrypto: number;
 	targetCommodities: number;
+	targetRealEstate: number;
+	targetCustom: number;
 }
 
 // // To stworzy typ dokładnie taki, jaki zwraca zapytanie z "include: { assets: true }"

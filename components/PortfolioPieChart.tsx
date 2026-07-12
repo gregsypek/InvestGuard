@@ -237,8 +237,8 @@ export default function PortfolioPieChart({
 									minAngle={8}
 									stroke="var(--t-bg-panel)"
 									strokeWidth={2}
-									labelLine={false} // Wyłączamy te brzydkie, domyślne kreski Recharts
-									label={renderCustomizedLabel} // Wrzucamy nasze piękne procenty
+									labelLine={false} // Wyłączamy domyślne kreski Recharts
+									label={renderCustomizedLabel} // Wrzucamy nasze procenty
 									onMouseEnter={(_, index) => setActiveIndex(index)}
 									onMouseLeave={() => setActiveIndex(null)}
 								>

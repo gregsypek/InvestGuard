@@ -9,6 +9,11 @@ const categoryStyles: Record<string, string> = {
 	DEVELOPED: "bg-portfolio-developed", // Added text color for contrast
 	EMERGING: "bg-portfolio-emerging",
 	BOOSTER: "bg-portfolio-booster",
+	CASH: "bg-portfolio-cash",
+	CRYPTO: "bg-portfolio-crypto",
+	COMMODITIES: "bg-portfolio-commodities",
+	REAL_ESTATE: "bg-portfolio-real-estate",
+	CUSTOM: "bg-portfolio-custom",
 };
 export default function AssetsTable({ assets }: { assets: Asset[] }) {
 	const rebalanceData = calculateRebalance(assets);

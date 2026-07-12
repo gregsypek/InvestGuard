@@ -64,6 +64,9 @@ export default function PortfolioForm({
 			targetCash: initialData?.targetCash ?? 0,
 			targetCrypto: initialData?.targetCrypto ?? 0,
 			targetCommodities: initialData?.targetCommodities ?? 0,
+			// 🚀 NOWE W DOMYŚLNYCH:
+			targetRealEstate: initialData?.targetRealEstate ?? 0,
+			targetCustom: initialData?.targetCustom ?? 0,
 		},
 	});
 
@@ -79,6 +82,9 @@ export default function PortfolioForm({
 			"targetCash",
 			"targetCrypto",
 			"targetCommodities",
+			// 🚀 NOWE NASŁUCHIWANE:
+			"targetRealEstate",
+			"targetCustom",
 		],
 	});
 
@@ -280,15 +286,18 @@ export default function PortfolioForm({
 							</div>
 						</div>
 
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-t-bg-base/30 dark:bg-black/20 p-4 rounded-xl border border-t-border-subtle">
-							{renderTargetField("targetDeveloped", "Developed")}
-							{renderTargetField("targetEmerging", "Emerging")}
+						<div className="grid grid-cols-2 md:grid-cols-5 gap-4 bg-t-bg-base/30 dark:bg-black/20 p-4 rounded-xl border border-t-border-subtle">
+							{renderTargetField("targetDeveloped", "Rynki rozwinięte")}
+							{renderTargetField("targetEmerging", "Rynki wschodzące")}
 							{renderTargetField("targetBonds", "Obligacje")}
 							{renderTargetField("targetGold", "Złoto")}
-							{renderTargetField("targetBooster", "Booster (Alpha)")}
+							{renderTargetField("targetBooster", "Akcje")}
 							{renderTargetField("targetCash", "Gotówka")}
 							{renderTargetField("targetCrypto", "Krypto")}
 							{renderTargetField("targetCommodities", "Surowce")}
+							{/* 🚀 NOWE WYŚWIETLANE POLA: */}
+							{renderTargetField("targetRealEstate", "Nieruchomości")}
+							{renderTargetField("targetCustom", "Alternatywne")}
 						</div>
 
 						{totalAllocation !== 100 && (

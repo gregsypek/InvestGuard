@@ -46,6 +46,8 @@ export const CATEGORY_ASSETS: AssetCategory[] = [
 	"CRYPTO",
 	"COMMODITIES",
 	"UNKNOWN",
+	"REAL_ESTATE",
+	"CUSTOM",
 ];
 
 // EN: Mapping technical keys to Polish labels
@@ -60,6 +62,8 @@ export const CATEGORY_LABELS: Record<AssetCategory, string> = {
 	CRYPTO: "Kryptowaluty",
 	COMMODITIES: "Surowce",
 	UNKNOWN: "Nieznana",
+	REAL_ESTATE: "Nieruchomości",
+	CUSTOM: "Niestandardowe",
 };
 
 // Your master plan: 15/15/10/55/5
@@ -137,17 +141,32 @@ export const CATEGORY_CONFIG = [
 		name: "Surowce",
 		color: "bg-portfolio-commodities",
 	},
+	{
+		id: "REAL_ESTATE",
+		targetKey: "targetRealEstate",
+		name: "Nieruchomości",
+		color: "bg-portfolio-real-estate",
+	},
+	{
+		id: "CUSTOM",
+		targetKey: "targetCustom",
+		name: "Niestandardowe",
+		color: "bg-portfolio-custom",
+	}
 ] as const; // Dodanie tego sprawi, że TypeScript będzie widział konkretne wartości zamiast stringów;
 
 export const COLORS: Record<string, string> = {
-	BONDS: "var(--color-portfolio-bonds)",
-	DEVELOPED: "var(--color-portfolio-developed)",
-	EMERGING: "var(--color-portfolio-emerging)",
-	GOLD: "var(--color-portfolio-gold)",
-	BOOSTER: "var(--color-portfolio-booster)",
-	CASH: "var(--color-portfolio-cash)",
-	CRYPTO: "var(--color-portfolio-crypto)",
-	COMMODITIES: "var(--color-portfolio-commodities)",
+	BONDS: "var(--portfolio-bonds)",
+	DEVELOPED: "var(--portfolio-developed)",
+	EMERGING: "var(--portfolio-emerging)",
+	GOLD: "var(--portfolio-gold)",
+	BOOSTER: "var(--portfolio-booster)",
+	CASH: "var(--portfolio-cash)",
+	CRYPTO: "var(--portfolio-crypto)",
+	COMMODITIES: "var(--portfolio-commodities)",
+	// NOWE KATEGORIE:
+	REAL_ESTATE: "var(--portfolio-real-estate)",
+	CUSTOM: "var(--portfolio-custom)",
 };
 
 export const CATEGORY_DETAILS: Record<
@@ -163,6 +182,9 @@ export const CATEGORY_DETAILS: Record<
 	CRYPTO: { label: "Kryptowaluty", color: "bg-blue-600", icon: "🪙" },
 	COMMODITIES: { label: "Surowce", color: "bg-brown-600", icon: "🛢️" },
 	UNKNOWN: { label: "Nieznana", color: "bg-gray-500", icon: "❓" },
+	REAL_ESTATE: { label: "Nieruchomości", color: "bg-teal-500", icon: "🏠" },
+	CUSTOM: { label: "Niestandardowe", color: "bg-indigo-500", icon: "⚙️" },
+	
 };
 
 // EN: Shared focus styles to remove thick ring and use subtle border instead
@@ -183,6 +205,8 @@ export const PORTFOLIO_STRATEGY_MAP = {
 	targetCash: "CASH",
 	targetCrypto: "CRYPTO",
 	targetCommodities: "COMMODITIES",
+	targetRealEstate: "REAL_ESTATE",
+	targetCustom: "CUSTOM",
 } as const;
 
 export const BOND_TYPES = {

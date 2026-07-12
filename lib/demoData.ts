@@ -105,6 +105,8 @@ export const allWeatherPortfolio: PortfolioWithAssets = {
 	targetBooster: 0,
 	targetCash: 0,
 	targetCrypto: 0,
+	targetRealEstate: 0,
+	targetCustom: 0,
 
 	assets: [
 		createDemoAsset({
@@ -174,6 +176,8 @@ export const classicPortfolio: PortfolioWithAssets = {
 	targetCrypto: 0,
 	targetGold: 0,
 	targetCommodities: 0,
+	targetRealEstate: 0,
+	targetCustom: 0,
 
 	assets: [
 		createDemoAsset({
@@ -217,6 +221,8 @@ export const yalePortfolio: PortfolioWithAssets = {
 	targetCrypto: 0,
 	targetGold: 0,
 	targetCommodities: 0,
+	targetRealEstate: 0,
+	targetCustom: 0,
 
 	assets: [
 		createDemoAsset({
@@ -288,6 +294,8 @@ const baseDemoPortfolio = {
 	targetCash: 0,
 	targetCrypto: 0,
 	targetCommodities: 0,
+	targetRealEstate: 0,
+	targetCustom: 0,
 };
 
 export const demoPlans = [

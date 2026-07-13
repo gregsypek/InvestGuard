@@ -66,13 +66,57 @@ export default function PortfolioPieChart({
 	};
 
 	// Niestandardowa legenda z funkcją klikania
-	const renderCustomLegend = (props: {
-		payload?: readonly LegendPayload[];
-	}) => {
-		const { payload } = props;
-		if (!payload) return null;
+	// const renderCustomLegend = (props: {
+	// 	payload?: readonly LegendPayload[];
+	// }) => {
+	// 	const { payload } = props;
+	// 	if (!payload) return null;
 
-		// Zbieramy unikalne kategorie z oryginalnych danych, żeby legenda zawsze była pełna
+	// 	// Zbieramy unikalne kategorie z oryginalnych danych, żeby legenda zawsze była pełna
+	// 	return (
+	// 		<div className="mt-4">
+	// 			<ul className="flex flex-wrap justify-center gap-x-4 gap-y-3">
+	// 				{data.map((entry, index) => {
+	// 					const labelKey = entry.category as keyof typeof CATEGORY_LABELS;
+	// 					const isHidden = hiddenCategories.has(entry.category);
+
+	// 					return (
+	// 						<li
+	// 							key={`item-${index}`}
+	// 							onClick={() => toggleCategory(entry.category)}
+	// 							className={cn(
+	// 								"flex items-center gap-2 cursor-pointer transition-all duration-300",
+	// 								isHidden
+	// 									? "opacity-30 grayscale"
+	// 									: "opacity-100 hover:opacity-80 hover:scale-105",
+	// 							)}
+	// 						>
+	// 							<div
+	// 								className="h-2 w-2 rounded-full"
+	// 								style={{
+	// 									backgroundColor: COLORS[entry.category],
+	// 									boxShadow: isHidden
+	// 										? "none"
+	// 										: `0 0 8px ${COLORS[entry.category]}`,
+	// 								}}
+	// 							/>
+	// 							<span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+	// 								{CATEGORY_LABELS[labelKey] || entry.category}
+	// 							</span>
+	// 						</li>
+	// 					);
+	// 				})}
+	// 			</ul>
+	// 			{/* 🚀 NOWE: Subtelna podpowiedź pod legendą */}
+	// 			<p className="text-[9px] text-center text-t-text-tertiary uppercase tracking-widest font-bold mt-4 opacity-70">
+	// 				💡 Kliknij w kategorię, aby włączyć lub wyłączyć ją z obliczeń
+	// 			</p>
+	// 		</div>
+	// 	);
+	// };
+
+	// 🚀 ZMIANA: Zwykła funkcja, nie potrzebuje już propsów z Recharts
+	const renderCustomLegend = () => {
 		return (
 			<div className="mt-4">
 				<ul className="flex flex-wrap justify-center gap-x-4 gap-y-3">
@@ -107,7 +151,6 @@ export default function PortfolioPieChart({
 						);
 					})}
 				</ul>
-				{/* 🚀 NOWE: Subtelna podpowiedź pod legendą */}
 				<p className="text-[9px] text-center text-t-text-tertiary uppercase tracking-widest font-bold mt-4 opacity-70">
 					💡 Kliknij w kategorię, aby włączyć lub wyłączyć ją z obliczeń
 				</p>
@@ -161,12 +204,13 @@ export default function PortfolioPieChart({
 	);
 
 	return (
-		<div className="flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-6 relative w-full h-full">
+		<div className="flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-6 relative w-full h-full ">
 			<h4 className="text-sm font-bold uppercase tracking-widest text-t-text-tertiary text-center mb-2">
 				{title}
 			</h4>
 
-			<div className="w-full h-[320px] min-h-[320px] mt-4 relative">
+			{/* 🚀 ZMIANA: Zmniejszyliśmy wysokość (np. h-[260px]) - to jest kontener WYŁĄCZNIE na donuta */}
+			<div className="w-full h-[260px] min-h-[260px] relative mt-4">
 				{isEmpty ? (
 					<div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 pb-8">
 						<div className="rounded-full border border-t-border bg-t-bg-base p-6 shadow-inner">
@@ -183,10 +227,10 @@ export default function PortfolioPieChart({
 					</div>
 				) : (
 					<>
-						{/* 🚀 ŚRODEK DONUTA (Hover Effect + Domyślna Suma RAZEM) */}
-						<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12 animate-in fade-in duration-300">
+						{/* RAZEM będzie teraz IDEALNIE w środku geometrycznym donuta */}
+						<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none animate-in fade-in duration-300">
 							{activeItem ? (
-								<div className="text-center flex flex-col items-center bg-t-bg-panel/60 backdrop-blur-sm p-3 rounded-full shadow-sm border border-t-border-subtle transition-all">
+								<div className="text-center  flex flex-col items-center bg-t-bg-panel/60 backdrop-blur-sm p-3 rounded-full shadow-sm border border-t-border-subtle transition-all ">
 									<span
 										className="text-[9px] font-bold uppercase tracking-widest"
 										style={{ color: COLORS[activeItem.category] }}
@@ -276,12 +320,14 @@ export default function PortfolioPieChart({
 											name,
 									]}
 								/>
-								<Legend content={renderCustomLegend} verticalAlign="bottom" />
+								{/* <Legend content={renderCustomLegend} verticalAlign="bottom" /> */}
 							</PieChart>
 						</ResponsiveContainer>
 					</>
 				)}
 			</div>
+			{/* 🚀 ZMIANA: Legenda jest teraz wyrenderowana POZA Recharts jako zwykły HTML */}
+			{!isEmpty && renderCustomLegend()}
 		</div>
 	);
 }

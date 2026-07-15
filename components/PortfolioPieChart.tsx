@@ -10,10 +10,10 @@ import {
 	ResponsiveContainer,
 	Tooltip,
 } from "recharts";
+import { CheckCircle2, Circle, PieChart as PieChartIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { CategoryStatus } from "@/lib/types";
-import { PieChart as PieChartIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PortfolioPieChartProps {
@@ -65,63 +65,16 @@ export default function PortfolioPieChart({
 		setActiveIndex(null); // Resetujemy środek po kliknięciu
 	};
 
-	// Niestandardowa legenda z funkcją klikania
-	// const renderCustomLegend = (props: {
-	// 	payload?: readonly LegendPayload[];
-	// }) => {
-	// 	const { payload } = props;
-	// 	if (!payload) return null;
-
-	// 	// Zbieramy unikalne kategorie z oryginalnych danych, żeby legenda zawsze była pełna
-	// 	return (
-	// 		<div className="mt-4">
-	// 			<ul className="flex flex-wrap justify-center gap-x-4 gap-y-3">
-	// 				{data.map((entry, index) => {
-	// 					const labelKey = entry.category as keyof typeof CATEGORY_LABELS;
-	// 					const isHidden = hiddenCategories.has(entry.category);
-
-	// 					return (
-	// 						<li
-	// 							key={`item-${index}`}
-	// 							onClick={() => toggleCategory(entry.category)}
-	// 							className={cn(
-	// 								"flex items-center gap-2 cursor-pointer transition-all duration-300",
-	// 								isHidden
-	// 									? "opacity-30 grayscale"
-	// 									: "opacity-100 hover:opacity-80 hover:scale-105",
-	// 							)}
-	// 						>
-	// 							<div
-	// 								className="h-2 w-2 rounded-full"
-	// 								style={{
-	// 									backgroundColor: COLORS[entry.category],
-	// 									boxShadow: isHidden
-	// 										? "none"
-	// 										: `0 0 8px ${COLORS[entry.category]}`,
-	// 								}}
-	// 							/>
-	// 							<span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-	// 								{CATEGORY_LABELS[labelKey] || entry.category}
-	// 							</span>
-	// 						</li>
-	// 					);
-	// 				})}
-	// 			</ul>
-	// 			{/* 🚀 NOWE: Subtelna podpowiedź pod legendą */}
-	// 			<p className="text-[9px] text-center text-t-text-tertiary uppercase tracking-widest font-bold mt-4 opacity-70">
-	// 				💡 Kliknij w kategorię, aby włączyć lub wyłączyć ją z obliczeń
-	// 			</p>
-	// 		</div>
-	// 	);
-	// };
-
 	// 🚀 ZMIANA: Zwykła funkcja, nie potrzebuje już propsów z Recharts
+	// 🚀 ZMIANA: Legenda wykorzystująca ikony CheckCircle2 / Circle
 	const renderCustomLegend = () => {
 		return (
 			<div className="mt-4">
 				<ul className="flex flex-wrap justify-center gap-x-4 gap-y-3">
 					{data.map((entry, index) => {
 						const labelKey = entry.category as keyof typeof CATEGORY_LABELS;
+
+						// Jeśli kategoria JEST w hiddenCategories, to znaczy, że jest wyłączona
 						const isHidden = hiddenCategories.has(entry.category);
 
 						return (
@@ -129,21 +82,28 @@ export default function PortfolioPieChart({
 								key={`item-${index}`}
 								onClick={() => toggleCategory(entry.category)}
 								className={cn(
-									"flex items-center gap-2 cursor-pointer transition-all duration-300",
+									"flex items-center gap-1.5 cursor-pointer transition-all duration-300",
 									isHidden
-										? "opacity-30 grayscale"
-										: "opacity-100 hover:opacity-80 hover:scale-105",
+										? "opacity-40 grayscale" // Stan odznaczony
+										: "opacity-100 hover:opacity-80 hover:scale-105", // Stan zaznaczony
 								)}
 							>
-								<div
-									className="h-2 w-2 rounded-full"
-									style={{
-										backgroundColor: COLORS[entry.category],
-										boxShadow: isHidden
-											? "none"
-											: `0 0 8px ${COLORS[entry.category]}`,
-									}}
-								/>
+								{/* Warunkowe renderowanie ikony w zależności od stanu */}
+								{!isHidden ? (
+									<CheckCircle2
+										className="w-4 h-4 transition-all"
+										style={{
+											color: COLORS[entry.category],
+											// Zachowujemy efekt glow (poświaty) dla zaznaczonych elementów
+											filter: `drop-shadow(0 0 6px ${COLORS[entry.category]}60)`,
+										}}
+									/>
+								) : (
+									<Circle
+										className="w-4 h-4 transition-all"
+										style={{ color: COLORS[entry.category] }}
+									/>
+								)}
 								<span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
 									{CATEGORY_LABELS[labelKey] || entry.category}
 								</span>
@@ -157,7 +117,6 @@ export default function PortfolioPieChart({
 			</div>
 		);
 	};
-
 	// Etykiety wyświetlane bezpośrednio NA kawałkach wykresu
 	const renderCustomizedLabel = ({
 		cx,
@@ -230,7 +189,7 @@ export default function PortfolioPieChart({
 						{/* RAZEM będzie teraz IDEALNIE w środku geometrycznym donuta */}
 						<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none animate-in fade-in duration-300">
 							{activeItem ? (
-								<div className="text-center  flex flex-col items-center bg-t-bg-panel/60 backdrop-blur-sm p-3 rounded-full shadow-sm border border-t-border-subtle transition-all ">
+								<div className="text-center flex flex-col items-center bg-t-bg-panel/80 backdrop-blur-md p-4 rounded-full shadow-lg border border-t-border-subtle transition-all scale-110">
 									<span
 										className="text-[9px] font-bold uppercase tracking-widest"
 										style={{ color: COLORS[activeItem.category] }}
@@ -239,7 +198,7 @@ export default function PortfolioPieChart({
 											activeItem.category as keyof typeof CATEGORY_LABELS
 										] || activeItem.category}
 									</span>
-									<span className="text-lg font-black text-t-text-primary leading-tight mt-0.5">
+									<span className="text-xl font-black text-t-text-primary leading-tight mt-0.5">
 										{dataKey === "actualPercentage"
 											? new Intl.NumberFormat("pl-PL", {
 													style: "currency",
@@ -248,6 +207,12 @@ export default function PortfolioPieChart({
 												}).format(activeItem.actualAmount)
 											: `${activeItem.weight}%`}
 									</span>
+									{/* 🚀 NOWE: Dokładny procent ląduje w stabilnym środku zamiast w Tooltipie */}
+									{dataKey === "actualPercentage" && (
+										<span className="text-[10px] font-bold text-t-text-tertiary mt-1 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
+											{activeItem.actualPercentage.toFixed(2)}% portfela
+										</span>
+									)}
 								</div>
 							) : (
 								<div className="text-center flex flex-col items-center transition-all">
@@ -275,8 +240,8 @@ export default function PortfolioPieChart({
 									nameKey="category"
 									cx="50%"
 									cy="50%"
-									innerRadius={75}
-									outerRadius={105}
+									innerRadius={90}
+									outerRadius={125}
 									paddingAngle={2}
 									minAngle={8}
 									stroke="var(--t-bg-panel)"
@@ -295,31 +260,6 @@ export default function PortfolioPieChart({
 									))}
 								</Pie>
 
-								<Tooltip
-									cursor={false}
-									offset={40}
-									contentStyle={{
-										backgroundColor: "var(--t-bg-panel)",
-										border: "1px solid var(--t-border)",
-										borderRadius: "12px",
-										fontSize: "12px",
-										fontWeight: "700",
-										boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
-										color: "var(--t-text-primary)",
-									}}
-									itemStyle={{
-										color: "var(--t-text-primary)",
-										paddingBottom: "4px",
-									}}
-									// 🚀 TŁUMACZENIE W TOOLTIPIE NA POLSKI
-									formatter={(value, name) => [
-										typeof value === "number"
-											? `${value.toFixed(2)}%`
-											: "0.00%",
-										CATEGORY_LABELS[name as keyof typeof CATEGORY_LABELS] ||
-											name,
-									]}
-								/>
 								{/* <Legend content={renderCustomLegend} verticalAlign="bottom" /> */}
 							</PieChart>
 						</ResponsiveContainer>

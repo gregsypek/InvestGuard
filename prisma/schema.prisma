@@ -239,11 +239,13 @@ model PortfolioSnapshot {
 }
 
 model MarketIndex {
-  id          String   @id @default(cuid())
-  symbol      String   @unique // np. "SP500", "WIG20"
-  price       Float    @default(0) // Aktualna cena (przyda się na przyszłość)
-  dailyChange Float    @default(0) // Zmiana procentowa
-  updatedAt   DateTime @updatedAt
+  id          String         @id @default(cuid())
+  symbol      String         @unique
+  name        String?
+  price       Float          @default(0)
+  dailyChange Float          @default(0)
+  updatedAt   DateTime       @updatedAt
+  history     IndexHistory[]
 }
 
 // EN: Tracks active sessions for JWT invalidation and security audits
@@ -256,4 +258,19 @@ model DeviceSession {
   createdAt  DateTime @default(now())
   lastActive DateTime @default(now())
   isValid    Boolean  @default(true) // EN: Set to false when user clicks "Revoke"
+}
+
+// NOWE: Tabela z historycznymi cenami
+model IndexHistory {
+  id          String      @id @default(cuid())
+  symbol      String
+  marketIndex MarketIndex @relation(fields: [symbol], references: [symbol], onDelete: Cascade)
+
+  closePrice Float // Cena zamknięcia w danym dniu
+  date       DateTime @default(now())
+
+  // Zabezpieczenie: tylko jedna cena dla danego indeksu na konkretny dzień
+  @@unique([symbol, date])
+  @@index([symbol])
+  @@index([date])
 }

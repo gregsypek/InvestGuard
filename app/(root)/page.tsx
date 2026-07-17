@@ -151,6 +151,33 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 		if (idx.updatedAt > latestUpdate) latestUpdate = idx.updatedAt;
 	});
 
+	// 1. Pobieramy historyczne wyceny indeksów z bazy dla wybranego zakresu dat
+	const rawIndexHistory = await db.indexHistory.findMany({
+		where: {
+			symbol: { in: userIndices },
+			date: {
+				gte: startDate, // Ta sama data początkowa co dla portfela
+				lte: endDate,
+			},
+		},
+		orderBy: { date: "asc" },
+	});
+
+	// 2. Formatujemy dane do postaci: { "SP500": { "2024-10-25": 5000, ... } }
+	const indexQuotesHistory: Record<string, Record<string, number>> = {};
+
+	userIndices.forEach((idx) => {
+		indexQuotesHistory[idx] = {};
+	});
+
+	rawIndexHistory.forEach((record) => {
+		// Wycinamy samą datę YYYY-MM-DD, aby pasowała do kluczy na frontendzie
+		const dateStr = record.date.toISOString().split("T")[0];
+		if (indexQuotesHistory[record.symbol]) {
+			indexQuotesHistory[record.symbol][dateStr] = record.closePrice;
+		}
+	});
+
 	return (
 		<UserDashboard
 			portfolios={portfolios}
@@ -158,6 +185,7 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 			realSnapshots={realSnapshots} // Tu wrzucamy prawdziwe dane z bazy
 			userIndices={userIndices}
 			indexQuotes={indexQuotes}
+			indexQuotesHistory={indexQuotesHistory}
 			lastUpdated={lastUpdated}
 			currentRange={range}
 		/>

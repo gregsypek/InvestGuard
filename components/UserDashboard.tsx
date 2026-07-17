@@ -5,6 +5,8 @@ import {
 	Banknote,
 	Briefcase,
 	Container,
+	Eye,
+	EyeOff,
 	Globe,
 	LineChart,
 	Wallet2,
@@ -12,7 +14,7 @@ import {
 import { ChartDataPoint, PortfolioChart } from "./dashboard/PortfolioCharts";
 import { cn, getStockLogo } from "@/lib/utils";
 import { differenceInDays, startOfYear } from "date-fns";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
@@ -72,6 +74,29 @@ export function UserDashboard({
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
+	// Stan sprawdzający, czy zjechaliśmy poniżej głównego nagłówka
+	const [isStuck, setIsStuck] = useState(false);
+	const [showAdvancedToolbar, setShowAdvancedToolbar] = useState(true);
+	// Referencja dla naszego "strażnika"
+	const sentinelRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				// Jeśli strażnik (sentinel) przestaje być widoczny na ekranie,
+				// oznacza to, że przewinęliśmy w dół -> pasek jest przyklejony.
+				setIsStuck(!entry.isIntersecting);
+			},
+			// Odpalamy dokładnie w momencie, gdy strażnik całkowicie znika
+			{ threshold: 0 },
+		);
+
+		if (sentinelRef.current) {
+			observer.observe(sentinelRef.current);
+		}
+
+		return () => observer.disconnect();
+	}, []);
 	const allTransactions = useMemo(() => {
 		return portfolios.flatMap((p) => p.transactionHistories || []);
 	}, [portfolios]);
@@ -165,6 +190,7 @@ export function UserDashboard({
 		const baseData: any[] = [];
 		const finalAbsoluteData: any[] = [];
 
+		// === KROK 1: Najpierw budujemy bazowe dane naszego portfela (baseData) ===
 		allDates.forEach((dateStr) => {
 			const snapsToday = sortedSnapshots.filter(
 				(s) =>
@@ -227,8 +253,9 @@ export function UserDashboard({
 			});
 		});
 
-		// Tworzymy pusty obiekt na nasze "załatane" dane
-		// Tworzymy pusty obiekt na nasze dane indeksów
+		// === KROK 2: Dopiero teraz budujemy wykres Benchmark, gdy baseData jest pełne ===
+
+		// EN: Simulated historical data for ALL dynamic user indices
 		const mockIndexHistory: Record<string, Record<string, number>> = {};
 
 		userIndices.forEach((idx, i) => {
@@ -266,20 +293,7 @@ export function UserDashboard({
 				});
 			}
 		});
-		console.log("🚀 ~ UserDashboard ~ userIndices:", userIndices);
-		// const fakePrices: Record<string, number> = {};
-
-		// userIndices.forEach((idx) => {
-		// 	fakePrices[idx] = 1000;
-		// 	mockIndexHistory[idx] = {};
-		// });
-
-		// allDates.forEach((date, index) => {
-		// 	userIndices.forEach((idx, i) => {
-		// 		fakePrices[idx] += Math.sin(index + i * 2) * 15 + i * 1.5;
-		// 		mockIndexHistory[idx][date] = fakePrices[idx];
-		// 	});
-		// });
+		// console.log("🚀 ~ UserDashboard ~ userIndices:", userIndices);
 
 		const finalBenchmarkData = [];
 
@@ -293,7 +307,7 @@ export function UserDashboard({
 						initialPortfolioInvested) *
 					100
 				: 0;
-
+		// EN: Get base values for all indices on day 1
 		const baseIndexValues: Record<string, number> = {};
 		userIndices.forEach((idx) => {
 			baseIndexValues[idx] =
@@ -310,12 +324,12 @@ export function UserDashboard({
 				const rawPct = ((today.value - today.invested) / today.invested) * 100;
 				currentPortfolioPct = rawPct - basePortfolioPct;
 			}
-
+			// EN: Create the base data point with the portfolio's performance
 			const dataPoint: any = {
 				date: today.date,
 				portfolioPct: Number(currentPortfolioPct.toFixed(2)),
 			};
-
+			// EN: Loop through each index and calculate its relative performance
 			userIndices.forEach((idx) => {
 				let idxPct = 0;
 				const todayValue = mockIndexHistory[idx][today.date];
@@ -324,6 +338,7 @@ export function UserDashboard({
 				if (baseValue > 0) {
 					idxPct = ((todayValue - baseValue) / baseValue) * 100;
 				}
+				// EN: Add the dynamic key (e.g., BTC: 2.45) to the object
 				dataPoint[idx] = Number(idxPct.toFixed(2));
 			});
 
@@ -392,12 +407,13 @@ export function UserDashboard({
 	);
 	const totalPnL = totalCurrent - totalInvested;
 	const totalPnLPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
-
+	// EN: Extract unique assets for the "Observed Markets" widget
 	const observedAssets = useMemo(() => {
 		if (!portfolios || portfolios.length === 0) return [];
 
 		const allAssets = portfolios.flatMap((p) => p.assets || []);
 
+		// EN: Filter out bonds and cash, and strictly include only observed assets
 		const riskAssets = allAssets.filter(
 			(a) =>
 				a.category !== "BONDS" &&
@@ -409,6 +425,7 @@ export function UserDashboard({
 		const seenIdentifiers = new Set();
 
 		for (const asset of riskAssets) {
+			// EN: Prioritize name over ticker
 			const identifier = asset.name || asset.ticker;
 
 			if (!seenIdentifiers.has(identifier)) {
@@ -417,6 +434,7 @@ export function UserDashboard({
 			}
 		}
 
+		// EN: Return all unique observed assets since limits are handled in Settings
 		return uniqueAssets;
 	}, [portfolios]);
 
@@ -430,6 +448,7 @@ export function UserDashboard({
 	}, [realSnapshots]);
 
 	const isRangeDisabled = (range: string) => {
+		// W trybie SYMULACJI pozwalamy na wszystko (silnik sobie policzy wstecz)
 		if (dataMode === "SIMULATED") return false;
 
 		const daysAvailable = differenceInDays(new Date(), oldestRealSnapshotDate);
@@ -562,15 +581,86 @@ export function UserDashboard({
 				</div>
 			</header>
 
-			{/* === STICKY TOOLBAR Z FILTRAMI === */}
-			<div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border border-slate-800 p-4 shadow-xl rounded-2xl mx-1 transition-all">
+			{/* === STRAŻNIK (Sentinel) do wykrywania scrolla === */}
+			<div
+				ref={sentinelRef}
+				className="h-px w-full invisible pointer-events-none"
+			/>
+
+			{/* === STICKY THIN HEADER (Pasek nawigacji i podsumowania) === */}
+			<div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 p-3 shadow-2xl shadow-black/20 rounded-2xl mx-1 my-4 transition-all min-h-[64px] flex flex-col justify-center">
 				<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-					{/* LEWA STRONA (Filtry walut i ŹRÓDŁO DANYCH) */}
-					<div className="flex flex-wrap items-center gap-4">
-						<div className="flex items-center gap-2">
+					{/* 1. SEKCJA DYNAMICZNA: Wartość i Portfele (Pojawia się tylko przy scrollu) */}
+					{isStuck && showAdvancedToolbar && (
+						<div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 w-full xl:w-auto border-b xl:border-b-0 xl:border-r border-slate-700/50 pb-3 xl:pb-0 xl:pr-5 justify-between xl:justify-start animate-in fade-in slide-in-from-left-4 duration-300">
+							{/* Podsumowanie wartości i PnL */}
+							{/* DODANO KLASY: w-full xl:w-auto */}
+							<div className="flex items-center justify-between gap-4 w-full xl:w-auto">
+								<div className="flex flex-col">
+									<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">
+										Wartość Zaznaczonych
+									</span>
+									<div className="flex items-baseline gap-1">
+										<span className="text-base md:text-lg font-black text-white tracking-tight">
+											{totalCurrent.toLocaleString("pl-PL", {
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 2,
+											})}
+										</span>
+										<span className="text-[10px] text-slate-400 font-bold">
+											PLN
+										</span>
+									</div>
+								</div>
+
+								<div
+									className={cn(
+										"px-2.5 py-1 rounded-md text-[11px] font-black tracking-wider flex items-center gap-1 shadow-sm shrink-0", // dodano shrink-0
+										totalPnLPct > 0
+											? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+											: totalPnLPct < 0
+												? "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+												: "bg-slate-800 text-slate-300 border border-slate-700",
+									)}
+								>
+									{totalPnLPct > 0 ? "+" : ""}
+									{totalPnLPct.toFixed(2)}%
+								</div>
+							</div>
+
+							{/* Filtry portfeli */}
+							<div className="flex gap-2 flex-wrap">
+								<FilterBadge
+									id="ALL"
+									label="Wszystkie Portfele"
+									isSelected={selectedIds.includes("ALL")}
+									onToggle={togglePortfolio}
+									className="text-blue-300 py-1 px-2 text-[10px]"
+								/>
+								{portfolios.map((p) => (
+									<FilterBadge
+										key={p.id}
+										id={p.id}
+										label={p.name}
+										isSelected={selectedIds.includes(p.id)}
+										onToggle={togglePortfolio}
+										className="text-blue-300 py-1 px-2 text-[10px]"
+									/>
+								))}
+							</div>
+						</div>
+					)}
+
+					{/* 2. FILTRY TRYBU WYKRESU I ŹRÓDŁA DANYCH (Zawsze widoczne) */}
+					<div
+						className={
+							"flex flex-wrap items-center gap-3  justify-between xl:justify-start transition-all duration-300"
+						}
+					>
+						<div className="flex items-center gap-1.5">
 							<FilterBadge
 								id="VALUE"
-								label="Wartość (PLN)"
+								label="PLN"
 								isSelected={chartMode === "VALUE"}
 								onToggle={() => setChartMode("VALUE")}
 							/>
@@ -582,9 +672,9 @@ export function UserDashboard({
 							/>
 						</div>
 
-						<div className="hidden md:block w-px h-6 bg-slate-700/50" />
+						<div className="hidden sm:block w-px h-5 bg-slate-700/50" />
 
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-1.5">
 							<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">
 								Dane:
 							</span>
@@ -613,9 +703,14 @@ export function UserDashboard({
 						</div>
 					</div>
 
-					{/* PRAWA STRONA (Zakresy czasu i kalendarz) */}
-					<div className="flex flex-col md:flex-row items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide justify-end">
-						<div>
+					{/* 3. ZAKRESY CZASU I KALENDARZ (PRAWA STRONA - Zawsze widoczne) */}
+					<div
+						className={cn(
+							"flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0 w-full xl:w-auto scrollbar-hide justify-start xl:justify-end transition-all duration-300",
+							!isStuck ? "ml-auto" : "", // Dociskamy do prawej krawędzi
+						)}
+					>
+						<div className="flex items-center gap-1">
 							{TIME_RANGES.map((range) => {
 								const disabled = isRangeDisabled(range);
 
@@ -630,12 +725,12 @@ export function UserDashboard({
 												: ""
 										}
 										className={cn(
-											"px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
+											"px-2.5 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
 											disabled
 												? "opacity-30 cursor-not-allowed bg-transparent text-slate-600 border-transparent"
 												: activeRange === range
-													? "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-sm hover:cursor-pointer"
-													: "bg-transparent text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50 hover:cursor-pointer",
+													? "bg-blue-500/15 text-blue-400 border-blue-500/30 shadow-sm hover:cursor-pointer"
+													: "bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/60 hover:cursor-pointer",
 										)}
 									>
 										{range}
@@ -643,13 +738,39 @@ export function UserDashboard({
 								);
 							})}
 						</div>
-						<div className="hidden md:block w-px h-6 bg-slate-700/50" />
+						{/* Przycisk przełączania widoku */}
+						{isStuck && (
+							<button
+								onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
+								className={cn(
+									"p-2 rounded-lg transition-all duration-300 border",
+									showAdvancedToolbar
+										? "bg-slate-800 text-emerald-400 border-slate-700"
+										: "bg-transparent text-slate-500 border-transparent hover:text-slate-300",
+								)}
+								title={
+									showAdvancedToolbar
+										? "Ukryj podsumowanie"
+										: "Pokaż podsumowanie"
+								}
+							>
+								{showAdvancedToolbar ? (
+									<Eye className="w-4 h-4" />
+								) : (
+									<EyeOff className="w-4 h-4" />
+								)}
+							</button>
+						)}
 
-						<DatePickerWithRange
-							from={fromDate}
-							to={toDate}
-							onSelect={handleDateRangeSelect}
-						/>
+						<div className="hidden md:block w-px h-5 bg-slate-700/50 mx-1" />
+
+						<div className="shrink-0">
+							<DatePickerWithRange
+								from={fromDate}
+								to={toDate}
+								onSelect={handleDateRangeSelect}
+							/>
+						</div>
 					</div>
 				</div>
 			</div>

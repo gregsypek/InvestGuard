@@ -49,46 +49,44 @@ export interface SimulatedSnapshot {
 }
 interface UserDashboardProps {
 	portfolios: PortfolioWithAssets[];
-	snapshots: SimulatedSnapshot[]; // To jest nasza symulacja
-	realSnapshots?: SimulatedSnapshot[]; // Gotowość na przyjęcie bazy danych
+	snapshots: SimulatedSnapshot[];
+	realSnapshots?: SimulatedSnapshot[];
 	userIndices?: string[];
 	indexQuotes?: Record<string, number>;
 	lastUpdated?: string | null;
 	currentRange?: string;
+	indexQuotesHistory?: Record<string, Record<string, number>>;
 }
 
 export function UserDashboard({
 	portfolios,
 	snapshots,
-	realSnapshots = [], //  Domyślnie pusta tablica
+	realSnapshots = [],
 	userIndices = [],
 	indexQuotes = {},
 	lastUpdated = null,
 	currentRange = "1M",
+	indexQuotesHistory = {},
 }: UserDashboardProps) {
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
-	// Pobieramy wszystkie transakcje ze wszystkich portfeli
 	const allTransactions = useMemo(() => {
 		return portfolios.flatMap((p) => p.transactionHistories || []);
 	}, [portfolios]);
 
-	// NATYCHMIASTOWY STAN UI
 	const activeRange = searchParams.get("range") || "1M";
 
 	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("SIMULATED");
 	const [chartMode, setChartMode] = useState<"VALUE" | "PERCENTAGE">("VALUE");
 	const [selectedIds, setSelectedIds] = useState<string[]>(["ALL"]);
 
-	// FILTROWANIE TRANSAKCJI DLA WYKRESU (magia ukrywania kropek)
 	const filteredTransactions = useMemo(() => {
 		if (selectedIds.includes("ALL")) return allTransactions;
 		return allTransactions.filter((tx) => selectedIds.includes(tx.portfolioId));
 	}, [allTransactions, selectedIds]);
 
-	// NOWY STAN: Wybór źródła danych (Domyślnie bierzemy prawdziwe z bazy, chyba że ich nie ma)
 	const togglePortfolio = (id: string) => {
 		setSelectedIds((prev: string[]) => {
 			if (id === "ALL") return ["ALL"];
@@ -112,17 +110,14 @@ export function UserDashboard({
 	const currentFrom = searchParams.get("from") || "";
 	const currentTo = searchParams.get("to") || "";
 
-	// Konwertujemy stringi z URL na obiekty Date dla nowego kalendarza
 	const fromDate = currentFrom ? new Date(currentFrom) : undefined;
 	const toDate = currentTo ? new Date(currentTo) : undefined;
 
-	// Nowa potężna funkcja aktualizująca obie daty naraz
 	const handleDateRangeSelect = (range: DateRange | undefined) => {
 		const params = new URLSearchParams(searchParams.toString());
 
 		if (range?.from) {
 			params.set("range", "CUSTOM");
-			// formatujemy do YYYY-MM-DD bezpiecznie dla stref czasowych
 			params.set("from", format(range.from, "yyyy-MM-dd"));
 		} else {
 			params.delete("from");
@@ -139,11 +134,10 @@ export function UserDashboard({
 
 	const {
 		portfolioChartData,
-		pnlChartData, // EN: Dodane, żeby uniknąć błędu braku zmiennej, jeśli jej używasz
+		pnlChartData,
 		absoluteChartData,
-		benchmarkChartData, // EN: TUTAJ wyciągamy naszą nową zmienną!
+		benchmarkChartData,
 	} = useMemo(() => {
-		// EN: SELECT DATA SOURCE
 		const activeSnapshots =
 			dataMode === "SIMULATED" ? snapshots : realSnapshots;
 
@@ -171,7 +165,6 @@ export function UserDashboard({
 		const baseData: any[] = [];
 		const finalAbsoluteData: any[] = [];
 
-		// === KROK 1: Najpierw budujemy bazowe dane naszego portfela (baseData) ===
 		allDates.forEach((dateStr) => {
 			const snapsToday = sortedSnapshots.filter(
 				(s) =>
@@ -234,27 +227,59 @@ export function UserDashboard({
 			});
 		});
 
-		// === KROK 2: Dopiero teraz budujemy wykres Benchmark, gdy baseData jest pełne ===
-
-		// === KROK 2: Dopiero teraz budujemy wykres Benchmark, gdy baseData jest pełne ===
-
-		// EN: Simulated historical data for ALL dynamic user indices
+		// Tworzymy pusty obiekt na nasze "załatane" dane
+		// Tworzymy pusty obiekt na nasze dane indeksów
 		const mockIndexHistory: Record<string, Record<string, number>> = {};
-		const fakePrices: Record<string, number> = {};
 
-		// EN: Initialize starting values for whatever indices the user has (BTC, GOLD, etc.)
-		userIndices.forEach((idx) => {
-			fakePrices[idx] = 1000;
+		userIndices.forEach((idx, i) => {
+			// <-- Dodane 'i' potrzebne do sinusa
 			mockIndexHistory[idx] = {};
-		});
 
-		allDates.forEach((date, index) => {
-			userIndices.forEach((idx, i) => {
-				// EN: Generate a unique fake wave for each index so they don't overlap on the chart
-				fakePrices[idx] += Math.sin(index + i * 2) * 15 + i * 1.5;
-				mockIndexHistory[idx][date] = fakePrices[idx];
-			});
+			if (dataMode === "SIMULATED") {
+				// === TRYB SYMULACJI: Sztuczna fala (sinus) ===
+				// Zaczynamy od arbitralnej kwoty i falujemy, by wykres ładnie pracował
+				let fakeBasePrice = 1000;
+				allDates.forEach((dateStr, index) => {
+					fakeBasePrice += Math.sin(index + i * 2) * 15 + i * 1.5;
+					mockIndexHistory[idx][dateStr] = fakeBasePrice;
+				});
+			} else {
+				// === TRYB RZECZYWISTY: Prawdziwe dane z bazy (Backward & Forward Fill) ===
+				// 1. Znajdujemy najstarszą dostępną prawdziwą cenę
+				let firstRealPrice = 100;
+				if (indexQuotesHistory[idx]) {
+					const availableDates = Object.keys(indexQuotesHistory[idx]).sort();
+					if (availableDates.length > 0) {
+						firstRealPrice = indexQuotesHistory[idx][availableDates[0]];
+					}
+				}
+
+				// 2. Backward-fill (startujemy z najstarszej wyceny)
+				let lastKnownPrice = firstRealPrice;
+
+				// 3. Forward-fill
+				allDates.forEach((dateStr) => {
+					if (indexQuotesHistory[idx] && indexQuotesHistory[idx][dateStr]) {
+						lastKnownPrice = indexQuotesHistory[idx][dateStr];
+					}
+					mockIndexHistory[idx][dateStr] = lastKnownPrice;
+				});
+			}
 		});
+		console.log("🚀 ~ UserDashboard ~ userIndices:", userIndices);
+		// const fakePrices: Record<string, number> = {};
+
+		// userIndices.forEach((idx) => {
+		// 	fakePrices[idx] = 1000;
+		// 	mockIndexHistory[idx] = {};
+		// });
+
+		// allDates.forEach((date, index) => {
+		// 	userIndices.forEach((idx, i) => {
+		// 		fakePrices[idx] += Math.sin(index + i * 2) * 15 + i * 1.5;
+		// 		mockIndexHistory[idx][date] = fakePrices[idx];
+		// 	});
+		// });
 
 		const finalBenchmarkData = [];
 
@@ -269,7 +294,6 @@ export function UserDashboard({
 					100
 				: 0;
 
-		// EN: Get base values for all indices on day 1
 		const baseIndexValues: Record<string, number> = {};
 		userIndices.forEach((idx) => {
 			baseIndexValues[idx] =
@@ -287,13 +311,11 @@ export function UserDashboard({
 				currentPortfolioPct = rawPct - basePortfolioPct;
 			}
 
-			// EN: Create the base data point with the portfolio's performance
 			const dataPoint: any = {
 				date: today.date,
 				portfolioPct: Number(currentPortfolioPct.toFixed(2)),
 			};
 
-			// EN: Loop through each index and calculate its relative performance
 			userIndices.forEach((idx) => {
 				let idxPct = 0;
 				const todayValue = mockIndexHistory[idx][today.date];
@@ -302,14 +324,12 @@ export function UserDashboard({
 				if (baseValue > 0) {
 					idxPct = ((todayValue - baseValue) / baseValue) * 100;
 				}
-				// EN: Add the dynamic key (e.g., BTC: 2.45) to the object
 				dataPoint[idx] = Number(idxPct.toFixed(2));
 			});
 
 			finalBenchmarkData.push(dataPoint);
 		}
 
-		// === KROK 3: Mapowanie pozostałych wykresów i zwracanie danych ===
 		let finalChartData: ChartDataPoint[] = [];
 
 		if (chartMode === "PERCENTAGE") {
@@ -342,9 +362,17 @@ export function UserDashboard({
 			portfolioChartData: finalChartData,
 			pnlChartData: finalPnlData,
 			absoluteChartData: finalAbsoluteData,
-			benchmarkChartData: finalBenchmarkData, // EN: Zwracamy zmienną z hooka!
+			benchmarkChartData: finalBenchmarkData,
 		};
-	}, [snapshots, realSnapshots, selectedIds, chartMode, dataMode, userIndices]);
+	}, [
+		snapshots,
+		realSnapshots,
+		selectedIds,
+		chartMode,
+		dataMode,
+		userIndices,
+		indexQuotesHistory,
+	]);
 
 	const selectedPortfolios = selectedIds.includes("ALL")
 		? portfolios
@@ -364,13 +392,12 @@ export function UserDashboard({
 	);
 	const totalPnL = totalCurrent - totalInvested;
 	const totalPnLPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
-	// EN: Extract unique assets for the "Observed Markets" widget
+
 	const observedAssets = useMemo(() => {
 		if (!portfolios || portfolios.length === 0) return [];
 
 		const allAssets = portfolios.flatMap((p) => p.assets || []);
 
-		// EN: Filter out bonds and cash, and strictly include only observed assets
 		const riskAssets = allAssets.filter(
 			(a) =>
 				a.category !== "BONDS" &&
@@ -382,7 +409,6 @@ export function UserDashboard({
 		const seenIdentifiers = new Set();
 
 		for (const asset of riskAssets) {
-			// EN: Prioritize name over ticker
 			const identifier = asset.name || asset.ticker;
 
 			if (!seenIdentifiers.has(identifier)) {
@@ -391,11 +417,9 @@ export function UserDashboard({
 			}
 		}
 
-		// EN: Return all unique observed assets since limits are handled in Settings
 		return uniqueAssets;
 	}, [portfolios]);
 
-	// SZUKAMY DATY NAJSTARSZEGO SNAPSHOTU RZECZYWISTEGO
 	const oldestRealSnapshotDate = useMemo(() => {
 		if (!realSnapshots || realSnapshots.length === 0) return new Date();
 		const oldestTime = realSnapshots.reduce((min, s) => {
@@ -405,36 +429,33 @@ export function UserDashboard({
 		return new Date(oldestTime);
 	}, [realSnapshots]);
 
-	// FUNKCJA BLOKUJĄCA PRZYCISKI CZASU
 	const isRangeDisabled = (range: string) => {
-		// W trybie SYMULACJI pozwalamy na wszystko (silnik sobie policzy wstecz)
 		if (dataMode === "SIMULATED") return false;
 
 		const daysAvailable = differenceInDays(new Date(), oldestRealSnapshotDate);
 
 		switch (range) {
 			case "3M":
-				return daysAvailable < 30; // Wyłącz 3M, jeśli mamy mniej niż miesiąc historii
+				return daysAvailable < 30;
 			case "YTD": {
 				const daysYtd = differenceInDays(new Date(), startOfYear(new Date()));
 				return daysAvailable < Math.min(30, daysYtd);
 			}
 			case "1Y":
-				return daysAvailable < 90; // Wyłącz 1Y, jeśli nie mamy chociaż 3 miesięcy
+				return daysAvailable < 90;
 			case "3Y":
 				return daysAvailable < 365;
 			case "5Y":
 				return daysAvailable < 1095;
 			default:
-				return false; // 1W, 1M oraz MAX zostawiamy zawsze włączone (żeby coś się wyświetlało)
+				return false;
 		}
 	};
 
 	return (
 		<div className="space-y-8">
-			{/* 1. SEKCJA:  HEADER  */}
+			{/* 1. SEKCJA: HEADER */}
 			<header className="relative overflow-hidden flex flex-col gap-8 w-full border-b border-white/10 bg-slate-900 dark:border-t-border rounded-b-2xl text-slate-100 p-6 md:p-8 transition-colors shadow-lg">
-				{/* TEKSTURA SVG */}
 				<div
 					className="absolute inset-0 z-0 pointer-events-none opacity-40 transition-opacity"
 					style={{
@@ -446,13 +467,11 @@ export function UserDashboard({
 					}}
 				/>
 
-				{/* GÓRA: Tytuł i FILTRY PORTFELI */}
 				<div className="relative z-10">
 					<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-sm mb-3 bg-slate-900 w-fit">
 						Przegląd Inwestycji
 					</h1>
 
-					{/* Interaktywne filtry */}
 					<div className="flex flex-wrap items-center gap-2 mt-2">
 						<span className="text-xs font-bold text-slate-400 uppercase flex-1 md:grow tracking-wider mr-2">
 							Analizowane portfele (Wybierz, aby porównać):
@@ -479,7 +498,6 @@ export function UserDashboard({
 					</div>
 				</div>
 
-				{/* DÓŁ: Statystyki dynamiczne */}
 				<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pt-4">
 					<div className="space-y-1">
 						<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[10px] uppercase mb-1">
@@ -544,21 +562,112 @@ export function UserDashboard({
 				</div>
 			</header>
 
+			{/* === STICKY TOOLBAR Z FILTRAMI === */}
+			<div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border border-slate-800 p-4 shadow-xl rounded-2xl mx-1 transition-all">
+				<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+					{/* LEWA STRONA (Filtry walut i ŹRÓDŁO DANYCH) */}
+					<div className="flex flex-wrap items-center gap-4">
+						<div className="flex items-center gap-2">
+							<FilterBadge
+								id="VALUE"
+								label="Wartość (PLN)"
+								isSelected={chartMode === "VALUE"}
+								onToggle={() => setChartMode("VALUE")}
+							/>
+							<FilterBadge
+								id="PERCENTAGE"
+								label="Zwrot (%)"
+								isSelected={chartMode === "PERCENTAGE"}
+								onToggle={() => setChartMode("PERCENTAGE")}
+							/>
+						</div>
+
+						<div className="hidden md:block w-px h-6 bg-slate-700/50" />
+
+						<div className="flex items-center gap-2">
+							<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">
+								Dane:
+							</span>
+							<FilterBadge
+								id="REAL"
+								label="Rzeczywiste"
+								isSelected={dataMode === "REAL"}
+								onToggle={() => setDataMode("REAL")}
+								className={
+									dataMode === "REAL"
+										? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20"
+										: ""
+								}
+							/>
+							<FilterBadge
+								id="SIMULATED"
+								label="Symulacja"
+								isSelected={dataMode === "SIMULATED"}
+								onToggle={() => setDataMode("SIMULATED")}
+								className={
+									dataMode === "SIMULATED"
+										? "text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
+										: ""
+								}
+							/>
+						</div>
+					</div>
+
+					{/* PRAWA STRONA (Zakresy czasu i kalendarz) */}
+					<div className="flex flex-col md:flex-row items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide justify-end">
+						<div>
+							{TIME_RANGES.map((range) => {
+								const disabled = isRangeDisabled(range);
+
+								return (
+									<button
+										key={range}
+										onClick={() => !disabled && handleRangeChange(range)}
+										disabled={disabled}
+										title={
+											disabled
+												? "Zbyt mało danych rzeczywistych dla tego okresu"
+												: ""
+										}
+										className={cn(
+											"px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
+											disabled
+												? "opacity-30 cursor-not-allowed bg-transparent text-slate-600 border-transparent"
+												: activeRange === range
+													? "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-sm hover:cursor-pointer"
+													: "bg-transparent text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50 hover:cursor-pointer",
+										)}
+									>
+										{range}
+									</button>
+								);
+							})}
+						</div>
+						<div className="hidden md:block w-px h-6 bg-slate-700/50" />
+
+						<DatePickerWithRange
+							from={fromDate}
+							to={toDate}
+							onSelect={handleDateRangeSelect}
+						/>
+					</div>
+				</div>
+			</div>
+
 			<SectionLayout
 				title="Radar Rynkowy"
 				titleIcon={Activity}
 				subtitle="Śledź kluczowe wskaźniki i wybrane aktywa."
 				description="Zestawienie globalnych indeksów makroekonomicznych oraz wytypowanych walorów z Twojego portfela."
 			>
-				<div className="flex flex-col md:flex-row gap-6  ">
+				<div className="flex flex-col md:flex-row gap-6">
 					{/* SEKCJA 2: AKTYWA Z PORTFELA */}
-					<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm  flex-1">
+					<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm flex-1">
 						<div className="flex items-center justify-between mb-4">
-							<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500  flex items-center gap-2">
+							<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
 								<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
 								Portfela
 							</h4>
-							{/* ZNACZNIK CZASU AKTUALIZACJI */}
 							{lastUpdated && (
 								<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
 									<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse " />
@@ -585,7 +694,7 @@ export function UserDashboard({
 											name={asset.name}
 											value={displayValue}
 											isPositive={isPositive}
-											logo={getStockLogo(asset.ticker ?? "")} // <--- Pobieramy logo dla aktywów z portfela
+											logo={getStockLogo(asset.ticker ?? "")}
 										/>
 									);
 								})
@@ -610,7 +719,6 @@ export function UserDashboard({
 										<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
 									</h4>
 
-									{/* ZNACZNIK CZASU AKTUALIZACJI */}
 									{lastUpdated && (
 										<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
 											<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse" />
@@ -631,7 +739,6 @@ export function UserDashboard({
 												? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
 												: "0.00%";
 
-										// Wygenerowanie ikony z Favicon dla indeksów globalnych
 										const logoUrl = `https://www.google.com/s2/favicons?domain=${
 											indexId === "SP500"
 												? "spglobal.com"
@@ -648,7 +755,7 @@ export function UserDashboard({
 												name={indexName}
 												value={displayValue}
 												isPositive={isPositive}
-												logo={logoUrl} // <--- PRZEKAZUJEMY LOGO
+												logo={logoUrl}
 											/>
 										);
 									})}
@@ -659,8 +766,7 @@ export function UserDashboard({
 				</div>
 			</SectionLayout>
 
-			{/* 2. SEKCJA: WYKRES GŁÓWNY Z FILTRAMI */}
-
+			{/* 2. SEKCJA: WYKRES GŁÓWNY (Bez filtrów w środku) */}
 			<SectionLayout
 				title="Analiza Wykresowa"
 				titleIcon={LineChart}
@@ -668,121 +774,31 @@ export function UserDashboard({
 				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela."
 			>
 				<div className="flex flex-col gap-4 mb-6 mt-4">
-					<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-						{/* LEWA STRONA (Filtry walut i ŹRÓDŁO DANYCH) */}
-						<div className="flex flex-wrap items-center gap-4">
-							<div className="flex items-center gap-2">
-								<FilterBadge
-									id="VALUE"
-									label="Wartość (PLN)"
-									isSelected={chartMode === "VALUE"}
-									onToggle={() => setChartMode("VALUE")}
-								/>
-								<FilterBadge
-									id="PERCENTAGE"
-									label="Zwrot (%)"
-									isSelected={chartMode === "PERCENTAGE"}
-									onToggle={() => setChartMode("PERCENTAGE")}
-								/>
-							</div>
-							{/* NOWY PRZEŁĄCZNIK ŹRÓDŁA */}
-							<div className="hidden md:block w-px h-6 bg-slate-700/50" />
-
-							<div className="flex items-center gap-2">
-								<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">
-									Dane:
-								</span>
-								<FilterBadge
-									id="REAL"
-									label="Rzeczywiste"
-									isSelected={dataMode === "REAL"}
-									onToggle={() => setDataMode("REAL")}
-									className={
-										dataMode === "REAL"
-											? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20"
-											: ""
-									}
-								/>
-								<FilterBadge
-									id="SIMULATED"
-									label="Symulacja"
-									isSelected={dataMode === "SIMULATED"}
-									onToggle={() => setDataMode("SIMULATED")}
-									className={
-										dataMode === "SIMULATED"
-											? "text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
-											: ""
-									}
-								/>
-							</div>
-						</div>
-
-						<div className="flex flex-col md:flex-row items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 w-full xl:w-auto scrollbar-hide justify-end">
-							<div>
-								{TIME_RANGES.map((range) => {
-									const disabled = isRangeDisabled(range);
-
-									return (
-										<button
-											key={range}
-											onClick={() => !disabled && handleRangeChange(range)}
-											disabled={disabled}
-											title={
-												disabled
-													? "Zbyt mało danych rzeczywistych dla tego okresu"
-													: ""
-											}
-											className={cn(
-												"px-3 py-1.5 rounded-lg text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
-												disabled
-													? "opacity-30 cursor-not-allowed bg-transparent text-slate-600 border-transparent"
-													: activeRange === range
-														? "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-sm hover:cursor-pointer"
-														: "bg-transparent text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50 hover:cursor-pointer",
-											)}
-										>
-											{range}
-										</button>
-									);
-								})}
-							</div>
-							<div className="hidden md:block w-px h-6 bg-slate-700/50" />
-
-							{/* === NOWOCZESNY KALENDARZ SHADCN OD-DO === */}
-							{/* <div> */}
-							<DatePickerWithRange
-								from={fromDate}
-								to={toDate}
-								onSelect={handleDateRangeSelect}
-							/>
-							{/* </div> */}
-						</div>
-					</div>
-
 					<div className="h-96 w-full">
 						<PortfolioChart data={portfolioChartData} mode={chartMode} />
 					</div>
 				</div>
 			</SectionLayout>
+
 			<div className="h-64 mt-6">
 				<ExpandableMainChart
 					data={portfolioChartData}
-					transactions={filteredTransactions} // <--- TO JEST WAŻNE
+					transactions={filteredTransactions}
 					chartMode={chartMode}
 				/>
 			</div>
+
 			<SectionLayout
 				title="Nominalny Wynik Dzienny"
-				titleIcon={Banknote} // EN: You can import Banknote from lucide-react
+				titleIcon={Banknote}
 				subtitle="Faktyczna kwota wypracowana na rynku"
 				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
 			>
 				<div className="h-64 mt-6">
 					<AbsoluteDailyPnLChart data={absoluteChartData} />
-					{/* <AbsoluteDailyPnLChart data={dummyChartData} /> */}
 				</div>
 			</SectionLayout>
-			{/* NOWA SEKCJA BENCHMARK */}
+
 			<SectionLayout
 				title="Porównanie z Rynkiem"
 				titleIcon={Globe}
@@ -792,7 +808,7 @@ export function UserDashboard({
 				<div className="h-72 mt-6">
 					<PortfolioBenchmarkChart
 						data={benchmarkChartData}
-						userIndices={userIndices} // EN: Replace with the actual prop from dbUser
+						userIndices={userIndices}
 					/>
 				</div>
 			</SectionLayout>

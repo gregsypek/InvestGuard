@@ -275,6 +275,8 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 					dataKey="netCashFlow"
 					name="Wpłaty / Wypłaty"
 					stroke="url(#cashFlowGradient)"
+					strokeDasharray="5 5"
+					strokeOpacity={0.7}
 					strokeWidth={2.5}
 					dot={(props: any) => {
 						const { cx, cy, payload } = props;

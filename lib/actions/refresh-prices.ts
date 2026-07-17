@@ -124,14 +124,19 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 					);
 
 					if (originalId) {
+						// 2. ZDEFINIUJ marketName wewnątrz pętli
+						const marketName = q.longName || q.shortName || originalId;
+
 						await db.marketIndex.upsert({
 							where: { symbol: originalId },
 							update: {
 								price: q.regularMarketPrice || 0,
 								dailyChange: q.regularMarketChangePercent || 0,
+								updatedAt: new Date(),
 							},
 							create: {
 								symbol: originalId,
+								name: marketName,
 								price: q.regularMarketPrice || 0,
 								dailyChange: q.regularMarketChangePercent || 0,
 							},

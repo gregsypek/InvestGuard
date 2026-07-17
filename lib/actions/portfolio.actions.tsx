@@ -81,22 +81,34 @@ export async function updatePortfolio(id: string, values: PortfolioFormValues) {
 
 export async function deletePortfolio(id: string) {
 	try {
+		// 1. NOWE: Usuwamy wszystkie historyczne zrzuty z CRONa powiązane z tym portfelem
+		await db.portfolioSnapshot.deleteMany({
+			where: { portfolioId: id },
+		});
+
+		// Opcjonalnie: Jeśli w pliku schema.prisma NIE masz dopisanego "onDelete: Cascade",
+		// musisz w tym miejscu usunąć również transakcje i aktywa (odkomentuj poniższe linie):
+		// await db.transactionHistory.deleteMany({ where: { portfolioId: id } });
+		// await db.asset.deleteMany({ where: { portfolioId: id } });
+
+		// 2. Usuwamy właściwy portfel
 		await db.portfolio.delete({ where: { id } });
 
-		// 1. Pobierz sklep ciasteczek (w Next 15+ użyj await)
+		// 3. Pobierz sklep ciasteczek (w Next 15+ użyj await)
 		const cookieStore = await cookies();
 
-		// 2. Jeśli usuwany portfel jest tym wybranym, usuń go z ciastek
+		// 4. Jeśli usuwany portfel jest tym wybranym, usuń go z ciastek
 		if (cookieStore.get("selectedPortfolioId")?.value === id) {
 			cookieStore.delete("selectedPortfolioId");
 		}
 
 		revalidatePath("/portfolios");
-	} catch {
+	} catch (error) {
+		console.error("Błąd usuwania portfela:", error);
 		return { error: "Błąd usuwania" };
 	}
 
-	// 3. KLUCZOWE: Przekieruj na listę bez parametrów w URL
+	// 5. KLUCZOWE: Przekieruj na listę bez parametrów w URL
 	redirect("/portfolios");
 }
 

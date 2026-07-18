@@ -5,10 +5,10 @@ import {
 	Banknote,
 	Briefcase,
 	Container,
-	Eye,
-	EyeOff,
 	Globe,
 	LineChart,
+	Maximize2,
+	Minimize2,
 	Wallet2,
 } from "lucide-react";
 import { ChartDataPoint, PortfolioChart } from "./dashboard/PortfolioCharts";
@@ -474,7 +474,7 @@ export function UserDashboard({
 	return (
 		<div className="space-y-8">
 			{/* 1. SEKCJA: HEADER */}
-			<header className="relative overflow-hidden flex flex-col gap-8 w-full border-b border-white/10 bg-slate-900 dark:border-t-border rounded-b-2xl text-slate-100 p-6 md:p-8 transition-colors shadow-lg">
+			<header className="relative overflow-hidden flex flex-col gap-4 md:gap-8 w-full border-b border-white/10 bg-slate-900 dark:border-t-border rounded-b-2xl text-slate-100 p-6 md:p-8 transition-colors shadow-lg">
 				<div
 					className="absolute inset-0 z-0 pointer-events-none opacity-40 transition-opacity"
 					style={{
@@ -517,7 +517,7 @@ export function UserDashboard({
 					</div>
 				</div>
 
-				<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pt-4">
+				<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-4 md:gap-8 pt-4">
 					<div className="space-y-1">
 						<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[10px] uppercase mb-1">
 							<Wallet2 className="w-3.5 h-3.5" />
@@ -536,7 +536,7 @@ export function UserDashboard({
 						</div>
 					</div>
 
-					<div className="flex self-start sm:justify-end flex-wrap gap-8 md:gap-12 overflow-x-auto no-scrollbar">
+					<div className="flex self-start sm:justify-end flex-wrap  gap-4 md:gap-12 overflow-x-auto no-scrollbar">
 						<ValueCard
 							label="Zainwestowany kapitał"
 							icon={Container}
@@ -589,15 +589,20 @@ export function UserDashboard({
 
 			{/* === STICKY THIN HEADER (Pasek nawigacji i podsumowania) === */}
 			<div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 p-3 shadow-2xl shadow-black/20 rounded-2xl mx-1 my-4 transition-all min-h-[64px] flex flex-col justify-center">
-				<div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+				<div
+					className={cn(
+						"flex flex-col  items-start xl:items-center justify-between gap-2",
+						isStuck ? "xl:flex-col" : " xl:flex-row",
+					)}
+				>
 					{/* 1. SEKCJA DYNAMICZNA: Wartość i Portfele (Pojawia się tylko przy scrollu) */}
 					{isStuck && showAdvancedToolbar && (
 						<div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 w-full xl:w-auto border-b xl:border-b-0 xl:border-r border-slate-700/50 pb-3 xl:pb-0 xl:pr-5 justify-between xl:justify-start animate-in fade-in slide-in-from-left-4 duration-300">
 							{/* Podsumowanie wartości i PnL */}
 							{/* DODANO KLASY: w-full xl:w-auto */}
 							<div className="flex items-center justify-between gap-4 w-full xl:w-auto">
-								<div className="flex flex-col">
-									<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">
+								<div className="flex flex-col xl:flex-row xl:items-center xl:gap-6">
+									<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5 xl:text-center">
 										Wartość Zaznaczonych
 									</span>
 									<div className="flex items-baseline gap-1">
@@ -627,12 +632,12 @@ export function UserDashboard({
 									{totalPnLPct.toFixed(2)}%
 								</div>
 							</div>
-
 							{/* Filtry portfeli */}
-							<div className="flex gap-2 flex-wrap">
+							{/* overflow-x-auto w-full scrollbar-hide */}
+							<div className="flex gap-2 md:flex-wrap overflow-x-auto w-full scrollbar-hide">
 								<FilterBadge
 									id="ALL"
-									label="Wszystkie Portfele"
+									label="Wszystkie"
 									isSelected={selectedIds.includes("ALL")}
 									onToggle={togglePortfolio}
 									className="text-blue-300 py-1 px-2 text-[10px]"
@@ -654,7 +659,7 @@ export function UserDashboard({
 					{/* 2. FILTRY TRYBU WYKRESU I ŹRÓDŁA DANYCH (Zawsze widoczne) */}
 					<div
 						className={
-							"flex flex-wrap items-center gap-3  justify-between xl:justify-start transition-all duration-300"
+							"flex flex-wrap items-center gap-3 justify-start transition-all duration-300 w-full xl:w-auto "
 						}
 					>
 						<div className="flex items-center gap-1.5">
@@ -666,7 +671,7 @@ export function UserDashboard({
 							/>
 							<FilterBadge
 								id="PERCENTAGE"
-								label="Zwrot (%)"
+								label="%"
 								isSelected={chartMode === "PERCENTAGE"}
 								onToggle={() => setChartMode("PERCENTAGE")}
 							/>
@@ -675,7 +680,7 @@ export function UserDashboard({
 						<div className="hidden sm:block w-px h-5 bg-slate-700/50" />
 
 						<div className="flex items-center gap-1.5">
-							<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">
+							<span className=" hidden md:block text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">
 								Dane:
 							</span>
 							<FilterBadge
@@ -701,6 +706,31 @@ export function UserDashboard({
 								}
 							/>
 						</div>
+						<div className=" flex-1 flex justify-end">
+							{/* Przycisk przełączania widoku */}
+							{isStuck && (
+								<button
+									onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
+									className={cn(
+										"p-2 rounded-lg transition-all duration-300 border",
+										showAdvancedToolbar
+											? "bg-slate-800 text-blue-400 border-slate-700"
+											: "bg-transparent text-slate-500 border-transparent hover:text-slate-300",
+									)}
+									title={
+										showAdvancedToolbar
+											? "Ukryj podsumowanie"
+											: "Pokaż podsumowanie"
+									}
+								>
+									{showAdvancedToolbar ? (
+										<Minimize2 className="w-4 h-4" />
+									) : (
+										<Maximize2 className="w-4 h-4" />
+									)}
+								</button>
+							)}
+						</div>
 					</div>
 
 					{/* 3. ZAKRESY CZASU I KALENDARZ (PRAWA STRONA - Zawsze widoczne) */}
@@ -725,7 +755,7 @@ export function UserDashboard({
 												: ""
 										}
 										className={cn(
-											"px-2.5 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
+											"px-1.5 my-1 md:px-2.5 md:py-1.5 rounded-lg text-[10px] sm:text-[11px] font-black tracking-wider transition-all duration-300 border whitespace-nowrap",
 											disabled
 												? "opacity-30 cursor-not-allowed bg-transparent text-slate-600 border-transparent"
 												: activeRange === range
@@ -738,29 +768,6 @@ export function UserDashboard({
 								);
 							})}
 						</div>
-						{/* Przycisk przełączania widoku */}
-						{isStuck && (
-							<button
-								onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
-								className={cn(
-									"p-2 rounded-lg transition-all duration-300 border",
-									showAdvancedToolbar
-										? "bg-slate-800 text-emerald-400 border-slate-700"
-										: "bg-transparent text-slate-500 border-transparent hover:text-slate-300",
-								)}
-								title={
-									showAdvancedToolbar
-										? "Ukryj podsumowanie"
-										: "Pokaż podsumowanie"
-								}
-							>
-								{showAdvancedToolbar ? (
-									<Eye className="w-4 h-4" />
-								) : (
-									<EyeOff className="w-4 h-4" />
-								)}
-							</button>
-						)}
 
 						<div className="hidden md:block w-px h-5 bg-slate-700/50 mx-1" />
 

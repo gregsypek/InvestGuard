@@ -7,6 +7,7 @@ import {
 	Container,
 	Globe,
 	LineChart,
+	Loader2,
 	Maximize2,
 	Minimize2,
 	Wallet2,
@@ -14,7 +15,7 @@ import {
 import { ChartDataPoint, PortfolioChart } from "./dashboard/PortfolioCharts";
 import { cn, getStockLogo } from "@/lib/utils";
 import { differenceInDays, startOfYear } from "date-fns";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
@@ -77,6 +78,7 @@ export function UserDashboard({
 	// Stan sprawdzający, czy zjechaliśmy poniżej głównego nagłówka
 	const [isStuck, setIsStuck] = useState(false);
 	const [showAdvancedToolbar, setShowAdvancedToolbar] = useState(true);
+	const [isPending, startTransition] = useTransition();
 	// Referencja dla naszego "strażnika"
 	const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -129,7 +131,9 @@ export function UserDashboard({
 			params.delete("from");
 			params.delete("to");
 		}
-		router.push(`${pathname}?${params.toString()}`, { scroll: false });
+		startTransition(() => {
+			router.push(`${pathname}?${params.toString()}`, { scroll: false });
+		});
 	};
 
 	const currentFrom = searchParams.get("from") || "";
@@ -900,55 +904,72 @@ export function UserDashboard({
 			{/* ========================================================= */}
 			{/* 3. WYKRESY  */}
 			{/* ========================================================= */}
-			{/* WYKRES GŁÓWNY (Z połączonymi transakcjami!) */}
-			<SectionLayout
-				title="Analiza Wykresowa"
-				titleIcon={LineChart}
-				subtitle="Sprawdź wyniki swoich inwestycji w czasie"
-				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
-			>
-				<div className="flex flex-col gap-4 mb-6 mt-4">
-					<div className="h-[400px] w-full">
-						<PortfolioChart
-							data={portfolioChartData}
-							transactions={filteredTransactions} // Przekazujemy transakcje tutaj!
-							mode={chartMode}
+
+			<div className="relative">
+				{/* 🚀 PREMIUM OVERLAY - Tło pokrywa całość (absolute inset-0) */}
+				{isPending && (
+					<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-3xl transition-all duration-300">
+						{/* Wewnętrzny kontener używa STICKY, dzięki czemu "płynie" razem ze scrollem */}
+						<div className="sticky top-[40vh] flex items-center justify-center">
+							<div className="flex flex-col items-center gap-3 bg-slate-900/90 border border-slate-700/50 p-4 rounded-2xl shadow-2xl">
+								<Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+								<span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+									Przeliczanie danych...
+								</span>
+							</div>
+						</div>
+					</div>
+				)}
+				{/* WYKRES GŁÓWNY (Z połączonymi transakcjami!) */}
+				<SectionLayout
+					title="Analiza Wykresowa"
+					titleIcon={LineChart}
+					subtitle="Sprawdź wyniki swoich inwestycji w czasie"
+					description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
+				>
+					<div className="flex flex-col gap-4 mb-6 mt-4">
+						<div className="h-[400px] w-full">
+							<PortfolioChart
+								data={portfolioChartData}
+								transactions={filteredTransactions} // Przekazujemy transakcje tutaj!
+								mode={chartMode}
+							/>
+						</div>
+					</div>
+				</SectionLayout>
+				{/* WYKRES ZYSK/STRATA NOMINALNY */}
+
+				<SectionLayout
+					title="Nominalny Wynik Dzienny"
+					titleIcon={Banknote}
+					subtitle="Faktyczna kwota wypracowana na rynku"
+					description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
+				>
+					<div className="h-64 mt-6">
+						{/* 🚀 DODANY KEY: Wymusza animację rysowania od nowa przy każdej zmianie trybu */}
+						<AbsoluteDailyPnLChart
+							key={chartMode}
+							data={absoluteChartData}
+						/>{" "}
+					</div>
+				</SectionLayout>
+				{/* WYKRES PORÓWNAWCZY */}
+				<SectionLayout
+					title="Porównanie z Rynkiem"
+					titleIcon={Globe}
+					subtitle="Portfel vs Indeksy"
+					description="Wykres przedstawia skumulowaną stopę zwrotu Twojego portfela w wybranym czasie, porównaną z wybranymi przez Ciebie indeksami światowymi. Wszystkie wartości startują od zera, co pozwala na obiektywną ocenę siły Twoich inwestycji względem szerokiego rynku."
+				>
+					<div className="h-72 mt-6">
+						{/* 🚀 DODANY KEY: Wymusza animację rysowania od nowa przy każdej zmianie trybu */}
+						<PortfolioBenchmarkChart
+							key={chartMode}
+							data={benchmarkChartData}
+							userIndices={userIndices}
 						/>
 					</div>
-				</div>
-			</SectionLayout>
-			{/* WYKRES ZYSK/STRATA NOMINALNY */}
-
-			<SectionLayout
-				title="Nominalny Wynik Dzienny"
-				titleIcon={Banknote}
-				subtitle="Faktyczna kwota wypracowana na rynku"
-				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
-			>
-				<div className="h-64 mt-6">
-					{/* 🚀 DODANY KEY: Wymusza animację rysowania od nowa przy każdej zmianie trybu */}
-					<AbsoluteDailyPnLChart
-						key={chartMode}
-						data={absoluteChartData}
-					/>{" "}
-				</div>
-			</SectionLayout>
-			{/* WYKRES PORÓWNAWCZY */}
-			<SectionLayout
-				title="Porównanie z Rynkiem"
-				titleIcon={Globe}
-				subtitle="Portfel vs Indeksy"
-				description="Wykres przedstawia skumulowaną stopę zwrotu Twojego portfela w wybranym czasie, porównaną z wybranymi przez Ciebie indeksami światowymi. Wszystkie wartości startują od zera, co pozwala na obiektywną ocenę siły Twoich inwestycji względem szerokiego rynku."
-			>
-				<div className="h-72 mt-6">
-					{/* 🚀 DODANY KEY: Wymusza animację rysowania od nowa przy każdej zmianie trybu */}
-					<PortfolioBenchmarkChart
-						key={chartMode}
-						data={benchmarkChartData}
-						userIndices={userIndices}
-					/>
-				</div>
-			</SectionLayout>
+				</SectionLayout>
+			</div>
 		</div>
 	);
 }

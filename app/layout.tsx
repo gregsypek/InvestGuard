@@ -5,6 +5,7 @@ import { APP_DESCRIPTION, APP_NAME, SERVER_URL } from "@/lib/constants";
 import BulbTip from "@/components/shared/BulbTip";
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
+import NextTopLoader from "nextjs-toploader";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { cookies } from "next/headers";
@@ -49,6 +50,8 @@ export default async function RootLayout({
 				className={`${inter.className} antialiased overflow-x-hidden`}
 				suppressHydrationWarning
 			>
+				{/* globalny loader Premium na każdej stronie */}
+				<NextTopLoader color="#3b82f6" height={3} showSpinner={false} />
 				<ThemeProvider
 					attribute="class"
 					defaultTheme="dark" /* Startujemy w dark mode! */

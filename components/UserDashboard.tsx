@@ -580,14 +580,130 @@ export function UserDashboard({
 					</div>
 				</div>
 			</header>
+			{/* ========================================================= */}
+			{/* SEKCJA INFORMACYJNA (Na samej górze, przed wykresami) */}
+			{/* ========================================================= */}
+			<SectionLayout
+				title="Radar Rynkowy"
+				titleIcon={Activity}
+				subtitle="Śledź kluczowe wskaźniki i wybrane aktywa."
+				description="Zestawienie globalnych indeksów makroekonomicznych oraz wytypowanych walorów z Twojego portfela."
+			>
+				<div className="flex flex-col md:flex-row gap-6">
+					{/* SEKCJA 2: AKTYWA Z PORTFELA */}
+					<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm flex-1">
+						<div className="flex items-center justify-between mb-4">
+							<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+								<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
+								Portfela
+							</h4>
+							{lastUpdated && (
+								<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
+									<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse " />
+									{format(new Date(lastUpdated), "HH:mm, dd MMM", {
+										locale: pl,
+									})}
+								</span>
+							)}
+						</div>
 
+						<div className="space-y-4">
+							{observedAssets.length > 0 ? (
+								observedAssets.map((asset) => {
+									const changeValue = asset.dailyChange || 0;
+									const isPositive = changeValue >= 0;
+									const displayValue =
+										changeValue !== 0
+											? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
+											: "0.00%";
+
+									return (
+										<MarketRow
+											key={asset.id}
+											name={asset.name}
+											value={displayValue}
+											isPositive={isPositive}
+											logo={getStockLogo(asset.ticker ?? "")}
+										/>
+									);
+								})
+							) : (
+								<div className="flex flex-col items-center justify-center py-6 opacity-50 text-center space-y-2">
+									<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
+										Brak aktywów
+									</p>
+									<p className="text-[10px] text-t-text-tertiary px-4 leading-relaxed">
+										Przejdź do ustawień, aby wybrać walory do obserwacji.
+									</p>
+								</div>
+							)}
+						</div>
+					</div>
+					<div className="flex-1">
+						{/* SEKCJA 1: GLOBALNE INDEKSY */}
+						{userIndices && userIndices.length > 0 && (
+							<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm">
+								<div className="flex items-center justify-between mb-4">
+									<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+										<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
+									</h4>
+
+									{lastUpdated && (
+										<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
+											<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse" />
+											{format(new Date(lastUpdated), "HH:mm, dd MMM", {
+												locale: pl,
+											})}
+										</span>
+									)}
+								</div>
+
+								<div className="space-y-4">
+									{userIndices.map((indexId) => {
+										const indexName = GLOBAL_INDICES_MAP[indexId] || indexId;
+										const changeValue = indexQuotes[indexId] || 0;
+										const isPositive = changeValue >= 0;
+										const displayValue =
+											changeValue !== 0
+												? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
+												: "0.00%";
+
+										const logoUrl = `https://www.google.com/s2/favicons?domain=${
+											indexId === "SP500"
+												? "spglobal.com"
+												: indexId === "NASDAQ"
+													? "nasdaq.com"
+													: indexId === "BTC"
+														? "bitcoin.org"
+														: "finance.yahoo.com"
+										}&sz=128`;
+
+										return (
+											<MarketRow
+												key={indexId}
+												name={indexName}
+												value={displayValue}
+												isPositive={isPositive}
+												logo={logoUrl}
+											/>
+										);
+									})}
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+			</SectionLayout>
+			{/* ========================================================= */}
+			{/* 2. PANEL STEROWANIA WYKRESAMI (Od tego momentu zaczyna się analiza) */}
+			{/* ========================================================= */}
 			{/* === STRAŻNIK (Sentinel) do wykrywania scrolla === */}
 			<div
 				ref={sentinelRef}
 				className="h-px w-full invisible pointer-events-none"
 			/>
 
-			{/* === STICKY THIN HEADER (Pasek nawigacji i podsumowania) === */}
+			{/* === STICKY  HEADER (Pasek nawigacji i podsumowania) === */}
 			<div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 p-3 shadow-2xl shadow-black/20 rounded-2xl mx-1 my-4 transition-all min-h-[64px] flex flex-col justify-center">
 				<div
 					className={cn(
@@ -781,140 +897,27 @@ export function UserDashboard({
 					</div>
 				</div>
 			</div>
-
-			<SectionLayout
-				title="Radar Rynkowy"
-				titleIcon={Activity}
-				subtitle="Śledź kluczowe wskaźniki i wybrane aktywa."
-				description="Zestawienie globalnych indeksów makroekonomicznych oraz wytypowanych walorów z Twojego portfela."
-			>
-				<div className="flex flex-col md:flex-row gap-6">
-					{/* SEKCJA 2: AKTYWA Z PORTFELA */}
-					<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm flex-1">
-						<div className="flex items-center justify-between mb-4">
-							<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-								<Briefcase className="w-4 h-4 text-blue-500" /> Z Twojego
-								Portfela
-							</h4>
-							{lastUpdated && (
-								<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
-									<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse " />
-									{format(new Date(lastUpdated), "HH:mm, dd MMM", {
-										locale: pl,
-									})}
-								</span>
-							)}
-						</div>
-
-						<div className="space-y-4">
-							{observedAssets.length > 0 ? (
-								observedAssets.map((asset) => {
-									const changeValue = asset.dailyChange || 0;
-									const isPositive = changeValue >= 0;
-									const displayValue =
-										changeValue !== 0
-											? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
-											: "0.00%";
-
-									return (
-										<MarketRow
-											key={asset.id}
-											name={asset.name}
-											value={displayValue}
-											isPositive={isPositive}
-											logo={getStockLogo(asset.ticker ?? "")}
-										/>
-									);
-								})
-							) : (
-								<div className="flex flex-col items-center justify-center py-6 opacity-50 text-center space-y-2">
-									<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
-										Brak aktywów
-									</p>
-									<p className="text-[10px] text-t-text-tertiary px-4 leading-relaxed">
-										Przejdź do ustawień, aby wybrać walory do obserwacji.
-									</p>
-								</div>
-							)}
-						</div>
-					</div>
-					<div className="flex-1">
-						{/* SEKCJA 1: GLOBALNE INDEKSY */}
-						{userIndices && userIndices.length > 0 && (
-							<div className="bg-t-bg-sticky border border-t-border rounded-3xl p-5 shadow-sm">
-								<div className="flex items-center justify-between mb-4">
-									<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-										<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
-									</h4>
-
-									{lastUpdated && (
-										<span className="text-[9px] font-bold text-slate-400 bg-t-bg-sticky px-2 py-0.5 rounded-md flex items-center gap-1 border border-slate-700/50">
-											<div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse" />
-											{format(new Date(lastUpdated), "HH:mm, dd MMM", {
-												locale: pl,
-											})}
-										</span>
-									)}
-								</div>
-
-								<div className="space-y-4">
-									{userIndices.map((indexId) => {
-										const indexName = GLOBAL_INDICES_MAP[indexId] || indexId;
-										const changeValue = indexQuotes[indexId] || 0;
-										const isPositive = changeValue >= 0;
-										const displayValue =
-											changeValue !== 0
-												? `${isPositive ? "+" : ""}${changeValue.toFixed(2)}%`
-												: "0.00%";
-
-										const logoUrl = `https://www.google.com/s2/favicons?domain=${
-											indexId === "SP500"
-												? "spglobal.com"
-												: indexId === "NASDAQ"
-													? "nasdaq.com"
-													: indexId === "BTC"
-														? "bitcoin.org"
-														: "finance.yahoo.com"
-										}&sz=128`;
-
-										return (
-											<MarketRow
-												key={indexId}
-												name={indexName}
-												value={displayValue}
-												isPositive={isPositive}
-												logo={logoUrl}
-											/>
-										);
-									})}
-								</div>
-							</div>
-						)}
-					</div>
-				</div>
-			</SectionLayout>
-
-			{/* 2. SEKCJA: WYKRES GŁÓWNY (Bez filtrów w środku) */}
+			{/* ========================================================= */}
+			{/* 3. WYKRESY  */}
+			{/* ========================================================= */}
+			{/* WYKRES GŁÓWNY (Z połączonymi transakcjami!) */}
 			<SectionLayout
 				title="Analiza Wykresowa"
 				titleIcon={LineChart}
 				subtitle="Sprawdź wyniki swoich inwestycji w czasie"
-				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela."
+				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
 			>
 				<div className="flex flex-col gap-4 mb-6 mt-4">
-					<div className="h-96 w-full">
-						<PortfolioChart data={portfolioChartData} mode={chartMode} />
+					<div className="h-[400px] w-full">
+						<PortfolioChart
+							data={portfolioChartData}
+							transactions={filteredTransactions} // Przekazujemy transakcje tutaj!
+							mode={chartMode}
+						/>
 					</div>
 				</div>
 			</SectionLayout>
-
-			<div className="h-64 mt-6">
-				<ExpandableMainChart
-					data={portfolioChartData}
-					transactions={filteredTransactions}
-					chartMode={chartMode}
-				/>
-			</div>
+			{/* WYKRES ZYSK/STRATA NOMINALNY */}
 
 			<SectionLayout
 				title="Nominalny Wynik Dzienny"
@@ -923,10 +926,14 @@ export function UserDashboard({
 				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
 			>
 				<div className="h-64 mt-6">
-					<AbsoluteDailyPnLChart data={absoluteChartData} />
+					{/* 🚀 DODANY KEY: Wymusza animację rysowania od nowa przy każdej zmianie trybu */}
+					<AbsoluteDailyPnLChart
+						key={chartMode}
+						data={absoluteChartData}
+					/>{" "}
 				</div>
 			</SectionLayout>
-
+			{/* WYKRES PORÓWNAWCZY */}
 			<SectionLayout
 				title="Porównanie z Rynkiem"
 				titleIcon={Globe}
@@ -934,7 +941,9 @@ export function UserDashboard({
 				description="Wykres przedstawia skumulowaną stopę zwrotu Twojego portfela w wybranym czasie, porównaną z wybranymi przez Ciebie indeksami światowymi. Wszystkie wartości startują od zera, co pozwala na obiektywną ocenę siły Twoich inwestycji względem szerokiego rynku."
 			>
 				<div className="h-72 mt-6">
+					{/* 🚀 DODANY KEY: Wymusza animację rysowania od nowa przy każdej zmianie trybu */}
 					<PortfolioBenchmarkChart
+						key={chartMode}
 						data={benchmarkChartData}
 						userIndices={userIndices}
 					/>

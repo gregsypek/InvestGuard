@@ -276,13 +276,21 @@ export function UserDashboard({
 				});
 			} else {
 				// === TRYB RZECZYWISTY: Prawdziwe dane z bazy (Backward & Forward Fill) ===
+
+				// 🚀 KROK 1: Normalizujemy daty z Prisma (ucinamy "T22:00:00.000Z" na rzecz "YYYY-MM-DD")
+				const normalizedHistory: Record<string, number> = {};
+				if (indexQuotesHistory[idx]) {
+					Object.keys(indexQuotesHistory[idx]).forEach((fullDate) => {
+						normalizedHistory[getDateStr(fullDate)] =
+							indexQuotesHistory[idx][fullDate];
+					});
+				}
+
 				// 1. Znajdujemy najstarszą dostępną prawdziwą cenę
 				let firstRealPrice = 100;
-				if (indexQuotesHistory[idx]) {
-					const availableDates = Object.keys(indexQuotesHistory[idx]).sort();
-					if (availableDates.length > 0) {
-						firstRealPrice = indexQuotesHistory[idx][availableDates[0]];
-					}
+				const availableDates = Object.keys(normalizedHistory).sort();
+				if (availableDates.length > 0) {
+					firstRealPrice = normalizedHistory[availableDates[0]];
 				}
 
 				// 2. Backward-fill (startujemy z najstarszej wyceny)
@@ -290,8 +298,9 @@ export function UserDashboard({
 
 				// 3. Forward-fill
 				allDates.forEach((dateStr) => {
-					if (indexQuotesHistory[idx] && indexQuotesHistory[idx][dateStr]) {
-						lastKnownPrice = indexQuotesHistory[idx][dateStr];
+					// 🚀 KROK 2: Teraz to perfekcyjnie zadziała, bo oba klucze mają format YYYY-MM-DD!
+					if (normalizedHistory[dateStr] !== undefined) {
+						lastKnownPrice = normalizedHistory[dateStr];
 					}
 					mockIndexHistory[idx][dateStr] = lastKnownPrice;
 				});
@@ -347,6 +356,10 @@ export function UserDashboard({
 			});
 
 			finalBenchmarkData.push(dataPoint);
+			console.log(
+				"🚀 ~ UserDashboard ~ finalBenchmarkData:",
+				finalBenchmarkData,
+			);
 		}
 
 		let finalChartData: ChartDataPoint[] = [];
@@ -412,6 +425,31 @@ export function UserDashboard({
 	const totalPnL = totalCurrent - totalInvested;
 	const totalPnLPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
 	// EN: Extract unique assets for the "Observed Markets" widget
+	// 🚀 ZMIANA: Zastąp swoje stare stałe (totalInvested, totalCurrent, totalPnL) tym dynamicznym Memo:
+	// const { totalCurrent, totalPnLPct } = useMemo(() => {
+	// 	if (absoluteChartData.length === 0)
+	// 		return { totalCurrent: 0, totalPnLPct: 0 };
+
+	// 	// Bierzemy dane z pierwszego i ostatniego widocznego dnia na wykresie
+	// 	const firstDay = absoluteChartData[0];
+	// 	const lastDay = absoluteChartData[absoluteChartData.length - 1];
+
+	// 	// Czysty zysk z danego okresu to suma słupków "Nominalnego Wyniku Dziennego"
+	// 	const periodPureGrowth = absoluteChartData.reduce(
+	// 		(acc, day) => acc + day.exactChangePLN,
+	// 		0,
+	// 	);
+
+	// 	// Obliczamy % względem kapitału z początku wybranego okresu
+	// 	const startValue =
+	// 		firstDay.totalPortfolioValue - firstDay.exactChangePLN || 1;
+	// 	const pct = (periodPureGrowth / startValue) * 100;
+
+	// 	return {
+	// 		totalCurrent: lastDay.totalPortfolioValue,
+	// 		totalPnLPct: pct,
+	// 	};
+	// }, [absoluteChartData]);
 	const observedAssets = useMemo(() => {
 		if (!portfolios || portfolios.length === 0) return [];
 

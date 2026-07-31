@@ -10,4 +10,8 @@ export default defineConfig({
 	datasource: {
 		url: process.env.DATABASE_URL,
 	},
+	migrations: {
+		// Definiujemy, jak Prisma ma uruchomić plik w TypeScript
+		seed: "npx tsx prisma/seed.ts",
+	},
 });

@@ -7,16 +7,16 @@ import { formatYahooTicker } from "@/lib/market-api";
 import { getLiveExchangeRate } from "../exchange-rates";
 import { revalidatePath } from "next/cache";
 
-const yahooFinance = new YahooFinance();
+// ✅ 1. Uciszenie reklamy ankiety Yahoo (która powodowała fałszywy komunikat 404)
+const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
-// EN: Simple mapper for problematic tickers between XTB and Yahoo
-// PL: Mapowanie tickerów, których Yahoo nie rozumie w formacie XTB
 const TICKER_MAP: Record<string, string> = {
 	"SP20.NL": "IS20.DE",
 	"EIMI.UK": "EIMI.L",
 	"ALAG.UK": "ALAG.L",
+	BTC: "BTC-USD", // ✅ 2. Dodano automatyczne mapowanie kryptowalut dla Yahoo
 };
-// EN: Słownik do mapowania globalnych indeksów dla Yahoo
+
 const GLOBAL_INDICES: Record<string, string> = {
 	SP500: "^GSPC",
 	NASDAQ: "^IXIC",
@@ -25,9 +25,16 @@ const GLOBAL_INDICES: Record<string, string> = {
 	GOLD: "GC=F",
 	BTC: "BTC-USD",
 };
+
 export async function refreshPortfolioPrices(portfolioId: string) {
 	const session = await auth();
 	if (!session?.user?.id) return { error: "Błąd autoryzacji" };
+
+	// ✅ 3. Zabezpieczenie przed pustym ID portfela z interfejsu
+	if (!portfolioId) {
+		console.error("❌ refreshPortfolioPrices wywołano z pustym portfolioId!");
+		return { error: "Nie podano ID portfela do aktualizacji." };
+	}
 
 	const role = session.user.role;
 	const now = new Date();
@@ -37,7 +44,7 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 		const assets = await db.asset.findMany({
 			where: {
 				portfolioId,
-				NOT: { category: "BONDS" },
+				NOT: { category: "BONDS" }, // Obligacje są mądrze ignorowane
 			},
 		});
 
@@ -46,7 +53,6 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 		for (const asset of assets) {
 			if (asset.ticker === "CASH" || asset.category === "CASH") continue;
 
-			// EN: 1. Clean ticker and 2. Map it to Yahoo-friendly symbol
 			const baseTicker = asset.ticker?.split("_")[0] || "";
 			const symbol = formatYahooTicker(TICKER_MAP[baseTicker] || baseTicker);
 
@@ -58,9 +64,8 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 				);
 				const quote = Array.isArray(result) ? result[0] : result;
 
-				// 🚀 CRITICAL FIX: Check if quote exists before accessing properties
 				if (!quote || quote.regularMarketPrice == null) {
-					console.warn(`⚠️ Yahoo Finance returned no data for: ${symbol}`);
+					console.warn(`⚠️ Yahoo Finance nie zwróciło danych dla: ${symbol}`);
 					continue;
 				}
 
@@ -68,14 +73,13 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 				const currency = quote.currency || "PLN";
 				let priceInPLN = rawPrice;
 
-				// EN: Handle Currency Conversion logic correctly
 				if (currency !== "PLN") {
 					const searchCurrency = currency === "GBp" ? "GBP" : currency;
 					const fxData = await getLiveExchangeRate(searchCurrency);
 
 					if (!fxData) {
 						console.error(
-							`❌ Missing FX Rate for ${searchCurrency}. Skipping ${symbol}.`,
+							`❌ Brak kursu wymiany dla ${searchCurrency}. Pomijam ${symbol}.`,
 						);
 						continue;
 					}
@@ -84,7 +88,6 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 					priceInPLN = rawPrice * multiplier * fxData.value;
 				}
 
-				// EN: Final Update - logging AFTER FX calculation for accuracy
 				console.log(
 					`✅ [${asset.ticker}] -> ${priceInPLN.toFixed(2)} PLN (Raw: ${rawPrice} ${currency})`,
 				);
@@ -100,11 +103,13 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 				});
 				updatedCount++;
 			} catch (err) {
-				console.error(`❌ Error refreshing ${symbol}:`, err);
+				// Ten blok try-catch łapie błąd pojedynczego aktywa (np. jak podasz błędny ticker)
+				// i pozwala pętli iść dalej do kolejnego aktywa.
+				console.error(`❌ Błąd aktualizacji ${symbol}:`, err);
 			}
 		}
 
-		// === NOWY BLOK: Pobieranie i zapis indeksów globalnych ===
+		// === Pobieranie i zapis indeksów globalnych ===
 		try {
 			const indexSymbols = Object.values(GLOBAL_INDICES);
 			const indexResult = await yahooFinance.quote(
@@ -118,13 +123,11 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 
 			for (const q of indexQuotes) {
 				if (q && q.symbol) {
-					// Tłumaczymy ticker z Yahoo (np. ^GSPC) z powrotem na Twój identyfikator (SP500)
 					const originalId = Object.keys(GLOBAL_INDICES).find(
 						(key) => GLOBAL_INDICES[key] === q.symbol,
 					);
 
 					if (originalId) {
-						// 2. ZDEFINIUJ marketName wewnątrz pętli
 						const marketName = q.longName || q.shortName || originalId;
 
 						await db.marketIndex.upsert({

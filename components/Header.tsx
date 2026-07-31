@@ -3,6 +3,7 @@
 import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
 import {
 	AlertCircle,
+	Globe2,
 	GraduationCap,
 	Menu as HamburgerIcon,
 	Settings,
@@ -373,12 +374,28 @@ export default function Header({
 
 			{/* PRAWA STRONA */}
 			<div className="flex items-center gap-2 md:gap-3">
-				{/* <RefreshButton portfolioId={displayValue} role={userRole} /> */}
-				<RefreshButton
-					portfolioId={displayValue}
-					role={userRole}
-					lastUpdated={lastUpdated} // <-- musisz podać tę zmienną do środka
-				/>
+				{isGlobalHome && !displayValue ? (
+					/* WIDOK GLOBALNY: Odznaka (Badge) informacyjna */
+					<div className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl shadow-sm h-11">
+						<Globe2 className="w-4 h-4 text-blue-400 animate-[spin_12s_linear_infinite]" />
+						<div className="hidden md:flex flex-col text-left justify-center">
+							<span className="text-[9px] font-black uppercase tracking-widest text-blue-500/70 mb-0.5 leading-none">
+								Kontekst
+							</span>
+							<span className="text-[10px] font-bold text-blue-400 leading-none">
+								RYNKI GLOBALNE
+							</span>
+						</div>
+					</div>
+				) : (
+					/* WIDOK PORTFELA: Twój dotychczasowy komponent */
+					<RefreshButton
+						portfolioId={displayValue}
+						role={userRole}
+						lastUpdated={lastUpdated}
+					/>
+				)}
+
 				<Menu userButton={userButton} />
 			</div>
 		</header>

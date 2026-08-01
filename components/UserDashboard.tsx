@@ -11,6 +11,7 @@ import {
 	Maximize2,
 	Minimize2,
 	Wallet2,
+	WalletCards,
 } from "lucide-react";
 import { ChartDataPoint, PortfolioChart } from "./dashboard/PortfolioCharts";
 import { cn, getStockLogo } from "@/lib/utils";
@@ -26,6 +27,7 @@ import { FilterBadge } from "./shared/FilterBadge";
 import { MarketRow } from "./home/MarketRow";
 import { PortfolioBenchmarkChart } from "./dashboard/PortfolioBenchmarkChart";
 import { PortfolioWithAssets } from "@/lib/types";
+import { PortfoliosComparisonChart } from "./dashboard/PortfoliosComparisonChart";
 import { SectionLayout } from "./shared/SectionLayout";
 import { ValueCard } from "./shared/ValueCard";
 import { format } from "date-fns";
@@ -513,6 +515,46 @@ export function UserDashboard({
 		}
 	};
 
+	// 1. Lista zaznaczonych portfeli
+	const activePortfolios = portfolios
+		.filter((p) => selectedIds.includes(p.id) || selectedIds.includes("ALL"))
+		.map((p) => ({ id: p.id, name: p.name }));
+
+	// 2. Generator Danych dla Wyścigu Portfeli
+	// Zauważ, że używam tutaj Twojej zmiennej "realSnapshots"
+	const portfoliosComparisonData = useMemo(() => {
+		if (!realSnapshots || realSnapshots.length === 0) return [];
+
+		const dataByDate: Record<string, any> = {};
+
+		realSnapshots.forEach((snapshot) => {
+			// Pomijamy odznaczone portfele
+			if (!activePortfolios.find((p) => p.id === snapshot.portfolioId)) return;
+
+			const dateStr = new Date(snapshot.date).toISOString().split("T")[0];
+
+			if (!dataByDate[dateStr]) {
+				dataByDate[dateStr] = {
+					date: snapshot.date,
+				};
+			}
+
+			const pnlValue = snapshot.totalValue - snapshot.investedValue;
+			const pnlPercentage =
+				snapshot.investedValue > 0
+					? (pnlValue / snapshot.investedValue) * 100
+					: 0;
+
+			dataByDate[dateStr][snapshot.portfolioId] =
+				chartMode === "PERCENTAGE"
+					? Number(pnlPercentage.toFixed(2))
+					: Number(pnlValue.toFixed(2));
+		});
+
+		return Object.values(dataByDate).sort(
+			(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+		);
+	}, [realSnapshots, activePortfolios, chartMode]);
 	return (
 		<div className="space-y-8">
 			{/* 1. SEKCJA: HEADER */}
@@ -991,6 +1033,24 @@ export function UserDashboard({
 						/>{" "}
 					</div>
 				</SectionLayout>
+
+				{/* WYŚCIG PORTFELI === */}
+				<SectionLayout
+					title="Wyścig Portfeli"
+					titleIcon={WalletCards}
+					subtitle="Porównanie Strategii"
+					description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w PLN.`}
+				>
+					<div className="h-72 mt-6">
+						<PortfoliosComparisonChart
+							key={`compare-${chartMode}`}
+							data={portfoliosComparisonData}
+							portfolios={activePortfolios}
+							chartMode={chartMode}
+						/>
+					</div>
+				</SectionLayout>
+
 				{/* WYKRES PORÓWNAWCZY */}
 				<SectionLayout
 					title="Porównanie z Rynkiem"

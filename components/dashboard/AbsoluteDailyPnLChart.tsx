@@ -364,7 +364,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 				<div>{trendBadge(true)}</div>
 				<button
 					onClick={() => setIsExpanded(true)}
-					className="p-1.5 bg-slate-800/80 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 rounded-md opacity-0 group-hover:opacity-100 transition-all shadow-sm border border-transparent hover:border-blue-500/30"
+					className="p-1.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-emerald-400 rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm z-10"
 					title="Powiększ wykres"
 				>
 					<Maximize2 className="w-4 h-4" />

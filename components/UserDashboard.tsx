@@ -926,7 +926,7 @@ export function UserDashboard({
 									{showAdvancedToolbar ? (
 										<Minimize2 className="w-4 h-4" />
 									) : (
-										<Maximize2 className="w-4 h-4" />
+										<Maximize2 className="w-4 h-4 opacity-100 md:opacity-0 md:group-hover:opacity-100" />
 									)}
 								</button>
 							)}
@@ -1043,7 +1043,7 @@ export function UserDashboard({
 				>
 					<div className="h-72 mt-6">
 						<PortfoliosComparisonChart
-							key={`compare-${chartMode}`}
+							key={`compare-${chartMode}-${selectedIds.join("-")}`}
 							data={portfoliosComparisonData}
 							portfolios={activePortfolios}
 							chartMode={chartMode}

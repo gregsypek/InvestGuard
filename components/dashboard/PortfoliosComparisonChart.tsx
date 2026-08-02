@@ -11,7 +11,13 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
-import { CheckCircle2, Circle } from "lucide-react";
+import {
+	CheckCircle2,
+	Circle,
+	Maximize2,
+	Minimize2,
+	WalletCards,
+} from "lucide-react";
 
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
@@ -33,14 +39,13 @@ interface PortfoliosComparisonChartProps {
 	chartMode: "VALUE" | "PERCENTAGE";
 }
 
-// Nowoczesna paleta kolorów dla ścigających się portfeli
 const COLORS = [
-	"#3b82f6", // Niebieski
-	"#ec4899", // Różowy
-	"#f59e0b", // Pomarańczowy
-	"#10b981", // Szmaragdowy
-	"#8b5cf6", // Fioletowy
-	"#06b6d4", // Cyjan
+	"#3b82f6",
+	"#ec4899",
+	"#f59e0b",
+	"#10b981",
+	"#8b5cf6",
+	"#06b6d4",
 ];
 
 export function PortfoliosComparisonChart({
@@ -49,6 +54,7 @@ export function PortfoliosComparisonChart({
 	chartMode,
 }: PortfoliosComparisonChartProps) {
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
+	const [isExpanded, setIsExpanded] = useState(false);
 
 	const toggleLine = (dataKey: string) => {
 		setHiddenLines((prev) => ({
@@ -67,7 +73,6 @@ export function PortfoliosComparisonChart({
 		);
 	}
 
-	// Obliczanie Y-Axis
 	const allValues = data.flatMap((d) =>
 		portfolios.map((p) => Number(d[p.id]) || 0),
 	);
@@ -77,7 +82,7 @@ export function PortfoliosComparisonChart({
 	const renderCustomLegend = ({ payload }: any) => (
 		<div className="mt-4">
 			<ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
-				{payload.map((entry: any, index: number) => {
+				{payload.map((entry: any) => {
 					const dataKey = String(entry.dataKey);
 					const isHidden = hiddenLines[dataKey];
 
@@ -109,83 +114,125 @@ export function PortfoliosComparisonChart({
 					);
 				})}
 			</ul>
+			<p className="text-[9px] text-center text-slate-500 uppercase tracking-widest font-bold mt-4 opacity-70">
+				💡 Kliknij w nazwę portfela, aby włączyć lub wyłączyć go z wykresu
+			</p>
 		</div>
 	);
 
-	return (
-		<div className="w-full h-full flex flex-col">
-			<ResponsiveContainer width="100%" height="100%">
-				<LineChart
-					data={data}
-					margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-				>
-					<CartesianGrid
-						strokeDasharray="2 6"
-						vertical={false}
-						stroke="rgba(148,163,184,0.08)"
-					/>
-					<XAxis
-						dataKey="date"
-						axisLine={false}
-						tickLine={false}
-						tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
-						tickMargin={12}
-						tickFormatter={(val) =>
-							format(new Date(val), "dd MMM", { locale: pl })
-						}
-					/>
-					<YAxis
-						axisLine={false}
-						tickLine={false}
-						tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
-						tickFormatter={
-							(val) =>
-								chartMode === "PERCENTAGE"
-									? `${val > 0 ? "+" : ""}${val}%`
-									: `${(val / 1000).toFixed(0)}k` // Formatowanie dla wartości w PLN (skrócone)
-						}
-						domain={
-							chartMode === "PERCENTAGE"
-								? [-yDomain, yDomain]
-								: ["auto", "auto"]
-						}
-					/>
-					<ReferenceLine
-						y={0}
-						stroke="rgba(148,163,184,0.25)"
-						strokeWidth={1}
-					/>
-					<Tooltip
-						content={
-							<ComparisonTooltip
-								hiddenLines={hiddenLines}
-								chartMode={chartMode}
-							/>
-						}
-						cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
-					/>
-					<Legend content={renderCustomLegend} />
-
-					{portfolios.map((p, idx) => (
-						<Line
-							key={p.id}
-							type="monotone"
-							dataKey={p.id}
-							name={p.name}
-							stroke={COLORS[idx % COLORS.length]}
-							strokeWidth={3}
-							dot={false}
-							activeDot={{ r: 5, strokeWidth: 0 }}
-							hide={hiddenLines[p.id]}
+	const chartContent = (
+		<ResponsiveContainer width="100%" height="100%">
+			<LineChart
+				data={data}
+				margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+			>
+				<CartesianGrid
+					strokeDasharray="2 6"
+					vertical={false}
+					stroke="rgba(148,163,184,0.08)"
+				/>
+				<XAxis
+					dataKey="date"
+					axisLine={false}
+					tickLine={false}
+					tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
+					tickMargin={12}
+					tickFormatter={(val) =>
+						format(new Date(val), "dd MMM", { locale: pl })
+					}
+				/>
+				<YAxis
+					axisLine={false}
+					tickLine={false}
+					tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
+					tickFormatter={(val) =>
+						chartMode === "PERCENTAGE"
+							? `${val > 0 ? "+" : ""}${val}%`
+							: `${(val / 1000).toFixed(0)}k`
+					}
+					domain={
+						chartMode === "PERCENTAGE" ? [-yDomain, yDomain] : ["auto", "auto"]
+					}
+				/>
+				<ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" strokeWidth={1} />
+				<Tooltip
+					content={
+						<ComparisonTooltip
+							hiddenLines={hiddenLines}
+							chartMode={chartMode}
 						/>
-					))}
-				</LineChart>
-			</ResponsiveContainer>
+					}
+					cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
+				/>
+				<Legend content={renderCustomLegend} />
+
+				{portfolios.map((p, idx) => (
+					<Line
+						key={p.id}
+						type="monotone"
+						dataKey={p.id}
+						name={p.name}
+						stroke={COLORS[idx % COLORS.length]}
+						strokeWidth={3}
+						dot={false}
+						activeDot={{ r: 5, strokeWidth: 0 }}
+						hide={hiddenLines[p.id]}
+						isAnimationActive={true}
+						animationDuration={800}
+					/>
+				))}
+			</LineChart>
+		</ResponsiveContainer>
+	);
+
+	if (isExpanded) {
+		return (
+			<div className="fixed inset-0 z-[100] bg-slate-950/97 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
+				<div className="relative flex justify-between items-center mb-6">
+					<div className="flex items-center gap-3">
+						<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
+							<WalletCards className="w-5 h-5 text-blue-400" />
+						</div>
+						<div>
+							<h3 className="text-2xl font-bold text-white tracking-tight">
+								Wyścig Portfeli
+							</h3>
+							<p className="text-sm text-slate-400">
+								Szczegółowe porównanie strategii inwestycyjnych
+							</p>
+						</div>
+					</div>
+					<button
+						onClick={() => setIsExpanded(false)}
+						className="p-2.5 bg-slate-800/80 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 rounded-xl transition-colors shadow-lg border border-slate-700/50 hover:border-rose-500/30"
+					>
+						<Minimize2 className="w-6 h-6" />
+					</button>
+				</div>
+				<div className="relative flex-1 min-h-0 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl">
+					{chartContent}
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="relative w-full h-full flex flex-col group">
+			<div className="flex justify-end px-1 pb-2 shrink-0 z-10">
+				{/* Przycisk powiększania widoczny na mobile */}
+				<button
+					onClick={() => setIsExpanded(true)}
+					className="p-1.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-emerald-400 rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm z-10"
+					title="Powiększ wykres"
+				>
+					<Maximize2 className="w-4 h-4" />
+				</button>
+			</div>
+			<div className="flex-1 min-h-0 absolute inset-0 pt-8">{chartContent}</div>
 		</div>
 	);
 }
 
-// Tooltip sortujący portfele od najlepszego
 function ComparisonTooltip({
 	active,
 	payload,

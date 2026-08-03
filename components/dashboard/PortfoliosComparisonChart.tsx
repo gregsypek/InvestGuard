@@ -18,10 +18,10 @@ import {
 	Minimize2,
 	WalletCards,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
-import { useState } from "react";
 
 interface PortfolioDataPoint {
 	date: string | Date;
@@ -36,6 +36,7 @@ interface PortfolioInfo {
 interface PortfoliosComparisonChartProps {
 	data: PortfolioDataPoint[];
 	portfolios: PortfolioInfo[];
+	activeIds: string[]; // NOWY PROP: ID portfeli zaznaczonych na pasku głównym
 	chartMode: "VALUE" | "PERCENTAGE";
 }
 
@@ -51,10 +52,21 @@ const COLORS = [
 export function PortfoliosComparisonChart({
 	data,
 	portfolios,
+	activeIds,
 	chartMode,
 }: PortfoliosComparisonChartProps) {
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
 	const [isExpanded, setIsExpanded] = useState(false);
+
+	// MAGICZNA LOGIKA: Synchronizacja widoczności z górnym paskiem (ale pozwala na ręczne nadpisanie)
+	useEffect(() => {
+		const initialHiddenState: Record<string, boolean> = {};
+		portfolios.forEach((p) => {
+			const isActive = activeIds.includes("ALL") || activeIds.includes(p.id);
+			initialHiddenState[p.id] = !isActive; // Ukryj, jeśli nie jest zaznaczony
+		});
+		setHiddenLines(initialHiddenState);
+	}, [activeIds, portfolios]);
 
 	const toggleLine = (dataKey: string) => {
 		setHiddenLines((prev) => ({
@@ -67,7 +79,7 @@ export function PortfoliosComparisonChart({
 		return (
 			<div className="flex items-center justify-center h-full opacity-60">
 				<p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-					Wybierz portfele do porównania
+					Brak danych do porównania
 				</p>
 			</div>
 		);
@@ -219,7 +231,6 @@ export function PortfoliosComparisonChart({
 	return (
 		<div className="relative w-full h-full flex flex-col group">
 			<div className="flex justify-end px-1 pb-2 shrink-0 z-10">
-				{/* Przycisk powiększania widoczny na mobile */}
 				<button
 					onClick={() => setIsExpanded(true)}
 					className="p-1.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-emerald-400 rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm z-10"

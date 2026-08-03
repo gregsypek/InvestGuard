@@ -378,7 +378,7 @@ export function useDashboardData({
 		if (!realSnapshots || realSnapshots.length === 0) return [];
 
 		type CompareDataPoint = { date: string | Date; [key: string]: any };
-		const dataByDate: Record = {};
+		const dataByDate: Record<string, any> = {};
 
 		realSnapshots.forEach((snapshot) => {
 			// 🚀 USUNIĘTO FILTROWANIE - teraz generujemy punkty dla każdego portfela!

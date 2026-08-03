@@ -169,7 +169,7 @@ export function PortfolioBenchmarkChart({
 		<ResponsiveContainer width="100%" height="100%">
 			<LineChart
 				data={data}
-				margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+				margin={{ top: 10, right: 10, left: -10, bottom: 20 }}
 			>
 				<defs>
 					<linearGradient id="portfolioGradient" x1="0" y1="0" x2="1" y2="0">
@@ -218,9 +218,18 @@ export function PortfolioBenchmarkChart({
 				<Tooltip
 					content={<BenchmarkTooltip hiddenLines={hiddenLines} />}
 					cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
+					wrapperStyle={{ zIndex: 100 }}
 				/>
 
-				<Legend content={renderCustomLegend} />
+				{/* 🚀 ZMODYFIKOWANA LEGENDA */}
+				<Legend
+					content={renderCustomLegend}
+					verticalAlign="bottom"
+					wrapperStyle={{
+						paddingTop: "24px", // Odsuwa legendę od linii wykresu
+						position: "relative", // Zapobiega nakładaniu się z Tooltipem
+					}}
+				/>
 
 				{/* Zwykłe indeksy - renderowane pod spodem */}
 				{userIndices.map((indexKey) => (

@@ -203,7 +203,7 @@ export function UserDashboard(props: UserDashboardProps) {
 				description="Zestawienie indeksów i walorów z Twojego portfela."
 			>
 				<div className="flex flex-col md:flex-row gap-6">
-					<div className="bg-t-bg-sticky border rounded-3xl p-5 shadow-sm flex-1">
+					<div className="bg-t-bg-sticky border rounded-2xl p-5 shadow-sm flex-1">
 						<h4 className="text-[10px] font-bold uppercase text-slate-500 mb-4 flex items-center gap-2">
 							<Briefcase className="w-4 h-4 text-blue-500" /> Z Portfela
 						</h4>
@@ -227,7 +227,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					</div>
 					<div className="flex-1">
 						{props.userIndices && props.userIndices.length > 0 && (
-							<div className="bg-t-bg-sticky border rounded-3xl p-5 shadow-sm">
+							<div className="bg-t-bg-sticky border rounded-2xl p-5 shadow-sm">
 								<h4 className="text-[10px] font-bold uppercase text-slate-500 mb-4 flex items-center gap-2">
 									<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
 								</h4>
@@ -425,7 +425,7 @@ export function UserDashboard(props: UserDashboardProps) {
 			</div>
 
 			{/* WYKRESY */}
-			<div className="relative">
+			<div className="relative space-y-8">
 				{isPending && (
 					<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-3xl transition-all duration-300">
 						<div className="sticky top-[40vh] flex items-center justify-center">
@@ -445,7 +445,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					subtitle="Sprawdź wyniki swoich inwestycji w czasie"
 					description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
 				>
-					<div className="h-[400px] w-full mt-4">
+					<div className="h-[400px] w-full mt-6">
 						<PortfolioChart
 							data={portfolioChartData}
 							transactions={filteredTransactions}

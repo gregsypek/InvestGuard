@@ -256,163 +256,152 @@ export function UserDashboard(props: UserDashboardProps) {
 				ref={sentinelRef}
 				className="h-px w-full invisible pointer-events-none"
 			/>
-
-			<div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 p-3 shadow-2xl rounded-2xl mx-1 my-4 flex flex-col justify-center">
-				<div
-					className={cn(
-						"flex flex-col items-start xl:items-center justify-between gap-2",
-						isStuck ? "xl:flex-col" : "xl:flex-row",
-					)}
-				>
-					{isStuck && showAdvancedToolbar && (
-						<div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 w-full xl:w-auto border-b xl:border-b-0 xl:border-r border-slate-700/50 pb-3 xl:pb-0 xl:pr-5 justify-between xl:justify-start animate-in fade-in slide-in-from-left-4 duration-300">
-							<div className="flex items-center justify-between gap-4 w-full xl:w-auto">
-								<div className="flex flex-col xl:flex-row xl:items-center xl:gap-6">
-									<span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5 xl:text-center">
-										Wartość Zaznaczonych
+			{/* === STICKY HEADER (Pełna szerokość, poprawione kolory Light Mode) === */}
+			<div className="sticky bg-t-bg-base dark:bg-slate-900 border-slate-700/20  p-2 sm:p-3 shadow-xl rounded-2xl   top-0 z-50  sm:px-3 md:px-6 py-2.5 sm:dark:shadow-md flex flex-col gap-2 transition-all duration-300 w-full  ">
+				{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Podsumowanie + Wybór portfeli) */}
+				{isStuck && showAdvancedToolbar && (
+					<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full border-b border-slate-300 dark:border-slate-800/80 pb-2.5 animate-in fade-in slide-in-from-top-1">
+						{/* Kwota i PnL */}
+						<div className="flex items-center gap-3 shrink-0">
+							<div className="flex flex-col">
+								<span className="text-[8px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">
+									Zaznaczone
+								</span>
+								<div className="flex items-baseline gap-1">
+									<span className="text-sm md:text-base font-black text-slate-800 dark:text-white tracking-tight">
+										{totalCurrent.toLocaleString("pl-PL", {
+											minimumFractionDigits: 2,
+											maximumFractionDigits: 2,
+										})}
 									</span>
-									<div className="flex items-baseline gap-1">
-										<span className="text-base md:text-lg font-black text-white tracking-tight">
-											{totalCurrent.toLocaleString("pl-PL", {
-												minimumFractionDigits: 2,
-												maximumFractionDigits: 2,
-											})}
-										</span>
-										<span className="text-[10px] text-slate-400 font-bold">
-											PLN
-										</span>
-									</div>
-								</div>
-								<div
-									className={cn(
-										"px-2.5 py-1 rounded-md text-[11px] font-black tracking-wider flex items-center gap-1 shadow-sm shrink-0",
-										totalPnLPct > 0
-											? "bg-emerald-500/10 text-emerald-400"
-											: totalPnLPct < 0
-												? "bg-rose-500/10 text-rose-500"
-												: "bg-slate-800 text-slate-300",
-									)}
-								>
-									{totalPnLPct > 0 ? "+" : ""}
-									{totalPnLPct.toFixed(2)}%
+									<span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold">
+										PLN
+									</span>
 								</div>
 							</div>
-							<div className="flex gap-2 md:flex-wrap overflow-x-auto w-full scrollbar-hide">
-								<FilterBadge
-									id="ALL"
-									label="Wszystkie"
-									isSelected={selectedIds.includes("ALL")}
-									onToggle={togglePortfolio}
-									className="text-blue-300 py-1 px-2 text-[10px]"
-								/>
-								{props.portfolios.map((p) => (
-									<FilterBadge
-										key={p.id}
-										id={p.id}
-										label={p.name}
-										isSelected={selectedIds.includes(p.id)}
-										onToggle={togglePortfolio}
-										className="text-blue-300 py-1 px-2 text-[10px]"
-									/>
-								))}
+							<div
+								className={cn(
+									"px-2 py-0.5 rounded text-[10px] font-black shadow-sm transition-colors",
+									totalPnLPct > 0
+										? "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:border-transparent dark:bg-emerald-500/10 dark:text-emerald-400"
+										: totalPnLPct < 0
+											? "bg-rose-100 text-rose-700 border border-rose-200 dark:border-transparent dark:bg-rose-500/10 dark:text-rose-500"
+											: "bg-white text-slate-600 border border-slate-200 dark:border-transparent dark:bg-slate-800 dark:text-slate-300",
+								)}
+							>
+								{totalPnLPct > 0 ? "+" : ""}
+								{totalPnLPct.toFixed(2)}%
 							</div>
 						</div>
-					)}
-					{/* FILTRY TRYBU WYKRESU I ŹRÓDŁA DANYCH (Zawsze widoczne) */}
 
-					<div className="flex flex-wrap items-center gap-3 justify-start transition-all duration-300 w-full xl:w-auto">
-						<div className="flex items-center gap-1.5">
+						{/* Wybór portfeli (Scroll poziomy) */}
+						<div className="flex gap-1.5 overflow-x-auto w-full scrollbar-hide md:justify-end items-center">
+							<FilterBadge
+								id="ALL"
+								label="Wszystkie"
+								isSelected={selectedIds.includes("ALL")}
+								onToggle={togglePortfolio}
+								className="py-1 px-2 text-[9px] whitespace-nowrap shadow-sm dark:shadow-none"
+							/>
+							{props.portfolios.map((p) => (
+								<FilterBadge
+									key={p.id}
+									id={p.id}
+									label={p.name}
+									isSelected={selectedIds.includes(p.id)}
+									onToggle={togglePortfolio}
+									className="py-1 px-2 text-[9px] whitespace-nowrap shadow-sm dark:shadow-none"
+								/>
+							))}
+						</div>
+					</div>
+				)}
+
+				{/* 2. GŁÓWNY PASEK NARZĘDZI (Zawsze widoczny) */}
+				<div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 w-full">
+					{/* Lewa Strona: Tryby wyświetlania */}
+					<div className="flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0 pb-0.5 xl:pb-0">
+						{/* Pigułka 1: PLN / % */}
+						<div className="flex items-center p-0.5 bg-slate-200/50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-lg shrink-0">
 							<FilterBadge
 								id="VALUE"
 								label="PLN"
 								isSelected={chartMode === "VALUE"}
 								onToggle={() => setChartMode("VALUE")}
+								className={cn(
+									"py-1 px-2.5 text-[9px] border-none shadow-none",
+									chartMode === "VALUE"
+										? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm"
+										: "bg-transparent text-slate-500",
+								)}
 							/>
 							<FilterBadge
 								id="PERCENTAGE"
 								label="%"
 								isSelected={chartMode === "PERCENTAGE"}
 								onToggle={() => setChartMode("PERCENTAGE")}
+								className={cn(
+									"py-1 px-2.5 text-[9px] border-none shadow-none",
+									chartMode === "PERCENTAGE"
+										? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm"
+										: "bg-transparent text-slate-500",
+								)}
 							/>
 						</div>
-						<div className="hidden sm:block w-px h-5 bg-slate-700/50" />
-						<div className="flex items-center gap-1.5">
-							<span className="hidden md:block text-[9px] font-bold text-slate-500 uppercase tracking-widest mr-1">
-								Dane:
-							</span>
+
+						{/* Pigułka 2: REAL / SIM */}
+						<div className="flex items-center p-0.5 bg-slate-200/50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-lg shrink-0">
 							<FilterBadge
 								id="REAL"
-								label="Rzeczywiste"
+								label="Realne"
 								isSelected={dataMode === "REAL"}
 								onToggle={() => setDataMode("REAL")}
-								className={
+								className={cn(
+									"py-1 px-2.5 text-[9px] border-none shadow-none transition-colors",
 									dataMode === "REAL"
-										? "text-emerald-400 bg-emerald-500/10"
-										: ""
-								}
+										? "bg-white text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/15 shadow-sm"
+										: "bg-transparent text-slate-500",
+								)}
 							/>
 							<FilterBadge
 								id="SIMULATED"
 								label="Symulacja"
 								isSelected={dataMode === "SIMULATED"}
 								onToggle={() => setDataMode("SIMULATED")}
-								className={
+								className={cn(
+									"py-1 px-2.5 text-[9px] border-none shadow-none transition-colors",
 									dataMode === "SIMULATED"
-										? "text-amber-400 bg-amber-500/10"
-										: ""
-								}
+										? "bg-white text-amber-600 dark:text-amber-400 dark:bg-amber-500/15 shadow-sm"
+										: "bg-transparent text-slate-500",
+								)}
 							/>
-						</div>
-
-						<div className="flex-1 flex justify-end">
-							{isStuck && (
-								<button
-									onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
-									className={cn(
-										"p-2 rounded-lg transition-all duration-300 border",
-										showAdvancedToolbar
-											? "bg-slate-800 text-blue-400 border-slate-700"
-											: "bg-transparent text-slate-500 border-transparent hover:text-slate-300",
-									)}
-								>
-									{showAdvancedToolbar ? (
-										<Minimize2 className="w-4 h-4" />
-									) : (
-										<Maximize2 className="w-4 h-4" />
-									)}
-								</button>
-							)}
 						</div>
 					</div>
 
-					<div
-						className={cn(
-							"flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0 w-full xl:w-auto scrollbar-hide justify-start xl:justify-end transition-all duration-300",
-							!isStuck ? "ml-auto" : "",
-						)}
-					>
-						<div className="flex items-center gap-1">
-							{TIME_RANGES.map((range) => (
-								<button
-									key={range}
-									onClick={() =>
-										!isRangeDisabled(range) && handleRangeChange(range)
-									}
-									disabled={isRangeDisabled(range)}
-									className={cn(
-										"px-1.5 md:px-2.5 py-1.5 rounded-lg text-[10px]",
-										isRangeDisabled(range)
-											? "opacity-30 cursor-not-allowed text-slate-600"
-											: activeRange === range
-												? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-												: "text-slate-400 hover:text-slate-200",
-									)}
-								>
-									{range}
-								</button>
-							))}
-						</div>
-						<div className="hidden md:block w-px h-5 bg-slate-700/50 mx-1" />
+					{/* Prawa Strona: Zakresy czasu i Kontrolki */}
+					<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide justify-start xl:justify-end pb-0.5 xl:pb-0 w-full xl:w-auto">
+						{TIME_RANGES.map((range) => (
+							<button
+								key={range}
+								onClick={() =>
+									!isRangeDisabled(range) && handleRangeChange(range)
+								}
+								disabled={isRangeDisabled(range)}
+								className={cn(
+									"px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold tracking-wide transition-all shrink-0 border",
+									isRangeDisabled(range)
+										? "opacity-30 cursor-not-allowed border-transparent text-slate-400 dark:text-slate-600"
+										: activeRange === range
+											? "bg-white text-blue-600 border-slate-200 shadow-sm dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30"
+											: "bg-transparent text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/60",
+								)}
+							>
+								{range}
+							</button>
+						))}
+
+						<div className="w-px h-4 bg-slate-300 dark:bg-slate-700/50 mx-0.5 hidden sm:block shrink-0" />
+
 						<div className="shrink-0">
 							<DatePickerWithRange
 								from={fromDate}
@@ -420,10 +409,33 @@ export function UserDashboard(props: UserDashboardProps) {
 								onSelect={handleDateRangeSelect}
 							/>
 						</div>
+
+						{/* Zwijanie panelu */}
+						{isStuck && (
+							<button
+								onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
+								className={cn(
+									"p-1  rounded-md transition-all duration-300 border bg-white text-blue-600 border-slate-200 shadow-sm dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30 shrink-0 absolute sm:static right-3 top-3 hover:cursor-pointer ml-auto",
+									showAdvancedToolbar
+										? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-700/60 shadow-sm"
+										: "bg-transparent text-slate-400 dark:text-slate-500 border-transparent hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800",
+								)}
+								title={
+									showAdvancedToolbar
+										? "Zwiń podsumowanie"
+										: "Rozwiń podsumowanie"
+								}
+							>
+								{showAdvancedToolbar ? (
+									<Minimize2 className="w-3.5 h-3.5" />
+								) : (
+									<Maximize2 className="w-3.5 h-3.5" />
+								)}
+							</button>
+						)}
 					</div>
 				</div>
 			</div>
-
 			{/* WYKRESY */}
 			<div className="relative space-y-8">
 				{isPending && (

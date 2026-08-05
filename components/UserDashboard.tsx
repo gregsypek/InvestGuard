@@ -257,7 +257,7 @@ export function UserDashboard(props: UserDashboardProps) {
 				className="h-px w-full invisible pointer-events-none"
 			/>
 			{/* === STICKY HEADER (Pełna szerokość, poprawione kolory Light Mode) === */}
-			<div className="sticky bg-t-bg-base dark:bg-slate-900 border-slate-700/20  p-2 sm:p-3 shadow-xl rounded-2xl   top-0 z-50  sm:px-3 md:px-6 py-2.5 sm:dark:shadow-md flex flex-col gap-2 transition-all duration-300 w-full  ">
+			<div className="sticky bg-t-bg-panel border-slate-700/20  p-2 sm:p-3 shadow-xl rounded-2xl   top-0 z-50  sm:px-3 md:px-6 py-2.5 sm:dark:shadow-md flex flex-col gap-2 transition-all duration-300 w-full  ">
 				{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Podsumowanie + Wybór portfeli) */}
 				{isStuck && showAdvancedToolbar && (
 					<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full border-b border-slate-300 dark:border-slate-800/80 pb-2.5 animate-in fade-in slide-in-from-top-1">
@@ -322,7 +322,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					{/* Lewa Strona: Tryby wyświetlania */}
 					<div className="flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0 pb-0.5 xl:pb-0">
 						{/* Pigułka 1: PLN / % */}
-						<div className="flex items-center p-0.5 bg-slate-200/50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-lg shrink-0">
+						<div className="flex items-center p-0.5 bg-slate-200/50 dark:bg-t-bg-panel border border-slate-200/80 dark:border-slate-700/60 rounded-lg shrink-0">
 							<FilterBadge
 								id="VALUE"
 								label="PLN"
@@ -350,7 +350,7 @@ export function UserDashboard(props: UserDashboardProps) {
 						</div>
 
 						{/* Pigułka 2: REAL / SIM */}
-						<div className="flex items-center p-0.5 bg-slate-200/50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-lg shrink-0">
+						<div className="flex items-center p-0.5 bg-slate-200/50 dark:bg-t-bg-panel border border-slate-200/80 dark:border-slate-700/60 rounded-lg shrink-0">
 							<FilterBadge
 								id="REAL"
 								label="Realne"

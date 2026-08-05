@@ -201,7 +201,7 @@ export function PortfoliosComparisonChart({
 		return (
 			<div className="fixed inset-0 z-[100] bg-slate-950/97 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
 				<div className="relative flex justify-between items-center mb-6">
-					<div className="flex items-center gap-3">
+					<div className="flex items-start gap-3 flex-col  sm:flex-row">
 						<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
 							<WalletCards className="w-5 h-5 text-blue-400" />
 						</div>

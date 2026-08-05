@@ -278,7 +278,7 @@ export function PortfolioBenchmarkChart({
 					}}
 				/>
 				<div className="relative flex justify-between items-center mb-6">
-					<div className="flex items-center gap-3">
+					<div className="flex items-start gap-3 flex-col  sm:flex-row">
 						<div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
 							<TrendingUp className="w-5 h-5 text-emerald-400" />
 						</div>

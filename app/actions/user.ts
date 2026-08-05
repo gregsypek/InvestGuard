@@ -65,8 +65,13 @@ export async function changeUserPassword(
 	const session = await auth();
 	if (!session?.user?.id) throw new Error("Brak autoryzacji");
 
+	// ✅ POPRAWKA: Pobieramy TYLKO id oraz hasło. Oszczędzamy pamięć i czas bazy danych.
 	const user = await db.user.findUnique({
 		where: { id: session.user.id },
+		select: {
+			id: true,
+			password: true,
+		},
 	});
 
 	if (!user) throw new Error("Nie znaleziono użytkownika");
@@ -100,11 +105,13 @@ export async function exportUserData() {
 
 	const userData = await db.user.findUnique({
 		where: { id: session.user.id },
-		include: {
+		select: {
+			id: true,
+			name: true,
+			email: true,
+			// OMIJAMY password: true
 			portfolios: {
-				include: {
-					assets: true,
-				},
+				include: { assets: true },
 			},
 		},
 	});

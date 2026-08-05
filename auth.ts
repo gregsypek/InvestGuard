@@ -41,7 +41,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
 				if (!isValid) throw new Error("Nieprawidłowe hasło.");
 
-				return user;
+				// ✅ POPRAWKA: Wyciągamy 'password' (i ew. klucz 2FA), a całą resztę pakujemy do 'safeUser'
+				const { password, twoFactorSecret, ...safeUser } = user; //Usunięcie hasła gwarantuje, że nie wycieknie ono na zewnątrz.
+
+				// Zwracamy obiekt bez wrażliwych danych
+				return safeUser;
 			},
 		}),
 	],

@@ -15,7 +15,10 @@ export async function POST(req: Request) {
 			});
 		}
 
-		const existingUser = await db.user.findUnique({ where: { email } });
+		const existingUser = await db.user.findUnique({
+			where: { email },
+			select: { id: true }, // Pobieramy tylko ID, to ułamek sekundy dla bazy!
+		});
 		if (existingUser) {
 			return new NextResponse("Email jest już zajęty", { status: 400 });
 		}

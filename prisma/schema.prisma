@@ -25,8 +25,8 @@ enum Category {
   CRYPTO
   COMMODITIES
   UNKNOWN
-  REAL_ESTATE // 🚀 Nieruchomości, działki, mieszkania
-  CUSTOM // 🚀 Aktywa alternatywne (Wino, Sztuka, Zegarki, Samochody)
+  REAL_ESTATE // 🚀 Real estate, land plots, apartments
+  CUSTOM // 🚀 Alternative assets (Wine, Art, Watches, Cars)
 }
 
 enum TimeHorizon {
@@ -48,17 +48,17 @@ model Asset {
   name         String
   ticker       String?
   category     Category
-  quantity     Float    @default(0) // 🧱 Liczba jednostek (akcji, sztuk obligacji, gramów złota)
-  nominalValue Float? // 🏷️ Wartość nominalna (szczególnie ważna dla obligacji, np. 100 PLN)
+  quantity     Float    @default(0) // 🧱 Number of units (shares, bond units, grams of gold)
+  nominalValue Float? // 🏷️ Nominal value (especially important for bonds, e.g., 100 PLN)
 
-  // BAZA FINANSOWA 💰📈
-  investedCapital Float @default(0) // Ile fizycznie wpłaciliśmy (np. 1000 PLN)
-  currentValue    Float @default(0) // Aktualna wycena rynkowa (np. 1300 PLN)
+  // FINANCIAL BASE 💰📈
+  investedCapital Float @default(0) // Physical amount deposited (e.g., 1000 PLN)
+  currentValue    Float @default(0) // Current market valuation (e.g., 1300 PLN)
 
   targetPercentage Float @default(0)
 
-  // OGÓLNE DLA BOOSTER & BONDS 🚀
-  rationale   String? // Twoja teza lub powód zakupu
+  // GENERAL FOR BOOSTER & BONDS 🚀
+  rationale   String? // Your thesis or reason for purchase
   timeHorizon TimeHorizon?
 
   // POLA DLA ALPHA / BOOSTER 💎
@@ -66,11 +66,11 @@ model Asset {
   conviction  Int?
   riskLevel   String?
 
-  // POLA DLA OBLIGACJI (BONDS) 📑
+  // FIELDS FOR BONDS 📑
   purchaseDate DateTime
   maturityDate DateTime?
   interestRate Float?
-  rateType     String? // "FIXED" lub "VARIABLE"
+  rateType     String? // "FIXED" or "VARIABLE"
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -78,34 +78,34 @@ model Asset {
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
-  // POLA DLA OBSERWOWANYCH RYNKÓW
+  // FIELDS FOR OBSERVED MARKETS
   isObserved Boolean @default(false) // EN: Toggle to show on dashboard | PL: Flaga wyświetlania w sekcji Obserwowane
 
   dailyChange Float? @default(0) // EN: Percentage change in the last 24h | PL: Zmiana procentowa w 24h
 
-  @@unique([portfolioId, ticker]) //unikalny klucz złożony, który uniemożliwi stworzenie dwóch rekordów w tym samym portfelu
+  @@unique([portfolioId, ticker]) // Composite unique key preventing duplicate records in the same portfolio
 }
 
 // Portfolio model - represents a distinct investment strategy or bucket
 model Portfolio {
   id          String   @id @default(cuid())
-  name        String // e.g., "Emerytalny", "Ryzykowny"
+  name        String // e.g., "Retirement", "High Risk"
   description String? // Optional strategy details
   goal        Float? // Financial target for this specific portfolio 🎯
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // STRATEGIA (Target Allocation) - suma powinna dawać 100%
+  // STRATEGY (Target Allocation) - sum should equal 100%
   targetDeveloped   Int @default(0)
   targetEmerging    Int @default(0)
   targetBonds       Int @default(0)
   targetGold        Int @default(0)
   targetBooster     Int @default(0)
-  targetCash        Int @default(0) // ✅ Traktujemy jak każde inne aktywo
+  targetCash        Int @default(0) // ✅ Treated like any other asset
   targetCrypto      Int @default(0)
   targetCommodities Int @default(0)
-  targetRealEstate  Int @default(0) // 🚀 Docelowy % w nieruchomościach
-  targetCustom      Int @default(0) // 🚀 Docelowy % w aktywach alternatywnych
+  targetRealEstate  Int @default(0) // 🚀 Target % in real estate
+  targetCustom      Int @default(0) // 🚀 Target % in alternative assets
 
   assets               Asset[] // Relation: One portfolio can house many assets
   userId               String
@@ -143,15 +143,14 @@ model TransactionHistory {
   externalId String?
   type       TransactionType @default(BUY)
   assetName  String
-  ticker     String? // EN: Optional for cash operations
+  ticker     String? // Optional for cash operations
 
-  // EN: Multi-currency support fields
-  // PL: Pola wspierające wiele walut
-  originalPrice    Float? // Cena w EUR/USD wyciągnięta z komentarza XTB
+  // Multi-currency support fields
+  originalPrice    Float? // Price in EUR/USD extracted from XTB comment
   originalCurrency String? // EUR, USD, PLN
   exchangeRate     Float   @default(1.0)
 
-  executedValue Float // Kwota w PLN (z kolumny Amount w Excelu)
+  executedValue Float // Amount in PLN (from Amount column in Excel)
   category      Category
   executedAt    DateTime @default(now())
   rationale     String?
@@ -162,7 +161,7 @@ model TransactionHistory {
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
   @@unique([portfolioId, externalId])
-  // Indeks dla wydajności przy filtrowaniu po dacie i kwocie
+  // Index for performance when filtering by date and amount
   @@index([executedAt, executedValue])
 }
 
@@ -172,20 +171,20 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  password      String? // NOWE POLE: Hasło (zahashowane)
+  password      String? // NEW FIELD: Hashed password
 
   isTwoFactorEnabled Boolean @default(false)
-  twoFactorSecret    String? // Tutaj w przyszłości zapiszemy klucz dla Google Authenticator
+  twoFactorSecret    String? // Key for Google Authenticator (future implementation)
 
   accounts   Account[]
   sessions   Session[]
-  portfolios Portfolio[] // Twoja relacja do portfeli
+  portfolios Portfolio[] // Relation to portfolios
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   role            Role            @default(REGULAR)
-  // EN: Array of global indices (tickers/IDs) selected by the user
+  // Array of global indices (tickers/IDs) selected by the user
   observedIndices String[]        @default([])
   deviceSessions  DeviceSession[]
 }
@@ -230,8 +229,8 @@ model PortfolioSnapshot {
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
-  totalValue    Float // Całkowita wartość w danym dniu
-  investedValue Float // Zainwestowany kapitał w danym dniu (do obliczania zysku)
+  totalValue    Float // Total value on a given day
+  investedValue Float // Capital invested on a given day (for profit calculation)
   date          DateTime @default(now())
 
   @@index([portfolioId])
@@ -260,16 +259,16 @@ model DeviceSession {
   isValid    Boolean  @default(true) // EN: Set to false when user clicks "Revoke"
 }
 
-// NOWE: Tabela z historycznymi cenami
+// NEW: Table for historical prices
 model IndexHistory {
   id          String      @id @default(cuid())
   symbol      String
   marketIndex MarketIndex @relation(fields: [symbol], references: [symbol], onDelete: Cascade)
 
-  closePrice Float // Cena zamknięcia w danym dniu
+  closePrice Float // Closing price on a given day
   date       DateTime @default(now())
 
-  // Zabezpieczenie: tylko jedna cena dla danego indeksu na konkretny dzień
+  // Safeguard: only one price per index for a specific date
   @@unique([symbol, date])
   @@index([symbol])
   @@index([date])

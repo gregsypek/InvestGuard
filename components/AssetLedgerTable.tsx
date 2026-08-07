@@ -333,15 +333,21 @@ const AssetLedgerTable = ({
 								const isLastRow = index === paginatedAssets.length - 1;
 								const isAggregatedBond = asset.id === "bonds-summary-id";
 
-								const assetHistory = isAggregatedBond
-									? portfolio.transactionHistories.filter(
-											(tx) => tx.category === "BONDS",
-										)
-									: portfolio.transactionHistories.filter(
-											(tx) =>
-												tx.ticker === asset.ticker &&
-												tx.category === asset.category,
-										);
+								const assetHistory = (
+									isAggregatedBond
+										? portfolio.transactionHistories.filter(
+												(tx) => tx.category === "BONDS",
+											)
+										: portfolio.transactionHistories.filter(
+												(tx) =>
+													tx.ticker === asset.ticker &&
+													tx.category === asset.category,
+											)
+								).sort(
+									(a, b) =>
+										new Date(b.executedAt).getTime() -
+										new Date(a.executedAt).getTime(),
+								);
 
 								const chartData = [...assetHistory]
 									.sort(

@@ -2,6 +2,7 @@
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Asset, TransactionHistory } from "@prisma/client";
+import { AssetWithUI, PortfolioWithAssets } from "@/lib/types";
 import { CATEGORY_LABELS, COLORS, PAGE_ITEMS } from "@/lib/constants";
 import {
 	ChevronDown,
@@ -41,7 +42,6 @@ import { AssetLogo } from "./shared/AssetLogo";
 import { FilterBadge } from "./shared/FilterBadge";
 import Link from "next/link";
 import PaginatedBar from "./shared/PaginatedBar";
-import { PortfolioWithAssets } from "@/lib/types";
 import PremiumDeleteModal from "./shared/PremiumDeleteModal";
 import { Progress } from "@/components/ui/progress";
 import QuickAdjustCell from "./QuickAdjustCell";
@@ -62,11 +62,6 @@ interface Props {
 // 1. Definiujemy prosty typ dla wykresu
 type ChartPoint = { date: string; amount: number };
 
-type AssetWithUI = Asset & {
-	profitAmount: number;
-	profitPercent: number;
-	cleanTicker: string;
-};
 const AssetLedgerTable = ({
 	portfolio,
 	allPortfoliosWithCash,

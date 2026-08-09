@@ -1,6 +1,6 @@
 // This table shows individual instruments and their weight within the category
 
-import { Asset } from "@/lib/types";
+import { Asset } from "@prisma/client";
 import { calculateRebalance } from "@/lib/rebalance";
 // Define a mapping object for category colors
 const categoryStyles: Record<string, string> = {

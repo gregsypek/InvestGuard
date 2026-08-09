@@ -1,12 +1,6 @@
-// 1. Importujemy wszystko, co potrzebne, prosto z Prisma Client
-import {
-	Asset,
-	Category,
-	Portfolio,
-	Role,
-	TransactionHistory,
-	TransactionType,
-} from "@prisma/client";
+import { Asset, Category, Portfolio, TransactionHistory } from "@prisma/client";
+
+export type { Asset, Portfolio, Role, TransactionType } from "@prisma/client";
 
 export type AssetCategory = Category;
 export type Transaction = TransactionHistory;

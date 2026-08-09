@@ -23,7 +23,6 @@ export default async function DemoPage({
 	// WIDOK 1: WYBRANA STRATEGIA (DASHBOARD)
 	// ==========================================
 	if (selectedStrategy) {
-		//@ts-expect-error - Tymczasowe obejście dla demo, bo DashboardClientView wymaga portfolio z bazy, a my mamy tylko obiekt
 		const portfolioStatus = calculateGapAnalysis(selectedStrategy.data);
 		const totalValue = selectedStrategy.data.assets.reduce(
 			(sum, a) => sum + (a.currentValue || 0),

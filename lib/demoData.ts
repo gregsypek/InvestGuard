@@ -96,7 +96,6 @@ export const allWeatherPortfolio: PortfolioWithAssets = {
 	id: "demo-dalio",
 	name: "Ray Dalio - All Weather",
 	userId: "demo-user",
-	currency: "PLN",
 	targetBonds: 55,
 	targetDeveloped: 30,
 	targetGold: 7.5,
@@ -107,6 +106,10 @@ export const allWeatherPortfolio: PortfolioWithAssets = {
 	targetCrypto: 0,
 	targetRealEstate: 0,
 	targetCustom: 0,
+	createdAt: new Date(),
+	updatedAt: new Date(),
+	description: null,
+	goal: null,
 
 	assets: [
 		createDemoAsset({
@@ -167,7 +170,6 @@ export const classicPortfolio: PortfolioWithAssets = {
 	id: "demo-classic",
 	name: "Klasyczny 60/40",
 	userId: "demo-user",
-	currency: "PLN",
 	targetBonds: 40,
 	targetDeveloped: 60,
 	targetEmerging: 0,
@@ -178,6 +180,10 @@ export const classicPortfolio: PortfolioWithAssets = {
 	targetCommodities: 0,
 	targetRealEstate: 0,
 	targetCustom: 0,
+	createdAt: new Date(),
+	updatedAt: new Date(),
+	description: null,
+	goal: null,
 
 	assets: [
 		createDemoAsset({
@@ -212,7 +218,6 @@ export const yalePortfolio: PortfolioWithAssets = {
 	id: "demo-yale",
 	name: "Model Yale",
 	userId: "demo-user",
-	currency: "PLN",
 	targetBonds: 30,
 	targetDeveloped: 50,
 	targetEmerging: 20,
@@ -223,6 +228,10 @@ export const yalePortfolio: PortfolioWithAssets = {
 	targetCommodities: 0,
 	targetRealEstate: 0,
 	targetCustom: 0,
+	createdAt: new Date(),
+	updatedAt: new Date(),
+	description: null,
+	goal: null,
 
 	assets: [
 		createDemoAsset({

@@ -1,12 +1,13 @@
 "use client";
 
-import { Asset, PortfolioWithAssets } from "@/lib/types";
 import { BriefcaseBusiness, Lock, Pencil, Wallet2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { Asset } from "@prisma/client";
 import { Button } from "./ui/button";
 import { DeleteButton } from "./DeleteButton";
 import Link from "next/link";
+import { PortfolioWithAssets } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import React from "react";
 import { cn } from "@/lib/utils";

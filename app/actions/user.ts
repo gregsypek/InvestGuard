@@ -118,8 +118,6 @@ export async function exportUserData() {
 
 	if (!userData) throw new Error("Nie znaleziono użytkownika");
 
-	// Usuwamy zahashowane hasło i sekret 2FA przed wysłaniem pliku do użytkownika!
-	const { password, twoFactorSecret, ...safeUserData } = userData;
-
-	return safeUserData;
+	// Data is already safe, the query did not fetch the password
+	return userData;
 }

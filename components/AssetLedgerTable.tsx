@@ -62,6 +62,11 @@ interface Props {
 // 1. Definiujemy prosty typ dla wykresu
 type ChartPoint = { date: string; amount: number };
 
+type AssetWithUI = Asset & {
+	profitAmount: number;
+	profitPercent: number;
+	cleanTicker: string;
+};
 const AssetLedgerTable = ({
 	portfolio,
 	allPortfoliosWithCash,
@@ -75,9 +80,9 @@ const AssetLedgerTable = ({
 	const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
 
-	const [assetToSell, setAssetToSell] = useState<Asset | null>(null);
-	const [assetToAdjust, setAssetToAdjust] = useState<Asset | null>(null);
-	const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null);
+	const [assetToSell, setAssetToSell] = useState<AssetWithUI | null>(null);
+	const [assetToAdjust, setAssetToAdjust] = useState<AssetWithUI | null>(null);
+	const [assetToDelete, setAssetToDelete] = useState<AssetWithUI | null>(null);
 
 	const [isPending, startTransition] = useTransition();
 
@@ -606,7 +611,7 @@ const AssetLedgerTable = ({
 																		});
 																		return;
 																	}
-																	setAssetToSell(asset as unknown as Asset);
+																	setAssetToSell(asset);
 																}}
 															>
 																<HandCoins className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />{" "}
@@ -625,7 +630,7 @@ const AssetLedgerTable = ({
 																		});
 																		return;
 																	}
-																	setAssetToAdjust(asset as unknown as Asset);
+																	setAssetToAdjust(asset);
 																}}
 															>
 																<Scale className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />{" "}
@@ -645,7 +650,7 @@ const AssetLedgerTable = ({
 															<div
 																onClick={(e) => {
 																	e.stopPropagation();
-																	setAssetToDelete(asset as any); // EN: Open the delete modal
+																	setAssetToDelete(asset); // EN: Open the delete modal
 																}}
 																className="flex w-full items-center gap-2 px-2 py-1.5 cursor-pointer font-medium text-sm text-rose-600 dark:text-rose-500 hover:bg-rose-500/10 transition-colors rounded-sm outline-none"
 															>

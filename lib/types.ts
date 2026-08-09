@@ -1,19 +1,18 @@
-import { Category, TransactionHistory, TransactionType } from "@prisma/client";
+// 1. Importujemy wszystko, co potrzebne, prosto z Prisma Client
+import {
+	Asset,
+	Category,
+	Portfolio,
+	Role,
+	TransactionHistory,
+	TransactionType,
+} from "@prisma/client";
 
-export type AssetCategory =
-	| "BONDS"
-	| "DEVELOPED"
-	| "EMERGING"
-	| "GOLD"
-	| "BOOSTER"
-	| "CASH"
-	| "CRYPTO"
-	| "COMMODITIES"
-	| "UNKNOWN"
-	| "REAL_ESTATE"
-	| "CUSTOM";
+export type AssetCategory = Category;
+export type Transaction = TransactionHistory;
 
-export type Role = "ADMIN" | "SUBSCRIBER" | "REGULAR";
+// 2. Zmiana: Usuwamy ręczne eksporty AssetCategory, Role, Asset, Portfolio i Transaction
+// Będą one teraz automatycznie pobierane z "@prisma/client" w miejscach, gdzie są potrzebne.
 
 export const MODEL_ALLOCATION = [
 	{ name: "Bonds", weight: 55, color: "bg-portfolio-bonds" },
@@ -27,38 +26,6 @@ export const MODEL_ALLOCATION = [
 	{ name: "Real Estate", weight: 0, color: "bg-portfolio-real-estate" },
 	{ name: "Custom", weight: 0, color: "bg-portfolio-custom" },
 ];
-export interface Asset {
-	id: string;
-	name: string;
-	ticker?: string | null;
-	category: AssetCategory;
-	isObserved: boolean; // Nowe pole do oznaczania obserwowanych rynków,
-	// REWOLUCJA FINANSOWA 💰
-	investedCapital: number; // Musi być, by liczyć zysk
-	currentValue: number; // Musi być, by liczyć rebalancing
-
-	// NOWE POLA Z PRISMA 🧱
-	// EN: Add the new fields to the manual Asset interface
-	quantity: number; // Musi być, by liczyć średnią cenę i udziały
-
-	nominalValue?: number | null; // Opcjonalne dla obligacji
-	// OGÓLNE DLA BOOSTER & BONDS 🚀
-	rationale?: string | null;
-	timeHorizon?: string | null; // W bazie mamy Enum lub String
-
-	// POLA DLA ALPHA / BOOSTER 💎
-	expectedRoi?: number | null; // Zmieniamy na number, by móc na tym liczyć
-	conviction?: number | null; // 1-100
-	riskLevel?: string | null;
-
-	// POLA DLA OBLIGACJI (BONDS) 📑
-	purchaseDate: Date; // Prisma zwraca obiekty Date
-	maturityDate?: Date | null; // Prisma zwraca obiekty Date
-	interestRate?: number | null;
-	rateType?: string | null; // "FIXED" | "VARIABLE" (opcjonalne, bo nie każde aktywo to obligacja)
-	dailyChange?: number | null;
-	targetPercentage: number;
-}
 
 export interface StockPrice {
 	price: string;
@@ -89,6 +56,7 @@ export interface CategoryConfig {
 	weight: number; // Target percentage (e.g., 55)
 	color: string; // Tailwind class for charts
 }
+
 // Result of our gap analysis for a single category
 export interface CategoryStatus extends CategoryConfig {
 	actualAmount: number;
@@ -103,34 +71,16 @@ export type ActionResponse = {
 	error?: string;
 };
 
-export interface Portfolio {
-	id: string;
-	name: string;
-	description?: string | null;
-	userId: string;
-	goal?: number | null;
-	currency?: "PLN" | "USD" | "EUR";
-	assets: Asset[];
-	targetDeveloped: number;
-	targetEmerging: number;
-	targetBonds: number;
-	targetGold: number;
-	targetBooster: number;
-	targetCash: number;
-	targetCrypto: number;
-	targetCommodities: number;
-	targetRealEstate: number;
-	targetCustom: number;
-}
-
-// // To stworzy typ dokładnie taki, jaki zwraca zapytanie z "include: { assets: true }"
-// export type PortfolioWithAssets = Prisma.PortfolioGetPayload<{
-// 	include: { assets: true };
-// }>;
-
+// 3. Zmiana: Definiujemy PortfolioWithAssets jako rozszerzenie natywnego typu Portfolio
 export type PortfolioWithAssets = Portfolio & {
 	assets: Asset[];
-	transactionHistories: TransactionHistory[]; // ⬅️ DODAJ TĘ LINIĘ
+	transactionHistories: TransactionHistory[];
+};
+
+export type AssetWithUI = Asset & {
+	profitAmount: number;
+	profitPercent: number;
+	cleanTicker: string;
 };
 
 export interface Bond {
@@ -145,41 +95,26 @@ export interface Bond {
 	quantity: number;
 }
 
-// EN: Corrected Transaction interface matching your DB schema
-// PL: Skorygowany interfejs transakcji pasujący do schematu bazy
-export interface Transaction {
-	id: string;
-	type: TransactionType;
-	executedAt: Date | string;
-	executedValue: number;
-	category: string;
-	ticker?: string | null; // Dodano '?' aby obsłużyć undefined
-	assetName: string;
-}
-
+// Interfejsy specyficzne dla UI/Frontendu pozostają bez zmian:
 export interface DashboardAsset {
 	id: string;
-	ticker?: string | null; // Dodano '?' aby obsłużyć undefined
+	ticker?: string | null;
 	category: string;
-	investedCapital: number; // Zmieniono z any na number
-	currentValue: number; // Zmieniono z any na number
+	investedCapital: number;
+	currentValue: number;
 }
 // EN: Interface for a single point on the projection chart
-// PL: Interfejs dla pojedynczego punktu na wykresie projekcji
 export interface ProjectionPoint {
 	name: string;
 	value: number;
 }
 
-// EN: Props for the GoalProjectionChart component
-// PL: Propsy dla komponentu GoalProjectionChart
 export interface GoalProjectionProps {
 	currentValue: number;
 	targetValue: number;
 	monthlyDeposit: number;
 }
 
-// PL: Surowa struktura wiersza z eksportu Excel XTB
 export interface XtbExcelRow {
 	ID: string | number;
 	Time: string;
@@ -188,7 +123,7 @@ export interface XtbExcelRow {
 	Comment: string;
 	Amount: number;
 }
-// Definicja typu dla pojedynczej transakcji
+
 export interface SimpleTransaction {
 	type: "BUY" | "SELL" | "DEPOSIT" | "WITHDRAWAL" | string;
 }

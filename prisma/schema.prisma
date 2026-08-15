@@ -273,3 +273,20 @@ model IndexHistory {
   @@index([symbol])
   @@index([date])
 }
+
+// Tablica z historycznymi i bieżącymi odczytami inflacji GUS (Aktualizowane co miesiąc przez Admina)
+model InflationRate {
+  id        String   @id @default(cuid())
+  yearMonth String   @unique // Format: "YYYY-MM" (np. "2026-07")
+  value     Float // Wskaźnik inflacji r/r (np. 2.5)
+  updatedAt DateTime @updatedAt
+}
+
+// Konfiguracja konkretnej serii (Aktualizowane co miesiąc przez Admina po publikacji listu emisyjnego)
+model BondSeriesConfig {
+  id            String   @id @default(cuid())
+  seriesCode    String   @unique // np. "EDO0736"
+  firstYearRate Float // Oprocentowanie w pierwszym roku (np. 6.55)
+  margin        Float? // Marża na kolejne lata (np. 2.00) - null dla stałoprocentowych (TOS/DOS)
+  updatedAt     DateTime @updatedAt
+}

@@ -5,6 +5,7 @@ import { syncPortfolioAssets, updateAssetValues } from "./asset-actions";
 
 import { BOND_TEMPLATES } from "../constants";
 import { auth } from "@/auth";
+import { calculateLiveBondValue } from "../bond-calculations";
 import { db } from "@/lib/db"; // EN: Your prisma instance
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -64,9 +65,17 @@ export async function getBondsData(portfolioId: string) {
 	// Jeśli portfel nie istnieje lub nie należy do usera -> błąd 404
 	if (!portfolio) notFound();
 
-	// Formatowanie danych
+	// Formatowanie danych z wyliczeniem NA ŻYWO
 	const bonds: Bond[] = rawBonds.map((b) => {
 		const cleanTicker = b.ticker ? b.ticker.split("_")[0] : "NIEZNANY";
+
+		// 🚀 OBLICZAMY WARTOŚĆ NA DZISIAJ, ignorując to co jest sztywno w bazie
+		const liveValue = calculateLiveBondValue(
+			Number(b.investedCapital),
+			b.interestRate ?? 0,
+			b.purchaseDate,
+		);
+
 		return {
 			id: b.id,
 			ticker: cleanTicker,
@@ -81,7 +90,10 @@ export async function getBondsData(portfolioId: string) {
 					: String(b.maturityDate)
 				: null,
 			investedCapital: Number(b.investedCapital) ?? 0,
-			currentValue: Number(b.currentValue) ?? 0,
+
+			// Podmieniamy statyczną wartość z bazy na dynamiczny wynik PKO BP
+			currentValue: liveValue,
+
 			interestRate: b.interestRate ?? 0,
 			quantity: b.quantity ?? 0,
 		};
@@ -251,27 +263,44 @@ function getBondMaturityDate(purchaseDate: Date, ticker: string): Date {
 
 export async function addBond(formData: FormData, portfolioId: string) {
 	try {
-		const rawTicker = formData.get("ticker") as string;
-		const name = formData.get("name") as string;
-		const investedCapital = Number(formData.get("investedCapital"));
+		const rawTicker = formData.get("ticker") as string; // np. "EDO"
 		const purchaseDate = new Date(formData.get("purchaseDate") as string);
+		const quantity = Number(formData.get("quantity")) || 1;
+		const investedCapital = Number(formData.get("investedCapital"));
 		const interestRate = Number(formData.get("interestRate")) || 0;
 		const manualCurrentValueRaw = formData.get("manualCurrentValue");
 
-		const quantity = Number(formData.get("quantity")) || 1;
-		// 2. MAGIC TRICK - Omijamy limit unikalności Prismy
-		const dbTicker = `${rawTicker}_${Date.now()}`;
 		const rateType = getRateTypeByTicker(rawTicker);
 		const maturityDate = getBondMaturityDate(purchaseDate, rawTicker);
 
-		// EN: NEW INITIAL VALUATION LOGIC
+		// ==========================================
+		// 1. GENEROWANIE PIĘKNEJ NAZWY (np. EDO0836)
+		// ==========================================
+		// Bierzemy miesiąc i dwie ostatnie cyfry roku z daty WYKUPU
+		const matMonth = String(maturityDate.getMonth() + 1).padStart(2, "0");
+		const matYear = String(maturityDate.getFullYear()).slice(-2);
+		// Składamy Ticker (np. EDO + 08 + 36 = EDO0836)
+		const prettyTicker = `${rawTicker.substring(0, 3)}${matMonth}${matYear}`;
+
+		let name = formData.get("name") as string;
+		// Jeśli użytkownik nic nie wpisał albo wpisał gołe "EDO", nadpisujemy ładną nazwą
+		if (!name || name === rawTicker) {
+			name = `Obligacje ${prettyTicker}`;
+		}
+
+		// ==========================================
+		// 2. KLUCZE DEDUPLIKACJI (Zgodne z Importerem)
+		// ==========================================
+		const dateStr = purchaseDate.toISOString().split("T")[0]; // np. 2026-08-10
+		const dbTicker = `${prettyTicker}_${dateStr}`; // np. EDO0836_2026-08-10
+		const uniqueExternalId = `BOND_${prettyTicker}_${dateStr}`; // Klucz dla historii transakcji
+
+		// POCZĄTKOWA WYCENA
 		let startingCurrentValue = investedCapital;
 
 		if (manualCurrentValueRaw) {
-			// EN: If the user entered the valuation manually, we trust them
 			startingCurrentValue = Number(manualCurrentValueRaw);
 		} else if (interestRate > 0) {
-			// EN: If only the percentage was provided, the server calculates the valuation itself
 			const now = new Date();
 			const diffYears = Math.max(
 				0,
@@ -281,17 +310,27 @@ export async function addBond(formData: FormData, portfolioId: string) {
 			const r = interestRate / 100;
 
 			if (rateType === "FIXED" || rawTicker === "OTS" || rawTicker === "DOR") {
-				startingCurrentValue = investedCapital * (1 + r * diffYears); // EN: Simple interest
+				startingCurrentValue = investedCapital * (1 + r * diffYears);
 			} else {
-				startingCurrentValue = investedCapital * Math.pow(1 + r, diffYears); // EN: Compound interest
+				startingCurrentValue = investedCapital * Math.pow(1 + r, diffYears);
 			}
 		}
 
-		startingCurrentValue = Number(startingCurrentValue.toFixed(2)); // EN: Round to two decimal places
+		startingCurrentValue = Number(startingCurrentValue.toFixed(2));
 
+		// TRANSAKCJA BAZY DANYCH
 		await db.$transaction(async (tx) => {
-			await tx.asset.create({
-				data: {
+			// Zapis Aktywa
+			await tx.asset.upsert({
+				where: {
+					portfolioId_ticker: { portfolioId, ticker: dbTicker },
+				},
+				update: {
+					quantity: { increment: quantity },
+					investedCapital: { increment: investedCapital },
+					currentValue: { increment: startingCurrentValue },
+				},
+				create: {
 					name,
 					ticker: dbTicker,
 					portfolioId,
@@ -299,28 +338,46 @@ export async function addBond(formData: FormData, portfolioId: string) {
 					quantity,
 					rateType,
 					investedCapital,
-					currentValue: startingCurrentValue, // EN: Save the CALCULATED valuation
+					currentValue: startingCurrentValue,
 					interestRate,
 					purchaseDate,
 					maturityDate,
 				},
 			});
-			// Zapisujemy ślad w historii (TransactionHistory)
-			await tx.transactionHistory.create({
-				data: {
-					portfolioId,
-					assetName: name,
-					ticker: dbTicker,
-					quantity,
-					executedValue: investedCapital, // EN: Record initial investment in history (so the chart starts from zero)
-					executedAt: purchaseDate,
-					category: "BONDS",
-					type: "BUY",
-					rationale: "Zakup nowej serii obligacji",
+
+			// Zapis Historii (Zabezpieczone unikalnym ID zewnętrznym)
+			const existingTx = await tx.transactionHistory.findUnique({
+				where: {
+					portfolioId_externalId: { portfolioId, externalId: uniqueExternalId },
 				},
 			});
+
+			if (existingTx) {
+				await tx.transactionHistory.update({
+					where: { id: existingTx.id },
+					data: {
+						quantity: { increment: quantity },
+						executedValue: { increment: investedCapital },
+					},
+				});
+			} else {
+				await tx.transactionHistory.create({
+					data: {
+						portfolioId,
+						externalId: uniqueExternalId, // 🚀 To sprawi, że Importer odrzuci to jako duplikat, jeśli wgrasz Excela z tą samą datą!
+						assetName: name,
+						ticker: dbTicker,
+						quantity,
+						executedValue: investedCapital,
+						executedAt: purchaseDate,
+						category: "BONDS",
+						type: "BUY",
+						rationale: "Zakup nowej serii obligacji (ręczny)",
+					},
+				});
+			}
 		});
-		// 4. REWALIDACJA - Odświeżamy wszystkie miejsca, gdzie obligacja ma być widoczna
+
 		revalidatePath(`/bond-reports/${portfolioId}`);
 		revalidatePath("/dashboard");
 		revalidatePath("/bond-reports");

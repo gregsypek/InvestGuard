@@ -168,7 +168,10 @@ const AssetLedgerTable = ({
 
 		if (hideClosed) {
 			result = result.filter(
-				(asset) => asset.quantity > 0 || asset.id === "bonds-summary-id",
+				(asset) =>
+					asset.quantity > 0 ||
+					asset.id === "bonds-summary-id" ||
+					asset.category === "CASH", // 🚀 ZMIANA: Gotówka jest ZAWSZE widoczna
 			);
 		}
 
@@ -410,8 +413,10 @@ const AssetLedgerTable = ({
 													: "opacity-90",
 												isExpanded && "bg-t-bg-base",
 												isHighlighted && "bg-blue-500/5",
+												// 🚀 ZMIANA: Gotówka (CASH) nigdy nie staje się szara i wyciszona!
 												asset.quantity === 0 &&
 													!isAggregatedBond &&
+													asset.category !== "CASH" &&
 													"opacity-50 grayscale",
 											)}
 											onClick={() => {
@@ -507,7 +512,8 @@ const AssetLedgerTable = ({
 													<span className="text-[9px] text-t-text-tertiary uppercase tracking-widest block text-center font-bold">
 														Auto-kalkulacja
 													</span>
-												) : asset.quantity === 0 ? (
+												) : // 🚀 ZMIANA: Gotówka (CASH) zawsze ma przycisk korekty, nawet przy 0.00
+												asset.quantity === 0 && asset.category !== "CASH" ? (
 													<span className="text-sm text-t-text-tertiary block text-center font-bold">
 														—
 													</span>
@@ -524,7 +530,10 @@ const AssetLedgerTable = ({
 											</TableCell>
 
 											<TableCell className="text-right border-none">
-												{asset.quantity === 0 && !isAggregatedBond ? (
+												{/* 🚀 ZMIANA: Gotówka nigdy nie wyświetla napisu "Zamknięta" */}
+												{asset.quantity === 0 &&
+												!isAggregatedBond &&
+												asset.category !== "CASH" ? (
 													<div className="inline-flex items-center px-2 py-0.5 rounded-sm border border-t-border bg-t-hover text-[8px] font-bold text-t-text-tertiary uppercase tracking-widest">
 														Zamknięta
 													</div>
@@ -595,7 +604,11 @@ const AssetLedgerTable = ({
 														>
 															<DropdownMenuItem
 																className="cursor-pointer font-medium hover:bg-t-hover focus:bg-t-hover"
-																disabled={asset.quantity === 0}
+																// 🚀 ZMIANA: Odblokowane dla gotówki, nawet przy 0
+																disabled={
+																	asset.quantity === 0 &&
+																	asset.category !== "CASH"
+																}
 																onClick={(e) => {
 																	e.stopPropagation();
 																	if (isDemo) {
@@ -614,7 +627,11 @@ const AssetLedgerTable = ({
 															</DropdownMenuItem>
 															<DropdownMenuItem
 																className="cursor-pointer font-medium hover:bg-t-hover focus:bg-t-hover"
-																disabled={asset.quantity === 0}
+																// 🚀 ZMIANA: Odblokowane dla gotówki, nawet przy 0
+																disabled={
+																	asset.quantity === 0 &&
+																	asset.category !== "CASH"
+																}
 																onClick={(e) => {
 																	e.stopPropagation();
 																	if (isDemo) {

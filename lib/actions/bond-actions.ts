@@ -293,8 +293,8 @@ export async function addBond(formData: FormData, portfolioId: string) {
 		// ==========================================
 		const dateStr = purchaseDate.toISOString().split("T")[0]; // np. 2026-08-10
 		const dbTicker = `${prettyTicker}_${dateStr}`; // np. EDO0836_2026-08-10
-		const uniqueExternalId = `BOND_${prettyTicker}_${dateStr}`; // Klucz dla historii transakcji
-
+		// 🚀 POPRAWKA: Usunięto kwotę. Teraz klucz to sztywno: BOND_EDO0836_2026-08-10
+		const uniqueExternalId = `BOND_${prettyTicker}_${dateStr}`;
 		// POCZĄTKOWA WYCENA
 		let startingCurrentValue = investedCapital;
 

@@ -27,8 +27,8 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
-	// 🚀 NOWOŚĆ: Stan przełącznika (domyślnie włączony, by chronić gotówkę)
-	const [autoFundCash, setAutoFundCash] = useState(true);
+	// 🚀 NOWOŚĆ: Stan null oznacza brak decyzji. Wymusza kliknięcie przed importem.
+	const [autoFundCash, setAutoFundCash] = useState<boolean | null>(null);
 	// EN: Local fallback API dictionary providing latest Polish Treasury Bond interest rates
 	const inferDefaultBondRate = (ticker: string): number => {
 		const prefix = ticker.substring(0, 3).toUpperCase();
@@ -98,9 +98,7 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 					bond.expiryDate instanceof Date
 						? bond.expiryDate.toISOString().split("T")[0]
 						: String(bond.expiryDate);
-
 				const prefix = bond.ticker.substring(0, 3).toUpperCase();
-
 				const durationYears = BOND_DURATIONS[prefix] || 10;
 
 				const inferredPurchaseDate = new Date(bond.expiryDate);
@@ -108,22 +106,26 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 					inferredPurchaseDate.getFullYear() - durationYears,
 				);
 
-				const uniqueKey = `BOND_${bond.ticker}_${dateStr}`;
+				const finalPurchaseDate = bond.purchaseDate || inferredPurchaseDate;
+				const purchaseDateStr = finalPurchaseDate.toISOString().split("T")[0];
+
+				// 🚀 POPRAWKA: Usunięto kwotę. Klucz znów jest sztywny.
+				const uniqueKey = `BOND_${bond.ticker}_${purchaseDateStr}`;
 
 				const txPayload = {
 					uniqueKey,
 					type: "BUY" as const,
 					assetName: `Obligacje ${bond.ticker}`,
-					ticker: `${bond.ticker}_${dateStr}`,
+					ticker: `${bond.ticker}_${purchaseDateStr}`,
 					quantity: bond.quantity,
-					date: bond.purchaseDate || inferredPurchaseDate,
-					amountPLN: bond.investedValue, // 🚀 FIX: Zapisujemy czysty, nominalny wkład początkowy
+					date: finalPurchaseDate,
+					amountPLN: bond.investedValue,
 					originalPrice:
 						bond.quantity > 0 ? bond.investedValue / bond.quantity : 0,
 					currency: "PLN",
 					exchangeRate: 1,
 					category: "BONDS" as const,
-					comment: `Automatyczny import: Wykup ${dateStr}`,
+					comment: `Automatyczny import: Wykup ${bond.expiryDate.toLocaleDateString("pl-PL")}`,
 				};
 
 				// 🚀 NOWOŚĆ: Automatyczne zasilenie gotówki (jeśli switch jest włączony)
@@ -449,12 +451,11 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 								Tylko zaznaczone obligacje zostaną dodane do portfela.
 							</p>
 						</div> */}
-
 						{/* ========================================= */}
 						{/* 4. PASEK AKCJI (FOOTER TABELI) */}
 						{/* ========================================= */}
-						<div className="p-6 bg-t-bg-base/30 dark:bg-black/20 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-t-border-subtle">
-							<div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+						<div className="p-6 bg-t-bg-base/30 dark:bg-black/20 flex flex-col sm:flex-row justify-between items-center gap-6 border-t border-t-border-subtle">
+							<div className="flex flex-col items-center sm:items-start text-center sm:text-left w-full sm:w-auto">
 								<p className="text-[11px] font-black uppercase tracking-widest text-t-text-primary">
 									Wybrano:{" "}
 									<span className="text-blue-500">
@@ -462,42 +463,103 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 									</span>{" "}
 									z {preview.length}
 								</p>
-								<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest font-bold mt-1">
-									Tylko zaznaczone obligacje zostaną dodane do portfela.
-								</p>
 
-								{/* 🚀 NOWOŚĆ: Nasz Switch / Checkbox */}
-								<label className="flex items-center gap-2 mt-3 cursor-pointer group">
-									<input
-										type="checkbox"
-										checked={autoFundCash}
-										onChange={(e) => setAutoFundCash(e.target.checked)}
-										className="rounded border-t-border-subtle text-blue-600 focus:ring-blue-500 h-4 w-4 bg-black/5 dark:bg-white/5 cursor-pointer"
-									/>
-									<span className="text-[10px] uppercase tracking-widest font-bold text-t-text-secondary group-hover:text-t-text-primary transition-colors">
-										Automatycznie zaksięguj wpłatę gotówki (chroni obecne saldo)
-									</span>
-								</label>
+								{/* 🚀 WYMUSZONY WYBÓR: Ochrona salda */}
+								<div className="mt-4 p-4 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-xl w-full">
+									<p className="text-[10px] text-t-text-secondary uppercase tracking-widest font-bold mb-3">
+										Czy wygenerować wpłatę gotówki na pokrycie tego zakupu?
+									</p>
+									<div className="flex flex-col sm:flex-row gap-4">
+										<label
+											className={cn(
+												"flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer",
+												autoFundCash === true
+													? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+													: "border-transparent hover:border-t-border text-t-text-tertiary hover:text-t-text-primary",
+											)}
+										>
+											<input
+												type="radio"
+												name="fundCash"
+												checked={autoFundCash === true}
+												onChange={() => setAutoFundCash(true)}
+												className="hidden"
+											/>
+											<div
+												className={cn(
+													"w-3 h-3 rounded-full border-2 flex items-center justify-center",
+													autoFundCash === true
+														? "border-emerald-500"
+														: "border-t-border-subtle",
+												)}
+											>
+												{autoFundCash === true && (
+													<div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+												)}
+											</div>
+											<span className="text-[10px] uppercase tracking-widest font-bold">
+												Tak, chroń saldo (utwórz depozyt)
+											</span>
+										</label>
+
+										<label
+											className={cn(
+												"flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer",
+												autoFundCash === false
+													? "border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400"
+													: "border-transparent hover:border-t-border text-t-text-tertiary hover:text-t-text-primary",
+											)}
+										>
+											<input
+												type="radio"
+												name="fundCash"
+												checked={autoFundCash === false}
+												onChange={() => setAutoFundCash(false)}
+												className="hidden"
+											/>
+											<div
+												className={cn(
+													"w-3 h-3 rounded-full border-2 flex items-center justify-center",
+													autoFundCash === false
+														? "border-rose-500"
+														: "border-t-border-subtle",
+												)}
+											>
+												{autoFundCash === false && (
+													<div className="w-1.5 h-1.5 bg-rose-500 rounded-full" />
+												)}
+											</div>
+											<span className="text-[10px] uppercase tracking-widest font-bold">
+												Nie, pobierz z obecnej gotówki
+											</span>
+										</label>
+									</div>
+								</div>
 							</div>
-						</div>
 
-						<button
-							onClick={handleImport}
-							disabled={loading || selectedIndices.length === 0}
-							className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white h-12 px-8 rounded-xl font-bold uppercase tracking-widest text-[10px] disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all"
-						>
-							{loading ? (
-								<span className="flex items-center gap-2">
-									<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-									Importowanie...
-								</span>
-							) : (
-								<>
-									<CheckCircle className="h-4 w-4" />
-									Zatwierdź Wybrane
-								</>
-							)}
-						</button>
+							{/* Przycisk jest zablokowany dopóki autoFundCash === null */}
+							<button
+								onClick={handleImport}
+								disabled={
+									loading ||
+									selectedIndices.length === 0 ||
+									autoFundCash === null
+								}
+								className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white h-12 px-8 rounded-xl font-bold uppercase tracking-widest text-[10px] disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all shrink-0"
+							>
+								{loading ? (
+									<span className="flex items-center gap-2">
+										<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+										Importowanie...
+									</span>
+								) : (
+									<>
+										<CheckCircle className="h-4 w-4" />
+										Zatwierdź Wybrane
+									</>
+								)}
+							</button>
+						</div>{" "}
 					</div>
 				</div>
 			)}

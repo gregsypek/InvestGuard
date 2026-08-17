@@ -451,20 +451,20 @@ export async function syncPortfolioAssets(portfolioId: string) {
 			asset.totalQuantity += tx.quantity;
 			asset.totalInvested += tx.executedValue;
 
-			// B. ale PŁACIMY za to naszą gotówką (CASH spada)
+			// B. ale PŁACIMY za to naszą gotówką (CASH spada) - przywracamy dla wszystkiego!
+			// Usunięto warunek (tx.category !== "BONDS")
 			cashAsset.totalQuantity -= tx.executedValue;
 			cashAsset.totalInvested -= tx.executedValue;
 		} else if (asset && tx.type === "SELL") {
 			// A. Sprzedajemy akcje: maleje ilość aktywa...
-			// (Używamy bezpiecznego dzielenia, by uniknąć NaN)
 			const currentTotal = asset.totalQuantity + tx.quantity;
-			// Obliczamy ile % całości kapitału musimy zdjąć w stosunku do posiadanych sztuk
 			const ratio =
 				asset.totalQuantity > 0 ? tx.quantity / asset.totalQuantity : 1;
 			asset.totalQuantity -= tx.quantity;
 			asset.totalInvested -= asset.totalInvested * ratio;
 
 			// B. ale gotówka z transakcji wraca na nasze konto (CASH rośnie)
+			// Usunięto warunek (tx.category !== "BONDS")
 			cashAsset.totalQuantity += tx.executedValue;
 			cashAsset.totalInvested += tx.executedValue;
 		}

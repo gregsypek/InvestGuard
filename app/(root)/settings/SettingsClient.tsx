@@ -3,12 +3,14 @@
 import {
 	AlertTriangle,
 	Globe,
+	Landmark,
 	LayoutDashboard,
 	Lock,
 	User,
 } from "lucide-react";
 
 import { ActiveSessions } from "@/components/settings/ActiveSessions";
+import { BondsAdminPanel } from "@/components/BondAdminPanel";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import Cookies from "js-cookie";
 import { DeleteAccountTool } from "./DeleteAccountTool";
@@ -94,6 +96,13 @@ export default function SettingsClient({
 						onClick={() => setActiveTab("dashboard")}
 						icon={LayoutDashboard}
 						label="Pulpit i Wygląd"
+					/>
+					{/* 🚀 NOWA ZAKŁADKA */}
+					<TabButton
+						active={activeTab === "bonds-admin"}
+						onClick={() => setActiveTab("bonds-admin")}
+						icon={Landmark}
+						label="Parametry Obligacji"
 					/>
 					<TabButton
 						active={activeTab === "preferences"}
@@ -301,6 +310,17 @@ export default function SettingsClient({
 									<ActiveSessions />
 								</div>
 							</section>
+						</div>
+					)}
+					{activeTab === "bonds-admin" && (
+						<div className="space-y-6 animate-in slide-in-from-right-4 duration-500 fade-in">
+							<SettingsSection
+								title="Baza Danych Ministerstwa Finansów"
+								desc="Globalne parametry silnika obligacji (Odczyty inflacji GUS oraz konfiguracje serii)."
+							>
+								{/* 🚀 Wpinamy nasz nowy potężny komponent */}
+								<BondsAdminPanel />
+							</SettingsSection>
 						</div>
 					)}
 				</main>

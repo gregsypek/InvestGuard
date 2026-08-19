@@ -163,11 +163,12 @@ export function UserDashboard(props: UserDashboardProps) {
 							<div className="flex items-center gap-2 font-mono">
 								<span
 									className={cn(
-										"text-xl font-bold tracking-tight",
+										"text-xl font-bold tracking-tight transition-colors",
 										totalPnL > 0
-											? "text-emerald-400"
+											? // EN: Dark background allows for neon glow effects
+												"text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]"
 											: totalPnL < 0
-												? "text-rose-500"
+												? "text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]"
 												: "text-slate-400",
 									)}
 								>
@@ -178,7 +179,7 @@ export function UserDashboard(props: UserDashboardProps) {
 								</span>
 								<span
 									className={cn(
-										"text-xs font-bold px-2 py-0.5 rounded-sm",
+										"flex items-center text-xs font-bold px-2 py-0.5 rounded-sm transition-colors",
 										totalPnLPct > 0
 											? "bg-emerald-500/10 text-emerald-400"
 											: totalPnLPct < 0

@@ -1,3 +1,8 @@
+import {
+	calculateLiveBondValue,
+	getBondDictionaries,
+} from "@/lib/bond-calculations";
+
 import DashboardClientView from "@/components/ui/DashboardClientView";
 import { auth } from "@/auth";
 import { calculateGapAnalysis } from "@/lib/calculations";
@@ -20,16 +25,52 @@ export default async function DashboardPage({ params }: Props) {
 
 	const { id } = await params;
 
-	// 1. ODPALAMY STRAŻNIKA (Wymuszamy ID ze ścieżki)
-	const { portfolio, errorComponent } = await getGuardedPortfolio({
+	const guardedResult = await getGuardedPortfolio({
 		searchParams: Promise.resolve({ portfolioId: id }),
 		userId: session.user.id,
 	});
 
-	// 2. Jeśli portfel nie istnieje, strażnik wyrzuci ładny modal NOT_FOUND
-	if (errorComponent || !portfolio) {
-		return errorComponent;
+	// Wczesny zwrot błędu
+	if (guardedResult.errorComponent || !guardedResult.portfolio) {
+		return guardedResult.errorComponent;
 	}
+
+	// 2. Wyciągamy portfolio do zmiennej modyfikowalnej (let)
+	let portfolio = guardedResult.portfolio;
+
+	// Przeliczamy obligacje z użyciem GUS przed wysłaniem do tabeli
+
+	const hasBonds = portfolio.assets.some((a) => a.category === "BONDS");
+
+	if (hasBonds) {
+		const { inflationMap, configMap } = await getBondDictionaries();
+		// Aktualizujemy wycenę w locie
+		portfolio = {
+			...portfolio,
+			assets: portfolio.assets.map((asset) => {
+				if (asset.category === "BONDS") {
+					const cleanTicker = asset.ticker
+						? asset.ticker.split("_")[0]
+						: "UNKNOWN";
+					const calculated = calculateLiveBondValue(
+						Number(asset.investedCapital),
+						asset.interestRate ?? 0,
+						asset.purchaseDate,
+						cleanTicker,
+						inflationMap,
+						configMap,
+					);
+
+					return {
+						...asset,
+						currentValue: calculated.value, // 🚀 Nadpisujemy statyczną bazę dynamicznym wynikiem z inflacji!
+					};
+				}
+				return asset;
+			}),
+		};
+	}
+	// =====================================================================
 
 	// 3. Pobieramy portfele z celem gotówkowym (do przelewów wewnętrznych)
 	const allPortfoliosWithCash = await db.portfolio.findMany({

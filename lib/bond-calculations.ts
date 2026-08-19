@@ -1,5 +1,7 @@
 // lib/bond-calculations.ts
 
+import { db } from "./db";
+
 export interface BondConfigDict {
 	[seriesCode: string]: { firstYearRate: number; margin: number | null };
 }
@@ -133,4 +135,32 @@ function getGusInflationMonth(anniversary: Date): string {
 function getDaysBetween(date1: Date, date2: Date): number {
 	const ONE_DAY = 1000 * 60 * 60 * 24;
 	return Math.round(Math.abs((date2.getTime() - date1.getTime()) / ONE_DAY));
+}
+
+export async function getBondDictionaries() {
+	const [rawInflation, rawConfigs] = await Promise.all([
+		db.inflationRate.findMany(),
+		db.bondSeriesConfig.findMany(),
+	]);
+
+	const inflationMap = rawInflation.reduce(
+		(acc, item) => {
+			acc[item.yearMonth] = item.value;
+			return acc;
+		},
+		{} as Record<string, number>,
+	);
+
+	const configMap = rawConfigs.reduce(
+		(acc, item) => {
+			acc[item.seriesCode] = {
+				firstYearRate: item.firstYearRate,
+				margin: item.margin,
+			};
+			return acc;
+		},
+		{} as Record<string, { firstYearRate: number; margin: number | null }>,
+	);
+
+	return { inflationMap, configMap };
 }

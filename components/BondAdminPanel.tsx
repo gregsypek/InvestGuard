@@ -93,26 +93,28 @@ export function BondsAdminPanel() {
 
 	// 🚀 FIX 1: Zaawansowane sortowanie CHRONOLOGICZNE (Lata -> Miesiące)
 	Object.keys(groupedConfigs).forEach((prefix) => {
-		groupedConfigs[prefix].sort((a, b) => {
-			// Wyciągamy miesiąc (mm) i rok (yy) ze stringa np. EDO0835 -> mm: 8, yy: 35
-			const parseDate = (code: string) => {
-				const match = code.match(/[A-Z]+(\d{2})(\d{2})/i);
-				if (match) {
-					return { mm: parseInt(match[1], 10), yy: parseInt(match[2], 10) };
+		groupedConfigs[prefix].sort(
+			(a: { seriesCode: string }, b: { seriesCode: string }) => {
+				// Wyciągamy miesiąc (mm) i rok (yy) ze stringa np. EDO0835 -> mm: 8, yy: 35
+				const parseDate = (code: string) => {
+					const match = code.match(/[A-Z]+(\d{2})(\d{2})/i);
+					if (match) {
+						return { mm: parseInt(match[1], 10), yy: parseInt(match[2], 10) };
+					}
+					return { mm: 99, yy: 99 };
+				};
+
+				const dateA = parseDate(a.seriesCode);
+				const dateB = parseDate(b.seriesCode);
+
+				// Jeśli lata są różne, sortujemy po latach (np. 35 przed 36)
+				if (dateA.yy !== dateB.yy) {
+					return dateA.yy - dateB.yy;
 				}
-				return { mm: 99, yy: 99 };
-			};
-
-			const dateA = parseDate(a.seriesCode);
-			const dateB = parseDate(b.seriesCode);
-
-			// Jeśli lata są różne, sortujemy po latach (np. 35 przed 36)
-			if (dateA.yy !== dateB.yy) {
-				return dateA.yy - dateB.yy;
-			}
-			// Jeśli rok ten sam, sortujemy po miesiącach (np. 07 przed 08)
-			return dateA.mm - dateB.mm;
-		});
+				// Jeśli rok ten sam, sortujemy po miesiącach (np. 07 przed 08)
+				return dateA.mm - dateB.mm;
+			},
+		);
 	});
 
 	const sortedPrefixes = Object.keys(groupedConfigs).sort();
@@ -272,37 +274,44 @@ export function BondsAdminPanel() {
 								</span>
 							</div>
 							<div>
-								{groupedConfigs[prefix].map((conf) => (
-									<div
-										key={conf.id}
-										className="flex justify-between items-center p-3 border-b border-t-border-subtle last:border-0 hover:bg-t-hover transition-colors"
-									>
-										<span className="font-mono text-[11px] font-bold text-t-text-secondary bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
-											{conf.seriesCode}
-										</span>
-										<div className="flex items-center gap-4 text-xs font-mono font-bold">
-											<div className="flex flex-col items-end">
-												<span className="text-t-text-primary">
-													{conf.firstYearRate.toFixed(2)}%
-												</span>
-												<span className="text-[9px] text-emerald-500 uppercase tracking-widest mt-0.5">
-													{conf.margin !== null
-														? `Marża: ${conf.margin.toFixed(2)}%`
-														: "Stałe (Brak marży)"}
-												</span>
+								{groupedConfigs[prefix].map(
+									(conf: {
+										id: string;
+										seriesCode: string;
+										firstYearRate: number;
+										margin: number | null;
+									}) => (
+										<div
+											key={conf.id}
+											className="flex justify-between items-center p-3 border-b border-t-border-subtle last:border-0 hover:bg-t-hover transition-colors"
+										>
+											<span className="font-mono text-[11px] font-bold text-t-text-secondary bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
+												{conf.seriesCode}
+											</span>
+											<div className="flex items-center gap-4 text-xs font-mono font-bold">
+												<div className="flex flex-col items-end">
+													<span className="text-t-text-primary">
+														{conf.firstYearRate.toFixed(2)}%
+													</span>
+													<span className="text-[9px] text-emerald-500 uppercase tracking-widest mt-0.5">
+														{conf.margin !== null
+															? `Marża: ${conf.margin.toFixed(2)}%`
+															: "Stałe (Brak marży)"}
+													</span>
+												</div>
+												<button
+													onClick={() => {
+														deleteBondConfig(conf.id);
+														loadData();
+													}}
+													className="text-t-text-tertiary hover:text-rose-500 transition-colors p-1"
+												>
+													<Trash2 className="w-4 h-4" />
+												</button>
 											</div>
-											<button
-												onClick={() => {
-													deleteBondConfig(conf.id);
-													loadData();
-												}}
-												className="text-t-text-tertiary hover:text-rose-500 transition-colors p-1"
-											>
-												<Trash2 className="w-4 h-4" />
-											</button>
 										</div>
-									</div>
-								))}
+									),
+								)}
 							</div>
 						</div>
 					))}

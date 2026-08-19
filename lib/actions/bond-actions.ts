@@ -54,26 +54,50 @@ export async function getBondsData(portfolioId: string) {
 	const session = await auth();
 	if (!session?.user?.id) return null;
 
-	const [portfolio, rawBonds] = await Promise.all([
+	// 🚀 ZMIANA: Pobieramy dane portfela, obligacji oraz słowniki z nowych tabel JEDNOCZEŚNIE
+	const [portfolio, rawBonds, rawInflation, rawConfigs] = await Promise.all([
 		db.portfolio.findUnique({
 			where: { id: portfolioId, userId: session.user.id },
 			select: { name: true },
 		}),
 		getBonds(portfolioId),
+		db.inflationRate.findMany(), // Pobiera wszystkie odczyty GUS
+		db.bondSeriesConfig.findMany(), // Pobiera konfiguracje serii (marże i proc. 1-szy rok)
 	]);
 
-	// Jeśli portfel nie istnieje lub nie należy do usera -> błąd 404
 	if (!portfolio) notFound();
 
-	// Formatowanie danych z wyliczeniem NA ŻYWO
-	const bonds: Bond[] = rawBonds.map((b) => {
-		const cleanTicker = b.ticker ? b.ticker.split("_")[0] : "NIEZNANY";
+	// 🚀 ZMIANA: Mapujemy tablice bazy danych na obiekty słownikowe (dla błyskawicznego odczytu O(1) w pętli)
+	const inflationMap = rawInflation.reduce(
+		(acc, item) => {
+			acc[item.yearMonth] = item.value;
+			return acc;
+		},
+		{} as Record<string, number>,
+	);
 
-		// 🚀 OBLICZAMY WARTOŚĆ NA DZISIAJ, ignorując to co jest sztywno w bazie
-		const liveValue = calculateLiveBondValue(
+	const configMap = rawConfigs.reduce(
+		(acc, item) => {
+			acc[item.seriesCode] = {
+				firstYearRate: item.firstYearRate,
+				margin: item.margin,
+			};
+			return acc;
+		},
+		{} as Record<string, { firstYearRate: number; margin: number | null }>,
+	);
+
+	const bonds: Bond[] = rawBonds.map((b) => {
+		const cleanTicker = b.ticker ? b.ticker.split("_")[0] : "NIEZNANY"; // np. EDO0836
+
+		// 🚀 ZMIANA: Odbieramy obiekt z wyceną i stawką z silnika
+		const calculated = calculateLiveBondValue(
 			Number(b.investedCapital),
 			b.interestRate ?? 0,
 			b.purchaseDate,
+			cleanTicker,
+			inflationMap,
+			configMap,
 		);
 
 		return {
@@ -91,15 +115,19 @@ export async function getBondsData(portfolioId: string) {
 				: null,
 			investedCapital: Number(b.investedCapital) ?? 0,
 
-			// Podmieniamy statyczną wartość z bazy na dynamiczny wynik PKO BP
-			currentValue: liveValue,
-
-			interestRate: b.interestRate ?? 0,
+			currentValue: calculated.value, // Wycena PLN
+			interestRate: configMap[cleanTicker]
+				? configMap[cleanTicker].firstYearRate
+				: (b.interestRate ?? 0),
 			quantity: b.quantity ?? 0,
-		};
+
+			// 🚀 NOWOŚĆ: Wstrzykujemy stawkę do wyrenderowania w nowym okienku
+			currentPeriodRate: calculated.currentRate,
+			// 🚀 NOWOŚĆ: Flaga informująca frontend, że tą obligacją steruje Panel Admina
+			hasGlobalConfig: !!configMap[cleanTicker],
+		} as Bond & { currentPeriodRate?: number; hasGlobalConfig?: boolean };
 	});
 
-	// EN: Calculate statistics for the cards directly in the layout
 	const totals = bonds.reduce(
 		(acc, bond) => {
 			acc.totalInvested += bond.investedCapital;
@@ -124,49 +152,6 @@ export async function getBondsData(portfolioId: string) {
 		},
 	};
 }
-
-// export async function deleteBond(id: string) {
-// 	try {
-// 		// 1. Pobieramy dane przed usunięciem
-// 		const bond = await db.asset.findUnique({
-// 			where: { id },
-// 		});
-
-// 		if (!bond) return { success: false, message: "Nie znaleziono obligacji" };
-
-// 		await db.$transaction([
-// 			// 2. Dodajemy wpis do historii (bilansujący na zero)
-// 			db.transactionHistory.create({
-// 				data: {
-// 					portfolioId: bond.portfolioId,
-// 					assetName: bond.name || (bond.ticker ?? "NIE PODANO"),
-// 					ticker: bond.ticker,
-// 					quantity: -bond.quantity, // Ujemna ilość, żeby wyzerować stos na wykresie
-// 					executedValue: -bond.currentValue, // Ujemna wartość
-// 					executedAt: new Date(),
-// 					category: "BONDS",
-// 					rationale: "[ZAMKNIĘCIE POZYCJI] Usunięcie transzy z portfela",
-// 				},
-// 			}),
-// 			// 3. Usuwamy samo aktywo
-// 			db.asset.delete({
-// 				where: { id },
-// 			}),
-// 		]);
-
-// 		// 4. Revalidujemy wszystkie ścieżki, gdzie te dane występują
-// 		revalidatePath("/bond-reports");
-// 		revalidatePath("/dashboard");
-
-// 		return {
-// 			success: true,
-// 			message: "Obligacja usunięta i zarchiwizowana w historii",
-// 		};
-// 	} catch (error) {
-// 		console.error("Delete error:", error);
-// 		return { success: false, message: "Nie udało się usunąć obligacji" };
-// 	}
-// }
 
 // EN: Ensure the function always returns a valid ActionResponse
 

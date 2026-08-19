@@ -1,11 +1,14 @@
 "use server";
 
 import { ActionResponse, Bond } from "../types";
+import {
+	calculateLiveBondValue,
+	getBondDictionaries,
+} from "../bond-calculations";
 import { syncPortfolioAssets, updateAssetValues } from "./asset-actions";
 
 import { BOND_TEMPLATES } from "../constants";
 import { auth } from "@/auth";
-import { calculateLiveBondValue } from "../bond-calculations";
 import { db } from "@/lib/db"; // EN: Your prisma instance
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -680,5 +683,58 @@ export async function updateImportedBondSpecs(
 	} catch (error) {
 		console.error("Failed to update imported bond specs:", error);
 		return { success: false, error };
+	}
+}
+
+// EN: Intelligent background scanner to synchronize bond valuations
+export async function syncBondsWithMarket(portfolioId: string) {
+	try {
+		const { inflationMap, configMap } = await getBondDictionaries();
+
+		const bonds = await db.asset.findMany({
+			where: { portfolioId, category: "BONDS" },
+		});
+
+		for (const bond of bonds) {
+			const cleanTicker = bond.ticker ? bond.ticker.split("_")[0] : "UNKNOWN";
+
+			const calculated = calculateLiveBondValue(
+				Number(bond.investedCapital),
+				bond.interestRate ?? 0,
+				bond.purchaseDate,
+				cleanTicker,
+				inflationMap,
+				configMap,
+			);
+
+			// EN: Check if the value has grown due to capitalized interest
+			const valueDelta = calculated.value - Number(bond.currentValue);
+
+			if (valueDelta > 0.01 || valueDelta < -0.01) {
+				await db.$transaction([
+					// EN: 1. Update the actual asset value
+					db.asset.update({
+						where: { id: bond.id },
+						data: { currentValue: calculated.value },
+					}),
+					// EN: 2. Save the growth as an interest transaction so charts reflect it
+					db.transactionHistory.create({
+						data: {
+							portfolioId,
+							type: "INTEREST",
+							assetName: bond.name,
+							ticker: bond.ticker,
+							quantity: 0,
+							executedValue: valueDelta,
+							category: "BONDS",
+							rationale: `Auto-kapitalizacja (wartość bieżąca: ${calculated.value} PLN)`,
+							executedAt: new Date(),
+						},
+					}),
+				]);
+			}
+		}
+	} catch (error) {
+		console.error("Error syncing bonds:", error);
 	}
 }

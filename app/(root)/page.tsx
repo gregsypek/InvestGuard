@@ -1,8 +1,14 @@
+import {
+	calculateLiveBondValue,
+	getBondDictionaries,
+} from "@/lib/bond-calculations";
+
 import GuestOnboarding from "@/components/GuestOnboarding";
 import { UserDashboard } from "@/components/UserDashboard";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { generatePortfolioHistory } from "../lib/history-engine";
+import { syncBondsWithMarket } from "@/lib/actions/bond-actions";
 
 // WYMUSZENIE ODŚWIEŻANIA Z BAZY DANYCH (Wyłącza agresywny cache Next.js)
 export const dynamic = "force-dynamic";
@@ -24,6 +30,11 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 		where: { userId: session.user.id },
 		include: { assets: true, transactionHistories: true },
 	});
+
+	// 🚀 Synchronizujemy obligacje z rynkiem (zapis do bazy i historii wykresów)
+	for (const p of portfolios) {
+		await syncBondsWithMarket(p.id);
+	}
 
 	const allAssets = portfolios.flatMap((p) => p.assets);
 

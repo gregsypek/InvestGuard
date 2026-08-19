@@ -11,8 +11,8 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 
 export default function SignInPage() {
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
+	const [email, setEmail] = useState("demo@example.com");
+	const [password, setPassword] = useState("demo123");
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const router = useRouter();

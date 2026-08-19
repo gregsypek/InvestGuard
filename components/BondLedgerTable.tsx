@@ -5,7 +5,9 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Clock,
+	Filter,
 	HandCoins,
+	Lock,
 	TableCellsMerge,
 } from "lucide-react";
 import React, { Fragment, useMemo, useState, useTransition } from "react";
@@ -35,39 +37,62 @@ import { SellAssetModal } from "./SellAssetModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+// 🚀 1. Dodajemy rozszerzony typ, żeby TS wiedział o nowym polu
+interface ExtendedBond extends Bond {
+	currentPeriodRate?: number;
+	hasGlobalConfig?: boolean;
+}
 interface Props {
-	initialBonds: Bond[];
+	initialBonds: ExtendedBond[];
 	portfolioId: string;
 	allPortfolios: { id: string; name: string }[];
 }
 
-// EN: Extracted to a clean, dedicated component
 export default function BondLedgerTable({
 	initialBonds,
 	portfolioId,
 	allPortfolios,
 }: Props) {
 	const [openGroups, setOpenGroups] = useState<string[]>([]);
-	// const [assetToSell, setAssetToSell] = useState<Bond | null>(null);
 	const [assetToSell, setAssetToSell] = useState<Asset | null>(null);
-	const [isPending, startTransition] = useTransition(); // Do obsługi ładowania
-	// EN: Grouping bonds using useMemo for better performance
+	const [isPending, startTransition] = useTransition();
 
-	// Przygotowujemy listę pod modal (filtrujemy np. tylko te, które przyjmują gotówkę)
+	// 🚀 NOWOŚĆ: Stan wybranego roku do filtrowania (Domyślnie obecny rok)
+	const [selectedYear, setSelectedYear] = useState<string>(
+		new Date().getFullYear().toString(),
+	);
+
 	const portfoliosWithCash = allPortfolios.map((p) => ({
 		id: p.id,
 		name: p.name,
 	}));
+
+	// 🚀 NOWOŚĆ: Generowanie listy dostępnych lat na podstawie danych
+	const availableYears = useMemo(() => {
+		const years = new Set(
+			initialBonds.map((b) =>
+				new Date(b.purchaseDate).getFullYear().toString(),
+			),
+		);
+		return Array.from(years).sort((a, b) => b.localeCompare(a));
+	}, [initialBonds]);
+
+	// 🚀 ZMIANA: Grupowanie uwzględniające filtr roku
 	const groupedBonds = useMemo(() => {
-		const groups: Record<string, Bond[]> = {};
+		const groups: Record<string, ExtendedBond[]> = {};
 		initialBonds.forEach((bond) => {
+			const bondYear = new Date(bond.purchaseDate).getFullYear().toString();
+
+			// Pomijamy obligacje, jeśli nie pasują do wybranego roku (i nie wybrano "ALL")
+			if (selectedYear !== "ALL" && bondYear !== selectedYear) return;
+
 			const ticker = bond.ticker ?? "NIEZNANE";
 			const prefix = ticker.match(/^[A-Z]+/)?.[0] || "INNE";
 			if (!groups[prefix]) groups[prefix] = [];
 			groups[prefix].push(bond);
 		});
 		return groups;
-	}, [initialBonds]);
+	}, [initialBonds, selectedYear]);
 
 	const toggleGroup = (ticker: string) => {
 		setOpenGroups((prev) =>
@@ -77,9 +102,7 @@ export default function BondLedgerTable({
 		);
 	};
 
-	// EN: Helper to calculate progress using objects instead of strings
 	const calculateProgress = (start: Date | string, end: Date | string) => {
-		// new Date() bezpiecznie parsuje zarówno obiekty Date jak i Stringi ISO
 		const startTime = new Date(start).getTime();
 		const endTime = new Date(end).getTime();
 		const now = new Date().getTime();
@@ -90,18 +113,25 @@ export default function BondLedgerTable({
 
 		return Math.max(0, Math.min(100, (current / total) * 100));
 	};
-	console.log("🚀 ~ calculateProgress ~ calculateProgress:", calculateProgress);
 
-	// EN: Function to estimate maturity date based on series type
+	// 🚀 NOWOŚĆ: Funkcja wyliczająca aktualny okres odsetkowy (lata od zakupu + 1)
+	const getCurrentPeriod = (purchaseDate: Date | string) => {
+		const start = new Date(purchaseDate).getTime();
+		const now = new Date().getTime();
+		if (now < start) return 1;
+
+		// Dzielimy różnicę czasu przez długość roku w milisekundach
+		const yearsDiff = (now - start) / (1000 * 60 * 60 * 24 * 365.25);
+		return Math.floor(yearsDiff) + 1;
+	};
+
 	const getMaturityDate = (bond: Bond) => {
 		if (bond.maturityDate) return new Date(bond.maturityDate);
 
-		// Wyciągamy TYLKO 3 pierwsze litery przedrostka do słownika
 		const cleanTicker = bond.ticker?.split("_")[0].toUpperCase() || "";
-		const prefix = cleanTicker.substring(0, 3); // Z 'ROD0438' robimy 'ROD'
-		const years = BOND_DURATIONS[prefix] || 10; // Zabezpieczenie na 10 lat, a nie na 0!
+		const prefix = cleanTicker.substring(0, 3);
+		const years = BOND_DURATIONS[prefix] || 10;
 
-		// Bezpieczne tworzenie daty z purchaseDate
 		const d = new Date(bond.purchaseDate);
 		d.setFullYear(d.getFullYear() + years);
 		return d;
@@ -119,9 +149,9 @@ export default function BondLedgerTable({
 	}) => {
 		if (!assetToSell) return;
 		const formData = new FormData();
-		formData.append("bondId", assetToSell.id); // 👈 Upewnij się że tu jest 'bondId'
+		formData.append("bondId", assetToSell.id);
 		formData.append("quantity", data.quantity.toString());
-		formData.append("sellPrice", data.price.toString()); // To jest nasze 'totalValue' z modalu
+		formData.append("sellPrice", data.price.toString());
 		formData.append("targetPortfolioId", data.targetId);
 		formData.append("executedAt", new Date().toISOString());
 		if (data.note) formData.append("note", data.note);
@@ -136,12 +166,49 @@ export default function BondLedgerTable({
 			}
 		});
 	};
+
 	return (
-		<div className="w-full">
+		<div className="w-full flex flex-col gap-4">
+			{/* 🚀 NOWOŚĆ: PASEK FILTROWANIA PO ROKU */}
+			{availableYears.length > 0 && (
+				<div className="flex items-center gap-2 overflow-x-auto p-2 scrollbar-hide">
+					<div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+						<Filter size={12} />
+						Rok Zakupu
+					</div>
+
+					<button
+						onClick={() => setSelectedYear("ALL")}
+						className={cn(
+							"px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+							selectedYear === "ALL"
+								? "bg-blue-600/10 border-blue-500 text-blue-500 border"
+								: "bg-transparent border border-transparent text-t-text-tertiary hover:bg-black/5 dark:hover:bg-white/5",
+						)}
+					>
+						Wszystkie
+					</button>
+
+					{availableYears.map((year) => (
+						<button
+							key={year}
+							onClick={() => setSelectedYear(year)}
+							className={cn(
+								"px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+								selectedYear === year
+									? "bg-blue-600/10 border-blue-500 text-blue-500 border"
+									: "bg-t-bg-panel border border-t-border-subtle text-t-text-secondary hover:border-blue-500/50",
+							)}
+						>
+							{year}
+						</button>
+					))}
+				</div>
+			)}
+
 			<Table className="w-full min-w-[800px]">
 				<TableHeader>
 					<TableRow className="border-b border-t-border-subtle hover:bg-transparent">
-						{/* STICKY NAGŁÓWEK */}
 						<TableHead className="sticky left-0 z-20 bg-t-bg-sticky text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4 pl-6 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.3)]">
 							Seria / Zakup
 						</TableHead>
@@ -161,6 +228,17 @@ export default function BondLedgerTable({
 				</TableHeader>
 
 				<TableBody>
+					{Object.keys(groupedBonds).length === 0 && (
+						<TableRow>
+							<TableCell
+								colSpan={5}
+								className="py-12 text-center text-t-text-tertiary text-sm font-bold border-none"
+							>
+								Brak obligacji dla wybranego roku ({selectedYear}).
+							</TableCell>
+						</TableRow>
+					)}
+
 					{Object.entries(groupedBonds).map(
 						([ticker, transzes], groupIndex) => {
 							const totalVal = transzes.reduce(
@@ -168,12 +246,10 @@ export default function BondLedgerTable({
 								0,
 							);
 							const isOpen = openGroups.includes(ticker);
-
 							const isEvenGroup = groupIndex % 2 === 1;
 
 							return (
 								<Fragment key={ticker}>
-									{/* ================= PARENT ROW (Nagłówek Grupy) ================= */}
 									<TableRow
 										onClick={() => toggleGroup(ticker)}
 										className={cn(
@@ -185,7 +261,6 @@ export default function BondLedgerTable({
 													: "hover:bg-t-hover",
 										)}
 									>
-										{/* STICKY RODZIC */}
 										<TableCell className="sticky left-0 z-10 pl-6 py-4 border-none bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.3)]">
 											<div className="flex items-center gap-3">
 												{isOpen ? (
@@ -229,7 +304,6 @@ export default function BondLedgerTable({
 										<TableCell className="py-4 border-none" />
 									</TableRow>
 
-									{/* ================= CHILD ROWS (Pojedyncze transze) ================= */}
 									{isOpen &&
 										transzes.map((bond, childIndex) => {
 											const mDate = getMaturityDate(bond);
@@ -237,7 +311,7 @@ export default function BondLedgerTable({
 												bond.purchaseDate,
 												mDate,
 											);
-
+											const currentPeriod = getCurrentPeriod(bond.purchaseDate);
 											const isEvenChild = childIndex % 2 === 1;
 
 											return (
@@ -250,13 +324,9 @@ export default function BondLedgerTable({
 															: "",
 													)}
 												>
-													{/* STICKY DZIECKO z niebieskim drzewkiem */}
 													<TableCell className="sticky left-0 z-10 p-0 border-none bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.3)]">
-														{/* Wewnętrzny wrapper 'relative', dzięki któremu 'sticky' komórki nie jest nadpisywane */}
 														<div className="relative w-full h-full pl-14 pr-4 py-4 flex flex-col justify-center">
-															{/* Linia pionowa (drzewko) */}
 															<div className="absolute left-8 top-0 bottom-0 w-px bg-blue-500/30 group-hover:bg-blue-500/50 transition-colors" />
-															{/* Linia pozioma do wiersza */}
 															<div className="absolute left-8 top-1/2 w-4 h-px bg-blue-500/30 group-hover:bg-blue-500/50 transition-colors" />
 
 															<div className="flex flex-col gap-1.5 relative z-10">
@@ -290,7 +360,6 @@ export default function BondLedgerTable({
 														</div>
 													</TableCell>
 
-													{/* 2. Wykup / Postęp */}
 													<TableCell className="py-4 border-none">
 														<div className="flex flex-col gap-1.5">
 															<span className="text-[10px] font-bold tracking-widest uppercase text-t-text-secondary flex items-center gap-1.5 whitespace-nowrap">
@@ -308,17 +377,46 @@ export default function BondLedgerTable({
 														</div>
 													</TableCell>
 
-													{/* 3. Oprocentowanie */}
+													{/* 🚀 ZMIANA: Dodano wyświetlanie bieżącego okresu odsetkowego pod kontrolką w kolumnie Oprocentowanie[cite: 6] */}
 													<TableCell className="py-4 border-none">
-														<QuickAdjustCell
-															currentValue={bond.interestRate || 0}
-															assetId={bond.id}
-															onUpdate={updateBondInterestRate}
-															label={`${bond.interestRate || 0}%`}
-														/>
+														<div className="flex flex-col items-start gap-1.5">
+															{/* 🚀 LOGIKA: Jeśli ma konfigurację z Panelu, to blokujemy edycję */}
+															{bond.hasGlobalConfig ? (
+																<div
+																	className="flex items-center gap-1.5 bg-black/5 dark:bg-white/5 px-2 py-1.5 rounded-lg border border-t-border-subtle cursor-help"
+																	title="Oprocentowanie bazowe jest automatycznie zarządzane przez List Emisyjny w Panelu Ustawień"
+																>
+																	<Lock
+																		size={12}
+																		className="text-t-text-tertiary"
+																	/>
+																	<span className="text-[11px] font-bold text-t-text-primary">
+																		{bond.interestRate?.toFixed(2)}%
+																	</span>
+																</div>
+															) : (
+																<QuickAdjustCell
+																	currentValue={bond.interestRate || 0}
+																	assetId={bond.id}
+																	onUpdate={updateBondInterestRate}
+																	label={`${bond.interestRate || 0}%`}
+																/>
+															)}
+
+															{bond.currentPeriodRate !== undefined &&
+																bond.currentPeriodRate !==
+																	bond.interestRate && (
+																	<span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+																		Bieżące: {bond.currentPeriodRate.toFixed(2)}
+																		%
+																	</span>
+																)}
+															<span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+																Okres Odsetkowy: {currentPeriod}
+															</span>
+														</div>
 													</TableCell>
 
-													{/* 4. Kapitał / Wycena */}
 													<TableCell className="py-4 border-none">
 														<div className="flex flex-col items-start gap-1">
 															<span className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center gap-1 whitespace-nowrap">
@@ -337,7 +435,6 @@ export default function BondLedgerTable({
 																label={`${bond.currentValue?.toLocaleString()} PLN`}
 															/>
 
-															{/* ZYSK FINANSOWY ZAWSZE ZIELONY */}
 															{bond.currentValue &&
 															bond.investedCapital &&
 															bond.currentValue > bond.investedCapital ? (
@@ -355,7 +452,6 @@ export default function BondLedgerTable({
 														</div>
 													</TableCell>
 
-													{/* 5. Akcje (Sprzedaż / Kosz) na niebiesko */}
 													<TableCell className="pr-6 py-4 border-none">
 														<div className="flex justify-end gap-1">
 															<button
@@ -391,11 +487,6 @@ export default function BondLedgerTable({
 																<HandCoins size={14} />
 															</button>
 
-															{/* <DeleteButton
-																id={bond.id}
-																onDelete={handleDeleteBond}
-																confirmMsg="Czy na pewno chcesz bezpowrotnie usunąć wybraną transzę obligacji?"
-															/> */}
 															<DeleteButton
 																id={bond.id}
 																onDelete={handleDeleteBond}
@@ -414,7 +505,6 @@ export default function BondLedgerTable({
 				</TableBody>
 			</Table>
 
-			{/* MODAL SPRZEDAŻY */}
 			{assetToSell && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
 					<SellAssetModal

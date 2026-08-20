@@ -707,31 +707,14 @@ export async function syncBondsWithMarket(portfolioId: string) {
 				configMap,
 			);
 
-			// EN: Check if the value has grown due to capitalized interest
 			const valueDelta = calculated.value - Number(bond.currentValue);
 
+			// Zostawiamy tylko aktualizację kapitału w tle (bez spamu w historii transakcji)
 			if (valueDelta > 0.01 || valueDelta < -0.01) {
-				await db.$transaction([
-					// EN: 1. Update the actual asset value
-					db.asset.update({
-						where: { id: bond.id },
-						data: { currentValue: calculated.value },
-					}),
-					// EN: 2. Save the growth as an interest transaction so charts reflect it
-					db.transactionHistory.create({
-						data: {
-							portfolioId,
-							type: "INTEREST",
-							assetName: bond.name,
-							ticker: bond.ticker,
-							quantity: 0,
-							executedValue: valueDelta,
-							category: "BONDS",
-							rationale: `Auto-kapitalizacja (wartość bieżąca: ${calculated.value} PLN)`,
-							executedAt: new Date(),
-						},
-					}),
-				]);
+				await db.asset.update({
+					where: { id: bond.id },
+					data: { currentValue: calculated.value },
+				});
 			}
 		}
 	} catch (error) {

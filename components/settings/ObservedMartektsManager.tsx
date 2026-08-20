@@ -99,20 +99,6 @@ export function ObservedMarketsManager({
 						</p>
 					</div>
 				</div>
-
-				<button
-					onClick={handleSave}
-					disabled={!hasChanges || isPending}
-					className={cn(
-						"flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all",
-						hasChanges && !isPending
-							? "bg-blue-600 text-white hover:bg-blue-500 shadow-md"
-							: "bg-black/5 dark:bg-white/5 text-t-text-tertiary cursor-not-allowed opacity-50",
-					)}
-				>
-					<Save className="w-4 h-4" />
-					{isPending ? "Zapisywanie..." : "Zapisz zmiany"}
-				</button>
 			</div>
 
 			<div className="space-y-8">
@@ -203,6 +189,21 @@ export function ObservedMarketsManager({
 							);
 						})}
 					</div>
+				</div>
+				<div className="flex justify-end">
+					<button
+						onClick={handleSave}
+						disabled={!hasChanges || isPending}
+						className={cn(
+							"flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:cursor-pointer",
+							hasChanges && !isPending
+								? "bg-blue-600 text-white hover:bg-blue-500 shadow-md"
+								: "bg-black/5 dark:bg-white/5 text-t-text-tertiary cursor-not-allowed opacity-50",
+						)}
+					>
+						<Save className="w-4 h-4" />
+						{isPending ? "Zapisywanie..." : "Zapisz zmiany"}
+					</button>
 				</div>
 			</div>
 		</div>

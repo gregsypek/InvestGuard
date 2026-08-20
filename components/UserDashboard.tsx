@@ -10,6 +10,8 @@ import {
 	Loader2,
 	Maximize2,
 	Minimize2,
+	Plus,
+	Settings,
 	Wallet2,
 	WalletCards,
 } from "lucide-react";
@@ -20,6 +22,7 @@ import { useEffect, useRef, useState } from "react";
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
 import { DatePickerWithRange } from "./shared/DatePickerWithRange";
 import { FilterBadge } from "./shared/FilterBadge";
+import Link from "next/link";
 import { MarketRow } from "./home/MarketRow";
 import { PortfolioBenchmarkChart } from "./dashboard/PortfolioBenchmarkChart";
 // Komponenty UI
@@ -27,6 +30,7 @@ import { PortfolioChart } from "./dashboard/PortfolioCharts";
 // IMPORT HOOKA LOGIKI
 import { PortfolioWithAssets } from "@/lib/types";
 import { PortfoliosComparisonChart } from "./dashboard/PortfoliosComparisonChart";
+import { PremiumMarketCard } from "./home/PremiumMarketCard";
 import { SectionLayout } from "./shared/SectionLayout";
 import { ValueCard } from "./shared/ValueCard";
 import { format } from "date-fns";
@@ -203,55 +207,91 @@ export function UserDashboard(props: UserDashboardProps) {
 				subtitle="Śledź kluczowe wskaźniki"
 				description="Zestawienie indeksów i walorów z Twojego portfela."
 			>
-				<div className="flex flex-col md:flex-row gap-6">
-					<div className="bg-t-bg-sticky border rounded-2xl p-5 shadow-sm flex-1">
-						<h4 className="text-[10px] font-bold uppercase text-slate-500 mb-4 flex items-center gap-2">
-							<Briefcase className="w-4 h-4 text-blue-500" /> Z Portfela
-						</h4>
-						<div className="space-y-4">
+				<div className="flex flex-col lg:flex-row gap-6">
+					{/* PORTFOLIO ASSETS COLUMN */}
+					<div className="flex-1 p-5">
+						<div className="flex justify-between items-center mb-5">
+							<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+								<Briefcase className="w-4 h-4 text-blue-500" /> Z Portfela
+							</h4>
+
+							<Link href="/settings" className="text-blue-500 hover:underline">
+								<Settings className="w-4 h-4" />
+							</Link>
+						</div>
+
+						<div className="grid grid-cols-1 gap-2.5">
 							{observedAssets.length > 0 ? (
 								observedAssets.map((asset) => (
-									<MarketRow
+									<PremiumMarketCard
 										key={asset.id}
 										name={asset.name}
-										value={`${asset.dailyChange! >= 0 ? "+" : ""}${asset.dailyChange!.toFixed(2)}%`}
-										isPositive={asset.dailyChange! >= 0}
+										ticker={asset.ticker}
+										change={asset.dailyChange || 0}
 										logo={getStockLogo(asset.ticker ?? "")}
 									/>
 								))
 							) : (
-								<p className="text-xs font-bold text-center opacity-50 py-4">
-									Brak aktywów do obserwacji
-								</p>
+								/* Premium Empty State */
+								<div className="flex flex-col items-center justify-center py-10 text-center border border-dashed rounded-xl border-slate-700/50 bg-slate-800/20 group hover:border-blue-500/50 transition-colors cursor-pointer">
+									<div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+										<Plus className="w-4 h-4 text-blue-500" />
+									</div>
+									<p className="text-xs font-bold opacity-60 mb-1">
+										Brak aktywów na radarze
+									</p>
+									<p className="text-[10px] text-slate-500 max-w-[200px]">
+										Kliknij ikonę zębatki powyżej, aby wybrać walory do
+										obserwacji.
+									</p>
+								</div>
 							)}
 						</div>
 					</div>
-					<div className="flex-1">
-						{props.userIndices && props.userIndices.length > 0 && (
-							<div className="bg-t-bg-sticky border rounded-2xl p-5 shadow-sm">
-								<h4 className="text-[10px] font-bold uppercase text-slate-500 mb-4 flex items-center gap-2">
+
+					{/* MACRO INDICATORS COLUMN */}
+					{props.userIndices && props.userIndices.length > 0 && (
+						<div className="flex-1 p-5">
+							<div className="flex justify-between items-center mb-5">
+								<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
 									<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
 								</h4>
-								<div className="space-y-4">
-									{props.userIndices.map((indexId) => {
-										const changeValue = props.indexQuotes?.[indexId] || 0;
-										return (
-											<MarketRow
-												key={indexId}
-												name={GLOBAL_INDICES_MAP[indexId] || indexId}
-												value={`${changeValue >= 0 ? "+" : ""}${changeValue.toFixed(2)}%`}
-												isPositive={changeValue >= 0}
-												logo={`https://www.google.com/s2/favicons?domain=${indexId === "SP500" ? "spglobal.com" : "finance.yahoo.com"}&sz=128`}
-											/>
-										);
-									})}
-								</div>
+
+								<Link
+									href="/settings"
+									className="text-blue-500 hover:underline"
+								>
+									<Settings className="w-4 h-4" />
+								</Link>
 							</div>
-						)}
-					</div>
+
+							<div className="grid grid-cols-1 gap-2.5">
+								{props.userIndices.map((indexId) => {
+									const changeValue = props.indexQuotes?.[indexId] || 0;
+
+									// 🚀 Pobieramy tablicę samych wycen z historii dla konkretnego indexId
+									const historyObject =
+										props.indexQuotesHistory?.[indexId] || {};
+									// Sortujemy po datach (kluczach) i wyciągamy same wartości
+									const historyArray = Object.keys(historyObject)
+										.sort()
+										.map((dateKey) => historyObject[dateKey]);
+
+									return (
+										<PremiumMarketCard
+											key={indexId}
+											name={GLOBAL_INDICES_MAP[indexId] || indexId}
+											change={changeValue}
+											historyData={historyArray}
+											logo={getStockLogo(indexId)}
+										/>
+									);
+								})}
+							</div>
+						</div>
+					)}
 				</div>
 			</SectionLayout>
-
 			{/* STICKY HEADER - PASEK NARZĘDZI */}
 			<div
 				ref={sentinelRef}

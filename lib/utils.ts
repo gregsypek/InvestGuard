@@ -101,6 +101,14 @@ export function getStockLogo(ticker: string | null): string | null {
 		LYX: "amundietf.com",
 		AMUN: "amundietf.com",
 
+		// ---Makro ---
+		SP500: "spglobal.com",
+		NASDAQ: "nasdaq.com",
+		WIG20: "gpw.pl",
+		DAX: "deutsche-boerse.com",
+		GOLD: "gold.org",
+		BTC: "bitcoin.org",
+
 		// --- Inne / OWL ---
 		OWL: "blueowl.com",
 	};

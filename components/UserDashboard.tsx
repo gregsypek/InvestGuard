@@ -297,37 +297,42 @@ export function UserDashboard(props: UserDashboardProps) {
 				ref={sentinelRef}
 				className="h-px w-full invisible pointer-events-none"
 			/>
-			{/* === STICKY HEADER (Pełna szerokość, poprawione kolory Light Mode) === */}
-			<div className="sticky bg-t-bg-panel border-slate-700/20  p-2 sm:p-3 shadow-xl rounded-2xl   top-0 z-50  sm:px-3 md:px-6 py-2.5 sm:dark:shadow-md flex flex-col gap-2 transition-all duration-300 w-full  ">
+			{/* STICKY HEADER - PASEK NARZĘDZI */}
+			<div
+				ref={sentinelRef}
+				className="h-px w-full invisible pointer-events-none"
+			/>
+			{/* === STICKY HEADER (Zawsze Ciemny Premium Motyw) === */}
+			<div className="sticky top-0 z-50 w-full flex flex-col gap-2 p-2 sm:p-3 sm:px-3 md:px-6 py-2.5 transition-all duration-300 bg-slate-900 border border-white/10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-xl">
 				{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Podsumowanie + Wybór portfeli) */}
 				{isStuck && showAdvancedToolbar && (
-					<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full border-b border-slate-300 dark:border-slate-800/80 pb-2.5 animate-in fade-in slide-in-from-top-1">
+					<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full border-b border-white/10 pb-2.5 animate-in fade-in slide-in-from-top-1">
 						{/* Kwota i PnL */}
 						<div className="flex items-center gap-3 shrink-0">
 							<div className="flex flex-col">
-								<span className="text-[8px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">
+								<span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">
 									Zaznaczone
 								</span>
 								<div className="flex items-baseline gap-1">
-									<span className="text-sm md:text-base font-black text-slate-800 dark:text-white tracking-tight">
+									<span className="text-sm md:text-base font-black text-white tracking-tight">
 										{totalCurrent.toLocaleString("pl-PL", {
 											minimumFractionDigits: 2,
 											maximumFractionDigits: 2,
 										})}
 									</span>
-									<span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold">
+									<span className="text-[9px] text-slate-400 font-bold">
 										PLN
 									</span>
 								</div>
 							</div>
 							<div
 								className={cn(
-									"px-2 py-0.5 rounded text-[10px] font-black shadow-sm transition-colors",
+									"px-2 py-0.5 rounded text-[10px] font-black shadow-sm transition-colors border border-transparent",
 									totalPnLPct > 0
-										? "bg-emerald-100 text-emerald-700 border border-emerald-200 dark:border-transparent dark:bg-emerald-500/10 dark:text-emerald-400"
+										? "bg-emerald-500/10 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]"
 										: totalPnLPct < 0
-											? "bg-rose-100 text-rose-700 border border-rose-200 dark:border-transparent dark:bg-rose-500/10 dark:text-rose-500"
-											: "bg-white text-slate-600 border border-slate-200 dark:border-transparent dark:bg-slate-800 dark:text-slate-300",
+											? "bg-rose-500/10 text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]"
+											: "bg-white/10 text-slate-300",
 								)}
 							>
 								{totalPnLPct > 0 ? "+" : ""}
@@ -342,7 +347,13 @@ export function UserDashboard(props: UserDashboardProps) {
 								label="Wszystkie"
 								isSelected={selectedIds.includes("ALL")}
 								onToggle={togglePortfolio}
-								className="py-1 px-2 text-[9px] whitespace-nowrap shadow-sm dark:shadow-none"
+								// className={cn(
+								// 	"py-1 px-2 text-[9px] whitespace-nowrap border-none",
+								// 	selectedIds.includes("ALL")
+								// 		? "bg-white text-slate-900"
+								// 		: "bg-slate-800 text-slate-300 hover:bg-slate-700",
+								// )}
+								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
 							/>
 							{props.portfolios.map((p) => (
 								<FilterBadge
@@ -351,7 +362,13 @@ export function UserDashboard(props: UserDashboardProps) {
 									label={p.name}
 									isSelected={selectedIds.includes(p.id)}
 									onToggle={togglePortfolio}
-									className="py-1 px-2 text-[9px] whitespace-nowrap shadow-sm dark:shadow-none"
+									// className={cn(
+									// 	"py-1 px-2 text-[9px] whitespace-nowrap border-none",
+									// 	selectedIds.includes(p.id)
+									// 		? "bg-blue-500 text-white"
+									// 		: "bg-slate-800 text-slate-300 hover:bg-slate-700",
+									// )}
+									className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
 								/>
 							))}
 						</div>
@@ -363,58 +380,38 @@ export function UserDashboard(props: UserDashboardProps) {
 					{/* Lewa Strona: Tryby wyświetlania */}
 					<div className="flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0 pb-0.5 xl:pb-0">
 						{/* Pigułka 1: PLN / % */}
-						<div className="flex items-center p-0.5 bg-slate-200/50 dark:bg-t-bg-panel border border-slate-200/80 dark:border-slate-700/60 rounded-lg shrink-0">
+						<div className="flex items-center p-0.5 bg-slate-800/80 border border-white/5 rounded-lg shrink-0">
 							<FilterBadge
 								id="VALUE"
 								label="PLN"
 								isSelected={chartMode === "VALUE"}
 								onToggle={() => setChartMode("VALUE")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] border-none shadow-none",
-									chartMode === "VALUE"
-										? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm"
-										: "bg-transparent text-slate-500",
-								)}
+								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
 							/>
 							<FilterBadge
 								id="PERCENTAGE"
 								label="%"
 								isSelected={chartMode === "PERCENTAGE"}
 								onToggle={() => setChartMode("PERCENTAGE")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] border-none shadow-none",
-									chartMode === "PERCENTAGE"
-										? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm"
-										: "bg-transparent text-slate-500",
-								)}
+								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
 							/>
 						</div>
 
 						{/* Pigułka 2: REAL / SIM */}
-						<div className="flex items-center p-0.5 bg-slate-200/50 dark:bg-t-bg-panel border border-slate-200/80 dark:border-slate-700/60 rounded-lg shrink-0">
+						<div className="flex items-center p-0.5 bg-slate-800/80 border border-white/5 rounded-lg shrink-0">
 							<FilterBadge
 								id="REAL"
 								label="Realne"
 								isSelected={dataMode === "REAL"}
 								onToggle={() => setDataMode("REAL")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] border-none shadow-none transition-colors",
-									dataMode === "REAL"
-										? "bg-white text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/15 shadow-sm"
-										: "bg-transparent text-slate-500",
-								)}
+								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
 							/>
 							<FilterBadge
 								id="SIMULATED"
 								label="Symulacja"
 								isSelected={dataMode === "SIMULATED"}
 								onToggle={() => setDataMode("SIMULATED")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] border-none shadow-none transition-colors",
-									dataMode === "SIMULATED"
-										? "bg-white text-amber-600 dark:text-amber-400 dark:bg-amber-500/15 shadow-sm"
-										: "bg-transparent text-slate-500",
-								)}
+								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
 							/>
 						</div>
 					</div>
@@ -431,18 +428,19 @@ export function UserDashboard(props: UserDashboardProps) {
 								className={cn(
 									"px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold tracking-wide transition-all shrink-0 border",
 									isRangeDisabled(range)
-										? "opacity-30 cursor-not-allowed border-transparent text-slate-400 dark:text-slate-600"
+										? "opacity-30 cursor-not-allowed border-transparent text-slate-500"
 										: activeRange === range
-											? "bg-white text-blue-600 border-slate-200 shadow-sm dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30"
-											: "bg-transparent text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/60",
+											? "bg-blue-500/20 text-blue-400 border-blue-500/30 shadow-sm"
+											: "bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800",
 								)}
 							>
 								{range}
 							</button>
 						))}
 
-						<div className="w-px h-4 bg-slate-300 dark:bg-slate-700/50 mx-0.5 hidden sm:block shrink-0" />
+						<div className="w-px h-4 bg-slate-700/80 mx-0.5 hidden sm:block shrink-0" />
 
+						{/* Opcjonalne: DatePicker może sam dostosowywać się do motywu systemowego, co jest OK dla popupów */}
 						<div className="shrink-0">
 							<DatePickerWithRange
 								from={fromDate}
@@ -456,10 +454,10 @@ export function UserDashboard(props: UserDashboardProps) {
 							<button
 								onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
 								className={cn(
-									"p-1  rounded-md transition-all duration-300 border bg-white text-blue-600 border-slate-200 shadow-sm dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30 shrink-0 absolute sm:static right-3 top-3 hover:cursor-pointer ml-auto",
+									"p-1 rounded-md transition-all duration-300 border shrink-0 absolute sm:static right-3 top-3 hover:cursor-pointer ml-auto",
 									showAdvancedToolbar
-										? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-700/60 shadow-sm"
-										: "bg-transparent text-slate-400 dark:text-slate-500 border-transparent hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800",
+										? "bg-slate-800 text-blue-400 border-slate-700/60 shadow-sm"
+										: "bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800",
 								)}
 								title={
 									showAdvancedToolbar
@@ -477,6 +475,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					</div>
 				</div>
 			</div>
+
 			{/* WYKRESY */}
 			<div className="relative space-y-8">
 				{isPending && (

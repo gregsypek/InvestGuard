@@ -289,49 +289,78 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 											{/* 5. KOLUMNA: WARTOŚĆ I ILOŚĆ */}
 											<TableCell className="text-right pr-6 py-4 border-none">
 												<div className="flex flex-col items-end">
-													<span
-														className={cn(
-															"text-sm font-black tracking-tight",
-															t.type === "BUY"
-																? "text-rose-500"
-																: t.type === "INTEREST" && t.executedValue < 0
-																	? "text-orange-500"
-																	: t.type === "INTEREST" && t.executedValue > 0
-																		? "text-purple-500"
-																		: "text-emerald-500",
-														)}
-													>
-														{t.type === "BUY" ||
-														(t.type === "INTEREST" && t.executedValue < 0)
-															? "-"
-															: "+"}
-														{Math.abs(t.executedValue).toLocaleString("pl-PL", {
-															style: "currency",
-															currency: "PLN",
-														})}
-													</span>
+													{(() => {
+														// 🚀 ZMIANA 2: Wykrywamy, czy to wypłata gotówki (sprzedaż aktywa CASH)
+														const isCashWithdrawal =
+															t.type === "SELL" && t.category === "CASH";
 
-													{/* Wyjaśnienia pod kwotą dla różnych typów zasilających/pomniejszających gotówkę */}
-													{t.type === "SELL" && (
-														<span className="text-[9px] text-emerald-500/80 font-bold uppercase tracking-widest mt-0.5">
-															(Zasila gotówkę)
-														</span>
-													)}
+														// Kiedy od kapitału odejmujemy pieniądze?
+														// Gdy kupujemy aktywo (BUY), płacimy podatek (INTEREST < 0), lub wypłacamy gotówkę (isCashWithdrawal)
+														const isNegative =
+															t.type === "BUY" ||
+															(t.type === "INTEREST" && t.executedValue < 0) ||
+															isCashWithdrawal;
 
-													{t.type === "INTEREST" && t.executedValue > 0 && (
-														<span className="text-[9px] text-purple-500/80 font-bold uppercase tracking-widest mt-0.5">
-															(Dywidenda / Gotówka)
-														</span>
-													)}
+														// Dobór koloru na podstawie typu
+														const colorClass = isNegative
+															? t.type === "INTEREST"
+																? "text-orange-500"
+																: "text-rose-500"
+															: t.type === "INTEREST"
+																? "text-purple-500"
+																: "text-emerald-500";
 
-													{t.type === "INTEREST" && t.executedValue < 0 && (
-														<span className="text-[9px] text-orange-500/80 font-bold uppercase tracking-widest mt-0.5">
-															(Podatek)
-														</span>
-													)}
+														return (
+															<>
+																<span
+																	className={cn(
+																		"text-sm font-black tracking-tight",
+																		colorClass,
+																	)}
+																>
+																	{isNegative ? "-" : "+"}
+																	{Math.abs(t.executedValue).toLocaleString(
+																		"pl-PL",
+																		{
+																			style: "currency",
+																			currency: "PLN",
+																		},
+																	)}
+																</span>
 
-													{/* Ilość (pokazujemy tylko dla akcji, ukrywamy dla dywidend i podatków, które mają 0 szt.) */}
-													{t.quantity > 0 && (
+																{/* Wyjaśnienia pod kwotą */}
+																{t.type === "SELL" && !isCashWithdrawal && (
+																	<span className="text-[9px] text-emerald-500/80 font-bold uppercase tracking-widest mt-0.5">
+																		(Zasila gotówkę)
+																	</span>
+																)}
+
+																{/* 🚀 Dedykowany napis dla wypłaty/transferu gotówki */}
+																{isCashWithdrawal && (
+																	<span className="text-[9px] text-rose-500/80 font-bold uppercase tracking-widest mt-0.5">
+																		(Wypłata / Transfer)
+																	</span>
+																)}
+
+																{t.type === "INTEREST" &&
+																	t.executedValue > 0 && (
+																		<span className="text-[9px] text-purple-500/80 font-bold uppercase tracking-widest mt-0.5">
+																			(Dywidenda / Gotówka)
+																		</span>
+																	)}
+
+																{t.type === "INTEREST" &&
+																	t.executedValue < 0 && (
+																		<span className="text-[9px] text-orange-500/80 font-bold uppercase tracking-widest mt-0.5">
+																			(Podatek)
+																		</span>
+																	)}
+															</>
+														);
+													})()}
+
+													{/* Ilość (pokazujemy tylko dla akcji, ukrywamy dla dywidend, podatków oraz GOTÓWKI) */}
+													{t.quantity > 0 && t.category !== "CASH" && (
 														<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest mt-1">
 															{t.quantity} szt.
 														</span>

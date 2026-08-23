@@ -221,6 +221,16 @@ export async function sellAssetAction(formData: FormData) {
 		}
 
 		// 3. Create the SELL transaction history record (The orange minus)
+		const isCash = asset.category === "CASH";
+		let finalRationale = note;
+		if (isCash && !note) {
+			finalRationale =
+				targetCashPortfolioId === "none"
+					? "Wypłata zewnętrzna"
+					: "Transfer środków";
+		}
+
+		// 3. Create the SELL transaction history record (The orange/red minus)
 		await tx.transactionHistory.create({
 			data: {
 				type: "SELL",
@@ -231,7 +241,7 @@ export async function sellAssetAction(formData: FormData) {
 				executedValue: totalSellValue,
 				category: asset.category,
 				executedAt,
-				rationale: note, // EN: Save the user's note here
+				rationale: finalRationale, // 👈 Używamy nowej zmiennej zamiast 'note'
 			},
 		});
 

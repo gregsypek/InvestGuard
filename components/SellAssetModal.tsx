@@ -12,7 +12,7 @@ interface SellAssetModalProps {
 	currentPortfolioId: string;
 	onConfirm: (data: {
 		quantity: number;
-		price: number; // EN: This will now be the Total Value (quantity * unitPrice)
+		price: number;
 		targetId: string;
 		note: string;
 	}) => void;
@@ -28,27 +28,26 @@ export function SellAssetModal({
 	onClose,
 	isLoading,
 }: SellAssetModalProps) {
+	const isCash = asset.category === "CASH";
+
 	const [quantity, setQuantity] = useState<number>(0);
 	const [unitPrice, setUnitPrice] = useState<number>(
-		asset.currentValue / asset.quantity || 0,
+		isCash ? 1 : asset.currentValue / asset.quantity || 0,
 	);
-	// ✅ POPRAWKA: Obliczamy wartość początkową bezpośrednio w useState
-	const [targetId, setTargetId] = useState<string>(() => {
-		const hasLocalCash = portfoliosWithCash.some(
-			(p) => p.id === currentPortfolioId,
-		);
-		if (hasLocalCash) return currentPortfolioId;
-		if (portfoliosWithCash.length > 0) return portfoliosWithCash[0].id;
-		return "none";
-	});
+
+	// 🚀 ZMIANA 1: Inteligentny domyślny wybór portfela
+	// Jeśli wypłacamy gotówkę -> Domyślnie "Zewnętrzne konto" (none)
+	// Jeśli sprzedajemy aktywo -> Domyślnie "Ten portfel" (zostawiamy kasę na kolejne zakupy)
+	const [targetId, setTargetId] = useState<string>(
+		isCash ? "none" : currentPortfolioId,
+	);
 	const [note, setNote] = useState("");
 
-	// EN: Financial calculations
-	const totalValue = quantity * unitPrice;
-	const avgPurchasePrice = asset.investedCapital / asset.quantity;
+	const totalValue = isCash ? quantity : quantity * unitPrice;
+	const avgPurchasePrice = isCash ? 1 : asset.investedCapital / asset.quantity;
 	const estimatedProfit = (unitPrice - avgPurchasePrice) * quantity;
 	const isLoss = estimatedProfit < 0;
-	// Walidacja: ilość musi być poprawna, a targetId nie może być pusty (musi być ID lub "none")
+
 	const isValid =
 		quantity > 0 &&
 		quantity <= asset.quantity &&
@@ -64,7 +63,7 @@ export function SellAssetModal({
 			<div className="flex items-center justify-between p-6 border-b border-t-border-subtle">
 				<div>
 					<h2 className="text-lg font-black text-t-text-primary tracking-tight">
-						Zatwierdź Sprzedaż
+						{isCash ? "Wypłać / Przelej Gotówkę" : "Zatwierdź Sprzedaż"}
 					</h2>
 					<p className="text-[11px] text-t-text-tertiary uppercase tracking-widest font-bold mt-0.5">
 						{asset.name} {asset.ticker && `(${asset.ticker})`}
@@ -80,11 +79,11 @@ export function SellAssetModal({
 
 			{/* ================= BODY ================= */}
 			<div className="p-6 space-y-6">
-				<div className="grid grid-cols-2 gap-4">
-					{/* Ilość */}
+				{isCash ? (
+					// WIDOK DLA GOTÓWKI (Tylko Kwota)
 					<div className="space-y-2">
 						<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-							Ilość sztuk
+							Kwota do wypłaty / przelewu
 						</label>
 						<div className="relative">
 							<input
@@ -95,56 +94,106 @@ export function SellAssetModal({
 								value={quantity || ""}
 							/>
 							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-								SZT
+								PLN
 							</span>
 						</div>
 						<button
 							type="button"
-							onClick={() => setQuantity(Number(asset.quantity.toFixed(4)))}
+							onClick={() => setQuantity(Number(asset.quantity.toFixed(2)))}
 							className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest text-left w-full transition-colors mt-1"
 						>
 							Wstaw MAX:{" "}
 							{asset.quantity.toLocaleString("pl-PL", {
-								maximumFractionDigits: 4,
-							})}
+								minimumFractionDigits: 2,
+								maximumFractionDigits: 2,
+							})}{" "}
+							PLN
 						</button>
 					</div>
+				) : (
+					// WIDOK DLA STANDARDOWYCH AKTYWÓW (Ilość + Cena)
+					<div className="grid grid-cols-2 gap-4">
+						<div className="space-y-2">
+							<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+								Ilość sztuk
+							</label>
+							<div className="relative">
+								<input
+									type="number"
+									className={cn(inputStyles, "pr-12 font-mono")}
+									placeholder="0.00"
+									onChange={(e) => setQuantity(Number(e.target.value))}
+									value={quantity || ""}
+								/>
+								<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+									SZT
+								</span>
+							</div>
+							<button
+								type="button"
+								onClick={() => setQuantity(Number(asset.quantity.toFixed(4)))}
+								className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest text-left w-full transition-colors mt-1"
+							>
+								Wstaw MAX:{" "}
+								{asset.quantity.toLocaleString("pl-PL", {
+									maximumFractionDigits: 4,
+								})}
+							</button>
+						</div>
 
-					{/* Cena */}
-					<div className="space-y-2">
-						<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-							Cena / szt.
-						</label>
-						<div className="relative">
-							<input
-								type="number"
-								defaultValue={unitPrice}
-								className={cn(inputStyles, "pr-12 font-mono")}
-								onChange={(e) => setUnitPrice(Number(e.target.value))}
-							/>
-							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-								PLN
-							</span>
+						<div className="space-y-2">
+							<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+								Cena / szt.
+							</label>
+							<div className="relative">
+								<input
+									type="number"
+									defaultValue={unitPrice}
+									className={cn(inputStyles, "pr-12 font-mono")}
+									onChange={(e) => setUnitPrice(Number(e.target.value))}
+								/>
+								<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+									PLN
+								</span>
+							</div>
 						</div>
 					</div>
-				</div>
+				)}
 
-				{/* Portfel docelowy */}
+				{/* 🚀 ZMIANA 2: 3 Precyzyjne opcje księgowania gotówki */}
 				<div className="space-y-2">
 					<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-						Gdzie przelać gotówkę?
+						{isCash
+							? "Gdzie przelać środki?"
+							: "Gdzie przekazać środki ze sprzedaży?"}
 					</label>
 					<select
 						value={targetId}
 						onChange={(e) => setTargetId(e.target.value)}
 						className={cn(inputStyles, "cursor-pointer appearance-none")}
 					>
-						<option value="none">-- Nie księguj gotówki (Wypłata) --</option>
-						{portfoliosWithCash.map((p) => (
-							<option key={p.id} value={p.id}>
-								🏦 {p.name} {p.id === currentPortfolioId ? "(Ten portfel)" : ""}
+						{/* OPCJA 1: Konto Zewnętrzne */}
+						<option value="none">
+							{isCash
+								? "-- Wypłać na zewnętrzne konto (Nie księguj) --"
+								: "-- Zewnętrzne konto (Nie księguj w aplikacji) --"}
+						</option>
+
+						{/* OPCJA 2: Obecny portfel (Pokazujemy TYLKO gdy sprzedajemy aktywo) */}
+						{!isCash && (
+							<option value={currentPortfolioId}>
+								🏦 Zostaw w tym portfelu (Wolna Gotówka PLN)
 							</option>
-						))}
+						)}
+
+						{/* OPCJA 3: Inne portfele bazodanowe (Wykluczamy obecny portfel z tej listy, żeby się nie dublował!) */}
+						{portfoliosWithCash
+							.filter((p) => p.id !== currentPortfolioId)
+							.map((p) => (
+								<option key={p.id} value={p.id}>
+									➡️ Zaksięguj na osobnym portfelu o nazwie: '{p.name}'
+								</option>
+							))}
 					</select>
 				</div>
 
@@ -157,12 +206,16 @@ export function SellAssetModal({
 						className={cn(inputStyles, "min-h-[80px] py-3 resize-none")}
 						value={note}
 						onChange={(e) => setNote(e.target.value)}
-						placeholder="Np. realizacja zysków, rebalansowanie..."
+						placeholder={
+							isCash
+								? "Np. Wypłata na wakacje, transfer..."
+								: "Np. realizacja zysków, rebalansowanie..."
+						}
 					/>
 				</div>
 
-				{/* Podsumowanie (Pokazuje się tylko gdy wpisano dane) */}
-				{quantity > 0 && unitPrice > 0 && (
+				{/* Podsumowanie zysków pokazuje się TYLKO dla zwykłych aktywów */}
+				{!isCash && quantity > 0 && unitPrice > 0 && (
 					<div
 						className={cn(
 							"p-4 rounded-xl border animate-in slide-in-from-bottom-2 duration-300",
@@ -218,8 +271,10 @@ export function SellAssetModal({
 				>
 					{isLoading ? (
 						<Loader2 className="h-4 w-4 animate-spin" />
+					) : isCash ? (
+						"Zatwierdź Wypłatę"
 					) : (
-						"Zatwierdź sprzedaż"
+						"Zatwierdź Sprzedaż"
 					)}
 				</button>
 			</div>

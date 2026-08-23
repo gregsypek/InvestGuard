@@ -10,9 +10,11 @@ import {
 	HandCoins,
 	Lock,
 	MoreHorizontal,
+	PlusCircle,
 	Scale,
 	Trash2,
 	TrendingUp,
+	X,
 } from "lucide-react";
 import {
 	DropdownMenu,
@@ -45,6 +47,7 @@ import PaginatedBar from "./shared/PaginatedBar";
 import PremiumDeleteModal from "./shared/PremiumDeleteModal";
 import { Progress } from "@/components/ui/progress";
 import QuickAdjustCell from "./QuickAdjustCell";
+import { QuickDepositForm } from "./ui/QuickDepositForm";
 import { SellAssetModal } from "./SellAssetModal";
 import { calculateAssetPL } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
@@ -62,11 +65,7 @@ interface Props {
 // 1. Definiujemy prosty typ dla wykresu
 type ChartPoint = { date: string; amount: number };
 
-const AssetLedgerTable = ({
-	portfolio,
-	allPortfoliosWithCash,
-	isDemo,
-}: Props) => {
+const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash, isDemo }: Props) => {
 	const router = useRouter();
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
@@ -78,6 +77,9 @@ const AssetLedgerTable = ({
 	const [assetToSell, setAssetToSell] = useState<AssetWithUI | null>(null);
 	const [assetToAdjust, setAssetToAdjust] = useState<AssetWithUI | null>(null);
 	const [assetToDelete, setAssetToDelete] = useState<AssetWithUI | null>(null);
+
+	// EN: State to control the Quick Deposit Modal visibility
+	const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
 	const [isPending, startTransition] = useTransition();
 
@@ -578,7 +580,7 @@ const AssetLedgerTable = ({
 											</TableCell>
 
 											<TableCell
-												className="text-right  border-none px-0 pr-2 "
+												className="text-right border-none px-0 pr-2"
 												onClick={(e) => e.stopPropagation()}
 											>
 												{isAggregatedBond ? (
@@ -598,13 +600,36 @@ const AssetLedgerTable = ({
 																<MoreHorizontal className="h-4 w-4 text-t-text-tertiary" />
 															</button>
 														</DropdownMenuTrigger>
+
 														<DropdownMenuContent
 															align="end"
 															className="w-40 bg-t-bg-panel border-t-border text-t-text-primary"
 														>
+															{/* 1. ZASIL PORTFEL (TYLKO DLA GOTÓWKI) */}
+															{asset.category === "CASH" && (
+																<DropdownMenuItem
+																	className="cursor-pointer font-medium hover:bg-t-hover focus:bg-t-hover text-emerald-600 dark:text-emerald-400"
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		if (isDemo) {
+																			toast.error("Akcja zablokowana", {
+																				description:
+																					"Wpłaty są wyłączone w trybie demo.",
+																				icon: <Lock className="h-4 w-4" />,
+																			});
+																			return;
+																		}
+																		setIsDepositModalOpen(true);
+																	}}
+																>
+																	<PlusCircle className="mr-2 h-4 w-4" />
+																	Zasil portfel
+																</DropdownMenuItem>
+															)}
+
+															{/* 2. SPRZEDAJ / WYPŁAĆ (DLA WSZYSTKICH) */}
 															<DropdownMenuItem
 																className="cursor-pointer font-medium hover:bg-t-hover focus:bg-t-hover"
-																// 🚀 ZMIANA: Odblokowane dla gotówki, nawet przy 0
 																disabled={
 																	asset.quantity === 0 &&
 																	asset.category !== "CASH"
@@ -622,53 +647,51 @@ const AssetLedgerTable = ({
 																	setAssetToSell(asset);
 																}}
 															>
-																<HandCoins className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />{" "}
-																Sprzedaj
+																<HandCoins className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+																{asset.category === "CASH"
+																	? "Wypłać gotówkę"
+																	: "Sprzedaj"}
 															</DropdownMenuItem>
-															<DropdownMenuItem
-																className="cursor-pointer font-medium hover:bg-t-hover focus:bg-t-hover"
-																// 🚀 ZMIANA: Odblokowane dla gotówki, nawet przy 0
-																disabled={
-																	asset.quantity === 0 &&
-																	asset.category !== "CASH"
-																}
-																onClick={(e) => {
-																	e.stopPropagation();
-																	if (isDemo) {
-																		toast.error("Akcja zablokowana", {
-																			description:
-																				"Korekta wyceny jest wyłączona w trybie demo.",
-																			icon: <Lock className="h-4 w-4" />,
-																		});
-																		return;
-																	}
-																	setAssetToAdjust(asset);
-																}}
-															>
-																<Scale className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />{" "}
-																Korekta
-															</DropdownMenuItem>
-															<DropdownMenuSeparator className="bg-t-border" />
-															{/* <div onClick={(e) => e.stopPropagation()}>
-																<DeleteButton
-																	id={asset.id}
-																	onDelete={deleteAsset}
-																	confirmMsg={`Usunąć całkowicie ${asset.name}?`}
-																	isDemo={isDemo}
-																	className="flex w-full items-center gap-2 px-2 py-1.5 cursor-pointer font-medium text-sm text-rose-600 dark:text-rose-500 hover:bg-rose-500/10 transition-colors rounded-sm"
-																	label="Usuń"
-																/>
-															</div> */}
-															<div
-																onClick={(e) => {
-																	e.stopPropagation();
-																	setAssetToDelete(asset); // EN: Open the delete modal
-																}}
-																className="flex w-full items-center gap-2 px-2 py-1.5 cursor-pointer font-medium text-sm text-rose-600 dark:text-rose-500 hover:bg-rose-500/10 transition-colors rounded-sm outline-none"
-															>
-																<Trash2 className=" mr-2  w-4 h-4" />
-																<span>Usuń</span>
-															</div>
+
+															{/* 3. KOREKTA (UKRYTA DLA GOTÓWKI) */}
+															{asset.category !== "CASH" && (
+																<DropdownMenuItem
+																	className="cursor-pointer font-medium hover:bg-t-hover focus:bg-t-hover"
+																	disabled={asset.quantity === 0}
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		if (isDemo) {
+																			toast.error("Akcja zablokowana", {
+																				description:
+																					"Korekta wyceny jest wyłączona w trybie demo.",
+																				icon: <Lock className="h-4 w-4" />,
+																			});
+																			return;
+																		}
+																		setAssetToAdjust(asset);
+																	}}
+																>
+																	<Scale className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
+																	Korekta
+																</DropdownMenuItem>
+															)}
+
+															{/* 4. USUŃ (UKRYTE DLA GOTÓWKI) */}
+															{asset.category !== "CASH" && (
+																<>
+																	<DropdownMenuSeparator className="bg-t-border" />
+																	<div
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			setAssetToDelete(asset);
+																		}}
+																		className="flex w-full items-center gap-2 px-2 py-1.5 cursor-pointer font-medium text-sm text-rose-600 dark:text-rose-500 hover:bg-rose-500/10 transition-colors rounded-sm outline-none"
+																	>
+																		<Trash2 className="mr-2 w-4 h-4" />
+																		<span>Usuń</span>
+																	</div>
+																</>
+															)}
 														</DropdownMenuContent>
 													</DropdownMenu>
 												)}
@@ -1063,9 +1086,42 @@ const AssetLedgerTable = ({
 						}
 					}}
 				/>
+)
+}
+			
+			{/* ======================================================== */}
+			{/* EN: QUICK DEPOSIT MODAL WRAPPER */}
+			{/* ======================================================== */}
+			{isDepositModalOpen && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-t-bg-base/80 backdrop-blur-sm p-4">
+					<div className="bg-t-bg-panel border border-t-border rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+						{/* EN: Modal Header with Close Button */}
+						<div className="flex items-center justify-between p-6 border-b border-t-border-subtle bg-t-bg-panel">
+							<div>
+								<h2 className="text-lg font-black text-t-text-primary tracking-tight">
+									Zasilenie gotówkowe
+								</h2>
+								<p className="text-[11px] text-t-text-tertiary uppercase tracking-widest font-bold mt-0.5">
+									{portfolio.name}
+								</p>
+							</div>
+							<button
+								onClick={() => setIsDepositModalOpen(false)}
+								className="p-2 text-t-text-tertiary hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all"
+							>
+								<X className="h-5 w-5" />
+							</button>
+						</div>
+						
+						{/* EN: The existing QuickDepositForm component seamlessly embedded */}
+						<div className="p-2 sm:p-4 bg-t-bg-base/30 dark:bg-black/20">
+							<QuickDepositForm portfolioId={portfolio.id} />
+						</div>
+					</div>
+				</div>
 			)}
 		</>
 	);
-};
+};;
 
 export default AssetLedgerTable;

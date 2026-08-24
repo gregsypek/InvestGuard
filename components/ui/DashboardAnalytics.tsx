@@ -112,6 +112,8 @@ const DashboardAnalytics = ({
 						onSortChange={setSortBy}
 						sortOptions={[
 							{ id: "ACTIVITY", label: "Ostatnia aktywność" },
+							{ id: "PROFIT", label: "Zysk PLN" },
+							{ id: "PROFIT_PCT", label: "Zysk %" },
 							{ id: "ALPHA", label: "A-Z" },
 							{ id: "VALUE", label: "Wartość" },
 						]}

@@ -10,6 +10,7 @@ export interface SortableAsset {
 	purchaseDate?: Date | null | string;
 	createdAt: Date | string;
 	currentValue?: number | null;
+	investedCapital?: number | null;
 }
 
 // 2. Definiujemy minimalny kształt transakcji z historii
@@ -69,6 +70,24 @@ export function useSortedAssets<T extends SortableAsset>(
 			if (sortBy === "ALPHA") return a.name.localeCompare(b.name);
 			if (sortBy === "VALUE")
 				return (b.currentValue || 0) - (a.currentValue || 0);
+
+			// Zysk kwotowy
+			if (sortBy === "PROFIT") {
+				const profitA = (a.currentValue || 0) - (a.investedCapital || 0);
+				const profitB = (b.currentValue || 0) - (b.investedCapital || 0);
+				return profitB - profitA;
+			}
+
+			// 🚀 NOWOŚĆ: Zysk procentowy
+			if (sortBy === "PROFIT_PCT") {
+				const getPct = (asset: any) => {
+					const invested = asset.investedCapital || 0;
+					const current = asset.currentValue || 0;
+					if (invested <= 0) return 0; // Ochrona przed dzieleniem przez 0
+					return ((current - invested) / invested) * 100;
+				};
+				return getPct(b) - getPct(a);
+			}
 
 			// DEFAULT (ACTIVITY)
 			return b.lastActivityDate.getTime() - a.lastActivityDate.getTime();

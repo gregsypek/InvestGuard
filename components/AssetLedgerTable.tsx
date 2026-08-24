@@ -39,6 +39,7 @@ import {
 } from "@/lib/actions/asset-actions";
 
 import { AdjustAssetModal } from "./AdjustAssetModal";
+import { AssetFilterPanel } from "./shared/AssetFilterPanel";
 import { AssetHistoryChart } from "./history/AssetHistoryChart";
 import { AssetLogo } from "./shared/AssetLogo";
 import { FilterBadge } from "./shared/FilterBadge";
@@ -55,6 +56,7 @@ import { deleteAsset } from "@/lib/actions/portfolio.actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
+import { useSortedAssets } from "@/lib/hooks/useSortedAssets";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
@@ -65,7 +67,11 @@ interface Props {
 // 1. Definiujemy prosty typ dla wykresu
 type ChartPoint = { date: string; amount: number };
 
-const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash, isDemo }: Props) => {
+const AssetLedgerTable = ({
+	portfolio,
+	allPortfoliosWithCash,
+	isDemo,
+}: Props) => {
 	const router = useRouter();
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
@@ -161,30 +167,16 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash, isDemo }: Props) =
 	// console.log("🚀 ~ AssetLedgerTable ~ assetsWithPL:", assetsWithPL);
 	// EN: 1. State for controlling filters and sorting
 	const [hideClosed, setHideClosed] = useState(true);
-	const [sortBy, setSortBy] = useState<"DEFAULT" | "ALPHA" | "VALUE">(
-		"DEFAULT",
-	);
+	const [sortBy, setSortBy] = useState("ACTIVITY");
+
 	// 2. NAJPIERW FILTRUJEMY I SORTUJEMY (zanim potniemy na strony!)
-	const filteredAndSortedAssets = useMemo(() => {
-		let result = [...assetsWithPL];
 
-		if (hideClosed) {
-			result = result.filter(
-				(asset) =>
-					asset.quantity > 0 ||
-					asset.id === "bonds-summary-id" ||
-					asset.category === "CASH", // 🚀 ZMIANA: Gotówka jest ZAWSZE widoczna
-			);
-		}
-
-		if (sortBy === "ALPHA") {
-			result.sort((a, b) => a.name.localeCompare(b.name));
-		} else if (sortBy === "VALUE") {
-			result.sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0));
-		}
-
-		return result;
-	}, [assetsWithPL, hideClosed, sortBy]);
+	const filteredAndSortedAssets = useSortedAssets(
+		assetsWithPL,
+		portfolio.transactionHistories,
+		hideClosed,
+		sortBy,
+	);
 
 	const startIndex = (currentPage - 1) * PAGE_ITEMS;
 	const endIndex = startIndex + PAGE_ITEMS;
@@ -257,46 +249,18 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash, isDemo }: Props) =
 	return (
 		<>
 			{/* EN: 4. The Controls Panel (FilterBadges) added above the table */}
-			<div className="flex flex-col md:flex-row items-start md:items-center gap-3   mb-4">
-				<div className="flex items-center gap-2">
-					<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-1">
-						Widok:
-					</span>
-					<FilterBadge
-						id="HIDE_CLOSED"
-						label="Ukryj zamknięte"
-						isSelected={hideClosed}
-						onToggle={() => setHideClosed(!hideClosed)}
-					/>
-				</div>
 
-				{/* EN: Desktop divider */}
-				<div className="hidden md:block w-px h-6 bg-slate-700/50 mx-1" />
-
-				<div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
-					<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-1">
-						Sortuj:
-					</span>
-					<FilterBadge
-						id="DEFAULT"
-						label="Kolejność"
-						isSelected={sortBy === "DEFAULT"}
-						onToggle={() => setSortBy("DEFAULT")}
-					/>
-					<FilterBadge
-						id="ALPHA"
-						label="A-Z"
-						isSelected={sortBy === "ALPHA"}
-						onToggle={() => setSortBy("ALPHA")}
-					/>
-					<FilterBadge
-						id="VALUE"
-						label="Wartość"
-						isSelected={sortBy === "VALUE"}
-						onToggle={() => setSortBy("VALUE")}
-					/>
-				</div>
-			</div>
+			<AssetFilterPanel
+				hideClosed={hideClosed}
+				onToggleHideClosed={() => setHideClosed(!hideClosed)}
+				sortBy={sortBy}
+				onSortChange={setSortBy}
+				sortOptions={[
+					{ id: "ACTIVITY", label: "Ostatnia aktywność" },
+					{ id: "ALPHA", label: "A-Z" },
+					{ id: "VALUE", label: "Wartość" },
+				]}
+			/>
 
 			<div className="w-full overflow-x-auto no-scrollbar pb-4">
 				<Table className="min-w-[700px] sm:min-w-[800px]">
@@ -1086,9 +1050,8 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash, isDemo }: Props) =
 						}
 					}}
 				/>
-)
-}
-			
+			)}
+
 			{/* ======================================================== */}
 			{/* EN: QUICK DEPOSIT MODAL WRAPPER */}
 			{/* ======================================================== */}
@@ -1112,7 +1075,7 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash, isDemo }: Props) =
 								<X className="h-5 w-5" />
 							</button>
 						</div>
-						
+
 						{/* EN: The existing QuickDepositForm component seamlessly embedded */}
 						<div className="p-2 sm:p-4 bg-t-bg-base/30 dark:bg-black/20">
 							<QuickDepositForm portfolioId={portfolio.id} />
@@ -1122,6 +1085,6 @@ const AssetLedgerTable = ({ portfolio, allPortfoliosWithCash, isDemo }: Props) =
 			)}
 		</>
 	);
-};;
+};
 
 export default AssetLedgerTable;

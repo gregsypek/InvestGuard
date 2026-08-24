@@ -23,6 +23,7 @@ import { SafeActionButton } from "./SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
 import StrategyHealthTable from "@/app/portfel/components/StrategyHealthTable";
 import { useSearchParams } from "next/navigation";
+import { useSortedAssets } from "@/lib/hooks/useSortedAssets";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
@@ -48,47 +49,12 @@ const DashboardAnalytics = ({
 	const [sortBy, setSortBy] = useState("ACTIVITY");
 	const [visibleCount, setVisibleCount] = useState(6);
 
-	// 🚀 ZMIANA 2: Profesjonalny silnik sortujący (Ostatnia Aktywność z bazy transakcji)
-	const filteredAndSortedAssets = useMemo(() => {
-		// 1. Filtrowanie
-		let result = assets;
-		if (hideClosed) {
-			result = result.filter((a) => a.quantity > 0 || a.category === "CASH");
-		}
-
-		// 2. Mapowanie (dodajemy do każdego aktywa jego "lastActivityDate")
-		const mappedResult = result.map((asset) => {
-			// Szukamy transakcji dla tego aktywa (Kupno, Sprzedaż, Dywidenda)
-			const assetTxs = transactions.filter(
-				(t) =>
-					(asset.ticker && t.ticker === asset.ticker) ||
-					t.assetName === asset.name,
-			);
-
-			// Jeśli ma transakcje, bierzemy najnowszą datę. Jeśli nie, datę utworzenia/zakupu.
-			const lastActivity =
-				assetTxs.length > 0
-					? new Date(
-							Math.max(
-								...assetTxs.map((t) => new Date(t.executedAt).getTime()),
-							),
-						)
-					: new Date(asset.purchaseDate || asset.createdAt);
-
-			return { ...asset, lastActivityDate: lastActivity };
-		});
-
-		// 3. Sortowanie
-		mappedResult.sort((a, b) => {
-			if (sortBy === "ALPHA") return a.name.localeCompare(b.name);
-			if (sortBy === "VALUE")
-				return (b.currentValue || 0) - (a.currentValue || 0);
-			// DEFAULT (ACTIVITY)
-			return b.lastActivityDate.getTime() - a.lastActivityDate.getTime();
-		});
-
-		return mappedResult;
-	}, [assets, hideClosed, sortBy, transactions]);
+	const filteredAndSortedAssets = useSortedAssets(
+		assets,
+		transactions,
+		hideClosed,
+		sortBy,
+	);
 
 	const visibleAssets = filteredAndSortedAssets.slice(0, visibleCount);
 	const hasMore = visibleCount < filteredAndSortedAssets.length;

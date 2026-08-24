@@ -37,6 +37,6 @@ export const SectionLayout = ({
 			</div>
 			{action && <div className="shrink-0 sm:mb-1 self-end">{action}</div>}
 		</div>
-		<div className="w-full mt-2 md:mt-6">{children}</div>
+		<div className="w-full mt-4 md:mt-8">{children}</div>
 	</section>
 );

@@ -21,7 +21,7 @@ export function AssetFilterPanel({
 	],
 }: AssetFilterPanelProps) {
 	return (
-		<div className="flex flex-col md:flex-row items-start md:items-center gap-3 mb-4">
+		<div className="flex flex-col xl:flex-row items-start xl:items-center gap-3 mb-4">
 			<div className="flex items-center gap-2">
 				<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-1">
 					Widok:
@@ -34,9 +34,9 @@ export function AssetFilterPanel({
 				/>
 			</div>
 
-			<div className="hidden md:block w-px h-6 bg-slate-700/50 mx-1" />
+			<div className="hidden xl:block w-px h-6 bg-slate-700/50 mx-1" />
 
-			<div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
+			<div className="flex items-center gap-2 flex-wrap w-full xl:w-auto pb-1 xl:pb-0 scrollbar-hide">
 				<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-1">
 					Sortuj:
 				</span>

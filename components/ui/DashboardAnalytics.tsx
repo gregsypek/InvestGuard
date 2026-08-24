@@ -103,7 +103,7 @@ const DashboardAnalytics = ({
 					/>
 				}
 			>
-				<div className="flex flex-col gap-4">
+				<div className="flex flex-col gap-4 md:gap-8">
 					{/* 🚀 ZMIANA 3: Nasz nowy uniwersalny panel */}
 					<AssetFilterPanel
 						hideClosed={hideClosed}

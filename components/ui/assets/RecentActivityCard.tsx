@@ -48,7 +48,7 @@ export default function AssetCard({
 			)}
 
 			<div className="flex flex-col gap-2 flex-1 min-w-0 pr-4">
-				<p className="font-bold text-sm text-t-text-primary tracking-tight truncate">
+				<p className="font-bold text-sm text-t-text-primary tracking-tight truncate max-w-[160px]">
 					{asset.name}
 				</p>
 				<div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export default function AssetCard({
 					)}
 
 					{/* Wyświetlanie precyzyjnej daty ostatniej aktywności */}
-					<span className="text-[9px] text-t-text-tertiary opacity-70 font-mono tracking-tighter shrink-0 ml-auto border-l border-t-border-subtle pl-2">
+					<span className="text-[9px] text-t-text-tertiary opacity-70 font-mono tracking-tighter shrink-0 mr-auto border-l border-t-border-subtle pl-2">
 						{(
 							activityDate || new Date(asset.purchaseDate || asset.createdAt)
 						).toLocaleDateString("pl-PL", {

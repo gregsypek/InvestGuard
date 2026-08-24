@@ -4,6 +4,7 @@ import {
 	Bar,
 	BarChart,
 	CartesianGrid,
+	ReferenceLine,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
@@ -22,14 +23,6 @@ export function MonthlyDepositsChart({
 	data: MonthlyDepositProps[];
 }) {
 	const [isMounted, setIsMounted] = useState(false);
-	useEffect(() => {
-		// setTimeout(..., 0) jest bardziej "cierpliwy" niż rAF dla Recharts
-		const timer = setTimeout(() => {
-			setIsMounted(true);
-		}, 0);
-
-		return () => clearTimeout(timer);
-	}, []);
 
 	useEffect(() => {
 		const timer = setTimeout(() => setIsMounted(true), 0);
@@ -49,12 +42,16 @@ export function MonthlyDepositsChart({
 		);
 	}
 
+	// 🚀 NOWOŚĆ: Obliczanie średniej wpłaty
+	const averageAmount =
+		data.reduce((sum, item) => sum + item.amount, 0) / data.length;
+
 	return (
 		<div className="h-[350px] w-full min-h-75">
 			<ResponsiveContainer width="100%" height="100%">
 				<BarChart
 					data={data}
-					margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+					margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
 				>
 					<CartesianGrid
 						strokeDasharray="3 3"
@@ -98,17 +95,35 @@ export function MonthlyDepositsChart({
 							marginBottom: "4px",
 						}}
 						formatter={(value) => {
-							// ✅ Fix: ValueType może być undefined lub string
 							const num =
 								typeof value === "number" ? value : Number(value ?? 0);
 							return [`${num.toLocaleString("pl-PL")} PLN`, "Wpłata"];
 						}}
 					/>
+
+					{/* 🚀 NOWOŚĆ: Linia referencyjna pokazująca średnią */}
+					{/* 1. Najpierw rysujemy kolumny */}
 					<Bar
 						dataKey="amount"
 						fill="#f59e0b"
 						radius={[4, 4, 0, 0]}
 						barSize={32}
+					/>
+
+					{/* 2. Następnie rysujemy linię (będzie na wierzchu) w kontrastowym kolorze */}
+					<ReferenceLine
+						y={averageAmount}
+						stroke="#64748b" // Uniwersalny szary (Slate 500) - czytelny w obu motywach
+						strokeDasharray="4 4"
+						strokeOpacity={0.8}
+						label={{
+							position: "insideTopLeft",
+							value: `ŚREDNIA: ${averageAmount.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} PLN`,
+							fill: "#64748b", // Ciemniejszy szary dla tekstu
+							fontSize: 10,
+							fontWeight: "bold",
+							opacity: 1,
+						}}
 					/>
 				</BarChart>
 			</ResponsiveContainer>

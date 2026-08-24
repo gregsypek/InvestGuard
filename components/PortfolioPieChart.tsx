@@ -205,29 +205,40 @@ export default function PortfolioPieChart({
 													currency: "PLN",
 													maximumFractionDigits: 0,
 												}).format(activeItem.actualAmount)
-											: `${activeItem.weight}%`}
+											: // 🚀 ZMIANA 1: Pokazujemy kwotę celu (Total Portfolio * (Weight / 100)) zamiast suchego 55%
+												new Intl.NumberFormat("pl-PL", {
+													style: "currency",
+													currency: "PLN",
+													maximumFractionDigits: 0,
+												}).format(
+													totalVisibleAmount * (activeItem.weight / 100),
+												)}
 									</span>
-									{/* 🚀 NOWE: Dokładny procent ląduje w stabilnym środku zamiast w Tooltipie */}
-									{dataKey === "actualPercentage" && (
-										<span className="text-[10px] font-bold text-t-text-tertiary mt-1 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
-											{activeItem.actualPercentage.toFixed(2)}% portfela
-										</span>
-									)}
+									{/* 🚀 ZMIANA 2: Procent wyświetlamy jako dodatkową metkę (dla obu trybów) */}
+									<span className="text-[10px] font-bold text-t-text-tertiary mt-1 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
+										{dataKey === "actualPercentage"
+											? `${activeItem.actualPercentage.toFixed(2)}% obecnie`
+											: `${activeItem.weight}% celu`}
+									</span>
 								</div>
 							) : (
 								<div className="text-center flex flex-col items-center transition-all">
 									<span className="text-[10px] uppercase tracking-widest text-t-text-tertiary font-bold">
-										RAZEM
+										{dataKey === "actualPercentage" ? "WARTOŚĆ" : "CEL (RAZEM)"}
 									</span>
 									<span className="text-lg font-black text-t-text-primary leading-tight mt-0.5">
-										{dataKey === "actualPercentage"
-											? new Intl.NumberFormat("pl-PL", {
-													style: "currency",
-													currency: "PLN",
-													maximumFractionDigits: 0,
-												}).format(totalVisibleAmount)
-											: `${totalVisibleWeight}%`}
+										{new Intl.NumberFormat("pl-PL", {
+											style: "currency",
+											currency: "PLN",
+											maximumFractionDigits: 0,
+										}).format(totalVisibleAmount)}
 									</span>
+									{/* Opcjonalny dopisek pod kwotą główną dla Docelowej Strategii */}
+									{dataKey === "weight" && (
+										<span className="text-[9px] font-bold text-t-text-tertiary mt-1 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
+											{totalVisibleWeight}% zainwestowano
+										</span>
+									)}
 								</div>
 							)}
 						</div>

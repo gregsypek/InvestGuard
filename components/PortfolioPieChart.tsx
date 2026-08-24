@@ -277,8 +277,8 @@ export default function PortfolioPieChart({
 					</>
 				)}
 			</div>
-			{/* 🚀 ZMIANA: Legenda jest teraz wyrenderowana POZA Recharts jako zwykły HTML */}
-			{!isEmpty && renderCustomLegend()}
+			{/* 🚀 ZMIANA: Legenda musi być ZAWSZE widoczna, chyba że portfel jest fizycznie pusty */}
+			{data.length > 0 && renderCustomLegend()}
 		</div>
 	);
 }

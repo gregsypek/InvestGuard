@@ -29,6 +29,7 @@ export function useSortedAssets<T extends SortableAsset>(
 	transactions: SortableTransaction[],
 	hideClosed: boolean,
 	sortBy: string,
+	filterCategory: string = "ALL",
 ) {
 	return useMemo(() => {
 		// 1. FILTROWANIE
@@ -39,6 +40,15 @@ export function useSortedAssets<T extends SortableAsset>(
 					a.quantity > 0 ||
 					a.category === "CASH" ||
 					a.id === "bonds-summary-id", // Ochrona wirtualnego wiersza obligacji
+			);
+		}
+
+		// 🚀 NOWOŚĆ: Filtrowanie tylko wybranych kategorii
+		if (filterCategory !== "ALL") {
+			result = result.filter(
+				(a) =>
+					a.category === filterCategory ||
+					(a.id === "bonds-summary-id" && filterCategory === "BONDS"), // Ochrona obligacji
 			);
 		}
 
@@ -78,15 +88,27 @@ export function useSortedAssets<T extends SortableAsset>(
 				return profitB - profitA;
 			}
 
-			// 🚀 NOWOŚĆ: Zysk procentowy
+			// Zysk procentowy
 			if (sortBy === "PROFIT_PCT") {
 				const getPct = (asset: any) => {
 					const invested = asset.investedCapital || 0;
 					const current = asset.currentValue || 0;
-					if (invested <= 0) return 0; // Ochrona przed dzieleniem przez 0
+					if (invested <= 0) return 0;
 					return ((current - invested) / invested) * 100;
 				};
 				return getPct(b) - getPct(a);
+			}
+
+			// 🚀 NOWOŚĆ: Sortowanie (grupowanie) po kategorii alokacji
+			if (sortBy === "CATEGORY") {
+				const catA = a.category || "";
+				const catB = b.category || "";
+				// Jeśli to ta sama kategoria, ułóż po wartości od największej
+				if (catA === catB) {
+					return (b.currentValue || 0) - (a.currentValue || 0);
+				}
+				// Jeśli różne kategorie, ułóż alfabetycznie po nazwie kategorii
+				return catA.localeCompare(catB);
 			}
 
 			// DEFAULT (ACTIVITY)
@@ -94,5 +116,5 @@ export function useSortedAssets<T extends SortableAsset>(
 		});
 
 		return mappedResult;
-	}, [assets, transactions, hideClosed, sortBy]);
+	}, [assets, transactions, hideClosed, sortBy, filterCategory]);
 }

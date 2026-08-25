@@ -80,6 +80,8 @@ const AssetLedgerTable = ({
 	const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
 
+	const [filterCategory, setFilterCategory] = useState("ALL");
+
 	const [assetToSell, setAssetToSell] = useState<AssetWithUI | null>(null);
 	const [assetToAdjust, setAssetToAdjust] = useState<AssetWithUI | null>(null);
 	const [assetToDelete, setAssetToDelete] = useState<AssetWithUI | null>(null);
@@ -176,6 +178,7 @@ const AssetLedgerTable = ({
 		portfolio.transactionHistories,
 		hideClosed,
 		sortBy,
+		filterCategory,
 	);
 
 	const startIndex = (currentPage - 1) * PAGE_ITEMS;
@@ -246,6 +249,19 @@ const AssetLedgerTable = ({
 		});
 	};
 
+	// 2. 🚀 Dynamicznie wyciągamy tylko te kategorie, które są w portfelu!
+	const activeCategories = useMemo(() => {
+		// Tworzymy unikalny zbiór (Set) kategorii z aktywów (i rzutujemy na string)
+		const uniqueCats = Array.from(
+			new Set(assets.map((a) => a.category).filter(Boolean)),
+		) as string[];
+
+		return uniqueCats.map((cat) => ({
+			id: cat,
+			label: CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] || cat,
+		}));
+	}, [assets]);
+
 	return (
 		<>
 			{/* EN: 4. The Controls Panel (FilterBadges) added above the table */}
@@ -258,17 +274,22 @@ const AssetLedgerTable = ({
 				sortOptions={[
 					{ id: "ACTIVITY", label: "Ostatnia aktywność" },
 					{ id: "PROFIT", label: "Zysk PLN" },
-							{ id: "PROFIT_PCT", label: "Zysk %" },
+					{ id: "PROFIT_PCT", label: "Zysk %" },
+					{ id: "CATEGORY", label: "Kategoria" },
 					{ id: "ALPHA", label: "A-Z" },
 					{ id: "VALUE", label: "Wartość" },
 				]}
+				// 🚀 Przekazujemy dane do drugiego rzędu filtrów
+				filterCategory={filterCategory}
+				onCategoryChange={setFilterCategory}
+				availableCategories={activeCategories}
 			/>
 
 			<div className="w-full overflow-x-auto no-scrollbar pb-4">
 				<Table className="min-w-[700px] sm:min-w-[800px]">
 					<TableHeader>
-						<TableRow className="border-b border-t-border-subtle hover:bg-transparent">
-							<TableHead className="sticky left-0 rounded-tl-2xl  z-20 bg-t-bg-sticky w-48 sm:w-56 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary py-4 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none">
+						<TableRow className="border-b border-t-border-subtle hover:bg-transparent ">
+							<TableHead className="sticky left-0 rounded-tl-2xl  z-20 bg-t-bg-sticky min-w-fit sm:w-56 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary py-4 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none">
 								Aktywo
 							</TableHead>
 							<TableHead className="hidden sm:table-cell w-32 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none">
@@ -398,7 +419,7 @@ const AssetLedgerTable = ({
 										>
 											<TableCell
 												className={cn(
-													"sticky left-0 z-10 py-3 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none transition-colors",
+													"sticky left-0 z-10 py-3 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none transition-colors w-min-width",
 													isExpanded
 														? "bg-t-bg-sticky-hover"
 														: "bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover",
@@ -431,7 +452,7 @@ const AssetLedgerTable = ({
 															<span className="text-[10px] md:text-[9px] font-bold text-t-text-secondary font-mono sm:bg-black/5 dark:sm:bg-white/5 sm:border sm:border-black/10 dark:sm:border-white/10 px-0 sm:px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
 																{asset.cleanTicker}
 															</span>
-															<span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold tracking-wide">
+															<span className=" hidden sm:block text-[10px] text-blue-600 dark:text-blue-400 font-bold tracking-wide">
 																{isAggregatedBond ||
 																	`${(asset.quantity ?? 0).toLocaleString(
 																		undefined,
@@ -470,7 +491,7 @@ const AssetLedgerTable = ({
 													<Progress
 														value={share}
 														indicatorColor={categoryColor}
-														className="h-1 bg-slate-200 dark:bg-slate-800"
+														className="h-2 bg-slate-200 dark:bg-slate-800"
 													/>
 												</div>
 											</TableCell>

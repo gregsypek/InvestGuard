@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 
 import { AssetFilterPanel } from "../shared/AssetFilterPanel";
 import AssetLedger from "../AssetLedgerTable";
+import { CATEGORY_LABELS } from "@/lib/constants";
 import { InteractiveChartSection } from "../InteractiveChartSection";
 import PortfolioCharts from "../PortfolioCharts";
 import RecentActivityCard from "./assets/RecentActivityCard";
@@ -48,17 +49,34 @@ const DashboardAnalytics = ({
 	const [hideClosed, setHideClosed] = useState(true);
 	const [sortBy, setSortBy] = useState("ACTIVITY");
 	const [visibleCount, setVisibleCount] = useState(6);
+	const [filterCategory, setFilterCategory] = useState("ALL");
 
 	const filteredAndSortedAssets = useSortedAssets(
 		assets,
 		transactions,
 		hideClosed,
 		sortBy,
+		filterCategory,
 	);
 
 	const visibleAssets = filteredAndSortedAssets.slice(0, visibleCount);
 	const hasMore = visibleCount < filteredAndSortedAssets.length;
 	const canCollapse = visibleCount > 6;
+
+	// 2. 🚀 Dynamicznie wyciągamy tylko te kategorie, które są w portfelu!
+	const activeCategories = useMemo(() => {
+		// Tworzymy unikalny zbiór (Set) kategorii z aktywów (i rzutujemy na string)
+		const uniqueCats = Array.from(
+			new Set(assets.map((a) => a.category).filter(Boolean)), //Każda wartość w JS jest albo truthy (prawdziwa), albo falsy (fałszywa).
+			// Falsy to: null, undefined, "" (pusty string), 0, false, NaN.
+			// Truthy to: każdy niepusty tekst (np. "BONDS"), liczba różna od zera, obiekt itd.
+		) as string[];
+
+		return uniqueCats.map((cat) => ({
+			id: cat,
+			label: CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] || cat,
+		}));
+	}, [assets]);
 
 	if (!portfolio || !portfolio.assets) {
 		return (
@@ -114,9 +132,14 @@ const DashboardAnalytics = ({
 							{ id: "ACTIVITY", label: "Ostatnia aktywność" },
 							{ id: "PROFIT", label: "Zysk PLN" },
 							{ id: "PROFIT_PCT", label: "Zysk %" },
+							{ id: "CATEGORY", label: "Kategoria" }, // 👈 Zmieniona nazwa
 							{ id: "ALPHA", label: "A-Z" },
 							{ id: "VALUE", label: "Wartość" },
 						]}
+						// 🚀 Przekazujemy dane do drugiego rzędu filtrów
+						filterCategory={filterCategory}
+						onCategoryChange={setFilterCategory}
+						availableCategories={activeCategories}
 					/>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">

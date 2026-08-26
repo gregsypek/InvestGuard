@@ -74,7 +74,7 @@ export function MonthlyDepositsChart({
 							v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()
 						}
 					/>
-					<Tooltip
+					{/* <Tooltip
 						cursor={{ fill: "rgba(255,255,255,0.05)" }}
 						contentStyle={{
 							backgroundColor: "#ffffff",
@@ -91,6 +91,32 @@ export function MonthlyDepositsChart({
 						}}
 						labelStyle={{
 							color: "#64748b",
+							fontSize: "10px",
+							marginBottom: "4px",
+						}}
+						formatter={(value) => {
+							const num =
+								typeof value === "number" ? value : Number(value ?? 0);
+							return [`${num.toLocaleString("pl-PL")} PLN`, "Wpłata"];
+						}}
+					/> */}
+					<Tooltip
+						cursor={{ fill: "rgba(255,255,255,0.05)" }}
+						contentStyle={{
+							backgroundColor: "var(--t-bg-panel)", // 👈 Zmiana
+							borderRadius: "12px",
+							borderColor: "var(--t-border-subtle)", // 👈 Zmiana
+							boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.5)",
+							padding: "8px 12px",
+						}}
+						itemStyle={{
+							color: "var(--t-text-primary)", // 👈 Zmiana
+							fontSize: "11px",
+							fontWeight: "bold",
+							textTransform: "uppercase",
+						}}
+						labelStyle={{
+							color: "var(--t-text-tertiary)", // 👈 Zmiana
 							fontSize: "10px",
 							marginBottom: "4px",
 						}}

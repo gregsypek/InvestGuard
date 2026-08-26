@@ -91,7 +91,7 @@ export default function PortfoliosClientView({
 				}
 			>
 				{/* Filtrowanie Portfeli - jako prosty select wyżej */}
-				<div className="mb-6 flex items-center gap-2">
+				{/* <div className="mb-6 flex items-center gap-2">
 					<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
 						Wybrany Portfel:
 					</span>
@@ -106,7 +106,7 @@ export default function PortfoliosClientView({
 							</option>
 						))}
 					</select>
-				</div>
+				</div> */}
 
 				<div className="w-full min-w-0">
 					<div
@@ -115,7 +115,7 @@ export default function PortfoliosClientView({
 							"md:grid md:grid-cols-2 xl:grid-cols-3 md:overflow-visible md:snap-none md:mx-0 md:px-0 md:pb-0 md:gap-6",
 						)}
 					>
-						{activePortfolios.map((p) => (
+						{portfolios.map((p) => (
 							<div
 								key={p.id}
 								className={cn(
@@ -151,6 +151,9 @@ export default function PortfoliosClientView({
 					filterCategory={filterCategory}
 					onCategoryChange={setFilterCategory}
 					availableCategories={activeCategories}
+					selectedPortfolioId={selectedPortfolioId}
+					onPortfolioChange={setSelectedPortfolioId}
+					portfolioOptions={portfolioOptions}
 				/>
 
 				{/* Komponent z wykresami */}
@@ -169,7 +172,7 @@ export default function PortfoliosClientView({
 			<SectionLayout
 				title="Alokacja Globalna"
 				titleIcon={Globe}
-				subtitle="Skład i Zdrowie Portfela"
+				subtitle="Skład i Zdrowie Portfeli"
 				description="Rozkład aktywów ze wszystkich Twoich portfeli (łącznie)."
 				subtitleIcon={PieChart}
 				action={

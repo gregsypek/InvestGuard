@@ -6,9 +6,15 @@ interface AssetFilterPanelProps {
 	sortBy: string;
 	onSortChange: (sortId: string) => void;
 	sortOptions?: { id: string; label: string }[];
+
 	filterCategory?: string;
 	onCategoryChange?: (catId: string) => void;
 	availableCategories?: { id: string; label: string }[];
+
+	// 🚀 NOWE: Props dla selektora portfela (opcjonalne, bo używasz panelu też w innych miejscach)
+	selectedPortfolioId?: string;
+	onPortfolioChange?: (id: string) => void;
+	portfolioOptions?: { id: string; label: string }[];
 }
 
 export function AssetFilterPanel({
@@ -20,15 +26,37 @@ export function AssetFilterPanel({
 	filterCategory,
 	onCategoryChange,
 	availableCategories = [],
+	selectedPortfolioId,
+	onPortfolioChange,
+	portfolioOptions = [],
 }: AssetFilterPanelProps) {
 	return (
-		// Główny kontener: układa się w kolumnę na małych ekranach, a w rzędzie od XL
-		<div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 mb-6">
-			{/* GRUPA 1: Widok i Kategoria */}
-			<div className="flex flex-row flex-wrap items-center gap-3 sm:gap-4">
-				{/* Widok */}
+		<div className="flex flex-col gap-3 mb-6">
+			{/* RZĄD 1: Zakres i Widok (Płasko, bez otoczki) */}
+			<div className="flex items-center justify-between gap-4">
+				{/* Selektor Portfela */}
+				{portfolioOptions.length > 0 && onPortfolioChange && (
+					<div className="flex items-center gap-2">
+						<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
+							Zakres:
+						</span>
+						<select
+							value={selectedPortfolioId}
+							onChange={(e) => onPortfolioChange(e.target.value)}
+							className="bg-transparent text-t-text-primary text-[11px] font-bold uppercase tracking-widest outline-none cursor-pointer border-b border-dashed border-slate-400 pb-0.5"
+						>
+							{portfolioOptions.map((opt) => (
+								<option key={opt.id} value={opt.id} className="bg-t-bg-panel">
+									{opt.label}
+								</option>
+							))}
+						</select>
+					</div>
+				)}
+
+				{/* Widok (Ukryj zamknięte) dosunięty do prawej */}
 				<div className="flex items-center gap-2">
-					<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+					<span className="hidden sm:inline text-[10px] font-bold text-slate-500 uppercase tracking-widest">
 						Widok:
 					</span>
 					<FilterBadge
@@ -38,51 +66,48 @@ export function AssetFilterPanel({
 						onToggle={onToggleHideClosed}
 					/>
 				</div>
+			</div>
 
-				{/* Separator między Widokiem a Kategorią (ukryty na najmniejszych telefonach, jeśli by się zawinęło) */}
-				{availableCategories.length > 0 && onCategoryChange && (
-					<div className="hidden sm:block xl:hidden w-px h-5 bg-black/10 dark:bg-white/10" />
-				)}
-
+			{/* RZĄD 2: Kategoria i Sortowanie (ZAWSZE w jednej linii: flex-row zamiast flex-col) */}
+			<div className="flex flex-row items-center gap-2 sm:gap-3">
 				{/* Kategoria */}
 				{availableCategories.length > 0 && onCategoryChange && (
-					<div className="flex items-center gap-2">
-						<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
+					<div className="flex flex-1 xl:flex-none xl:w-56 items-center gap-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg px-2 py-1.5 focus-within:border-t-border transition-colors overflow-hidden">
+						<span className="hidden sm:block text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
 							Kategoria:
 						</span>
 						<select
 							value={filterCategory}
 							onChange={(e) => onCategoryChange(e.target.value)}
-							className="bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border text-t-text-secondary text-[10px] font-bold uppercase tracking-widest rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-blue-500 transition-colors cursor-pointer"
+							className="w-full bg-transparent text-t-text-secondary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate"
 						>
 							<option value="ALL">Wszystkie</option>
 							{availableCategories.map((cat) => (
-								<option key={cat.id} value={cat.id}>
+								<option key={cat.id} value={cat.id} className="bg-t-bg-panel">
 									{cat.label}
 								</option>
 							))}
 						</select>
 					</div>
 				)}
-			</div>
 
-			{/* Główny separator między lewą stroną a prawą (Sortowanie) widoczny tylko na dużych ekranach */}
-			{/* <div className="hidden xl:block w-px h-5 bg-black/10 dark:bg-white/10 mx-1" /> */}
-
-			{/* GRUPA 2: Sortowanie */}
-			<div className="flex items-center gap-2 flex-wrap w-full xl:w-auto">
-				<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mr-1">
-					Sortuj:
-				</span>
-				{sortOptions.map((opt) => (
-					<FilterBadge
-						key={opt.id}
-						id={opt.id}
-						label={opt.label}
-						isSelected={sortBy === opt.id}
-						onToggle={() => onSortChange(opt.id)}
-					/>
-				))}
+				{/* Sortowanie */}
+				<div className="flex flex-1 xl:flex-none xl:w-56 items-center gap-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg px-2 py-1.5 focus-within:border-t-border transition-colors overflow-hidden">
+					<span className="hidden sm:block text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
+						Sortuj:
+					</span>
+					<select
+						value={sortBy}
+						onChange={(e) => onSortChange(e.target.value)}
+						className="w-full bg-transparent text-t-text-secondary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate"
+					>
+						{sortOptions.map((opt) => (
+							<option key={opt.id} value={opt.id} className="bg-t-bg-panel">
+								{opt.label}
+							</option>
+						))}
+					</select>
+				</div>
 			</div>
 		</div>
 	);

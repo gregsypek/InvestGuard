@@ -1,5 +1,5 @@
 import { CalendarClock } from "lucide-react";
-import { PlanCard } from "./PlanCard";
+import { PlannerClientList } from "./PlannerClientList";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
@@ -8,7 +8,6 @@ export async function PlannerList() {
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
 
-	// 1. Pobieramy plany (ważne: filtrujemy po userId, żeby nie widzieć planów innych osób)
 	const plans = await db.investmentPlan.findMany({
 		where: {
 			portfolio: { userId: session.user.id },
@@ -17,8 +16,6 @@ export async function PlannerList() {
 		include: { portfolio: true },
 	});
 
-	// 2. Pobieramy ID portfeli, które fizycznie posiadają aktywo "CASH"
-	// To jest kluczowe dla działania funkcji executePlan
 	const portfoliosWithAssets = await db.asset.findMany({
 		where: {
 			ticker: "CASH",
@@ -27,29 +24,18 @@ export async function PlannerList() {
 		select: { portfolioId: true },
 	});
 
-	// Tworzymy zbiór (Set) ID portfeli z gotówką dla szybkiego wyszukiwania
-	const cashPortfolioIds = new Set(
-		portfoliosWithAssets.map((a) => a.portfolioId),
+	// Konwersja na standardową tablicę do przesłania jako props
+	const cashPortfolioIds = Array.from(
+		new Set(portfoliosWithAssets.map((a) => a.portfolioId)),
 	);
 
 	const allPortfoliosWithCash = await db.portfolio.findMany({
 		where: {
 			userId: session.user.id,
-			// Szukamy portfeli, które mają zdefiniowany cel na gotówkę większy niż 0%
-			// lub po prostu wszystkie portfele użytkownika, jeśli dopuszczasz wpłatę do każdego
-			targetCash: {
-				gt: 0,
-			},
+			targetCash: { gt: 0 },
 		},
-		select: {
-			id: true,
-			name: true,
-		},
+		select: { id: true, name: true },
 	});
-	// console.log(
-	// 	"🚀 ~ PlannerList ~ allPortfoliosWithCash:",
-	// 	allPortfoliosWithCash,
-	// );
 
 	if (plans.length === 0) {
 		return (
@@ -70,31 +56,33 @@ export async function PlannerList() {
 		);
 	}
 
-	// --- LOGIKA DATY DO BLOKADY ---
+	// =====================================================================
+	// 🚀 LOGIKA AUTOMATYCZNEGO ROLOWANIA PRZETERMINOWANYCH PLANÓW
+	// =====================================================================
 	const now = new Date();
 	const currentYear = now.getFullYear();
 	const currentMonth = now.getMonth() + 1;
+	const currentMonthStr = `${currentYear}-${currentMonth.toString().padStart(2, "0")}`;
+
+	const processedPlans = plans.map((plan) => {
+		const [pYear, pMonth] = plan.plannedDate.split("-").map(Number);
+
+		// Sprawdzamy czy miesiąc lub rok planu jest w przeszłości
+		const isPast =
+			pYear < currentYear || (pYear === currentYear && pMonth < currentMonth);
+
+		return {
+			...plan,
+			// Przebijamy wirtualnie datę na obecny miesiąc w UI dla zaległych planów
+			plannedDate: isPast ? currentMonthStr : plan.plannedDate,
+		};
+	});
 
 	return (
-		<div className="flex flex-col md:flex-row gap-4 flex-wrap">
-			{plans.map((plan) => {
-				// EN: Calculate lock status based on plannedDate vs current month
-				// UI: Obliczanie statusu blokady na podstawie daty planu względem obecnego miesiąca
-				const [pYear, pMonth] = plan.plannedDate.split("-").map(Number);
-				const isLocked =
-					pYear > currentYear ||
-					(pYear === currentYear && pMonth > currentMonth);
-
-				return (
-					<PlanCard
-						key={plan.id}
-						plan={plan}
-						isLocked={isLocked}
-						hasCashInPortfolio={cashPortfolioIds.has(plan.portfolioId)}
-						allPortfoliosWithCash={allPortfoliosWithCash}
-					/>
-				);
-			})}
-		</div>
+		<PlannerClientList
+			plans={processedPlans}
+			cashPortfolioIds={cashPortfolioIds}
+			allPortfoliosWithCash={allPortfoliosWithCash}
+		/>
 	);
 }

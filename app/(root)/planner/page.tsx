@@ -1,9 +1,7 @@
-import { PiggyBank, PlusSquare, TrendingUp } from "lucide-react";
-
-import { GoalProjectionChart } from "@/components/planner/GoalProjectionChart";
+import { PlannerDashboardClient } from "@/components/planner/PlannerDashboardClient"; // 👈 Nowy import
 import PlannerForm from "@/components/planner/PlannerForm";
 import { PlannerHeader } from "@/components/PlanerHeader";
-import { PlannerList } from "@/components/planner/PlanenerList";
+import { PlusSquare } from "lucide-react";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
@@ -21,64 +19,78 @@ export default async function PlannerPage({ searchParams }: Props) {
 		redirect("/sign-in");
 	}
 
-	// =====================================================================
-	// 1. STRAŻNIK: Pobiera konkretny portfel i obsługuje wszystkie błędy
-	// =====================================================================
+	// 1. STRAŻNIK: Pobiera konkretny portfel do domyślnego formularza
 	const { portfolio, errorComponent } = await getGuardedPortfolio({
 		searchParams,
 		userId: session.user.id,
 	});
-
 	// Jeśli użytkownik nie ma portfeli, nie wybrał żadnego, lub wpisał złe ID -
 	// Strażnik automatycznie zaserwuje odpowiedni wariant <PortfolioEmptyState />
+
 	if (errorComponent || !portfolio) {
 		return errorComponent;
 	}
 
+	// 2. Pobieramy wszystkie portfele usera z aktywami (do Projekcji i Selektorów)
 	const allUserPortfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
-		select: { id: true, name: true }, // Pobieramy absolutne minimum do dropdownu
+		include: { assets: true }, // Niezbędne do wyliczania currentValue na żywo
 	});
 
-	// =====================================================================
-	// 2. POBIERANIE PLANÓW INWESTYCYJNYCH (Tylko dla tego portfela)
-	// =====================================================================
-	// ZMIANA: Filtrujemy plany stricte po id aktywnego portfela,
-	// aby nie mieszać planów z innych portfeli tego samego użytkownika.
-	const investmentPlans = await db.investmentPlan.findMany({
+	// 3. Pobieramy WSZYSTKIE oczekujące plany użytkownika
+	const allPlans = await db.investmentPlan.findMany({
 		where: {
-			portfolioId: portfolio.id,
+			portfolio: { userId: session.user.id },
 			isExecuted: false,
 		},
+		orderBy: [{ plannedDate: "asc" }, { createdAt: "desc" }],
+		include: { portfolio: true },
 	});
 
-	// =====================================================================
-	// 3. OBLICZENIA DLA WYBRANEGO PORTFELA
-	// =====================================================================
+	// 4. Pobieramy informację o tym, które portfele mają CASH
+	const portfoliosWithAssets = await db.asset.findMany({
+		where: {
+			ticker: "CASH",
+			portfolio: { userId: session.user.id },
+		},
+		select: { portfolioId: true },
+	});
+	const cashPortfolioIds = Array.from(
+		new Set(portfoliosWithAssets.map((a) => a.portfolioId)),
+	);
 
-	// Plany i miesięczne wpłaty
-	const totalPlannedValue = investmentPlans.reduce(
+	// =====================================================================
+	// 5. LOGIKA AUTOMATYCZNEGO ROLOWANIA PRZETERMINOWANYCH PLANÓW
+	// =====================================================================
+	const now = new Date();
+	const currentYear = now.getFullYear();
+	const currentMonth = now.getMonth() + 1;
+	const currentMonthStr = `${currentYear}-${currentMonth.toString().padStart(2, "0")}`;
+
+	const processedPlans = allPlans.map((plan) => {
+		const [pYear, pMonth] = plan.plannedDate.split("-").map(Number);
+		const isPast =
+			pYear < currentYear || (pYear === currentYear && pMonth < currentMonth);
+
+		return {
+			...plan,
+			// Podmieniamy w locie starą datę na aktualny miesiąc dla UI
+			plannedDate: isPast ? currentMonthStr : plan.plannedDate,
+		};
+	});
+
+	// Globalne statystyki do górnego nagłówka (PlannerHeader)
+	const totalPlannedValue = processedPlans.reduce(
 		(sum, plan) => sum + Number(plan.value),
 		0,
 	);
-	const plannedCount = investmentPlans.length;
-	const monthlyPlanned = totalPlannedValue; // Uproszczenie  kodu
-
-	// Wartość aktualna aktywów (Strażnik pobrał już assets w pamięci)
-	const currentPortfolioValue = portfolio.assets.reduce(
-		(sum, a) => sum + Number(a.currentValue),
-		0,
-	);
-
-	// Cel portfela (zabezpieczenie na wypadek braku)
-	const goalValue = Number(portfolio.goal) || 100000;
 
 	return (
 		<div>
-			{/* NAGŁÓWEK */}
+			{/* NAGŁÓWEK GŁÓWNY */}
 			<PlannerHeader
 				totalPlannedValue={totalPlannedValue}
-				plannedCount={plannedCount}
+				plannedCount={processedPlans.length}
 				customBreadcrumbs={
 					<div className="flex items-center gap-2 mb-2">
 						<nav className="text-sm text-slate-400 italic">
@@ -91,15 +103,13 @@ export default async function PlannerPage({ searchParams }: Props) {
 				}
 			/>
 
-			{/* SEKCJA 1: Formularz */}
+			{/* SEKCJA 1: Formularz (Pozostaje na górze, zapięty na domyślny portfel) */}
 			<SectionLayout
 				title="Nowy plan inwestycyjny"
 				titleIcon={PlusSquare}
 				subtitle="Zdefiniuj aktywo, które zamierzasz dodać do portfela w najbliższym czasie."
-				description="Zaplanowane zakupy pozwalają Ci kontrolować przepływ gotówki i lepiej zarządzać budżetem inwestycyjnym. Dodając plan, określasz, jakie aktywo chcesz kupić, w jakiej ilości i kiedy. To narzędzie jest idealne do organizowania przyszłych zakupów i utrzymania dyscypliny inwestycyjnej."
+				description="Zaplanowane zakupy pozwalają Ci kontrolować przepływ gotówki i lepiej zarządzać budżetem inwestycyjnym."
 			>
-				{/* bg-t-bg-panel */}
-				{/* Delikatny kontener, aby formularz ładnie odcinał się od tła strony */}
 				<div className="bg-white/2 dark:bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 lg:p-8 shadow-sm">
 					<PlannerForm
 						portfolios={allUserPortfolios}
@@ -108,42 +118,12 @@ export default async function PlannerPage({ searchParams }: Props) {
 				</div>
 			</SectionLayout>
 
-			{/* SEKCJA 2: Lista Oczekujących */}
-			<SectionLayout
-				title="Oczekujące Realizacje"
-				titleIcon={PiggyBank}
-				subtitle="Lista zaplanowanych zakupów, które jeszcze nie zostały zrealizowane."
-				description="Na jej podstawie możesz monitorować nadchodzące inwestycje i zarządzać nimi w czasie."
-				action={
-					<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg">
-						<span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-							Zaplanowane: {plannedCount}
-						</span>
-					</div>
-				}
-			>
-				{/* Wyświetlamy listę bezpośrednio – strona będzie się naturalnie scrollować w dół */}
-				<PlannerList />
-			</SectionLayout>
-
-			{/* SEKCJA 3: Projekcja Celu */}
-			<SectionLayout
-				title="Projekcja Celu"
-				titleIcon={TrendingUp}
-				subtitle="Symulacja osiągnięcia celu inwestycyjnego"
-				description="Wizualizacja pokazuje, jak Twoje obecne oszczędności i plany inwestycyjne mogą przyczynić się do osiągnięcia wyznaczonego celu finansowego. Symulacja zakłada średnioroczne zwroty na poziomie 7%, co jest historycznym średnim wynikiem dla zdywersyfikowanego portfela akcji. Pamiętaj, że rzeczywiste wyniki mogą się różnić w zależności od warunków rynkowych."
-			>
-				{/* Kontener na wykres analogiczny do tego z formularza */}
-				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-sm">
-					<div className="h-[400px] w-full relative">
-						<GoalProjectionChart
-							currentValue={currentPortfolioValue}
-							targetValue={goalValue}
-							monthlyDeposit={monthlyPlanned}
-						/>
-					</div>
-				</div>
-			</SectionLayout>
+			{/* SEKCJE 2 i 3: Lista i Projekcja (Zarządzane przez nowego klienta) */}
+			<PlannerDashboardClient
+				portfolios={allUserPortfolios}
+				plans={processedPlans}
+				cashPortfolioIds={cashPortfolioIds}
+			/>
 		</div>
 	);
 }

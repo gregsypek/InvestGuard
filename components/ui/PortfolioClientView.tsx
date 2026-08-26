@@ -36,22 +36,16 @@ export default function PortfoliosClientView({
 	isDemo = false,
 }: Props) {
 	// --- 1. STANY DLA STRUKTURY INWESTYCJI (Wykresy) ---
-	const [chartsPortfolioId, setChartsPortfolioId] = useState<string>(
-		initialPortfolioId || "ALL",
-	);
+	const [chartsPortfolioId, setChartsPortfolioId] = useState<string>("ALL");
 	const [chartsHideClosed, setChartsHideClosed] = useState(true);
 	const [chartsSortBy, setChartsSortBy] = useState("VALUE");
 	const [chartsFilterCategory, setChartsFilterCategory] = useState("ALL");
 
 	// --- 2. STAN DLA TABELI ALOKACJI ---
-	const [tablePortfolioId, setTablePortfolioId] = useState<string>(
-		initialPortfolioId || "ALL",
-	);
+	const [tablePortfolioId, setTablePortfolioId] = useState<string>("ALL");
 
 	// --- 3. STAN DLA ANALIZY WZROSTU ---
-	const [growthPortfolioId, setGrowthPortfolioId] = useState<string>(
-		initialPortfolioId || "ALL",
-	);
+	const [growthPortfolioId, setGrowthPortfolioId] = useState<string>("ALL");
 
 	// Wspólne opcje wyboru portfela
 	const portfolioOptions = [
@@ -93,15 +87,33 @@ export default function PortfoliosClientView({
 		[tableAssets],
 	);
 
-	const tableDynamicTotals = useMemo(() => {
-		const totals: Record<string, number> = {};
+	// 🚀 ZMIANA: Zbieramy pełne dane dla kategorii (Wartość, Zysk PLN, Zysk %)
+	const tableCategoryStats = useMemo(() => {
+		const stats: Record<string, { value: number; invested: number }> = {};
+
 		tableAssets.forEach((asset) => {
 			if (asset.quantity > 0 || asset.category === "CASH") {
 				const cat = asset.category || "UNKNOWN";
-				totals[cat] = (totals[cat] || 0) + (asset.currentValue || 0);
+				if (!stats[cat]) stats[cat] = { value: 0, invested: 0 };
+
+				stats[cat].value += asset.currentValue || 0;
+				stats[cat].invested += asset.investedCapital || 0;
 			}
 		});
-		return totals;
+
+		// Przekształcamy to w tablicę gotową do sortowania i renderowania
+		return Object.entries(stats).map(([category, data]) => {
+			const profitPLN = data.value - data.invested;
+			const profitPct =
+				data.invested > 0 ? (profitPLN / data.invested) * 100 : 0;
+
+			return {
+				category,
+				value: data.value,
+				profitPLN,
+				profitPct,
+			};
+		});
 	}, [tableAssets]);
 
 	// --- LOGIKA: ANALIZA WZROSTU ---
@@ -260,7 +272,8 @@ export default function PortfoliosClientView({
 					</div>
 				}
 			>
-				<CategoryTable data={tableDynamicTotals} totalValue={tableTotalValue} />
+				{/* 🚀 ZMIANA: Podajemy nowy format danych */}
+				<CategoryTable data={tableCategoryStats} totalValue={tableTotalValue} />
 			</SectionLayout>
 		</>
 	);

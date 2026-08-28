@@ -8,6 +8,7 @@ import {
 	Loader2,
 	RefreshCw,
 	Trash2,
+	Wand2,
 } from "lucide-react";
 import {
 	Dialog,
@@ -36,6 +37,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SimpleSwitch } from "../ui/SimpleSwitchProps";
+import { fetchMagicFillData } from "@/lib/actions/magic-actions";
+import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -63,6 +66,8 @@ export function PlanCard({
 	const [isOpen, setIsOpen] = useState(false);
 	const [isPending, setIsPending] = useState(false);
 
+	const [finalTicker, setFinalTicker] = useState(plan.ticker || "");
+
 	// --- STANY DLA PÓL EDYCYJNYCH ---
 	const [finalName, setFinalName] = useState(plan.name);
 	const [finalValue, setFinalValue] = useState(plan.value);
@@ -73,6 +78,9 @@ export function PlanCard({
 	const [purchaseDate, setPurchaseDate] = useState(
 		new Date().toISOString().split("T")[0],
 	);
+
+	// 🚀 NOWY STAN DLA MAGII
+	const [isMagicLoading, setIsMagicLoading] = useState(false);
 
 	// // NOWE: Musimy trzymać ticker, który user wybrał w modalu
 	// const [finalTicker, setFinalTicker] = useState(plan.ticker || "");
@@ -107,10 +115,13 @@ export function PlanCard({
 	const isBond = plan.targetCategory === "BONDS";
 
 	const handleExecute = async () => {
-		const effectivePrice = isCash ? 1 : Number(purchasePrice);
+		// 🚀 ZMIANA: Jeśli purchasePrice jest puste lub 0, domyślnie ustawiamy 1
+		const effectivePrice = isCash ? 1 : Number(purchasePrice) || 1;
 		const rateAsFloat = parseFloat(String(interestRate).replace(",", "."));
-		if (effectivePrice <= 0) {
-			toast.error("Kurs zakupu musi być większy niż 0");
+
+		// 🚀 ZMIANA: Blokujemy tylko wartości ujemne
+		if (effectivePrice < 0) {
+			toast.error("Kurs zakupu nie może być ujemny.");
 			return;
 		}
 
@@ -126,7 +137,7 @@ export function PlanCard({
 			// EN: Passing all 8 arguments to the server action
 			const result = await executePlan(
 				plan.id, // 1
-				finalValue, // 2
+				Number(finalValue), // 2
 				purchasePrice, // 3
 				isBooked, // 4
 				sourcePortfolioId, // 5
@@ -134,11 +145,22 @@ export function PlanCard({
 				finalName, // 7
 				purchaseDate, // 8: purchaseDate (String)
 				rateAsFloat, // 9: interestRate (Number)
+				finalTicker,
 				// finalTicker, // <--- DODAJEMY TEN ARGUMENT (np. "ROD")
 			);
-
+			// 1. Najpierw weryfikujemy success, dzięki czemu TypeScript zawęża typ
 			if (result.success) {
-				toast.success("Plan zrealizowany pomyślnie! 🚀");
+				// Używamy operatora 'in', by TypeScript przestał panikować
+				if (
+					"portfolioIdsToSync" in result &&
+					Array.isArray(result.portfolioIdsToSync)
+				) {
+					for (const id of result.portfolioIdsToSync) {
+						await syncPortfolioAssets(id);
+					}
+				}
+
+				toast.success("Plan zrealizowany i zsynchronizowany pomyślnie! 🚀");
 				setIsOpen(false);
 				router.refresh();
 			} else {
@@ -164,6 +186,34 @@ export function PlanCard({
 				description: "Usuwanie planów jest wyłączone w trybie podglądu.",
 			});
 			return;
+		}
+	};
+
+	// 🚀 NOWA FUNKCJA
+	const handleMagicFill = async () => {
+		const currentTicker = finalTicker || plan.ticker;
+		if (!currentTicker || isCash || isBond) {
+			toast.error("Podaj ticker (np. AAPL.US), aby pobrać kurs.");
+			return;
+		}
+
+		setIsMagicLoading(true);
+		try {
+			// Pobieramy wartość dla 1 sztuki, aby uzyskać dokładną cenę jednostkową w PLN
+			const result = await fetchMagicFillData(currentTicker, purchaseDate, 1);
+
+			if (result.success && result.data) {
+				setPurchasePrice(Number(result.data.investedCapitalPln));
+				toast.success(
+					`Pobrano kurs: ${result.data.originalPrice.toFixed(2)} ${result.data.originalCurrency} (NBP: ${result.data.exchangeRate.toFixed(4)})`,
+				);
+			} else {
+				toast.error(result.message);
+			}
+		} catch {
+			toast.error("Wystąpił błąd komunikacji z API.");
+		} finally {
+			setIsMagicLoading(false);
 		}
 	};
 
@@ -352,6 +402,20 @@ export function PlanCard({
 									Nazwa aktywa (seria)
 								</Label>
 							</div>
+							<div className="md:col-span-2 space-y-2">
+								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+									Ostateczny Ticker (Wymagany do transakcji)
+								</Label>
+								<Input
+									value={finalTicker}
+									onChange={(e) => setFinalTicker(e.target.value.toUpperCase())}
+									className={cn(
+										inputStyles,
+										"bg-t-bg-base border-t-border font-mono",
+									)}
+									placeholder="Np. CDR.PL, IGLN.L"
+								/>
+							</div>
 							<Input
 								value={finalName}
 								onChange={(e) => setFinalName(e.target.value)}
@@ -367,7 +431,7 @@ export function PlanCard({
 								</p>
 							)}
 						</div>
-
+						{/* here */}
 						{/* OSTATECZNA KWOTA */}
 						<div className="space-y-2">
 							<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
@@ -375,8 +439,11 @@ export function PlanCard({
 							</Label>
 							<Input
 								type="number"
+								inputMode="decimal"
 								value={finalValue}
-								onChange={(e) => setFinalValue(Number(e.target.value))}
+								onChange={(e) =>
+									setFinalValue(e.target.value.replace(",", "."))
+								}
 								className={cn(
 									inputStyles,
 									"bg-t-bg-base border-t-border font-mono",
@@ -384,17 +451,36 @@ export function PlanCard({
 							/>
 						</div>
 
-						{/* KURS ZAKUPU */}
+						{/* KURS ZAKUPU Z MAGIĄ */}
 						<div className="space-y-2">
-							<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-								{isCash ? "Kurs wymiany" : "Kurs zakupu (Cena za 1 szt.)"}
-							</Label>
+							<div className="flex items-center justify-between">
+								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+									{isCash ? "Kurs wymiany" : "Kurs zakupu (Cena za 1 szt.)"}
+								</Label>
+								{/* 🚀 NOWY PRZYCISK MAGII */}
+								{!isCash && !isBond && (
+									<button
+										type="button"
+										onClick={handleMagicFill}
+										disabled={isMagicLoading}
+										className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-400 transition-colors disabled:opacity-50"
+									>
+										{isMagicLoading ? (
+											<Loader2 className="w-3 h-3 animate-spin" />
+										) : (
+											<Wand2 className="w-3 h-3" />
+										)}
+										Auto-Kalkulator
+									</button>
+								)}
+							</div>
 							<Input
 								type="number"
 								step="any"
 								value={isCash ? "1" : purchasePrice || ""}
 								onChange={(e) => setPurchasePrice(e.target.valueAsNumber || 0)}
 								disabled={isCash}
+								placeholder="Domyślnie: 1 PLN"
 								className={cn(
 									inputStyles,
 									"bg-t-bg-base border-t-border font-mono",

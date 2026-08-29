@@ -85,6 +85,31 @@ export default async function PlannerPage({ searchParams }: Props) {
 		0,
 	);
 
+	// Obliczanie aktualnej wartości portfela
+	// Ustawiamy datę na pierwszy dzień obecnego miesiąca (godzina 00:00:00)
+	const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+	const monthlyInvestedResult = await db.transactionHistory.aggregate({
+		where: {
+			// 1. Zabezpieczenie: tylko portfele tego konkretnego użytkownika
+			portfolio: {
+				userId: session.user.id,
+			},
+			// 2. Interesują nas tylko faktyczne zakupy (możesz dodać też "DEPOSIT", jeśli tak wolisz liczyć)
+			type: "BUY",
+			// 3. Ograniczenie czasowe: tylko transakcje od 1-go dnia obecnego miesiąca
+			executedAt: {
+				gte: firstDayOfMonth,
+			},
+		},
+		_sum: {
+			executedValue: true, // Prisma sama zsumuje tę kolumnę
+		},
+	});
+
+	// Wyciągamy zsumowaną wartość (lub 0, jeśli w tym miesiącu nie było transakcji)
+	const monthlyInvested = monthlyInvestedResult._sum.executedValue || 0;
+
 	return (
 		<div>
 			{/* NAGŁÓWEK GŁÓWNY */}
@@ -123,6 +148,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 				portfolios={allUserPortfolios}
 				plans={processedPlans}
 				cashPortfolioIds={cashPortfolioIds}
+				monthlyInvested={monthlyInvested}
 			/>
 		</div>
 	);

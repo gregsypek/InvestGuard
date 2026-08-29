@@ -73,7 +73,10 @@ export function PlanCard({
 	const [exchangeRate, setExchangeRate] = useState(1);
 
 	// --- STANY DLA PÓL EDYCYJNYCH ---
-	const [finalName, setFinalName] = useState(plan.name);
+	const [finalName, setFinalName] = useState(
+		plan.name ||
+			`Zakup: ${CATEGORY_LABELS[plan.targetCategory as keyof typeof CATEGORY_LABELS] || plan.targetCategory}`,
+	);
 	const [finalValue, setFinalValue] = useState(plan.value);
 	const [purchasePrice, setPurchasePrice] = useState<number>(
 		plan.targetCategory === "BONDS" ? 100 : 0,
@@ -252,7 +255,8 @@ export function PlanCard({
 								}}
 							/>
 							<h3 className="text-sm font-bold truncate text-t-text-primary">
-								{plan.name}
+								{plan.name ||
+									`Zakup: ${CATEGORY_LABELS[plan.targetCategory as keyof typeof CATEGORY_LABELS] || plan.targetCategory}`}
 							</h3>
 							{plan.conviction && (
 								<span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 tabular-nums">

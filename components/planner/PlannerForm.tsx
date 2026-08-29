@@ -68,7 +68,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 	const selectedCategory = useWatch({
 		control: form.control,
 		name: "category",
-	});
+	}) as string | undefined; // Rzutujemy na string
 
 	// EN: Now using isCash to dynamically change labels (fixes 'unused' error)
 	const isCash = selectedCategory === "CASH";

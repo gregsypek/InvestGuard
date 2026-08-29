@@ -80,187 +80,205 @@ export async function executePlan(
 	sourcePortfolioId?: string,
 	executionNote?: string,
 	finalNameParam?: string,
-	purchaseDate?: string, // ARG 8: purchaseDate (String YYYY-MM-DD)
-	interestRate?: number, // ARG 9: interestRate (Float)
-	// finalTickerParam?: string, // <--- NOWY 10. ARGUMENT
+	purchaseDate?: string,
+	interestRate?: number,
+	finalTickerParam?: string,
+	originalCurrencyParam: string = "PLN",
+	exchangeRateParam: number = 1,
 ) {
 	try {
-		return await db.$transaction(async (tx) => {
-			const plan = await tx.investmentPlan.findUnique({
-				where: { id: planId },
-				include: { portfolio: true },
-			});
+		return await db.$transaction(
+			async (tx) => {
+				const plan = await tx.investmentPlan.findUnique({
+					where: { id: planId },
+					include: { portfolio: true },
+				});
 
-			if (!plan) throw new Error("Plan nie znaleziony");
+				if (!plan) throw new Error("Plan nie znaleziony");
 
-			const targetCategory = (plan.targetCategory as Category) || "CASH";
-			const isBond = targetCategory === "BONDS";
-			const isCash = targetCategory === "CASH";
+				const targetCategory = (plan.targetCategory as Category) || "CASH";
+				const isBond = targetCategory === "BONDS";
+				const isCash = targetCategory === "CASH";
 
-			const effectivePrice = isCash ? 1 : purchasePrice || 1;
-			const calculatedQuantity = finalValue / effectivePrice;
+				const effectivePrice = isCash ? 1 : purchasePrice || 1;
+				const calculatedQuantity = finalValue / effectivePrice;
+				const executionDate = purchaseDate
+					? new Date(purchaseDate)
+					: new Date();
 
-			// Ustalamy Ticker: priorytet ma ten z modalu, potem ten z planu
-			// const currentTicker = finalTickerParam || plan.ticker || "";
-			const currentTicker = plan.ticker || "";
-			const baseTickerForDuration = currentTicker.split("_")[0];
+				const currentTicker = finalTickerParam || plan.ticker;
+				if (!currentTicker && !isCash) {
+					throw new Error(
+						"Musisz podać Ticker podczas zatwierdzania realizacji.",
+					);
+				}
 
-			// EN: Handle dates correctly
-			// UI: Poprawne ustawienie daty zakupu i wyliczenie daty wykupu
-			const executionDate = purchaseDate ? new Date(purchaseDate) : new Date();
-			const rate = interestRate || 0;
+				const resolvedTicker =
+					isBond && currentTicker
+						? `${currentTicker}_${executionDate.getTime()}`
+						: currentTicker || "CASH";
 
-			// OBLICZAMY WARTOŚĆ POCZĄTKOWĄ Z UWZGLĘDNIENIEM CZASU
-			// Dzięki temu jeśli kupiłeś obligację rok temu, od razu zobaczysz zysk
-			const initialCurrentValue = isBond
-				? calculateAccruedValue(finalValue, rate, executionDate)
-				: finalValue;
-			let maturityDate = null;
+				// 🚀 NOWE: Szukamy, czy mamy już to aktywo w historii (np. z importu XTB)
+				const existingTx = await tx.transactionHistory.findFirst({
+					where: { portfolioId: plan.portfolioId, ticker: resolvedTicker },
+				});
 
-			if (isBond && baseTickerForDuration) {
-				const duration = BOND_DURATIONS[baseTickerForDuration] || 0;
-				if (duration > 0) {
-					maturityDate = new Date(executionDate);
-					if (duration < 1) {
-						maturityDate.setMonth(maturityDate.getMonth() + 3);
-					} else {
-						maturityDate.setFullYear(
-							maturityDate.getFullYear() + Math.floor(duration),
-						);
+				// 🚀 POPRAWKA 1: Najpierw szukamy aktywa, żeby odziedziczyć PRAWIDŁOWĄ nazwę
+				const existingAsset = !isBond
+					? await tx.asset.findFirst({
+							where: { portfolioId: plan.portfolioId, ticker: resolvedTicker },
+						})
+					: null;
+
+				// Jeśli aktywo istnieje, bierzemy jego nazwę (np. iShares Core...), w przeciwnym razie nazwę z modalu/planera
+
+				const resolvedName =
+					finalNameParam ||
+					plan.name ||
+					existingTx?.assetName ||
+					resolvedTicker;
+
+				// 2. LOGIKA OBLIGACJI
+				const baseTickerForDuration = currentTicker
+					? currentTicker.split("_")[0]
+					: "";
+				const rate = interestRate || 0;
+				const initialCurrentValue = isBond
+					? calculateAccruedValue(finalValue, rate, executionDate)
+					: finalValue;
+
+				let maturityDate = null;
+				if (isBond && baseTickerForDuration) {
+					const duration = BOND_DURATIONS[baseTickerForDuration] || 0;
+					if (duration > 0) {
+						maturityDate = new Date(executionDate);
+						if (duration < 1) {
+							maturityDate.setMonth(maturityDate.getMonth() + 3);
+						} else {
+							maturityDate.setFullYear(
+								maturityDate.getFullYear() + Math.floor(duration),
+							);
+						}
 					}
 				}
-			}
+				const transactionType = isCash ? "DEPOSIT" : "BUY";
 
-			const resolvedName = finalNameParam || plan.name || "Nowe Aktywo";
+				// 3. WYPŁATA GOTÓWKI (ŹRÓDŁO)
+				if (isBooked && sourcePortfolioId) {
+					const sourceCash = await tx.asset.findFirst({
+						where: { portfolioId: sourcePortfolioId, ticker: "CASH" },
+					});
 
-			// EN: Unique ticker for bonds to prevent merging entries
-			const resolvedTicker =
-				isBond && plan.ticker
-					? `${plan.ticker}_${Date.now()}`
-					: plan.ticker || (isCash ? "CASH" : "UNIT");
+					if (!sourceCash || sourceCash.currentValue < finalValue) {
+						throw new Error("Niewystarczająca gotówka w portfelu źródłowym.");
+					}
 
-			// 1. WYPŁATA (ŹRÓDŁO)
-			if (isBooked && sourcePortfolioId) {
-				const sourceCash = await tx.asset.findFirst({
-					where: { portfolioId: sourcePortfolioId, ticker: "CASH" },
-				});
+					await tx.asset.update({
+						where: { id: sourceCash.id },
+						data: {
+							quantity: { decrement: finalValue },
+							investedCapital: { decrement: finalValue },
+							currentValue: { decrement: finalValue },
+						},
+					});
 
-				if (!sourceCash || sourceCash.currentValue < finalValue) {
-					throw new Error("Niewystarczająca gotówka w portfelu źródłowym.");
+					await tx.transactionHistory.create({
+						data: {
+							type: transactionType,
+							portfolioId: plan.portfolioId,
+							assetName: resolvedName,
+							ticker: resolvedTicker,
+							quantity: calculatedQuantity,
+							executedValue: finalValue,
+							originalPrice: purchasePrice, // Prawidłowa cena (np. 708 EUR)
+							originalCurrency: originalCurrencyParam, // Prawidłowa waluta
+							exchangeRate: exchangeRateParam, // Prawidłowy kurs
+							category: targetCategory,
+							executedAt: executionDate,
+							rationale: executionNote || plan.rationale || "Realizacja planu",
+							// Nadajemy unikalny klucz, który pozwoli wyłapać duplikaty
+							externalId: `PLAN_${resolvedTicker}_${executionDate.toISOString().split("T")[0]}_${calculatedQuantity}`,
+						},
+					});
 				}
 
-				await tx.asset.update({
-					where: { id: sourceCash.id },
-					data: {
-						quantity: { decrement: finalValue },
-						investedCapital: { decrement: finalValue },
-						currentValue: { decrement: finalValue },
-					},
-				});
+				// 4. WPŁATA / ZAKUP (AKTUALIZACJA/TWORZENIE ASSET)
+				if (existingAsset) {
+					await tx.asset.update({
+						where: { id: existingAsset.id },
+						data: {
+							quantity: { increment: calculatedQuantity },
+							investedCapital: { increment: finalValue },
+							currentValue: { increment: finalValue },
+						},
+					});
+				} else {
+					await tx.asset.create({
+						data: {
+							name: resolvedName,
+							ticker: resolvedTicker,
+							category: targetCategory,
+							quantity: calculatedQuantity,
+							investedCapital: finalValue,
+							currentValue: initialCurrentValue,
+							portfolioId: plan.portfolioId,
+							purchaseDate: executionDate,
+							maturityDate: maturityDate,
+							nominalValue: isBond ? 100 : 0,
+							interestRate: Number(interestRate) || 0,
+							targetPercentage: 0,
+							conviction: plan.conviction,
+							rationale: plan.rationale,
+						},
+					});
+				}
 
+				// 🚀 POPRAWKA 2: Pełne dane dla TransactionHistory (wymagane dla AssetLedger)
 				await tx.transactionHistory.create({
 					data: {
-						type: "SELL",
-						portfolioId: sourcePortfolioId,
-						assetName: sourceCash.name,
-						ticker: sourceCash.ticker,
-						quantity: -finalValue,
-						executedValue: finalValue,
-						category: "CASH",
-						executedAt: executionDate,
-						rationale: `Transfer na poczet: ${resolvedName}`,
-					},
-				});
-			}
-
-			// Ticker do bazy (z timestampem, by uniknąć duplikatów w ID)
-			// const dbTicker = isBond
-			// 	? `${baseTickerForDuration}_${Date.now()}`
-			// 	: currentTicker;
-
-			// 2. WPŁATA (CEL)
-			// EN: Bonds are always created as new assets, others can be updated
-			const existingAsset = !isBond
-				? await tx.asset.findFirst({
-						where: {
-							portfolioId: plan.portfolioId,
-							ticker: plan.ticker || undefined,
-						},
-					})
-				: null;
-
-			if (existingAsset) {
-				await tx.asset.update({
-					where: { id: existingAsset.id },
-					data: {
-						quantity: { increment: calculatedQuantity },
-						investedCapital: { increment: finalValue },
-						currentValue: { increment: finalValue },
-					},
-				});
-			} else {
-				await tx.asset.create({
-					data: {
-						name: resolvedName,
+						type: transactionType,
+						portfolioId: plan.portfolioId,
+						assetName: resolvedName,
 						ticker: resolvedTicker,
-						category: targetCategory,
 						quantity: calculatedQuantity,
-						investedCapital: finalValue,
-						currentValue: initialCurrentValue, // <--- TUTAJ WPADA WYLICZONA WARTOŚĆ
-						portfolioId: plan.portfolioId,
-						purchaseDate: executionDate,
-						maturityDate: maturityDate,
-						nominalValue: isBond ? 100 : 0,
-						interestRate: Number(interestRate) || 0,
-						targetPercentage: 0,
-						conviction: plan.conviction,
-						rationale: plan.rationale,
+						executedValue: finalValue,
+						originalPrice: effectivePrice, // Zamiast 0, wstawiamy realny kurs
+						originalCurrency: "PLN", // Domyślnie baza przyjmuje zapis w PLN
+						exchangeRate: 1, // Kurs wymiany domyślnie 1
+						category: targetCategory,
+						executedAt: executionDate,
+						rationale: executionNote || plan.rationale || "Realizacja planu",
 					},
 				});
-			}
 
-			// 3. HISTORIA WPŁATY
-			await tx.transactionHistory.create({
-				data: {
-					type: "BUY",
-					portfolioId: plan.portfolioId,
-					assetName: resolvedName,
-					ticker: resolvedTicker,
-					quantity: calculatedQuantity,
-					executedValue: finalValue,
-					category: targetCategory,
-					executedAt: executionDate,
-					rationale: executionNote || plan.rationale || "Realizacja planu",
-				},
-			});
+				// 6. CYKLICZNOŚĆ I CZYSZCZENIE
+				if (plan.isRecurring) {
+					await tx.investmentPlan.create({
+						data: {
+							name: plan.name,
+							ticker: plan.ticker,
+							value: plan.value,
+							plannedDate: getNextMonth(plan.plannedDate),
+							targetCategory: plan.targetCategory,
+							portfolioId: plan.portfolioId,
+							isRecurring: true,
+							rationale: plan.rationale,
+							conviction: plan.conviction,
+						},
+					});
+				}
+				await tx.investmentPlan.delete({ where: { id: planId } });
 
-			// 4. CYKLICZNOŚĆ
-			if (plan.isRecurring) {
-				await tx.investmentPlan.create({
-					data: {
-						name: plan.name,
-						ticker: plan.ticker,
-						value: plan.value,
-						plannedDate: getNextMonth(plan.plannedDate),
-						targetCategory: targetCategory,
-						portfolioId: plan.portfolioId,
-						isRecurring: true,
-						rationale: plan.rationale,
-					},
-				});
-			}
-
-			await tx.investmentPlan.delete({ where: { id: planId } });
-
-			revalidatePath("/dashboard");
-			revalidatePath("/planner");
-			revalidatePath("/activity");
-			revalidatePath("/bond-reports");
-			return { success: true };
-		});
-	} catch (error) {
+				return { success: true };
+			},
+			{
+				maxWait: 10000,
+				timeout: 30000,
+			},
+		);
+	} catch (error: any) {
 		console.error("Execute Plan Error:", error);
-		return { success: false, error: "Błąd bazy danych" };
+		return { success: false, error: error.message || "Błąd bazy danych" };
 	}
 }
 

@@ -46,6 +46,28 @@ export async function saveXtbTransaction(
 	portfolioId: string,
 ) {
 	try {
+		// Miękkie sprawdzanie duplikatów z Planera
+		const startOfDay = new Date(data.date);
+		startOfDay.setHours(0, 0, 0, 0);
+		const endOfDay = new Date(data.date);
+		endOfDay.setHours(23, 59, 59, 999);
+
+		const softDuplicate = await db.transactionHistory.findFirst({
+			where: {
+				portfolioId,
+				ticker: data.ticker,
+				executedValue: data.amountPLN,
+				executedAt: { gte: startOfDay, lte: endOfDay },
+			},
+		});
+
+		// Udajemy błąd Prisma P2002, aby Twój catch w importerze go wyłapał i pominął
+		if (softDuplicate) {
+			throw new Prisma.PrismaClientKnownRequestError("Soft duplicate found", {
+				code: "P2002",
+				clientVersion: "1.0",
+			});
+		}
 		// EN: Perform a strict creation to enforce underlying unique constraint checks
 		// PL: Wykonujemy twarde utworzenie, aby wymusić sprawdzenie unikalności klucza
 		return await db.transactionHistory.create({

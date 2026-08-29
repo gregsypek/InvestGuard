@@ -68,6 +68,10 @@ export function PlanCard({
 
 	const [finalTicker, setFinalTicker] = useState(plan.ticker || "");
 
+	// 1. Dodaj nowe stany pod istniejącymi
+	const [originalCurrency, setOriginalCurrency] = useState("PLN");
+	const [exchangeRate, setExchangeRate] = useState(1);
+
 	// --- STANY DLA PÓL EDYCYJNYCH ---
 	const [finalName, setFinalName] = useState(plan.name);
 	const [finalValue, setFinalValue] = useState(plan.value);
@@ -136,38 +140,26 @@ export function PlanCard({
 		try {
 			// EN: Passing all 8 arguments to the server action
 			const result = await executePlan(
-				plan.id, // 1
-				Number(finalValue), // 2
-				purchasePrice, // 3
-				isBooked, // 4
-				sourcePortfolioId, // 5
-				executionNote, // 6
-				finalName, // 7
-				purchaseDate, // 8: purchaseDate (String)
-				rateAsFloat, // 9: interestRate (Number)
+				plan.id,
+				Number(finalValue),
+				purchasePrice,
+				isBooked,
+				sourcePortfolioId,
+				executionNote,
+				finalName,
+				purchaseDate,
+				rateAsFloat,
 				finalTicker,
-				// finalTicker, // <--- DODAJEMY TEN ARGUMENT (np. "ROD")
+				originalCurrency, // <--- Nowy argument
+				exchangeRate, // <--- Nowy argument
 			);
-			// 1. Najpierw weryfikujemy success, dzięki czemu TypeScript zawęża typ
-			if (result.success) {
-				// Używamy operatora 'in', by TypeScript przestał panikować
-				if (
-					"portfolioIdsToSync" in result &&
-					Array.isArray(result.portfolioIdsToSync)
-				) {
-					for (const id of result.portfolioIdsToSync) {
-						await syncPortfolioAssets(id);
-					}
-				}
 
-				toast.success("Plan zrealizowany i zsynchronizowany pomyślnie! 🚀");
+			if (result.success) {
+				toast.success("Plan zrealizowany pomyślnie! 🚀");
 				setIsOpen(false);
 				router.refresh();
 			} else {
-				// Sprawdzamy, czy pole 'error' faktycznie istnieje w obiekcie
-				const errorMessage =
-					"error" in result ? result.error : "Wystąpił nieznany błąd";
-				toast.error("Błąd: " + errorMessage);
+				toast.error("Błąd: " + result?.error);
 			}
 		} catch {
 			toast.error("Błąd połączenia. Spróbuj ponownie.");
@@ -199,11 +191,14 @@ export function PlanCard({
 
 		setIsMagicLoading(true);
 		try {
-			// Pobieramy wartość dla 1 sztuki, aby uzyskać dokładną cenę jednostkową w PLN
 			const result = await fetchMagicFillData(currentTicker, purchaseDate, 1);
 
 			if (result.success && result.data) {
-				setPurchasePrice(Number(result.data.investedCapitalPln));
+				setPurchasePrice(Number(result.data.originalPrice));
+				setOriginalCurrency(result.data.originalCurrency);
+				setExchangeRate(Number(result.data.exchangeRate));
+				// 🚀 USUNIĘTO: setFinalValue(result.data.investedCapitalPln);
+
 				toast.success(
 					`Pobrano kurs: ${result.data.originalPrice.toFixed(2)} ${result.data.originalCurrency} (NBP: ${result.data.exchangeRate.toFixed(4)})`,
 				);
@@ -453,27 +448,10 @@ export function PlanCard({
 
 						{/* KURS ZAKUPU Z MAGIĄ */}
 						<div className="space-y-2">
-							<div className="flex items-center justify-between">
-								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-									{isCash ? "Kurs wymiany" : "Kurs zakupu (Cena za 1 szt.)"}
-								</Label>
-								{/* 🚀 NOWY PRZYCISK MAGII */}
-								{!isCash && !isBond && (
-									<button
-										type="button"
-										onClick={handleMagicFill}
-										disabled={isMagicLoading}
-										className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-400 transition-colors disabled:opacity-50"
-									>
-										{isMagicLoading ? (
-											<Loader2 className="w-3 h-3 animate-spin" />
-										) : (
-											<Wand2 className="w-3 h-3" />
-										)}
-										Auto-Kalkulator
-									</button>
-								)}
-							</div>
+							<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+								{isCash ? "Kurs wymiany" : "Kurs zakupu (Cena za 1 szt.)"}
+							</Label>
+
 							<Input
 								type="number"
 								step="any"
@@ -488,8 +466,24 @@ export function PlanCard({
 										"bg-black/5 dark:bg-white/5 opacity-50 cursor-not-allowed",
 								)}
 							/>
-						</div>
 
+							{/* 🚀 PRZYCISK MAGII W NOWEJ LINII */}
+							{!isCash && !isBond && (
+								<button
+									type="button"
+									onClick={handleMagicFill}
+									disabled={isMagicLoading}
+									className="flex items-center justify-center w-full gap-2 py-2 mt-2 text-[10px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-lg transition-colors disabled:opacity-50"
+								>
+									{isMagicLoading ? (
+										<Loader2 className="w-3 h-3 animate-spin" />
+									) : (
+										<Wand2 className="w-3 h-3" />
+									)}
+									Pobierz kurs z rynku
+								</button>
+							)}
+						</div>
 						{/* SEKCJA KSIĘGOWANIA */}
 						<div className="md:col-span-2 space-y-4 rounded-xl border border-t-border p-5 bg-black/5 dark:bg-white/5">
 							<div className="flex items-center justify-between">

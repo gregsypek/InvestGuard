@@ -18,18 +18,18 @@ export const CATEGORY_VALUES = [
 ] as const;
 
 export const PlannerSchema = z.object({
-	name: z.string().min(1, "Nazwa jest wymagana"),
-	ticker: z.string().optional().nullable(), // EN: Allow null for DB compatibility
-	value: z.coerce.number().min(0.01, "Kwota musi być większa od 0"),
+	// Ticker i Nazwa nie są już bezwzględnie wymagane przy planowaniu!
+	name: z.string().optional().or(z.literal("")),
+	ticker: z.string().optional().or(z.literal("")),
+	value: z.number().min(1, "Kwota musi być większa niż 0"),
 	plannedDate: z.string().regex(/^\d{4}-\d{2}$/, "Wybierz miesiąc i rok"),
-	portfolioId: z.string().min(1, "Wybierz portfel docelowy"),
-
+	portfolioId: z.string().min(1, "Wybierz portfel"),
+	// category: z.string().min(1, "Wybierz kategorię"),
 	// EN: Use nativeEnum for Prisma Enums to avoid "Invalid option" errors
 	// UI: Używamy nativeEnum dla Enumów Prismy, aby uniknąć błędów walidacji
 	category: z.enum(CATEGORY_VALUES),
-	// interestRate: z.coerce.number().optional().default(0), // NOWE POLE
 
-	conviction: z.number().min(1).max(100).optional().nullable(),
-	rationale: z.string().optional().nullable(),
+	rationale: z.string().optional(),
 	isRecurring: z.boolean().default(false),
+	conviction: z.number().nullable().optional(),
 });

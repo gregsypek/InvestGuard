@@ -90,6 +90,16 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 
 	async function onSubmit(data: PlannerFormValues) {
 		try {
+			// Jeśli nazwa jest pusta, generujemy ją automatycznie na bazie kategorii
+			// const finalData = { ...data };
+			// if (!finalData.name && finalData.category !== "BONDS") {
+			// 	const catLabel =
+			// 		CATEGORY_LABELS[finalData.category as keyof typeof CATEGORY_LABELS] ||
+			// 		finalData.category;
+			// 	finalData.name = `Zakup: ${catLabel}`;
+			// }
+
+			// const result = await createInvestmentPlan(finalData);
 			const result = await createInvestmentPlan(data);
 			if (result.success) {
 				toast.success("Dodano do planu");
@@ -469,7 +479,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 								/>
 
 								{/* EN: RATIONALE TEXTAREA */}
-								<FormField
+								{/* <FormField
 									control={form.control}
 									name="rationale"
 									render={({ field }) => (
@@ -488,7 +498,113 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 											<FormMessage className="text-red-500 text-xs" />
 										</FormItem>
 									)}
+								/> */}
+								{/* SEKCJA: NAZWA (Teraz opcjonalna, z wyjątkiem Obligacji i Cash) */}
+								<FormField
+									control={form.control}
+									name="name"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
+												{isCash
+													? "Opis wpłaty"
+													: selectedCategory === "BONDS"
+														? "Wybierz typ obligacji (Wymagane)"
+														: "Opcjonalna nazwa (np. cel zakupu)"}
+											</FormLabel>
+											{selectedCategory === "BONDS" ? (
+												<Select
+													onValueChange={(value) => {
+														field.onChange(
+															BOND_CONFIG[value as keyof typeof BOND_CONFIG]
+																.label,
+														);
+														form.setValue("ticker", value);
+													}}
+													defaultValue={field.value}
+												>
+													<FormControl>
+														<SelectTrigger
+															className={cn(
+																inputStyles,
+																"h-[42px] bg-black/5 dark:bg-blue-500/5 border-t-border",
+															)}
+														>
+															<SelectValue placeholder="Wybierz serię..." />
+														</SelectTrigger>
+													</FormControl>
+													<SelectContent>
+														{Object.entries(BOND_CONFIG).map(
+															([key, config]) => (
+																<SelectItem
+																	key={key}
+																	value={key}
+																	className="cursor-pointer"
+																>
+																	<div className="flex items-center gap-2">
+																		<div
+																			className={cn(
+																				"w-2 h-2 rounded-full",
+																				config.color,
+																			)}
+																		/>
+																		<span className="font-medium">
+																			{config.label}
+																		</span>
+																	</div>
+																</SelectItem>
+															),
+														)}
+													</SelectContent>
+												</Select>
+											) : (
+												<FormControl>
+													<Input
+														placeholder={
+															isCash
+																? "Wpłata na konto"
+																: "Zostaw puste dla ogólnego planu..."
+														}
+														className={cn(
+															inputStyles,
+															"bg-black/5 dark:bg-blue-500/5 border-t-border",
+														)}
+														{...field}
+														value={field.value ?? ""}
+													/>
+												</FormControl>
+											)}
+											<FormMessage className="text-red-500 text-xs" />
+										</FormItem>
+									)}
 								/>
+
+								{/* SEKCJA: TICKER (Pokazujemy tylko jeśli nie ma obligacji i gotówki) */}
+								{!isCash && selectedCategory !== "BONDS" && (
+									<FormField
+										control={form.control}
+										name="ticker"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+													Opcjonalny Ticker (np. ETF, Spółka)
+												</FormLabel>
+												<FormControl>
+													<Input
+														placeholder="Zostaw puste, wybierzesz przy realizacji"
+														className={cn(
+															inputStyles,
+															"bg-black/5 dark:bg-blue-500/5 border-t-border",
+														)}
+														{...field}
+														value={field.value ?? ""}
+													/>
+												</FormControl>
+												<FormMessage className="text-red-500 text-xs" />
+											</FormItem>
+										)}
+									/>
+								)}
 							</div>
 						</div>
 					)}

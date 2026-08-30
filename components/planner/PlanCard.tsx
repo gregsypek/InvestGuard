@@ -241,7 +241,10 @@ export function PlanCard({
 			setIsCloseModalOpen(false);
 			router.refresh();
 		} else {
-			toast.error("Błąd: " + res.error);
+			// 🚀 ZMIANA: Bezpieczne odczytywanie błędu dla TypeScripta
+			toast.error(
+				"Błąd: " + ("error" in res ? String(res.error) : "Nieznany błąd"),
+			);
 		}
 	};
 
@@ -257,7 +260,7 @@ export function PlanCard({
 	return (
 		<div
 			className={cn(
-				"group relative rounded-2xl p-4 transition-all duration-300 overflow-hidden min-w-80 flex-1",
+				"group relative rounded-2xl p-4 transition-all duration-300   flex-1",
 				// ZMIANA: Przejście na zmienne systemowe
 				"bg-t-bg-base border border-t-border hover:border-t-border-subtle",
 				isLocked && "backdrop-blur-[1px] opacity-90",
@@ -424,7 +427,7 @@ export function PlanCard({
 						)}
 
 						{/* SEKCJA: NAZWA */}
-						<div className="md:col-span-2 space-y-2">
+						<div className="col-span-2 space-y-2">
 							<div className="flex items-center justify-between">
 								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 									Nazwa aktywa (seria)
@@ -518,7 +521,7 @@ export function PlanCard({
 							)}
 						</div>
 						{/* SEKCJA KSIĘGOWANIA */}
-						<div className="md:col-span-2 space-y-4 rounded-xl border border-t-border p-5 bg-black/5 dark:bg-white/5">
+						<div className="col-span-2 space-y-4 rounded-xl border border-t-border p-5 bg-black/5 dark:bg-white/5">
 							<div className="flex items-center justify-between">
 								<div className="space-y-1">
 									<Label className="text-sm font-bold text-t-text-primary">
@@ -561,7 +564,7 @@ export function PlanCard({
 						</div>
 
 						{/* NOTATKA */}
-						<div className="md:col-span-2 space-y-2">
+						<div className="col-span-2 space-y-2">
 							<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 								Notatka z transakcji
 							</Label>
@@ -574,8 +577,8 @@ export function PlanCard({
 						</div>
 
 						{/* EN: CONVICTION SLIDER (Oparty o useState) */}
-						<div className="space-y-4">
-							<div className="flex justify-between items-center">
+						<div className="space-y-4 col-span-2">
+							<div className=" flex justify-between items-center ">
 								<Label className="text-sm font-bold text-t-text-primary">
 									Poziom przekonania
 								</Label>

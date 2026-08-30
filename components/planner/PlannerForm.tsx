@@ -71,8 +71,10 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 	}) as string | undefined; // Rzutujemy na string
 
 	// EN: Now using isCash to dynamically change labels (fixes 'unused' error)
-	const isCash = selectedCategory === "CASH";
-	const isBooster = selectedCategory === "BOOSTER";
+	// Zabezpieczone sprawdzanie
+	const isCash = (selectedCategory as string) === "CASH";
+	const isBooster = (selectedCategory as string) === "BOOSTER";
+	const isBond = (selectedCategory as string) === "BONDS";
 
 	const filteredCategories = useMemo(() => {
 		return Object.keys(CATEGORY_LABELS).filter((cat) => cat !== "BONDS");
@@ -193,8 +195,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 									</FormLabel>
 									<FormControl>
 										<Input
-											// EN: Dynamic type switching based on mode
-											type={viewMode === "bond" ? "date" : "month"}
+											type="month"
 											className={cn(
 												inputStyles,
 												"bg-black/5  dark:bg-blue-500/5  border-t-border",
@@ -435,179 +436,6 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 						/>
 					</div>
 
-					{/* EN: STRATEGIC ANALYSIS PANEL */}
-					{viewMode === "asset" && isBooster && (
-						<div className="space-y-6 pt-8 mt-4 border-t border-t-border-subtle">
-							<div className="flex items-center gap-3">
-								<div className="h-1.5 w-10 bg-blue-500 rounded-full" />
-								<h3 className="text-xs font-black uppercase tracking-widest text-t-text-secondary">
-									Analiza Strategiczna
-								</h3>
-							</div>
-
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-								{/* EN: CONVICTION SLIDER */}
-								<FormField
-									control={form.control}
-									name="conviction"
-									render={({ field }) => (
-										<FormItem className="space-y-4">
-											<div className="flex justify-between items-center">
-												<FormLabel className="text-sm font-bold text-t-text-primary">
-													Poziom przekonania
-												</FormLabel>
-												<span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20 tabular-nums">
-													{field.value || 50}%
-												</span>
-											</div>
-											<FormControl>
-												<Slider
-													min={1}
-													max={100}
-													step={1}
-													defaultValue={[field.value || 50]}
-													onValueChange={(vals) => field.onChange(vals[0])}
-													className="py-4"
-												/>
-											</FormControl>
-											<FormDescription className="text-xs text-t-text-tertiary">
-												Jak bardzo wierzysz w sukces tej tezy? (Skala 1-100%)
-											</FormDescription>
-											<FormMessage className="text-red-500 text-xs" />
-										</FormItem>
-									)}
-								/>
-
-								{/* EN: RATIONALE TEXTAREA */}
-								{/* <FormField
-									control={form.control}
-									name="rationale"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel className="text-sm font-bold text-t-text-primary">
-												Teza inwestycyjna
-											</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder="Np. Spółka jest niedowartościowana o 20% względem sektora..."
-													className="resize-none min-h-[120px] bg-t-bg-base border-t-border"
-													{...field}
-													value={field.value ?? ""}
-												/>
-											</FormControl>
-											<FormMessage className="text-red-500 text-xs" />
-										</FormItem>
-									)}
-								/> */}
-								{/* SEKCJA: NAZWA (Teraz opcjonalna, z wyjątkiem Obligacji i Cash) */}
-								<FormField
-									control={form.control}
-									name="name"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel className="text-sm font-bold uppercase tracking-widest text-t-text-secondary">
-												{isCash
-													? "Opis wpłaty"
-													: selectedCategory === "BONDS"
-														? "Wybierz typ obligacji (Wymagane)"
-														: "Opcjonalna nazwa (np. cel zakupu)"}
-											</FormLabel>
-											{selectedCategory === "BONDS" ? (
-												<Select
-													onValueChange={(value) => {
-														field.onChange(
-															BOND_CONFIG[value as keyof typeof BOND_CONFIG]
-																.label,
-														);
-														form.setValue("ticker", value);
-													}}
-													defaultValue={field.value}
-												>
-													<FormControl>
-														<SelectTrigger
-															className={cn(
-																inputStyles,
-																"h-[42px] bg-black/5 dark:bg-blue-500/5 border-t-border",
-															)}
-														>
-															<SelectValue placeholder="Wybierz serię..." />
-														</SelectTrigger>
-													</FormControl>
-													<SelectContent>
-														{Object.entries(BOND_CONFIG).map(
-															([key, config]) => (
-																<SelectItem
-																	key={key}
-																	value={key}
-																	className="cursor-pointer"
-																>
-																	<div className="flex items-center gap-2">
-																		<div
-																			className={cn(
-																				"w-2 h-2 rounded-full",
-																				config.color,
-																			)}
-																		/>
-																		<span className="font-medium">
-																			{config.label}
-																		</span>
-																	</div>
-																</SelectItem>
-															),
-														)}
-													</SelectContent>
-												</Select>
-											) : (
-												<FormControl>
-													<Input
-														placeholder={
-															isCash
-																? "Wpłata na konto"
-																: "Zostaw puste dla ogólnego planu..."
-														}
-														className={cn(
-															inputStyles,
-															"bg-black/5 dark:bg-blue-500/5 border-t-border",
-														)}
-														{...field}
-														value={field.value ?? ""}
-													/>
-												</FormControl>
-											)}
-											<FormMessage className="text-red-500 text-xs" />
-										</FormItem>
-									)}
-								/>
-
-								{/* SEKCJA: TICKER (Pokazujemy tylko jeśli nie ma obligacji i gotówki) */}
-								{!isCash && selectedCategory !== "BONDS" && (
-									<FormField
-										control={form.control}
-										name="ticker"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-													Opcjonalny Ticker (np. ETF, Spółka)
-												</FormLabel>
-												<FormControl>
-													<Input
-														placeholder="Zostaw puste, wybierzesz przy realizacji"
-														className={cn(
-															inputStyles,
-															"bg-black/5 dark:bg-blue-500/5 border-t-border",
-														)}
-														{...field}
-														value={field.value ?? ""}
-													/>
-												</FormControl>
-												<FormMessage className="text-red-500 text-xs" />
-											</FormItem>
-										)}
-									/>
-								)}
-							</div>
-						</div>
-					)}
 					<div className="flex justify-end pt-4">
 						<SubmitButton
 							label="Zapisz plan"

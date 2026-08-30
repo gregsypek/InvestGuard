@@ -110,6 +110,14 @@ export default async function PlannerPage({ searchParams }: Props) {
 	// Wyciągamy zsumowaną wartość (lub 0, jeśli w tym miesiącu nie było transakcji)
 	const monthlyInvested = monthlyInvestedResult._sum.executedValue || 0;
 
+	const currentMonthTransactions = await db.transactionHistory.findMany({
+		where: {
+			portfolio: { userId: session.user.id },
+			type: "BUY",
+			executedAt: { gte: firstDayOfMonth },
+		},
+		orderBy: { executedAt: "desc" },
+	});
 	return (
 		<div>
 			{/* NAGŁÓWEK GŁÓWNY */}
@@ -149,6 +157,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 				plans={processedPlans}
 				cashPortfolioIds={cashPortfolioIds}
 				monthlyInvested={monthlyInvested}
+				currentMonthTransactions={currentMonthTransactions}
 			/>
 		</div>
 	);

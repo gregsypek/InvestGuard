@@ -1,5 +1,13 @@
 "use client";
 
+import {
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
 import {
 	CalendarIcon,
@@ -26,21 +34,27 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "../ui/select";
-import { cn, generateBondName } from "@/lib/utils";
 import {
+	closePlanWithoutExecution,
 	deleteInvestmentPlan,
 	executePlan,
 } from "@/lib/actions/planner.actions";
+import { cn, generateBondName } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PlannerSchema } from "@/lib/validations/planner";
+import PremiumDeleteModal from "../shared/PremiumDeleteModal";
 import { SimpleSwitch } from "../ui/SimpleSwitchProps";
+import { Slider } from "../ui/slider";
 import { fetchMagicFillData } from "@/lib/actions/magic-actions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 // EN: Extend the Plan type to include the related Portfolio name
 type PlanWithPortfolio = InvestmentPlan & {
@@ -65,12 +79,15 @@ export function PlanCard({
 	const router = useRouter();
 	const [isOpen, setIsOpen] = useState(false);
 	const [isPending, setIsPending] = useState(false);
+	const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
 
 	const [finalTicker, setFinalTicker] = useState(plan.ticker || "");
 
 	// 1. Dodaj nowe stany pod istniejącymi
 	const [originalCurrency, setOriginalCurrency] = useState("PLN");
 	const [exchangeRate, setExchangeRate] = useState(1);
+	const [conviction, setConviction] = useState(plan.conviction || 50);
+	const [rationale, setRationale] = useState(plan.rationale || "");
 
 	// --- STANY DLA PÓL EDYCYJNYCH ---
 	const [finalName, setFinalName] = useState(
@@ -215,6 +232,19 @@ export function PlanCard({
 		}
 	};
 
+	// Handler wewnątrz PlanCard:
+	const handleCloseWithoutExecution = async () => {
+		const res = await closePlanWithoutExecution(plan.id);
+		if (res.success) {
+			toast.success("Plan oznaczony jako zrealizowany! 🎯");
+			setIsOpen(false);
+			setIsCloseModalOpen(false);
+			router.refresh();
+		} else {
+			toast.error("Błąd: " + res.error);
+		}
+	};
+
 	// 3. LOGIKA AUTOMATYCZNEJ NAZWY (tylko dla obligacji)
 	useEffect(() => {
 		if (plan.targetCategory === "BONDS" && plan.ticker) {
@@ -343,7 +373,7 @@ export function PlanCard({
 
 			{/* ======================= MODAL REALIZACJI ======================= */}
 			<Dialog open={isOpen} onOpenChange={setIsOpen}>
-				<DialogContent className="max-w-2xl bg-t-bg-panel border-t-border shadow-2xl rounded-2xl p-6 md:p-8">
+				<DialogContent className="max-w-4xl w-[95vw] bg-t-bg-panel/95 backdrop-blur-xl border-t-border shadow-2xl rounded-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto overflow-x-hidden">
 					<DialogHeader className="space-y-3">
 						<div className="h-12 w-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-2">
 							<RefreshCw className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
@@ -355,7 +385,6 @@ export function PlanCard({
 							Uzupełnij ostateczne parametry transakcji rynkowej.
 						</DialogDescription>
 					</DialogHeader>
-
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
 						{/* DATA ZAKUPU */}
 						<div className={cn(!isBond && "col-span-2", "space-y-2")}>
@@ -543,36 +572,101 @@ export function PlanCard({
 								className={cn(inputStyles, "bg-t-bg-base border-t-border")}
 							/>
 						</div>
-					</div>
 
+						{/* EN: CONVICTION SLIDER (Oparty o useState) */}
+						<div className="space-y-4">
+							<div className="flex justify-between items-center">
+								<Label className="text-sm font-bold text-t-text-primary">
+									Poziom przekonania
+								</Label>
+								<span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20 tabular-nums">
+									{conviction}%
+								</span>
+							</div>
+							<Slider
+								min={1}
+								max={100}
+								step={1}
+								value={[conviction]}
+								onValueChange={(vals) => setConviction(vals[0])}
+								className="py-4"
+							/>
+							<p className="text-[10px] text-t-text-tertiary">
+								Jak bardzo wierzysz w sukces tej tezy? (Skala 1-100%)
+							</p>
+						</div>
+					</div>
 					{/* STOPKA Z PRZYCISKIEM */}
-					<DialogFooter className="pt-2">
+					<DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setIsCloseModalOpen(true)} // 🚀 Otwiera nowy modal
+							disabled={isPending}
+							className="w-full sm:w-auto h-12 text-[10px] font-bold uppercase tracking-widest text-t-text-secondary border-t-border hover:bg-t-hover rounded-xl"
+						>
+							Zamknij bez księgowania (XTB)
+						</Button>
 						<Button
 							onClick={handleExecute}
 							disabled={
 								isPending || (isBooked && !sourcePortfolioId) || isLocked
 							}
 							className={cn(
-								"w-full h-14 font-black uppercase tracking-widest text-xs rounded-xl transition-all duration-300",
+								"w-full sm:flex-1 h-12 font-black uppercase tracking-widest text-xs rounded-xl transition-all duration-300",
 								isLocked
 									? "bg-t-bg-base text-t-text-tertiary border border-t-border shadow-none cursor-not-allowed"
-									: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] border border-emerald-500/50",
+									: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] border border-emerald-500/50",
 							)}
 						>
 							{isPending ? (
 								<Loader2 className="h-5 w-5 animate-spin" />
-							) : isLocked ? (
-								<div className="flex items-center gap-3">
-									<Clock className="w-5 h-5 text-amber-500" />
-									{`Dostępny wkrótce (${plan.plannedDate})`}
-								</div>
 							) : (
-								"Zatwierdź realizację"
+								"Zatwierdź z księgowaniem"
 							)}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+			<AlertDialog open={isCloseModalOpen} onOpenChange={setIsCloseModalOpen}>
+				<AlertDialogContent className="bg-t-bg-panel border-t-border shadow-2xl rounded-2xl p-6 sm:p-8 max-w-md">
+					<AlertDialogHeader className="space-y-3 text-left">
+						<div className="p-3 bg-blue-500/10 rounded-2xl w-fit border border-blue-500/20">
+							<CheckSquare className="h-6 w-6 text-blue-500" />
+						</div>
+						<AlertDialogTitle className="text-xl font-black tracking-tight text-t-text-primary">
+							Zamknij bez księgowania
+						</AlertDialogTitle>
+						<AlertDialogDescription className="text-sm font-medium text-t-text-tertiary">
+							Czy na pewno chcesz zamknąć ten plan? Aktywa i gotówka w portfelu
+							pozostaną bez zmian. Opcja idealna, gdy transakcja została już
+							zaimportowana z zewnętrznego pliku (np. XTB).
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter className="pt-4 border-t border-t-border-subtle mt-4">
+						<Button
+							type="button"
+							variant="ghost"
+							disabled={isPending}
+							onClick={() => setIsCloseModalOpen(false)}
+							className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary hover:bg-black/5 rounded-xl h-11"
+						>
+							Anuluj
+						</Button>
+						<Button
+							onClick={handleCloseWithoutExecution}
+							disabled={isPending}
+							className="bg-blue-600 hover:bg-blue-500 text-white font-bold tracking-widest uppercase text-[10px] rounded-xl shadow-md px-6 h-11"
+						>
+							{isPending ? (
+								<Loader2 className="w-4 h-4 animate-spin" />
+							) : (
+								"Oznacz jako zrobione"
+							)}
+						</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

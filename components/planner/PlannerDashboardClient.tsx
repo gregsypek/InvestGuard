@@ -1,6 +1,6 @@
 "use client";
 
-import { PiggyBank, Target, TrendingUp } from "lucide-react";
+import { CheckSquare, PiggyBank, Target, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { GoalProjectionChart } from "./GoalProjectionChart";
@@ -13,6 +13,7 @@ interface PlannerDashboardClientProps {
 	plans: any[];
 	cashPortfolioIds: string[];
 	monthlyInvested?: number;
+	currentMonthTransactions?: any[]; // Nowy prop dla transakcji bieżącego miesiąca
 }
 
 export function PlannerDashboardClient({
@@ -20,6 +21,7 @@ export function PlannerDashboardClient({
 	plans,
 	cashPortfolioIds,
 	monthlyInvested = 0, // Domyślnie 0, dopóki nie podepniesz z serwera
+	currentMonthTransactions,
 }: PlannerDashboardClientProps) {
 	const [listPortfolioId, setListPortfolioId] = useState("ALL");
 	const [projPortfolioId, setProjPortfolioId] = useState("ALL");
@@ -139,6 +141,43 @@ export function PlannerDashboardClient({
 					Zrealizowano {progressPercentage}% założeń ({listPlans.length} wpłat w
 					kolejce)
 				</p>
+				{currentMonthTransactions && currentMonthTransactions.length > 0 && (
+					<div className="mt-6 border-t border-t-border-subtle pt-5">
+						<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary mb-3 flex items-center gap-2">
+							<CheckSquare className="w-4 h-4 text-emerald-500" />
+							Zaksięgowane w tym miesiącu
+						</h4>
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+							{currentMonthTransactions.map((tx) => (
+								<div
+									key={tx.id}
+									className="flex justify-between items-center bg-black/5 dark:bg-white/5 px-3 py-2.5 rounded-xl border border-t-border-subtle"
+								>
+									<div className="flex flex-col overflow-hidden">
+										<span className="text-xs font-bold text-t-text-primary truncate pr-2">
+											{tx.assetName}
+										</span>
+										<span className="text-[9px] font-mono text-t-text-tertiary">
+											{tx.ticker} •{" "}
+											{new Date(tx.executedAt).toLocaleDateString("pl-PL")}
+										</span>
+									</div>
+									<div className="text-right flex flex-col shrink-0">
+										<span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+											+{tx.executedValue.toLocaleString("pl-PL")} PLN
+										</span>
+										{tx.originalPrice > 0 && tx.originalCurrency !== "PLN" && (
+											<span className="text-[9px] font-mono text-t-text-tertiary">
+												{tx.quantity.toFixed(4)} szt @{" "}
+												{tx.originalPrice.toFixed(2)} {tx.originalCurrency}
+											</span>
+										)}
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
+				)}
 			</div>
 
 			<SectionLayout

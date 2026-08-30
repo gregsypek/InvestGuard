@@ -184,20 +184,18 @@ export async function executePlan(
 
 					await tx.transactionHistory.create({
 						data: {
-							type: transactionType,
-							portfolioId: plan.portfolioId,
-							assetName: resolvedName,
-							ticker: resolvedTicker,
-							quantity: calculatedQuantity,
+							type: "SELL", // 👈 Tu musi być twarde "SELL"
+							portfolioId: sourcePortfolioId,
+							assetName: sourceCash.name,
+							ticker: sourceCash.ticker,
+							quantity: -finalValue,
 							executedValue: finalValue,
-							originalPrice: purchasePrice, // Prawidłowa cena (np. 708 EUR)
-							originalCurrency: originalCurrencyParam, // Prawidłowa waluta
-							exchangeRate: exchangeRateParam, // Prawidłowy kurs
-							category: targetCategory,
+							originalPrice: 1, // 👈 Gotówka zawsze 1:1
+							originalCurrency: "PLN",
+							exchangeRate: 1,
+							category: "CASH",
 							executedAt: executionDate,
-							rationale: executionNote || plan.rationale || "Realizacja planu",
-							// Nadajemy unikalny klucz, który pozwoli wyłapać duplikaty
-							externalId: `PLAN_${resolvedTicker}_${executionDate.toISOString().split("T")[0]}_${calculatedQuantity}`,
+							rationale: `Transfer środków na: ${resolvedName}`,
 						},
 					});
 				}
@@ -233,7 +231,6 @@ export async function executePlan(
 					});
 				}
 
-				// 🚀 POPRAWKA 2: Pełne dane dla TransactionHistory (wymagane dla AssetLedger)
 				await tx.transactionHistory.create({
 					data: {
 						type: transactionType,
@@ -242,33 +239,51 @@ export async function executePlan(
 						ticker: resolvedTicker,
 						quantity: calculatedQuantity,
 						executedValue: finalValue,
-						originalPrice: effectivePrice, // Zamiast 0, wstawiamy realny kurs
-						originalCurrency: "PLN", // Domyślnie baza przyjmuje zapis w PLN
-						exchangeRate: 1, // Kurs wymiany domyślnie 1
+						originalPrice: purchasePrice, // 👈 Cena z różdżki (np. 721.06)
+						originalCurrency: originalCurrencyParam, // 👈 Waluta obca (np. EUR)
+						exchangeRate: exchangeRateParam, // 👈 Kurs NBP
 						category: targetCategory,
 						executedAt: executionDate,
 						rationale: executionNote || plan.rationale || "Realizacja planu",
+						// 👈 Zabezpieczenie przed XTB przeniesione do właściwej transakcji
+						externalId: `PLAN_${resolvedTicker}_${executionDate.getTime()}_${calculatedQuantity}`,
 					},
 				});
 
-				// 6. CYKLICZNOŚĆ I CZYSZCZENIE
-				if (plan.isRecurring) {
-					await tx.investmentPlan.create({
-						data: {
-							name: plan.name,
-							ticker: plan.ticker,
-							value: plan.value,
-							plannedDate: getNextMonth(plan.plannedDate),
-							targetCategory: plan.targetCategory,
-							portfolioId: plan.portfolioId,
-							isRecurring: true,
-							rationale: plan.rationale,
-							conviction: plan.conviction,
-						},
-					});
-				}
-				await tx.investmentPlan.delete({ where: { id: planId } });
+				// 6. CZĘŚCIOWA REALIZACJA, CYKLICZNOŚĆ I CZYSZCZENIE
+				const remainingValue = plan.value - finalValue;
 
+				if (remainingValue > 0) {
+					// Jeśli zrealizowano tylko część, zostawiamy resztę planu na ten miesiąc
+					await tx.investmentPlan.update({
+						where: { id: planId },
+						data: { value: remainingValue },
+					});
+				} else {
+					// Jeśli zrealizowano całość (lub więcej), zamykamy cel
+					if (plan.isRecurring) {
+						// Rolowanie na kolejny miesiąc odbywa się TYLKO po pełnym zrealizowaniu
+						// Przywracamy oryginalną pełną kwotę z historii (aby np. znowu wymagał 1000 PLN)
+						const originalPlan = await tx.investmentPlan.findUnique({
+							where: { id: planId },
+						});
+
+						await tx.investmentPlan.create({
+							data: {
+								name: plan.name,
+								ticker: plan.ticker,
+								value: originalPlan ? originalPlan.value : plan.value,
+								plannedDate: getNextMonth(plan.plannedDate),
+								targetCategory: plan.targetCategory,
+								portfolioId: plan.portfolioId,
+								isRecurring: true,
+								rationale: plan.rationale,
+								conviction: plan.conviction,
+							},
+						});
+					}
+					await tx.investmentPlan.delete({ where: { id: planId } });
+				}
 				return { success: true };
 			},
 			{
@@ -302,4 +317,47 @@ function getNextMonth(dateStr: string): string {
 	date.setMonth(date.getMonth() + 1);
 
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export async function closePlanWithoutExecution(planId: string) {
+	try {
+		return await db.$transaction(
+			async (tx) => {
+				const plan = await tx.investmentPlan.findUnique({
+					where: { id: planId },
+				});
+
+				if (!plan) throw new Error("Plan nie znaleziony");
+
+				if (plan.isRecurring) {
+					await tx.investmentPlan.create({
+						data: {
+							name: plan.name,
+							ticker: plan.ticker,
+							value: plan.value,
+							plannedDate: getNextMonth(plan.plannedDate),
+							targetCategory: plan.targetCategory,
+							portfolioId: plan.portfolioId,
+							isRecurring: true,
+							rationale: plan.rationale,
+							conviction: plan.conviction,
+						},
+					});
+				}
+
+				await tx.investmentPlan.delete({ where: { id: planId } });
+
+				// (Można tu usunąć revalidatePath, jeśli robisz to w komponencie)
+				return { success: true };
+			},
+			{
+				// 🚀 DODANE LIMITY CZASOWE
+				maxWait: 10000,
+				timeout: 30000,
+			},
+		);
+	} catch (error: any) {
+		console.error("Close Plan Error:", error);
+		return { success: false, error: error.message || "Błąd bazy danych" };
+	}
 }

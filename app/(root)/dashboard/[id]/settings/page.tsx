@@ -16,6 +16,7 @@ import { Category } from "@prisma/client";
 import { HardEraseTool } from "@/components/shared/HardEraseTool";
 import Link from "next/link";
 import { QuickDepositForm } from "@/components/ui/QuickDepositForm";
+import { RevertLastTrancheTool } from "@/components/shared/RevertLastTrancheTool";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { XtbImporter } from "@/components/ui/XtbImporter"; // Upewnij się, że ścieżka jest poprawna
 import { auth } from "@/auth";
@@ -168,6 +169,27 @@ export default async function PortfolioSettingsPage(props: {
 			>
 				<div className="w-full bg-red-500/5 border border-red-500/20 rounded-2xl p-4 sm:p-6 shadow-sm space-y-6">
 					<HardEraseTool assets={portfolio.assets} />
+
+					<div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 shadow-sm">
+						<p className="text-[11px] text-red-400/80 leading-relaxed font-medium">
+							<strong className="text-red-500 uppercase tracking-wider text-[10px] block mb-1">
+								Ważna informacja
+							</strong>
+							System zarządzania automatycznie obsługuje re-kalkulację
+							wszystkich zysków i strat (P&L). Po wymazaniu aktywa, odświeżenie
+							wykresów może zająć do kilku sekund.
+						</p>
+					</div>
+				</div>
+			</SectionLayout>
+			<SectionLayout
+				title="Strefa Zagrożenia"
+				titleIcon={AlertTriangle}
+				subtitle="Całkowite wymazanie pojedynczej transzy"
+				description="Operacje w tej sekcji bezpowrotnie usuną transzę z historii. Operacja nie wpływa na inne transakcje. Wykresy jak i obliczenia dla  pozostałych aktywówzostaną natychmiast przeliczone na nowo."
+			>
+				<div className="w-full bg-red-500/5 border border-red-500/20 rounded-2xl p-4 sm:p-6 shadow-sm space-y-6">
+					<RevertLastTrancheTool assets={portfolio.assets} />
 
 					<div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 shadow-sm">
 						<p className="text-[11px] text-red-400/80 leading-relaxed font-medium">

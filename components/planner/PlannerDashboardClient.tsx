@@ -1,5 +1,6 @@
 "use client";
 
+import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import {
 	Calculator,
 	CheckSquare,
@@ -9,7 +10,6 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { COLORS } from "@/lib/constants";
 import { GoalProjectionChart } from "./GoalProjectionChart";
 import { PlannerClientList } from "./PlannerClientList";
 import { SectionLayout } from "../shared/SectionLayout";
@@ -124,6 +124,26 @@ export function PlannerDashboardClient({
 		</div>
 	);
 
+	// 🚀 NOWE: Obliczanie struktury (wykresu) bieżącego miesiąca
+	const categoryBreakdown = useMemo(() => {
+		if (!currentMonthTransactions || currentMonthTransactions.length === 0)
+			return [];
+		const breakdown: Record<string, number> = {};
+		let total = 0;
+		currentMonthTransactions.forEach((tx) => {
+			breakdown[tx.category] = (breakdown[tx.category] || 0) + tx.executedValue;
+			total += tx.executedValue;
+		});
+
+		return Object.entries(breakdown)
+			.map(([category, value]) => ({
+				category,
+				value,
+				percentage: (value / total) * 100,
+			}))
+			.sort((a, b) => b.value - a.value); // Największe udziały na początku
+	}, [currentMonthTransactions]);
+
 	return (
 		<>
 			{/* 🚀 NOWE: Opakowane w SectionLayout */}
@@ -133,7 +153,8 @@ export function PlannerDashboardClient({
 				subtitle="Monitor bieżących operacji"
 				description="Śledź swój miesięczny postęp wpłat i weryfikuj najnowsze zaksięgowane transakcje."
 			>
-				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-5 mb-8 shadow-sm">
+				{/* //bg-t-bg-panel */}
+				<div className="w-full  border border-t-border rounded-2xl p-5 mb-8 shadow-sm">
 					{/* Wskaźnik Celu */}
 					<div className="flex items-center justify-between mb-3">
 						<div className="flex items-center gap-2">
@@ -165,13 +186,71 @@ export function PlannerDashboardClient({
 						w kolejce)
 					</p>
 
-					{/* Lista Zaksięgowanych Transakcji */}
+					{/* Lista Zaksięgowanych Transakcji & Wykres Struktury */}
 					{currentMonthTransactions && currentMonthTransactions.length > 0 && (
 						<div className="mt-6 border-t border-t-border-subtle pt-5">
-							<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary mb-3 flex items-center gap-2">
+							<div className="flex items-center gap-2 mb-4">
 								<CheckSquare className="w-4 h-4 text-emerald-500" />
-								Zaksięgowane w tym miesiącu
-							</h4>
+								<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+									Zaksięgowane w tym miesiącu
+								</h4>
+							</div>
+
+							{/* 🚀 NOWE: Pasek Struktury Kapitału (Wykres) */}
+							<div className="mb-6 space-y-3 p-4 bg-black/5 dark:bg-white/5 rounded-xl border border-t-border-subtle">
+								<div className="flex justify-between items-center mb-1">
+									<span className="text-[9px] font-black uppercase tracking-widest text-t-text-secondary">
+										Struktura kapitału
+									</span>
+									<span className="text-[9px] font-bold text-t-text-tertiary">
+										100% = {monthlyInvested.toLocaleString("pl-PL")} PLN
+									</span>
+								</div>
+
+								<div className="h-3 w-full flex rounded-full overflow-hidden border border-t-border shadow-sm">
+									{categoryBreakdown.map((item) => (
+										<div
+											key={item.category}
+											style={{
+												width: `${item.percentage}%`,
+												backgroundColor:
+													COLORS[item.category as keyof typeof COLORS] ||
+													"#94a3b8",
+											}}
+											className="h-full transition-all duration-1000 ease-out hover:opacity-80"
+											title={`${CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] || item.category}: ${item.percentage.toFixed(1)}%`}
+										/>
+									))}
+								</div>
+
+								{/* Legenda Wykresu */}
+								<div className="flex flex-wrap gap-x-4 gap-y-2 pt-1">
+									{categoryBreakdown.map((item) => (
+										<div
+											key={item.category}
+											className="flex items-center gap-1.5"
+										>
+											<span
+												className="w-2 h-2 rounded-full shadow-sm"
+												style={{
+													backgroundColor:
+														COLORS[item.category as keyof typeof COLORS] ||
+														"#94a3b8",
+												}}
+											/>
+											<span className="text-[10px] font-bold text-t-text-primary">
+												{CATEGORY_LABELS[
+													item.category as keyof typeof CATEGORY_LABELS
+												] || item.category}
+											</span>
+											<span className="text-[9px] font-mono text-t-text-tertiary">
+												({item.percentage.toFixed(1)}%)
+											</span>
+										</div>
+									))}
+								</div>
+							</div>
+
 							<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 								{currentMonthTransactions.map((tx) => (
 									<label

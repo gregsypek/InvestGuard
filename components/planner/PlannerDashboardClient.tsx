@@ -17,7 +17,6 @@ import {
 	Target,
 	TrendingUp,
 } from "lucide-react";
-import { useMemo, useState } from "react";
 
 import { GoalProjectionChart } from "./GoalProjectionChart";
 import { PlannerClientList } from "./PlannerClientList";
@@ -148,7 +147,10 @@ export function PlannerDashboardClient({
 			</span>
 			<select
 				value={value}
-				onChange={(e) => onChange(e.target.value)}
+				onChange={(e) => {
+					onChange(e.target.value);
+					setSelectedTxs([]);
+				}}
 				className="bg-transparent text-t-text-primary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate max-w-[160px]"
 			>
 				{portfolioOptions.map((opt) => (
@@ -170,7 +172,10 @@ export function PlannerDashboardClient({
 			</span>
 			<select
 				value={value}
-				onChange={(e) => onChange(e.target.value)}
+				onChange={(e) => {
+					onChange(e.target.value);
+					setSelectedTxs([]); // 👈 Resetuje zaznaczenia przy zmianie kategorii
+				}}
 				className="bg-transparent text-t-text-primary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate max-w-[160px]"
 			>
 				<option value="ALL" className="bg-t-bg-panel">

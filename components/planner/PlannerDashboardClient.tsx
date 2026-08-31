@@ -1,9 +1,17 @@
 "use client";
 
+import type {
+	Asset,
+	InvestmentPlan,
+	Portfolio,
+	TransactionHistory,
+} from "@prisma/client";
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import {
 	Calculator,
 	CheckSquare,
+	ChevronDown,
+	ChevronUp,
 	Clock,
 	PiggyBank,
 	Target,
@@ -16,13 +24,32 @@ import { PlannerClientList } from "./PlannerClientList";
 import { SectionLayout } from "../shared/SectionLayout";
 import { cn } from "@/lib/utils";
 
-// Dodaliśmy opcjonalny prop monthlyInvested (przekaż go ze strony serwerowej!)
+type PlanWithPortfolio = InvestmentPlan & {
+	portfolio?: Portfolio | null;
+};
+interface TransactionData {
+	id: string;
+	portfolioId: string;
+	category: string;
+	executedValue: number;
+	assetName: string;
+	ticker: string | null;
+	executedAt: Date;
+	originalPrice: number | null;
+	originalCurrency: string | null;
+	quantity: number;
+}
+type PortfolioWithAssets = Portfolio & {
+	assets: Asset[];
+	transactionHistories?: TransactionHistory[];
+};
+
 interface PlannerDashboardClientProps {
-	portfolios: any[];
-	plans: any[];
+	portfolios: PortfolioWithAssets[];
+	plans: PlanWithPortfolio[];
 	cashPortfolioIds: string[];
 	monthlyInvested?: number;
-	currentMonthTransactions?: any[]; // Nowy prop dla transakcji bieżącego miesiąca
+	currentMonthTransactions?: TransactionData[];
 }
 
 export function PlannerDashboardClient({
@@ -30,17 +57,21 @@ export function PlannerDashboardClient({
 	plans,
 	cashPortfolioIds,
 	monthlyInvested = 0,
-	currentMonthTransactions = [], // Domyślnie pusta tablica
+	currentMonthTransactions = [],
 }: PlannerDashboardClientProps) {
 	const [listPortfolioId, setListPortfolioId] = useState("ALL");
 	const [projPortfolioId, setProjPortfolioId] = useState("ALL");
 
-	// 🚀 NOWE STANY: Filtry dla Zestawienia Miesiąca
+	// Filtry dla Zestawienia Miesiąca
 	const [monthPortfolioId, setMonthPortfolioId] = useState("ALL");
 	const [monthCategoryId, setMonthCategoryId] = useState("ALL");
 
-	// 🚀 NOWY STAN: Wybrane transakcje do podsumowania
+	// Wybrane transakcje do podsumowania
 	const [selectedTxs, setSelectedTxs] = useState<string[]>([]);
+
+	// Rozwijanie paneli
+	const [isCurrentMonthOpen, setIsCurrentMonthOpen] = useState(true);
+	const [isNextMonthOpen, setIsNextMonthOpen] = useState(true);
 
 	const portfolioOptions = [
 		{ id: "ALL", label: "Wszystkie portfele" },
@@ -78,7 +109,8 @@ export function PlannerDashboardClient({
 			(sum, p) =>
 				sum +
 				p.assets.reduce(
-					(aSum: number, a: any) => aSum + (a.currentValue || 0),
+					(aSum: number, a: { currentValue: number }) =>
+						aSum + (a.currentValue || 0),
 					0,
 				),
 			0,
@@ -94,7 +126,6 @@ export function PlannerDashboardClient({
 		return { currentValue, targetValue, monthlyDeposit };
 	}, [portfolios, plans, projPortfolioId]);
 
-	// 🚀 NOWE: Funkcje do obsługi zaznaczania
 	const toggleTx = (id: string) => {
 		setSelectedTxs((prev) =>
 			prev.includes(id) ? prev.filter((txId) => txId !== id) : [...prev, id],
@@ -156,12 +187,6 @@ export function PlannerDashboardClient({
 		</div>
 	);
 
-	// const nextMonthPlans = listPlans.filter(
-	// 	(p) => p.plannedDate === nextMonthStr,
-	// );
-
-	// Dynamiczna kwota inwestycji (zmienia się wraz z filtrami)
-	// 1. Wykres i Kwoty (NIE REAGUJĄ na filtr kategorii, pokazują prawdę o całym portfelu)
 	const displayMonthlyInvested =
 		monthPortfolioId === "ALL"
 			? monthlyInvested
@@ -169,9 +194,7 @@ export function PlannerDashboardClient({
 					.filter((tx) => tx.portfolioId === monthPortfolioId)
 					.reduce((sum, tx) => sum + tx.executedValue, 0);
 
-	// 🚀 NOWE: Obliczanie struktury (wykresu) bieżącego miesiąca
 	const categoryBreakdown = useMemo(() => {
-		// Używamy wszystkich transakcji (lub tylko dla danego portfela), ale bez filtra kategorii
 		const txsForBreakdown = currentMonthTransactions.filter(
 			(tx) => monthPortfolioId === "ALL" || tx.portfolioId === monthPortfolioId,
 		);
@@ -194,24 +217,24 @@ export function PlannerDashboardClient({
 			.sort((a, b) => b.value - a.value);
 	}, [currentMonthTransactions, monthPortfolioId]);
 
-	// 2. Lista zaksięgowanych transakcji (REAGUJE na oba filtry)
-	// const filteredMonthTransactions = useMemo(() => {
-	// 	return (currentMonthTransactions || []).filter((tx) => {
-	// 		const matchPortfolio =
-	// 			monthPortfolioId === "ALL" || tx.portfolioId === monthPortfolioId;
-	// 		const matchCategory =
-	// 			monthCategoryId === "ALL" || tx.category === monthCategoryId;
-	// 		return matchPortfolio && matchCategory;
-	// 	});
-	// }, [currentMonthTransactions, monthPortfolioId, monthCategoryId]);
+	const filteredMonthTransactions = useMemo(() => {
+		return (currentMonthTransactions || []).filter((tx) => {
+			const matchPortfolio =
+				monthPortfolioId === "ALL" || tx.portfolioId === monthPortfolioId;
+			const matchCategory =
+				monthCategoryId === "ALL" || tx.category === monthCategoryId;
+			return matchPortfolio && matchCategory;
+		});
+	}, [currentMonthTransactions, monthPortfolioId, monthCategoryId]);
 
-	// 3. Oczekujące w przyszłym miesiącu (Oparte o czyste plans z bazy, nie o listPlans!)
+	// 🚀 ZMIANA: FIX DATY (Zapobiega przewijaniu z 31 sierpnia na 1 października)
 	const nextMonthDate = new Date();
+	nextMonthDate.setDate(1); // <- Ustawiamy 1 dzień przed zmianą miesiąca!
 	nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+
 	const nextMonthStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
 
 	const filteredNextMonthPlans = plans.filter((p) => {
-		// <- Piszemy po orginalnym 'plans', nie 'listPlans'
 		const isNextMonth = p.plannedDate === nextMonthStr;
 		const matchPortfolio =
 			monthPortfolioId === "ALL" || p.portfolioId === monthPortfolioId;
@@ -220,7 +243,6 @@ export function PlannerDashboardClient({
 		return isNextMonth && matchPortfolio && matchCategory;
 	});
 
-	// Suma na przyszły miesiąc (reaguje na filtry portfela i kategorii)
 	const nextMonthTotal = filteredNextMonthPlans.reduce(
 		(sum, p) => sum + Number(p.value),
 		0,
@@ -228,7 +250,6 @@ export function PlannerDashboardClient({
 
 	return (
 		<>
-			{/* 🚀 NOWE: Opakowane w SectionLayout */}
 			<SectionLayout
 				title="Zestawienie Miesiąca"
 				titleIcon={Target}
@@ -245,7 +266,6 @@ export function PlannerDashboardClient({
 				}
 			>
 				<div className="w-full  border border-t-border rounded-2xl p-5 mb-8 shadow-sm">
-					{/* Wskaźnik Celu */}
 					<div className="flex items-center justify-between mb-3">
 						<div className="flex items-center gap-2">
 							<h3 className="text-sm font-black tracking-tight text-t-text-primary">
@@ -256,13 +276,15 @@ export function PlannerDashboardClient({
 							<span className="text-sm font-black text-t-text-primary">
 								{displayMonthlyInvested.toLocaleString("pl-PL")} PLN
 							</span>
-							<span className="text-[10px] font-bold text-t-text-tertiary ml-1">
+							<span
+								className="text-[10px] font-bold text-t-text-tertiary ml-1 cursor-help underline decoration-dotted decoration-t-text-tertiary"
+								title="Całkowity cel na ten miesiąc: Suma zaksięgowanych inwestycji + oczekujące plany (bez filtrów)."
+							>
 								/ {totalMonthlyGoal.toLocaleString("pl-PL")} PLN
 							</span>
 						</div>
 					</div>
 
-					{/* Pasek Postępu */}
 					<div className="h-4 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden border border-t-border-subtle relative">
 						<div
 							className="h-full bg-emerald-500 transition-all duration-1000 ease-out relative"
@@ -276,186 +298,235 @@ export function PlannerDashboardClient({
 						w kolejce)
 					</p>
 
-					{/* Lista Zaksięgowanych Transakcji & Wykres Struktury */}
-					{currentMonthTransactions && currentMonthTransactions.length > 0 && (
-						<div className="mt-6 border-t border-t-border-subtle pt-5">
-							<div className="flex items-center gap-2 mb-4">
-								<CheckSquare className="w-4 h-4 text-emerald-500" />
-								<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-									Zaksięgowane w tym miesiącu
-								</h4>
-							</div>
+					{filteredMonthTransactions &&
+						filteredMonthTransactions.length > 0 && (
+							<div className="mt-6 border-t border-t-border-subtle pt-5">
+								<div className="flex items-center justify-between mb-4">
+									<div className="flex items-center gap-2">
+										<CheckSquare className="w-4 h-4 text-emerald-500" />
+										<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+											Zaksięgowane w tym miesiącu
+										</h4>
+									</div>
 
-							{/* 🚀 NOWE: Pasek Struktury Kapitału (Wykres) */}
-							<div className="mb-6 space-y-3 p-4 bg-black/5 dark:bg-white/5 rounded-xl border border-t-border-subtle">
-								<div className="flex justify-between items-center mb-1">
-									<span className="text-[9px] font-black uppercase tracking-widest text-t-text-secondary">
-										Struktura kapitału
-									</span>
-									<span className="text-[9px] font-bold text-t-text-tertiary">
-										100% = {monthlyInvested.toLocaleString("pl-PL")} PLN
-									</span>
-								</div>
-
-								<div className="h-3 w-full flex rounded-full overflow-hidden border border-t-border shadow-sm">
-									{categoryBreakdown.map((item) => (
-										<div
-											key={item.category}
-											style={{
-												width: `${item.percentage}%`,
-												backgroundColor:
-													COLORS[item.category as keyof typeof COLORS] ||
-													"#94a3b8",
-											}}
-											className="h-full transition-all duration-1000 ease-out hover:opacity-80"
-											title={`${CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] || item.category}: ${item.percentage.toFixed(1)}%`}
-										/>
-									))}
-								</div>
-
-								{/* Legenda Wykresu */}
-								<div className="flex flex-wrap gap-x-4 gap-y-2 pt-1">
-									{categoryBreakdown.map((item) => (
-										<div
-											key={item.category}
-											className="flex items-center gap-1.5"
-										>
-											<span
-												className="w-2 h-2 rounded-full shadow-sm"
-												style={{
-													backgroundColor:
-														COLORS[item.category as keyof typeof COLORS] ||
-														"#94a3b8",
-												}}
-											/>
-											<span className="text-[10px] font-bold text-t-text-primary">
-												{CATEGORY_LABELS[
-													item.category as keyof typeof CATEGORY_LABELS
-												] || item.category}
-											</span>
-											<span className="text-[9px] font-mono text-t-text-tertiary">
-												({item.percentage.toFixed(1)}%)
-											</span>
-										</div>
-									))}
-								</div>
-							</div>
-
-							<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-								{currentMonthTransactions.map((tx) => (
-									<label
-										key={tx.id}
-										className={cn(
-											"flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all cursor-pointer select-none",
-											selectedTxs.includes(tx.id)
-												? "bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/40 shadow-sm"
-												: "bg-black/5 dark:bg-white/5 border-t-border-subtle hover:bg-black/10 dark:hover:bg-white/10",
-										)}
-									>
-										<input
-											type="checkbox"
-											checked={selectedTxs.includes(tx.id)}
-											onChange={() => toggleTx(tx.id)}
-											className="w-4 h-4 rounded border-t-border-subtle text-blue-500 focus:ring-blue-500 cursor-pointer accent-blue-500 shrink-0"
-										/>
-
-										<div className="flex flex-col overflow-hidden flex-1">
-											<span className="text-xs font-bold text-t-text-primary truncate pr-2">
-												{tx.assetName}
-											</span>
-											{/* ZMIANA: Kolorowa kropka zamiast tekstu '•' */}
-											<span className="text-[9px] font-mono text-t-text-tertiary flex items-center gap-1.5 mt-0.5">
-												<span
-													className="w-2 h-2 rounded-full shrink-0"
-													style={{
-														backgroundColor:
-															COLORS[tx.category as keyof typeof COLORS] ||
-															"#94a3b8",
-													}}
-												/>
-												{tx.ticker} •{" "}
-												{new Date(tx.executedAt).toLocaleDateString("pl-PL")}
-											</span>
-										</div>
-										<div className="text-right flex flex-col shrink-0">
-											<span
-												className={cn(
-													"text-xs font-black",
-													selectedTxs.includes(tx.id)
-														? "text-blue-600 dark:text-blue-400"
-														: "text-emerald-600 dark:text-emerald-400",
-												)}
-											>
-												+{tx.executedValue.toLocaleString("pl-PL")} PLN
-											</span>
-											{tx.originalPrice > 0 &&
-												tx.originalCurrency !== "PLN" && (
-													<span className="text-[9px] font-mono text-t-text-tertiary">
-														{tx.quantity.toFixed(4)} szt @{" "}
-														{tx.originalPrice.toFixed(2)} {tx.originalCurrency}
-													</span>
-												)}
-										</div>
-									</label>
-								))}
-							</div>
-
-							{/* ZMIANA: Suma przeniesiona pod listę transakcji */}
-							{selectedTxs.length > 0 && (
-								<div className="mt-4 flex justify-end animate-in fade-in slide-in-from-top-2 duration-300">
-									<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-4 py-2.5 rounded-xl shadow-sm">
-										<Calculator className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-										<span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-											Suma: {selectedSum.toLocaleString("pl-PL")} PLN
+									<div className="flex items-center gap-4">
+										{/* 🚀 ZMIANA: Dynamiczna suma widoczna nawet po zwinięciu */}
+										<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500">
+											Suma:{" "}
+											{filteredMonthTransactions
+												.reduce((sum, tx) => sum + tx.executedValue, 0)
+												.toLocaleString("pl-PL")}{" "}
+											PLN
 										</span>
+										<button
+											onClick={() => setIsCurrentMonthOpen(!isCurrentMonthOpen)}
+											className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary hover:text-t-text-primary transition-colors flex items-center gap-1"
+										>
+											{isCurrentMonthOpen ? "Zwiń" : "Rozwiń"}
+											{isCurrentMonthOpen ? (
+												<ChevronUp className="w-3 h-3" />
+											) : (
+												<ChevronDown className="w-3 h-3" />
+											)}
+										</button>
 									</div>
 								</div>
-							)}
-						</div>
-					)}
-					{/*  Sekcja planów na przyszły miesiąc */}
-					{filteredNextMonthPlans.length > 0 && ( // <--- Zmiana z nextMonthPlans
+
+								{isCurrentMonthOpen && (
+									<div className="animate-in fade-in slide-in-from-top-2 duration-300">
+										<div className="mb-6 space-y-3 p-4 bg-black/5 dark:bg-white/5 rounded-xl border border-t-border-subtle">
+											<div className="flex justify-between items-center mb-1">
+												<span className="text-[9px] font-black uppercase tracking-widest text-t-text-secondary">
+													Struktura kapitału
+												</span>
+												<span className="text-[9px] font-bold text-t-text-tertiary">
+													100% ={" "}
+													{displayMonthlyInvested.toLocaleString("pl-PL")} PLN
+												</span>
+											</div>
+
+											<div className="h-3 w-full flex rounded-full overflow-hidden border border-t-border shadow-sm">
+												{categoryBreakdown.map((item) => (
+													<div
+														key={item.category}
+														style={{
+															width: `${item.percentage}%`,
+															backgroundColor:
+																COLORS[item.category as keyof typeof COLORS] ||
+																"#94a3b8",
+														}}
+														className="h-full transition-all duration-1000 ease-out hover:opacity-80"
+														title={`${CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] || item.category}: ${item.percentage.toFixed(1)}%`}
+													/>
+												))}
+											</div>
+
+											<div className="flex flex-wrap gap-x-4 gap-y-2 pt-1">
+												{categoryBreakdown.map((item) => (
+													<div
+														key={item.category}
+														className="flex items-center gap-1.5"
+													>
+														<span
+															className="w-2 h-2 rounded-full shadow-sm"
+															style={{
+																backgroundColor:
+																	COLORS[
+																		item.category as keyof typeof COLORS
+																	] || "#94a3b8",
+															}}
+														/>
+														<span className="text-[10px] font-bold text-t-text-primary">
+															{CATEGORY_LABELS[
+																item.category as keyof typeof CATEGORY_LABELS
+															] || item.category}
+														</span>
+														<span className="text-[9px] font-mono text-t-text-tertiary">
+															({item.percentage.toFixed(1)}%)
+														</span>
+													</div>
+												))}
+											</div>
+										</div>
+
+										<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+											{filteredMonthTransactions.map((tx) => (
+												<label
+													key={tx.id}
+													className={cn(
+														"flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all cursor-pointer select-none",
+														selectedTxs.includes(tx.id)
+															? "bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/40 shadow-sm"
+															: "bg-black/5 dark:bg-white/5 border-t-border-subtle hover:bg-black/10 dark:hover:bg-white/10",
+													)}
+												>
+													<input
+														type="checkbox"
+														checked={selectedTxs.includes(tx.id)}
+														onChange={() => toggleTx(tx.id)}
+														className="w-4 h-4 rounded border-t-border-subtle text-blue-500 focus:ring-blue-500 cursor-pointer accent-blue-500 shrink-0"
+													/>
+
+													<div className="flex flex-col overflow-hidden flex-1">
+														<span className="text-xs font-bold text-t-text-primary truncate pr-2">
+															{tx.assetName}
+														</span>
+														<span className="text-[9px] font-mono text-t-text-tertiary flex items-center gap-1.5 mt-0.5">
+															<span
+																className="w-2 h-2 rounded-full shrink-0"
+																style={{
+																	backgroundColor:
+																		COLORS[
+																			tx.category as keyof typeof COLORS
+																		] || "#94a3b8",
+																}}
+															/>
+															{tx.ticker} •{" "}
+															{new Date(tx.executedAt).toLocaleDateString(
+																"pl-PL",
+															)}
+														</span>
+													</div>
+													<div className="text-right flex flex-col shrink-0">
+														<span
+															className={cn(
+																"text-xs font-black",
+																selectedTxs.includes(tx.id)
+																	? "text-blue-600 dark:text-blue-400"
+																	: "text-emerald-600 dark:text-emerald-400",
+															)}
+														>
+															+{tx.executedValue.toLocaleString("pl-PL")} PLN
+														</span>
+														{tx.originalPrice !== null &&
+															tx.originalPrice > 0 &&
+															tx.originalCurrency !== "PLN" && (
+																<span className="text-[9px] font-mono text-t-text-tertiary">
+																	{tx.quantity.toFixed(4)} szt @{" "}
+																	{tx.originalPrice.toFixed(2)}{" "}
+																	{tx.originalCurrency}
+																</span>
+															)}
+													</div>
+												</label>
+											))}
+										</div>
+
+										{selectedTxs.length > 0 && (
+											<div className="mt-4 flex justify-end animate-in fade-in slide-in-from-top-2 duration-300">
+												<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-4 py-2.5 rounded-xl shadow-sm">
+													<Calculator className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+													<span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+														Suma: {selectedSum.toLocaleString("pl-PL")} PLN
+													</span>
+												</div>
+											</div>
+										)}
+									</div>
+								)}
+							</div>
+						)}
+
+					{/* 🚀 NOWE: Sekcja przyszłego miesiąca - wyprowadzona całkowicie poza poprzednią */}
+					{filteredNextMonthPlans.length > 0 && (
 						<div className="mt-6 border-t border-t-border-subtle pt-5">
 							<div className="flex items-center justify-between mb-3">
 								<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center gap-2">
 									<Clock className="w-4 h-4 text-amber-500" />
 									Na celowniku: Przyszły miesiąc
 								</h4>
-								<span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
-									Suma: {nextMonthTotal.toLocaleString("pl-PL")} PLN
-								</span>
-							</div>
-							<div className="grid grid-cols-1 lg:grid-cols-2 gap-3 opacity-80">
-								{filteredNextMonthPlans.map((plan) => (
-									<div
-										key={plan.id}
-										className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-dashed border-t-border bg-black/5 dark:bg-white/5"
+
+								<div className="flex items-center gap-4">
+									<span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
+										Suma: {nextMonthTotal.toLocaleString("pl-PL")} PLN
+									</span>
+									<button
+										onClick={() => setIsNextMonthOpen(!isNextMonthOpen)}
+										className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary hover:text-t-text-primary transition-colors flex items-center gap-1"
 									>
-										{/* Kolor kategorii */}
-										<div
-											className="w-1.5 self-stretch rounded-full shrink-0 opacity-50"
-											style={{
-												backgroundColor:
-													COLORS[plan.targetCategory as keyof typeof COLORS] ||
-													"#94a3b8",
-											}}
-										/>
-										<div className="flex flex-col overflow-hidden flex-1">
-											<span className="text-xs font-bold text-t-text-secondary truncate pr-2">
-												{plan.name || plan.targetCategory}
-											</span>
-											<span className="text-[9px] font-mono text-t-text-tertiary">
-												{plan.ticker || "Brak tickera"} • {plan.plannedDate}
-											</span>
-										</div>
-										<div className="text-right shrink-0">
-											<span className="text-xs font-black text-t-text-secondary">
-												{plan.value.toLocaleString("pl-PL")} PLN
-											</span>
-										</div>
-									</div>
-								))}
+										{isNextMonthOpen ? "Zwiń" : "Rozwiń"}
+										{isNextMonthOpen ? (
+											<ChevronUp className="w-3 h-3" />
+										) : (
+											<ChevronDown className="w-3 h-3" />
+										)}
+									</button>
+								</div>
 							</div>
+
+							{isNextMonthOpen && (
+								<div className="grid grid-cols-1 lg:grid-cols-2 gap-3 opacity-80 animate-in fade-in slide-in-from-top-2 duration-300">
+									{filteredNextMonthPlans.map((plan) => (
+										<div
+											key={plan.id}
+											className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-dashed border-t-border bg-black/5 dark:bg-white/5"
+										>
+											<div
+												className="w-1.5 self-stretch rounded-full shrink-0 opacity-50"
+												style={{
+													backgroundColor:
+														COLORS[
+															plan.targetCategory as keyof typeof COLORS
+														] || "#94a3b8",
+												}}
+											/>
+											<div className="flex flex-col overflow-hidden flex-1">
+												<span className="text-xs font-bold text-t-text-secondary truncate pr-2">
+													{plan.name || plan.targetCategory}
+												</span>
+												<span className="text-[9px] font-mono text-t-text-tertiary">
+													{plan.ticker || "Brak tickera"} • {plan.plannedDate}
+												</span>
+											</div>
+											<div className="text-right shrink-0">
+												<span className="text-xs font-black text-t-text-secondary">
+													{plan.value.toLocaleString("pl-PL")} PLN
+												</span>
+											</div>
+										</div>
+									))}
+								</div>
+							)}
 						</div>
 					)}
 				</div>

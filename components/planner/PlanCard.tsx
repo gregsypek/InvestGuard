@@ -75,7 +75,7 @@ export function PlanCard({
 	allPortfoliosWithCash,
 	isDemo,
 }: PlanCardProps) {
-	console.log("🚀 ~ PlanCard ~ plan:", plan);
+	// console.log("🚀 ~ PlanCard ~ plan:", plan);
 	const router = useRouter();
 	const [isOpen, setIsOpen] = useState(false);
 	const [isPending, setIsPending] = useState(false);

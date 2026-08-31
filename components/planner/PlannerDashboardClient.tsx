@@ -17,6 +17,7 @@ import {
 	Target,
 	TrendingUp,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { GoalProjectionChart } from "./GoalProjectionChart";
 import { PlannerClientList } from "./PlannerClientList";

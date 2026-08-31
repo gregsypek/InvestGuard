@@ -12,7 +12,6 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { Landmark, PlusCircle } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -23,12 +22,12 @@ import {
 import { useForm, useWatch } from "react-hook-form";
 import { useMemo, useState } from "react";
 
+import { FilterBadge } from "../shared/FilterBadge";
 import { Input } from "@/components/ui/input";
+import { Landmark } from "lucide-react";
 import { PlannerSchema } from "@/lib/validations/planner";
 import { SimpleSwitch } from "@/components/ui/SimpleSwitchProps";
-import { Slider } from "@/components/ui/slider";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { createInvestmentPlan } from "@/lib/actions/planner.actions";
 import { toast } from "sonner";
@@ -92,15 +91,6 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 
 	async function onSubmit(data: PlannerFormValues) {
 		try {
-			// Jeśli nazwa jest pusta, generujemy ją automatycznie na bazie kategorii
-			// const finalData = { ...data };
-			// if (!finalData.name && finalData.category !== "BONDS") {
-			// 	const catLabel =
-			// 		CATEGORY_LABELS[finalData.category as keyof typeof CATEGORY_LABELS] ||
-			// 		finalData.category;
-			// 	finalData.name = `Zakup: ${catLabel}`;
-			// }
-
 			// const result = await createInvestmentPlan(finalData);
 			const result = await createInvestmentPlan(data);
 			if (result.success) {
@@ -118,36 +108,34 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 			{/* EN: MODE SELECTOR - Updated to use deep panel styling */}
 
 			{/* SELEKTOR TRYBÓW */}
-			<div className="flex bg-white dark:bg-black/5 p-1.5 rounded-xl gap-1.5 items-center border border-t-border">
+			<div className="flex p-1.5 rounded-xl gap-1.5 items-center">
 				{/* Przycisk 1: Aktywo / Gotówka (Niebieski po aktywacji) */}
-				<button
-					type="button"
-					onClick={() => handleModeChange("asset")}
-					className={cn(
-						// Baza dla obu stanów: zawsze dodajemy klasę 'border'
-						"flex items-center justify-center gap-2 px-4 flex-1 py-2.5 rounded-lg text-xs font-bold transition-all border",
-						viewMode === "asset"
-							? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30 shadow-sm"
-							: "bg-transparent border-black/10 dark:border-white/10 text-t-text-secondary hover:text-t-text-primary hover:bg-t-hover hover:border-black/20 dark:hover:border-white/20",
-					)}
-				>
-					<PlusCircle size={14} /> Aktywo / Gotówka
-				</button>
+				<FilterBadge
+					id="asset"
+					label="Aktywo / Gotówka"
+					isSelected={viewMode === "asset"}
+					onToggle={(id) => handleModeChange(id as "asset" | "bond")}
+					// className={cn(
+					// 	"flex-1 py-2.5 justify-center h-full",
+					// 	viewMode === "asset"
+					// 		? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30"
+					// 		: "bg-transparent border-black/10 dark:border-white/10 text-t-text-secondary",
+					// )}
+				/>
 
-				{/* Przycisk 2: Planuj Obligację */}
-				<button
-					type="button"
-					onClick={() => handleModeChange("bond")}
-					className={cn(
-						// Baza dla obu stanów: zawsze dodajemy klasę 'border'
-						"flex items-center justify-center gap-2 flex-1 px-4 py-2.5 rounded-lg text-xs font-bold transition-all border",
-						viewMode === "bond"
-							? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30 shadow-sm"
-							: "bg-transparent border-black/10 dark:border-white/10 text-t-text-secondary hover:text-t-text-primary hover:bg-t-hover hover:border-black/20 dark:hover:border-white/20",
-					)}
-				>
-					<Landmark size={14} /> Planuj Obligację
-				</button>
+				{/* Przycisk 2: Planuj Obligację (Szmaragdowy po aktywacji) */}
+				<FilterBadge
+					id="bond"
+					label="Planuj Obligację"
+					isSelected={viewMode === "bond"}
+					onToggle={(id) => handleModeChange(id as "asset" | "bond")}
+					// className={cn(
+					// 	"flex-1 py-2.5 justify-center h-full",
+					// 	viewMode === "bond"
+					// 		? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30"
+					// 		: "bg-transparent border-black/10 dark:border-white/10 text-t-text-secondary",
+					// )}
+				/>
 			</div>
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

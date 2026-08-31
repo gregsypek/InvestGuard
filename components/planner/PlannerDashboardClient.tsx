@@ -4,6 +4,7 @@ import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import {
 	Calculator,
 	CheckSquare,
+	Clock,
 	PiggyBank,
 	Target,
 	TrendingUp,
@@ -33,6 +34,10 @@ export function PlannerDashboardClient({
 }: PlannerDashboardClientProps) {
 	const [listPortfolioId, setListPortfolioId] = useState("ALL");
 	const [projPortfolioId, setProjPortfolioId] = useState("ALL");
+
+	// 🚀 NOWE STANY: Filtry dla Zestawienia Miesiąca
+	const [monthPortfolioId, setMonthPortfolioId] = useState("ALL");
+	const [monthCategoryId, setMonthCategoryId] = useState("ALL");
 
 	// 🚀 NOWY STAN: Wybrane transakcje do podsumowania
 	const [selectedTxs, setSelectedTxs] = useState<string[]>([]);
@@ -124,13 +129,58 @@ export function PlannerDashboardClient({
 		</div>
 	);
 
+	const renderInlineCategorySelector = (
+		value: string,
+		onChange: (val: string) => void,
+	) => (
+		<div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg px-2 py-1.5 focus-within:border-t-border transition-colors w-full sm:w-auto shrink-0">
+			<span className="hidden sm:inline-block text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
+				Kategoria:
+			</span>
+			<select
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+				className="bg-transparent text-t-text-primary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate max-w-[160px]"
+			>
+				<option value="ALL" className="bg-t-bg-panel">
+					Wszystkie
+				</option>
+				{Object.entries(CATEGORY_LABELS)
+					.filter(([id]) => id !== "CASH")
+					.map(([id, label]) => (
+						<option key={id} value={id} className="bg-t-bg-panel">
+							{label}
+						</option>
+					))}
+			</select>
+		</div>
+	);
+
+	// const nextMonthPlans = listPlans.filter(
+	// 	(p) => p.plannedDate === nextMonthStr,
+	// );
+
+	// Dynamiczna kwota inwestycji (zmienia się wraz z filtrami)
+	// 1. Wykres i Kwoty (NIE REAGUJĄ na filtr kategorii, pokazują prawdę o całym portfelu)
+	const displayMonthlyInvested =
+		monthPortfolioId === "ALL"
+			? monthlyInvested
+			: currentMonthTransactions
+					.filter((tx) => tx.portfolioId === monthPortfolioId)
+					.reduce((sum, tx) => sum + tx.executedValue, 0);
+
 	// 🚀 NOWE: Obliczanie struktury (wykresu) bieżącego miesiąca
 	const categoryBreakdown = useMemo(() => {
-		if (!currentMonthTransactions || currentMonthTransactions.length === 0)
-			return [];
+		// Używamy wszystkich transakcji (lub tylko dla danego portfela), ale bez filtra kategorii
+		const txsForBreakdown = currentMonthTransactions.filter(
+			(tx) => monthPortfolioId === "ALL" || tx.portfolioId === monthPortfolioId,
+		);
+
+		if (!txsForBreakdown || txsForBreakdown.length === 0) return [];
+
 		const breakdown: Record<string, number> = {};
 		let total = 0;
-		currentMonthTransactions.forEach((tx) => {
+		txsForBreakdown.forEach((tx) => {
 			breakdown[tx.category] = (breakdown[tx.category] || 0) + tx.executedValue;
 			total += tx.executedValue;
 		});
@@ -141,8 +191,40 @@ export function PlannerDashboardClient({
 				value,
 				percentage: (value / total) * 100,
 			}))
-			.sort((a, b) => b.value - a.value); // Największe udziały na początku
-	}, [currentMonthTransactions]);
+			.sort((a, b) => b.value - a.value);
+	}, [currentMonthTransactions, monthPortfolioId]);
+
+	// 2. Lista zaksięgowanych transakcji (REAGUJE na oba filtry)
+	// const filteredMonthTransactions = useMemo(() => {
+	// 	return (currentMonthTransactions || []).filter((tx) => {
+	// 		const matchPortfolio =
+	// 			monthPortfolioId === "ALL" || tx.portfolioId === monthPortfolioId;
+	// 		const matchCategory =
+	// 			monthCategoryId === "ALL" || tx.category === monthCategoryId;
+	// 		return matchPortfolio && matchCategory;
+	// 	});
+	// }, [currentMonthTransactions, monthPortfolioId, monthCategoryId]);
+
+	// 3. Oczekujące w przyszłym miesiącu (Oparte o czyste plans z bazy, nie o listPlans!)
+	const nextMonthDate = new Date();
+	nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
+	const nextMonthStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
+
+	const filteredNextMonthPlans = plans.filter((p) => {
+		// <- Piszemy po orginalnym 'plans', nie 'listPlans'
+		const isNextMonth = p.plannedDate === nextMonthStr;
+		const matchPortfolio =
+			monthPortfolioId === "ALL" || p.portfolioId === monthPortfolioId;
+		const matchCategory =
+			monthCategoryId === "ALL" || p.targetCategory === monthCategoryId;
+		return isNextMonth && matchPortfolio && matchCategory;
+	});
+
+	// Suma na przyszły miesiąc (reaguje na filtry portfela i kategorii)
+	const nextMonthTotal = filteredNextMonthPlans.reduce(
+		(sum, p) => sum + Number(p.value),
+		0,
+	);
 
 	return (
 		<>
@@ -152,8 +234,16 @@ export function PlannerDashboardClient({
 				titleIcon={Target}
 				subtitle="Monitor bieżących operacji"
 				description="Śledź swój miesięczny postęp wpłat i weryfikuj najnowsze zaksięgowane transakcje."
+				action={
+					<div className="flex flex-col-reverse sm:flex-row items-end sm:items-center gap-3">
+						{renderInlinePortfolioSelector(
+							monthPortfolioId,
+							setMonthPortfolioId,
+						)}
+						{renderInlineCategorySelector(monthCategoryId, setMonthCategoryId)}
+					</div>
+				}
 			>
-				{/* //bg-t-bg-panel */}
 				<div className="w-full  border border-t-border rounded-2xl p-5 mb-8 shadow-sm">
 					{/* Wskaźnik Celu */}
 					<div className="flex items-center justify-between mb-3">
@@ -164,7 +254,7 @@ export function PlannerDashboardClient({
 						</div>
 						<div className="text-right">
 							<span className="text-sm font-black text-t-text-primary">
-								{monthlyInvested.toLocaleString("pl-PL")} PLN
+								{displayMonthlyInvested.toLocaleString("pl-PL")} PLN
 							</span>
 							<span className="text-[10px] font-bold text-t-text-tertiary ml-1">
 								/ {totalMonthlyGoal.toLocaleString("pl-PL")} PLN
@@ -321,6 +411,51 @@ export function PlannerDashboardClient({
 									</div>
 								</div>
 							)}
+						</div>
+					)}
+					{/*  Sekcja planów na przyszły miesiąc */}
+					{filteredNextMonthPlans.length > 0 && ( // <--- Zmiana z nextMonthPlans
+						<div className="mt-6 border-t border-t-border-subtle pt-5">
+							<div className="flex items-center justify-between mb-3">
+								<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center gap-2">
+									<Clock className="w-4 h-4 text-amber-500" />
+									Na celowniku: Przyszły miesiąc
+								</h4>
+								<span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
+									Suma: {nextMonthTotal.toLocaleString("pl-PL")} PLN
+								</span>
+							</div>
+							<div className="grid grid-cols-1 lg:grid-cols-2 gap-3 opacity-80">
+								{filteredNextMonthPlans.map((plan) => (
+									<div
+										key={plan.id}
+										className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-dashed border-t-border bg-black/5 dark:bg-white/5"
+									>
+										{/* Kolor kategorii */}
+										<div
+											className="w-1.5 self-stretch rounded-full shrink-0 opacity-50"
+											style={{
+												backgroundColor:
+													COLORS[plan.targetCategory as keyof typeof COLORS] ||
+													"#94a3b8",
+											}}
+										/>
+										<div className="flex flex-col overflow-hidden flex-1">
+											<span className="text-xs font-bold text-t-text-secondary truncate pr-2">
+												{plan.name || plan.targetCategory}
+											</span>
+											<span className="text-[9px] font-mono text-t-text-tertiary">
+												{plan.ticker || "Brak tickera"} • {plan.plannedDate}
+											</span>
+										</div>
+										<div className="text-right shrink-0">
+											<span className="text-xs font-black text-t-text-secondary">
+												{plan.value.toLocaleString("pl-PL")} PLN
+											</span>
+										</div>
+									</div>
+								))}
+							</div>
 						</div>
 					)}
 				</div>

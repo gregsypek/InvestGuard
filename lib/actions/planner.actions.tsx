@@ -34,7 +34,7 @@ export async function createInvestmentPlan(
 	try {
 		await db.investmentPlan.create({
 			data: {
-				name,
+				name: name || "",
 				ticker,
 				value,
 				plannedDate,

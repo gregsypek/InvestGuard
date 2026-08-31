@@ -94,7 +94,7 @@ export function PlanCard({
 		plan.name ||
 			`Zakup: ${CATEGORY_LABELS[plan.targetCategory as keyof typeof CATEGORY_LABELS] || plan.targetCategory}`,
 	);
-	const [finalValue, setFinalValue] = useState(plan.value);
+	const [finalValue, setFinalValue] = useState<number | string>(plan.value);
 	const [purchasePrice, setPurchasePrice] = useState<number>(
 		plan.targetCategory === "BONDS" ? 100 : 0,
 	);
@@ -179,7 +179,10 @@ export function PlanCard({
 				setIsOpen(false);
 				router.refresh();
 			} else {
-				toast.error("Błąd: " + result?.error);
+				toast.error(
+					"Błąd: " +
+						("error" in result ? String(result.error) : "Nieznany błąd"),
+				);
 			}
 		} catch {
 			toast.error("Błąd połączenia. Spróbuj ponownie.");

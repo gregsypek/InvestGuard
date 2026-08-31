@@ -39,10 +39,18 @@ export function RevertLastTrancheTool({ assets }: RevertToolProps) {
 		try {
 			const res = await revertLastTransaction(selectedAssetId);
 			if (res.success) {
-				toast.success(res.message || "Ostatnia transza została cofnięta.");
+				toast.success(
+					"message" in res
+						? String(res.message)
+						: "Ostatnia transza została cofnięta.",
+				);
 				setSelectedAssetId("");
 			} else {
-				toast.error(res.error || "Nie udało się cofnąć transakcji.");
+				toast.error(
+					"error" in res
+						? String(res.error)
+						: "Nie udało się cofnąć transakcji.",
+				);
 			}
 		} catch {
 			toast.error("Wystąpił błąd krytyczny.");

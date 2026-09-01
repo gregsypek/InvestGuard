@@ -96,36 +96,33 @@ export function PlannerDashboardClient({
 			? Math.min(Math.round((monthlyInvested / totalMonthlyGoal) * 100), 100)
 			: 0;
 
-	const projData = useMemo(() => {
+	const projPortfolios = useMemo(() => {
 		const activePorts =
 			projPortfolioId === "ALL"
 				? portfolios
 				: portfolios.filter((p) => p.id === projPortfolioId);
-		const activePlans =
-			projPortfolioId === "ALL"
-				? plans
-				: plans.filter((p) => p.portfolioId === projPortfolioId);
-		const currentValue = activePorts.reduce(
-			(sum, p) =>
-				sum +
-				p.assets.reduce(
-					(aSum: number, a: { currentValue: number }) =>
-						aSum + (a.currentValue || 0),
-					0,
-				),
-			0,
-		);
-		const targetValue = activePorts.reduce(
-			(sum, p) => sum + (Number(p.goal) || 100000),
-			0,
-		);
-		const monthlyDeposit = activePlans.reduce(
-			(sum, p) => sum + Number(p.value),
-			0,
-		);
-		return { currentValue, targetValue, monthlyDeposit };
-	}, [portfolios, plans, projPortfolioId]);
 
+		return activePorts.map((p) => {
+			const pPlans = plans.filter((plan) => plan.portfolioId === p.id);
+			const currentValue = p.assets.reduce(
+				(aSum: number, a: { currentValue: number }) =>
+					aSum + (a.currentValue || 0),
+				0,
+			);
+			const targetValue = Number(p.goal) || 100000;
+			const monthlyDeposit = pPlans.reduce(
+				(sum, plan) => sum + Number(plan.value),
+				0,
+			);
+			return {
+				id: p.id,
+				name: p.name,
+				currentValue,
+				targetValue,
+				monthlyDeposit,
+			};
+		});
+	}, [portfolios, plans, projPortfolioId]);
 	const toggleTx = (id: string) => {
 		setSelectedTxs((prev) =>
 			prev.includes(id) ? prev.filter((txId) => txId !== id) : [...prev, id],
@@ -573,11 +570,7 @@ export function PlannerDashboardClient({
 			>
 				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-sm">
 					<div className="h-[400px] w-full relative">
-						<GoalProjectionChart
-							currentValue={projData.currentValue}
-							targetValue={projData.targetValue}
-							monthlyDeposit={projData.monthlyDeposit}
-						/>
+						<GoalProjectionChart portfolios={projPortfolios} />
 					</div>
 				</div>
 			</SectionLayout>

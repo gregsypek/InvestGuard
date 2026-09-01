@@ -16,6 +16,10 @@ const getPastDate = (daysAgo: number) => {
 };
 
 async function main() {
+	console.log("🧹 Czyszczenie starego konta Demo...");
+	await prisma.user.deleteMany({
+		where: { email: "demo@example.com" },
+	});
 	console.log("🚀 Rozpoczynam generowanie Pokazowego Portfela (Demo)...");
 
 	// 1. Tworzenie użytkownika testowego

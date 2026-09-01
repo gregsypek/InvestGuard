@@ -103,6 +103,8 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 		}
 	}
 
+	const currentMonthStr = new Date().toISOString().slice(0, 7);
+
 	return (
 		<div className="space-y-6 ">
 			{/* EN: MODE SELECTOR - Updated to use deep panel styling */}
@@ -184,6 +186,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 									<FormControl>
 										<Input
 											type="month"
+											min={currentMonthStr}
 											className={cn(
 												inputStyles,
 												"bg-black/5  dark:bg-blue-500/5  border-t-border",

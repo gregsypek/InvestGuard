@@ -254,25 +254,25 @@ export async function executePlan(
 				const remainingValue = plan.value - finalValue;
 
 				if (remainingValue > 0) {
-					// Jeśli zrealizowano tylko część, zostawiamy resztę planu na ten miesiąc
+					// 🚀 ZMIANA: Jeśli zrealizowano tylko część, zapisujemy oryginalną kwotę
+					// (jeśli to pierwsze potrącenie, zapisze np. 500 zł, żeby nie zginęło)
 					await tx.investmentPlan.update({
 						where: { id: planId },
-						data: { value: remainingValue },
+						data: {
+							value: remainingValue,
+							originalValue: plan.originalValue ?? plan.value,
+						},
 					});
 				} else {
-					// Jeśli zrealizowano całość (lub więcej), zamykamy cel
+					// Jeśli zrealizowano całość (lub wpłacono z nadwyżką), zamykamy cel
 					if (plan.isRecurring) {
-						// Rolowanie na kolejny miesiąc odbywa się TYLKO po pełnym zrealizowaniu
-						// Przywracamy oryginalną pełną kwotę z historii (aby np. znowu wymagał 1000 PLN)
-						const originalPlan = await tx.investmentPlan.findUnique({
-							where: { id: planId },
-						});
-
+						// 🚀 ZMIANA: Tworzymy nowy plan na podstawie zapamiętanej oryginalnej kwoty
+						// Jeśli plan nigdy nie był częściowo realizowany, bierzemy po prostu plan.value
 						await tx.investmentPlan.create({
 							data: {
 								name: plan.name,
 								ticker: plan.ticker,
-								value: originalPlan ? originalPlan.value : plan.value,
+								value: plan.originalValue ?? plan.value,
 								plannedDate: getNextMonth(plan.plannedDate),
 								targetCategory: plan.targetCategory,
 								portfolioId: plan.portfolioId,

@@ -17,7 +17,7 @@ import {
 	Target,
 	TrendingUp,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { GoalProjectionChart } from "./GoalProjectionChart";
 import { PlannerClientList } from "./PlannerClientList";
@@ -50,6 +50,7 @@ interface PlannerDashboardClientProps {
 	cashPortfolioIds: string[];
 	monthlyInvested?: number;
 	currentMonthTransactions?: TransactionData[];
+	defaultPortfolioId?: string;
 }
 
 export function PlannerDashboardClient({
@@ -58,12 +59,12 @@ export function PlannerDashboardClient({
 	cashPortfolioIds,
 	monthlyInvested = 0,
 	currentMonthTransactions = [],
+	defaultPortfolioId = "ALL",
 }: PlannerDashboardClientProps) {
-	const [listPortfolioId, setListPortfolioId] = useState("ALL");
-	const [projPortfolioId, setProjPortfolioId] = useState("ALL");
+	const [listPortfolioId, setListPortfolioId] = useState(defaultPortfolioId);
+	const [projPortfolioId, setProjPortfolioId] = useState(defaultPortfolioId);
+	const [monthPortfolioId, setMonthPortfolioId] = useState(defaultPortfolioId);
 
-	// Filtry dla Zestawienia Miesiąca
-	const [monthPortfolioId, setMonthPortfolioId] = useState("ALL");
 	const [monthCategoryId, setMonthCategoryId] = useState("ALL");
 
 	// Wybrane transakcje do podsumowania
@@ -250,6 +251,13 @@ export function PlannerDashboardClient({
 		(sum, p) => sum + Number(p.value),
 		0,
 	);
+
+	// 🚀 NOWE: Synchronizacja wszystkich filtrów po zmianie portfela w globalnym Headerze
+	useEffect(() => {
+		setListPortfolioId(defaultPortfolioId);
+		setProjPortfolioId(defaultPortfolioId);
+		setMonthPortfolioId(defaultPortfolioId);
+	}, [defaultPortfolioId]);
 
 	return (
 		<>

@@ -158,6 +158,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 				cashPortfolioIds={cashPortfolioIds}
 				monthlyInvested={monthlyInvested}
 				currentMonthTransactions={currentMonthTransactions}
+				defaultPortfolioId={portfolio.id}
 			/>
 		</div>
 	);

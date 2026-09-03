@@ -101,7 +101,9 @@ export async function executePlan(
 				const isCash = targetCategory === "CASH";
 
 				const effectivePrice = isCash ? 1 : purchasePrice || 1;
-				const calculatedQuantity = finalValue / effectivePrice;
+				// 🚀 POPRAWKA: Wartość w PLN dzielimy przez (Cena w walucie * Kurs NBP)
+				const calculatedQuantity =
+					finalValue / (effectivePrice * exchangeRateParam);
 				const executionDate = purchaseDate
 					? new Date(purchaseDate)
 					: new Date();
@@ -126,13 +128,18 @@ export async function executePlan(
 				// 🚀 POPRAWKA 1: Najpierw szukamy aktywa, żeby odziedziczyć PRAWIDŁOWĄ nazwę
 				const existingAsset = !isBond
 					? await tx.asset.findFirst({
-							where: { portfolioId: plan.portfolioId, ticker: resolvedTicker },
+							where: {
+								portfolioId: plan.portfolioId,
+								ticker: { equals: resolvedTicker, mode: "insensitive" }, // 👈 TO ŁĄCZY REKORDY
+							},
 						})
 					: null;
 
 				// Jeśli aktywo istnieje, bierzemy jego nazwę (np. iShares Core...), w przeciwnym razie nazwę z modalu/planera
 
+				// 🚀 POPRAWKA 2: Jeżeli aktywo istnieje, ZAWSZE wymuszamy użycie jego nazwy
 				const resolvedName =
+					// existingAsset?.name || // 👈 Wymusza "Bitcoin" zamiast "Zakup: Kryptowaluty"
 					finalNameParam ||
 					plan.name ||
 					existingTx?.assetName ||

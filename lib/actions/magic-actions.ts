@@ -98,6 +98,15 @@ export async function fetchMagicFillData(
 		const totalOriginalValue = historicalPrice * quantity;
 		const finalPlnValue = totalOriginalValue * exchangeRate;
 
+		// 🚀 NOWE: Pobieramy profil spółki, aby zdobyć jej oficjalną nazwę
+		let companyName = ticker;
+		try {
+			const quote = await yahooFinance.quote(yahooTicker);
+			companyName = quote.shortName || quote.longName || ticker;
+		} catch (e) {
+			console.warn("Nie udało się pobrać nazwy z Yahoo, używam tickera:", e);
+		}
+
 		return {
 			success: true,
 			data: {
@@ -105,6 +114,7 @@ export async function fetchMagicFillData(
 				originalCurrency,
 				exchangeRate,
 				investedCapitalPln: Math.abs(finalPlnValue).toFixed(2),
+				name: companyName, // 👈 Teraz zmienna istnieje i jest bezpieczna
 			},
 		};
 	} catch (error: any) {

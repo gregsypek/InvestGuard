@@ -91,11 +91,7 @@ export function PlannerDashboardClient({
 		.filter((p) => p.plannedDate <= currentMonth)
 		.reduce((sum, p) => sum + Number(p.value), 0);
 
-	const totalMonthlyGoal = currentMonthPlansTotal + monthlyInvested;
-	const progressPercentage =
-		totalMonthlyGoal > 0
-			? Math.min(Math.round((monthlyInvested / totalMonthlyGoal) * 100), 100)
-			: 0;
+	// const totalMonthlyGoal = currentMonthPlansTotal + monthlyInvested;
 
 	const projPortfolios = useMemo(() => {
 		const activePorts =
@@ -197,6 +193,25 @@ export function PlannerDashboardClient({
 			: currentMonthTransactions
 					.filter((tx) => tx.portfolioId === monthPortfolioId)
 					.reduce((sum, tx) => sum + tx.executedValue, 0);
+
+	// 🚀 ZMIANA: Total Monthly Goal musi reagować na filtr portfela
+	const totalMonthlyGoal = useMemo(() => {
+		// 1. Bierzemy tylko plany z tego miesiąca (odfiltrowane)
+		const activePlans =
+			monthPortfolioId === "ALL"
+				? plans
+				: plans.filter((p) => p.portfolioId === monthPortfolioId);
+
+		// 2. Sumujemy ich wartość
+		const plansTotal = activePlans.reduce((sum, p) => sum + Number(p.value), 0);
+
+		// 3. Dodajemy zainwestowaną kwotę (ta powinna już być u Ciebie zdefiniowana np. jako displayMonthlyInvested)
+		return plansTotal + displayMonthlyInvested;
+	}, [plans, monthPortfolioId, displayMonthlyInvested]);
+	const progressPercentage =
+		totalMonthlyGoal > 0
+			? Math.min(Math.round((monthlyInvested / totalMonthlyGoal) * 100), 100)
+			: 0;
 
 	const categoryBreakdown = useMemo(() => {
 		const txsForBreakdown = currentMonthTransactions.filter(
@@ -563,6 +578,7 @@ export function PlannerDashboardClient({
 					plans={listPlans}
 					cashPortfolioIds={cashPortfolioIds}
 					allPortfoliosWithCash={portfolios}
+					currentMonthTransactions={currentMonthTransactions}
 				/>
 			</SectionLayout>
 

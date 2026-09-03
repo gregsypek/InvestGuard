@@ -15,12 +15,14 @@ interface PlannerClientListProps {
 	plans: PlanWithPortfolio[];
 	cashPortfolioIds: string[];
 	allPortfoliosWithCash: { id: string; name: string }[];
+	currentMonthTransactions?: any[];
 }
 
 export function PlannerClientList({
 	plans,
 	cashPortfolioIds,
 	allPortfoliosWithCash,
+	currentMonthTransactions = [],
 }: PlannerClientListProps) {
 	// --- STANY FILTRÓW ---
 	const [filterCategory, setFilterCategory] = useState("ALL");
@@ -128,6 +130,7 @@ export function PlannerClientList({
 							isLocked={isLocked}
 							hasCashInPortfolio={cashPortfolioIds.includes(plan.portfolioId)}
 							allPortfoliosWithCash={allPortfoliosWithCash}
+							currentMonthTransactions={currentMonthTransactions}
 						/>
 					);
 				})}

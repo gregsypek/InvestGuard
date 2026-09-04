@@ -104,7 +104,6 @@ export function PlanCard({
 		}
 		return plan.ticker || "";
 	});
-	// console.log("🚀 ~ PlanCard ~ finalTicker:", finalTicker);
 	// 🚀 DODANE: Stan do obsługi wyboru istniejącego aktywa
 	const [selectedAssetId, setSelectedAssetId] = useState<string>("new");
 	// 1. Dodaj nowe stany pod istniejącymi
@@ -315,10 +314,10 @@ export function PlanCard({
 
 	// 3. LOGIKA AUTOMATYCZNEJ NAZWY (tylko dla obligacji)
 	useEffect(() => {
-		console.log("🚀 ~ PlanCard ~ finalTicker:", finalTicker);
+		// console.log("🚀 ~ PlanCard ~ finalTicker:", finalTicker);
 		if (plan.targetCategory === "BONDS" && finalTicker) {
 			const autoName = generateBondName(finalTicker, purchaseDate);
-			console.log("🚀 ~ PlanCard ~ autoName:", autoName);
+			// console.log("🚀 ~ PlanCard ~ autoName:", autoName);
 			setFinalName(autoName);
 		}
 	}, [purchaseDate, finalTicker, plan.targetCategory, isOpen]);

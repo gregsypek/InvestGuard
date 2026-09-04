@@ -235,7 +235,10 @@ function getRateTypeByTicker(ticker: string): "VARIABLE" | "FIXED" {
 	return type || "FIXED";
 }
 
-function getBondMaturityDate(purchaseDate: Date, ticker: string): Date {
+export async function getBondMaturityDate(
+	purchaseDate: Date,
+	ticker: string,
+): Promise<Date> {
 	const cleanTicker = ticker
 		.toUpperCase()
 		.split("_")[0] as keyof typeof BOND_TEMPLATES;
@@ -259,7 +262,7 @@ export async function addBond(formData: FormData, portfolioId: string) {
 		const manualCurrentValueRaw = formData.get("manualCurrentValue");
 
 		const rateType = getRateTypeByTicker(rawTicker);
-		const maturityDate = getBondMaturityDate(purchaseDate, rawTicker);
+		const maturityDate = await getBondMaturityDate(purchaseDate, rawTicker);
 
 		// ==========================================
 		// 1. GENEROWANIE PIĘKNEJ NAZWY (np. EDO0836)

@@ -63,7 +63,7 @@ export async function addAssetAction(formData: FormData) {
 			const assetCount = await db.asset.count({
 				where: {
 					portfolioId: portfolioId,
-					NOT: { category: "BONDS" }, // Liczymy tylko aktywa, które nie są obligacjami
+					NOT: { category: "BONDS" },
 				},
 			});
 
@@ -80,47 +80,51 @@ export async function addAssetAction(formData: FormData) {
 
 		// 1. INTELIGENTNE SZUKANIE (Unikanie P2002)
 		if (!isBond && (!targetAssetId || targetAssetId === "new")) {
-			// Szukamy aktywa o tym samym tickerze w TYM SAMYM portfelu (bez filtrowania kategorii)
 			const existing = await db.asset.findFirst({
 				where: { ticker, portfolioId },
 			});
 
 			if (existing) {
-				// Jeśli kategoria się zgadza - aktualizujemy
 				if (existing.category === category) {
 					targetAssetId = existing.id;
-				} else {
-					// Jeśli kategoria jest INNA (np. CASH w Passive vs CASH w Booster)
-					// to MUSIMY stworzyć nowy wpis, ale z innym dbTicker, żeby baza nie wywaliła błędu
-					// targetAssetId pozostaje "new", a my modyfikujemy ticker dla bazy poniżej
 				}
 			}
 		}
 
-		// 2. GENEROWANIE TICKERA DLA BAZY (Magic Trick)
-		// Jeśli to nowa pozycja (targetAssetId === "new"), a ticker już istnieje w bazie (ale w innej kategorii)
-		// lub jeśli to obligacja - dodajemy sufiks czasowy, by zachować unikalność
+		// 2. GENEROWANIE TICKERA DLA BAZY (Ujednolicone z importem i planami)
 		let dbTicker = ticker;
-		if (isBond && ticker) {
-			dbTicker = `${ticker}_${Date.now()}`;
+
+		if (isBond && name) {
+			const purchaseDateStr = purchaseDate.toISOString().split("T")[0];
+			const cleanName = name.replace("Obligacje ", "").trim();
+
+			dbTicker = `${cleanName}_${purchaseDateStr}`;
+
+			// 🚀 Blokada duplikatu z formularza ręcznego
+			const conflict = await db.asset.findFirst({
+				where: { ticker: dbTicker, portfolioId },
+			});
+			if (conflict) {
+				return {
+					success: false,
+					message: "Taka obligacja (ta sama seria i data) jest już w portfelu!",
+				};
+			}
 		} else if (targetAssetId === "new" && ticker) {
-			// Sprawdzamy czy ten konkretny ticker jest już zajęty przez inną kategorię
 			const conflict = await db.asset.findFirst({
 				where: { ticker, portfolioId },
 			});
 			if (conflict) {
-				dbTicker = `${ticker}_${category}`; // np. CASH_BOOSTER
+				dbTicker = `${ticker}_${category}`;
 			}
 		}
 
 		// 3. AKTUALIZACJA LUB TWORZENIE
 		if (!isBond && targetAssetId && targetAssetId !== "new") {
-			// Najpierw pobieramy obecne aktywo, by sprawdzić jego datę
 			const existingAssetForDate = await db.asset.findUnique({
 				where: { id: targetAssetId },
 			});
 
-			// Jeśli nowa data operacji (executedAt) jest starsza niż obecne purchaseDate, aktualizujemy purchaseDate
 			const shouldUpdateDate =
 				existingAssetForDate && executedAt < existingAssetForDate.purchaseDate;
 
@@ -132,7 +136,7 @@ export async function addAssetAction(formData: FormData) {
 					currentValue: { increment: currentValue },
 					conviction: conviction !== null ? conviction : undefined,
 					rationale: rationale || undefined,
-					...(shouldUpdateDate && { purchaseDate: executedAt }), // Magia! Cofa datę startową, jeśli to konieczne
+					...(shouldUpdateDate && { purchaseDate: executedAt }),
 				},
 			});
 		} else {
@@ -155,7 +159,7 @@ export async function addAssetAction(formData: FormData) {
 			targetAssetId = newAsset.id;
 		}
 
-		// 4. ZAPIS DO HISTORII (Używamy dbTicker, aby transakcja była powiązana z właściwym rekordem)
+		// 4. ZAPIS DO HISTORII (Używamy dbTicker)
 		await db.transactionHistory.create({
 			data: {
 				portfolioId,

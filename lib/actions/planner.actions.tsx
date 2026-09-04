@@ -104,46 +104,50 @@ export async function executePlan(
 				// 🚀 POPRAWKA: Wartość w PLN dzielimy przez (Cena w walucie * Kurs NBP)
 				const calculatedQuantity =
 					finalValue / (effectivePrice * exchangeRateParam);
+
 				const executionDate = purchaseDate
 					? new Date(purchaseDate)
 					: new Date();
+				const purchaseDateStr = executionDate.toISOString().split("T")[0];
 
-				const currentTicker = finalTickerParam || plan.ticker;
-				if (!currentTicker && !isCash) {
+				// 🚀 1. UJEDNOLICONE NAZEWNICTWO OBLIGACJI (Zgodne z importem XTB)
+				const currentTicker = finalTickerParam || plan.ticker || "CASH";
+
+				const resolvedTicker =
+					isBond && finalNameParam
+						? `${finalNameParam}_${purchaseDateStr}`
+						: currentTicker;
+
+				if (!resolvedTicker && !isCash) {
 					throw new Error(
 						"Musisz podać Ticker podczas zatwierdzania realizacji.",
 					);
 				}
 
-				const resolvedTicker =
-					isBond && currentTicker
-						? `${currentTicker}_${executionDate.getTime()}`
-						: currentTicker || "CASH";
+				const resolvedName =
+					isBond && finalNameParam
+						? `Obligacje ${finalNameParam}`
+						: finalNameParam || plan.name || resolvedTicker;
 
-				// 🚀 NOWE: Szukamy, czy mamy już to aktywo w historii (np. z importu XTB)
+				// 🚀 2. SZUKAMY AKTYWA (Teraz bez wyjątku dla obligacji, by wyłapać duplikaty!)
+				const existingAsset = await tx.asset.findFirst({
+					where: {
+						portfolioId: plan.portfolioId,
+						ticker: { equals: resolvedTicker, mode: "insensitive" },
+					},
+				});
+
+				// 🚀 3. TWARDA BLOKADA DUPLIKATÓW OBLIGACJI
+				if (isBond && existingAsset) {
+					throw new Error(
+						"Ta obligacja z tą datą zakupu jest już w portfelu (np. z importu XTB). Kliknij 'Zamknij bez księgowania'.",
+					);
+				}
+
+				// Szukamy, czy mamy już to aktywo w historii (np. z importu XTB)
 				const existingTx = await tx.transactionHistory.findFirst({
 					where: { portfolioId: plan.portfolioId, ticker: resolvedTicker },
 				});
-
-				// 🚀 POPRAWKA 1: Najpierw szukamy aktywa, żeby odziedziczyć PRAWIDŁOWĄ nazwę
-				const existingAsset = !isBond
-					? await tx.asset.findFirst({
-							where: {
-								portfolioId: plan.portfolioId,
-								ticker: { equals: resolvedTicker, mode: "insensitive" }, // 👈 TO ŁĄCZY REKORDY
-							},
-						})
-					: null;
-
-				// Jeśli aktywo istnieje, bierzemy jego nazwę (np. iShares Core...), w przeciwnym razie nazwę z modalu/planera
-
-				// 🚀 POPRAWKA 2: Jeżeli aktywo istnieje, ZAWSZE wymuszamy użycie jego nazwy
-				const resolvedName =
-					// existingAsset?.name || // 👈 Wymusza "Bitcoin" zamiast "Zakup: Kryptowaluty"
-					finalNameParam ||
-					plan.name ||
-					existingTx?.assetName ||
-					resolvedTicker;
 
 				// 2. LOGIKA OBLIGACJI
 				const baseTickerForDuration = currentTicker
@@ -191,13 +195,13 @@ export async function executePlan(
 
 					await tx.transactionHistory.create({
 						data: {
-							type: "SELL", // 👈 Tu musi być twarde "SELL"
+							type: "SELL",
 							portfolioId: sourcePortfolioId,
 							assetName: sourceCash.name,
 							ticker: sourceCash.ticker,
 							quantity: -finalValue,
 							executedValue: finalValue,
-							originalPrice: 1, // 👈 Gotówka zawsze 1:1
+							originalPrice: 1,
 							originalCurrency: "PLN",
 							exchangeRate: 1,
 							category: "CASH",
@@ -246,13 +250,12 @@ export async function executePlan(
 						ticker: resolvedTicker,
 						quantity: calculatedQuantity,
 						executedValue: finalValue,
-						originalPrice: purchasePrice, // 👈 Cena z różdżki (np. 721.06)
-						originalCurrency: originalCurrencyParam, // 👈 Waluta obca (np. EUR)
-						exchangeRate: exchangeRateParam, // 👈 Kurs NBP
+						originalPrice: purchasePrice,
+						originalCurrency: originalCurrencyParam,
+						exchangeRate: exchangeRateParam,
 						category: targetCategory,
 						executedAt: executionDate,
 						rationale: executionNote || plan.rationale || "Realizacja planu",
-						// 👈 Zabezpieczenie przed XTB przeniesione do właściwej transakcji
 						externalId: `PLAN_${resolvedTicker}_${executionDate.getTime()}_${calculatedQuantity}`,
 					},
 				});
@@ -261,8 +264,6 @@ export async function executePlan(
 				const remainingValue = plan.value - finalValue;
 
 				if (remainingValue > 0) {
-					// 🚀 ZMIANA: Jeśli zrealizowano tylko część, zapisujemy oryginalną kwotę
-					// (jeśli to pierwsze potrącenie, zapisze np. 500 zł, żeby nie zginęło)
 					await tx.investmentPlan.update({
 						where: { id: planId },
 						data: {
@@ -271,10 +272,7 @@ export async function executePlan(
 						},
 					});
 				} else {
-					// Jeśli zrealizowano całość (lub wpłacono z nadwyżką), zamykamy cel
 					if (plan.isRecurring) {
-						// 🚀 ZMIANA: Tworzymy nowy plan na podstawie zapamiętanej oryginalnej kwoty
-						// Jeśli plan nigdy nie był częściowo realizowany, bierzemy po prostu plan.value
 						await tx.investmentPlan.create({
 							data: {
 								name: plan.name,

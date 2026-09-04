@@ -195,19 +195,24 @@ export function PlannerDashboardClient({
 					.reduce((sum, tx) => sum + tx.executedValue, 0);
 
 	// 🚀 ZMIANA: Total Monthly Goal musi reagować na filtr portfela
+	// 🚀 ZMIANA: Total Monthly Goal reaguje na portfel ORAZ na bieżący miesiąc
 	const totalMonthlyGoal = useMemo(() => {
-		// 1. Bierzemy tylko plany z tego miesiąca (odfiltrowane)
-		const activePlans =
-			monthPortfolioId === "ALL"
-				? plans
-				: plans.filter((p) => p.portfolioId === monthPortfolioId);
+		// Definiujemy format bieżącego miesiąca (np. "2026-09")
+		const currentMonthStr = new Date().toISOString().substring(0, 7);
 
-		// 2. Sumujemy ich wartość
+		const activePlans = plans.filter((p) => {
+			const matchesPortfolio =
+				monthPortfolioId === "ALL" ? true : p.portfolioId === monthPortfolioId;
+			const matchesMonth = p.plannedDate === currentMonthStr; // 👈 Ignoruje przyszłe miesiące
+
+			return matchesPortfolio && matchesMonth;
+		});
+
 		const plansTotal = activePlans.reduce((sum, p) => sum + Number(p.value), 0);
 
-		// 3. Dodajemy zainwestowaną kwotę (ta powinna już być u Ciebie zdefiniowana np. jako displayMonthlyInvested)
 		return plansTotal + displayMonthlyInvested;
 	}, [plans, monthPortfolioId, displayMonthlyInvested]);
+
 	const progressPercentage =
 		totalMonthlyGoal > 0
 			? Math.min(Math.round((monthlyInvested / totalMonthlyGoal) * 100), 100)

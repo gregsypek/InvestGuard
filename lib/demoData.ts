@@ -322,6 +322,7 @@ export const demoPlans = [
 		portfolioId: "demo-dalio",
 		createdAt: new Date(),
 		updatedAt: new Date(),
+		originalValue: 1000,
 		// KLUCZOWE: Pełny obiekt portfela zamiast samej nazwy
 		portfolio: {
 			...baseDemoPortfolio,
@@ -337,6 +338,7 @@ export const demoPlans = [
 		name: "Złoto Fizyczne",
 		ticker: "GOLD",
 		value: 2500,
+		originalValue: 2500,
 		plannedDate: "2026-05-01",
 		targetCategory: "GOLD" as Category,
 		conviction: 5,

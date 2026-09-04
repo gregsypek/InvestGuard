@@ -14,6 +14,8 @@ import {
 	CheckSquare,
 	Clock,
 	Loader2,
+	PlusCircle,
+	Recycle,
 	RefreshCw,
 	Trash2,
 	Wand2,
@@ -65,7 +67,16 @@ interface PlanCardProps {
 	plan: PlanWithPortfolio;
 	isLocked: boolean;
 	hasCashInPortfolio: boolean;
-	allPortfoliosWithCash: { id: string; name: string }[];
+	allPortfoliosWithCash: {
+		id: string;
+		name: string;
+		assets?: {
+			id: string;
+			name: string;
+			ticker: string | null;
+			category: string;
+		}[];
+	}[];
 	isDemo?: boolean;
 	currentMonthTransactions?: any[];
 }
@@ -83,8 +94,19 @@ export function PlanCard({
 	const [isPending, setIsPending] = useState(false);
 	const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
 
-	const [finalTicker, setFinalTicker] = useState(plan.ticker || "");
-
+	// 🚀 ZMIANA: Inteligentne czyszczenie tickera dla obligacji
+	// (np. z "EDO (10-letnie)" wyciąga samo "EDO")
+	const [finalTicker, setFinalTicker] = useState(() => {
+		if (plan.targetCategory === "BONDS") {
+			// Szukamy tickera w planie, a jak go nie ma, ratujemy się nazwą
+			const rawString = plan.ticker || plan.name || "";
+			return rawString.split(" ")[0].toUpperCase();
+		}
+		return plan.ticker || "";
+	});
+	// console.log("🚀 ~ PlanCard ~ finalTicker:", finalTicker);
+	// 🚀 DODANE: Stan do obsługi wyboru istniejącego aktywa
+	const [selectedAssetId, setSelectedAssetId] = useState<string>("new");
 	// 1. Dodaj nowe stany pod istniejącymi
 	const [originalCurrency, setOriginalCurrency] = useState("PLN");
 	const [exchangeRate, setExchangeRate] = useState(1);
@@ -107,7 +129,7 @@ export function PlanCard({
 			)
 			.reduce((sum, tx) => sum + Math.abs(tx.executedValue), 0); // 👈 Math.abs rozwiązuje problem np -400 zł (kwota z importu)
 	}, [currentMonthTransactions, plan]);
-	console.log("🚀 ~ PlanCard ~ alreadyInvested:", alreadyInvested);
+	// console.log("🚀 ~ PlanCard ~ alreadyInvested:", alreadyInvested);
 
 	// const suggestedValue = Math.max(0, plan.value - alreadyInvested);
 
@@ -232,7 +254,11 @@ export function PlanCard({
 				setExchangeRate(Number(result.data.exchangeRate));
 
 				// 🚀 DODANE: Podmień roboczą nazwę na prawdziwą (jeśli backend ją zwróci)
-				if ("name" in result.data && (result.data as any).name) {
+				if (
+					"name" in result.data &&
+					(result.data as any).name &&
+					selectedAssetId === "new" // 👈 Ten warunek blokuje nadpisanie
+				) {
 					setFinalName((result.data as any).name);
 				}
 				// 🚀 NOWE: Automatycznie wypełnij Wolumen na podstawie różdżki
@@ -273,14 +299,35 @@ export function PlanCard({
 		}
 	};
 
+	// Wyszukujemy aktywa z portfela docelowego planu (odfiltrowujemy gotówkę)
+	// 🚀 ZMIANA: Filtrujemy gotówkę, obligacje oraz zostawiamy tylko tę samą kategorię co w planie
+	const targetPortfolioAssets = useMemo(() => {
+		const targetPortfolio = allPortfoliosWithCash.find(
+			(p) => p.id === plan.portfolioId,
+		);
+		const assets = targetPortfolio?.assets || [];
+
+		return assets.filter((a) => {
+			if (a.category === "CASH" || a.category === "BONDS") return false;
+			return a.category === plan.targetCategory;
+		});
+	}, [allPortfoliosWithCash, plan.portfolioId, plan.targetCategory]);
+
 	// 3. LOGIKA AUTOMATYCZNEJ NAZWY (tylko dla obligacji)
 	useEffect(() => {
-		if (plan.targetCategory === "BONDS" && plan.ticker) {
-			const autoName = generateBondName(plan.ticker, purchaseDate);
-			console.log("🚀 ~ PlanCard ~ generateBondName:", generateBondName);
+		console.log("🚀 ~ PlanCard ~ finalTicker:", finalTicker);
+		if (plan.targetCategory === "BONDS" && finalTicker) {
+			const autoName = generateBondName(finalTicker, purchaseDate);
+			console.log("🚀 ~ PlanCard ~ autoName:", autoName);
 			setFinalName(autoName);
 		}
-	}, [purchaseDate, plan.ticker, plan.targetCategory]);
+	}, [purchaseDate, finalTicker, plan.targetCategory, isOpen]);
+	// 🚀 ZMIANA: Jeśli w danej kategorii nie ma jeszcze aktywów, wymuś tryb "new"
+	useEffect(() => {
+		if (targetPortfolioAssets.length === 0) {
+			setSelectedAssetId("new");
+		}
+	}, [targetPortfolioAssets]);
 
 	useEffect(() => {
 		if (alreadyInvested > 0) {
@@ -288,6 +335,20 @@ export function PlanCard({
 		}
 	}, [alreadyInvested, plan.value]);
 
+	// Automatycznie zaktualizuj pola, jeśli użytkownik wybierze pozycję z listy
+	useEffect(() => {
+		if (selectedAssetId !== "new") {
+			const asset = targetPortfolioAssets.find((a) => a.id === selectedAssetId);
+			if (asset) {
+				setFinalTicker(asset.ticker || "");
+				setFinalName(asset.name);
+			}
+		} else {
+			// Jeśli przełączy z powrotem na "Nowe", możemy przywrócić puste/stare wartości
+			setFinalTicker(plan.ticker || "");
+			setFinalName(plan.name || "");
+		}
+	}, [selectedAssetId, targetPortfolioAssets, plan.ticker, plan.name]);
 	return (
 		<div
 			className={cn(
@@ -485,24 +546,113 @@ export function PlanCard({
 										Nazwa aktywa (seria)
 									</Label>
 								</div>
-								<div className="md:col-span-2 space-y-2">
-									<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-										Ostateczny Ticker (Wymagany do transakcji)
-									</Label>
-									<Input
-										value={finalTicker}
-										onChange={(e) =>
-											setFinalTicker(e.target.value.toUpperCase())
-										}
-										className={cn(
-											inputStyles,
-											"bg-t-bg-base border-t-border font-mono",
+								{/* SEKCJA: WPROWADZENIE DANYCH SPÓŁKI */}
+								<div className="col-span-2 space-y-4 rounded-xl border border-t-border p-4 bg-t-bg-base/50">
+									{/* PRZEŁĄCZNIK TRYBU WPROWADZANIA */}
+									{!isCash && targetPortfolioAssets.length > 0 && (
+										<div className="flex flex-wrap items-center gap-2 mb-2 p-1.5 w-fit bg-t-bg-panel rounded-xl border border-t-border-subtle">
+											<button
+												type="button"
+												onClick={() => setSelectedAssetId("new")}
+												className={cn(
+													"flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+													selectedAssetId === "new"
+														? "bg-t-bg-base shadow-sm text-t-text-primary border border-t-border"
+														: "text-t-text-tertiary border border-transparent hover:text-t-text-primary",
+												)}
+											>
+												<PlusCircle size={14} /> Wprowadź ticker ręcznie
+											</button>
+											<button
+												type="button"
+												onClick={() =>
+													setSelectedAssetId(targetPortfolioAssets[0].id)
+												}
+												className={cn(
+													"flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+													selectedAssetId !== "new"
+														? "bg-t-bg-base shadow-sm text-t-text-primary border border-t-border"
+														: "text-t-text-tertiary border border-transparent hover:text-t-text-primary",
+												)}
+											>
+												<Recycle size={14} /> Dokup z portfela
+											</button>
+										</div>
+									)}
+
+									{/* INPUTY DANYCH (Ticker + Nazwa) */}
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										{/* Jeśli używa listy (istniejące aktywo) */}
+										{selectedAssetId !== "new" ? (
+											<div className="col-span-2 space-y-2 animate-in fade-in">
+												<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+													Wybierz zasób z portfela (Odziedziczy Ticker i Nazwę)
+												</Label>
+												<Select
+													value={selectedAssetId}
+													onValueChange={setSelectedAssetId}
+												>
+													<SelectTrigger className={inputStyles}>
+														<SelectValue placeholder="Wybierz aktywo..." />
+													</SelectTrigger>
+													<SelectContent>
+														{targetPortfolioAssets.map((asset) => (
+															<SelectItem key={asset.id} value={asset.id}>
+																{asset.name}{" "}
+																{asset.ticker && `(${asset.ticker})`}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											</div>
+										) : (
+											/* Jeśli wpisuje z palca (tak jak do tej pory) */
+											<>
+												<div className="space-y-2">
+													<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center justify-between">
+														<span>Ostateczny Ticker (Wymagany)</span>
+														{!isCash && (
+															<span className="text-amber-500">*</span>
+														)}
+													</Label>
+													<Input
+														value={finalTicker}
+														onChange={(e) =>
+															setFinalTicker(e.target.value.toUpperCase())
+														}
+														className={cn(
+															inputStyles,
+															"bg-t-bg-base border-t-border font-mono",
+														)}
+														placeholder="Np. AAPL.US"
+														required={!isCash}
+													/>
+												</div>
+												<div className="space-y-2">
+													<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+														Oficjalna nazwa
+													</Label>
+													<Input
+														value={finalName}
+														onChange={(e) => setFinalName(e.target.value)}
+														className={cn(
+															inputStyles,
+															"bg-t-bg-base border-t-border font-black text-amber-600 dark:text-amber-500 uppercase",
+														)}
+														placeholder="Np. Apple Inc."
+													/>
+													{plan.targetCategory === "BONDS" && (
+														<p className="text-[10px] text-t-text-tertiary italic">
+															* Nazwa generowana automatycznie
+														</p>
+													)}
+												</div>
+											</>
 										)}
-										placeholder="Np. CDR.PL, IGLN.L"
-										required={!isCash}
-									/>
+									</div>
 								</div>
-								<Input
+
+								{/* <Input
 									value={finalName}
 									onChange={(e) => setFinalName(e.target.value)}
 									className={cn(
@@ -515,7 +665,7 @@ export function PlanCard({
 									<p className="text-[10px] text-t-text-tertiary italic">
 										* Nazwa wygenerowana automatycznie
 									</p>
-								)}
+								)} */}
 							</div>
 							{/* OSTATECZNA KWOTA */}
 							<div className="space-y-2">
@@ -703,27 +853,29 @@ export function PlanCard({
 							</div>
 
 							{/* EN: CONVICTION SLIDER (Oparty o useState) */}
-							<div className="space-y-4 col-span-2">
-								<div className=" flex justify-between items-center ">
-									<Label className="text-sm font-bold text-t-text-primary">
-										Poziom przekonania
-									</Label>
-									<span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20 tabular-nums">
-										{conviction}%
-									</span>
+							{plan.targetCategory === "BOOSTER" && (
+								<div className="space-y-4 col-span-2">
+									<div className=" flex justify-between items-center ">
+										<Label className="text-sm font-bold text-t-text-primary">
+											Poziom przekonania
+										</Label>
+										<span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20 tabular-nums">
+											{conviction}%
+										</span>
+									</div>
+									<Slider
+										min={1}
+										max={100}
+										step={1}
+										value={[conviction]}
+										onValueChange={(vals) => setConviction(vals[0])}
+										className="py-4"
+									/>
+									<p className="text-[10px] text-t-text-tertiary">
+										Jak bardzo wierzysz w sukces tej tezy? (Skala 1-100%)
+									</p>
 								</div>
-								<Slider
-									min={1}
-									max={100}
-									step={1}
-									value={[conviction]}
-									onValueChange={(vals) => setConviction(vals[0])}
-									className="py-4"
-								/>
-								<p className="text-[10px] text-t-text-tertiary">
-									Jak bardzo wierzysz w sukces tej tezy? (Skala 1-100%)
-								</p>
-							</div>
+							)}
 						</div>
 						{/* STOPKA Z PRZYCISKIEM */}
 						<DialogFooter className="flex flex-col sm:flex-row gap-2 pt-2">

@@ -115,7 +115,7 @@ export function PlannerClientList({
 			</div>
 
 			{/* LISTA KART PLANÓW */}
-			<div className="flex flex-col md:flex-row gap-4 flex-wrap">
+			<div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4 justify-between flex-wrap">
 				{filteredAndSorted.map((plan) => {
 					// Weryfikacja blokady w locie
 					const [pYear, pMonth] = plan.plannedDate.split("-").map(Number);

@@ -71,8 +71,8 @@ export function PlannerDashboardClient({
 	const [selectedTxs, setSelectedTxs] = useState<string[]>([]);
 
 	// Rozwijanie paneli
-	const [isCurrentMonthOpen, setIsCurrentMonthOpen] = useState(true);
-	const [isNextMonthOpen, setIsNextMonthOpen] = useState(true);
+	const [isCurrentMonthOpen, setIsCurrentMonthOpen] = useState(false);
+	const [isNextMonthOpen, setIsNextMonthOpen] = useState(false);
 
 	const portfolioOptions = [
 		{ id: "ALL", label: "Wszystkie portfele" },
@@ -315,20 +315,20 @@ export function PlannerDashboardClient({
 							</span>
 						</div>
 					</div>
-
-					<div className="h-4 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden border border-t-border-subtle relative">
-						<div
-							className="h-full bg-emerald-500 transition-all duration-1000 ease-out relative"
-							style={{ width: `${progressPercentage}%` }}
-						>
-							<div className="absolute inset-0 bg-white/20 w-full h-full animate-pulse"></div>
+					<div className="flex gap-6 xl:gap-12 items-center justify-between">
+						<div className="h-4 flex-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden border border-t-border-subtle relative">
+							<div
+								className="h-full bg-emerald-500 transition-all duration-1000 ease-out relative opacity-70"
+								style={{ width: `${progressPercentage}%` }}
+							>
+								<div className="absolute inset-0 bg-white/20 w-full h-full "></div>
+							</div>
 						</div>
+						<p className="text-[10px] flex-1 font-bold uppercase tracking-widest  text-right text-t-text-secondary mt-2">
+							Zrealizowano {progressPercentage}% założeń ({listPlans.length}{" "}
+							wpłat w kolejce)
+						</p>
 					</div>
-					<p className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary mt-2">
-						Zrealizowano {progressPercentage}% założeń ({listPlans.length} wpłat
-						w kolejce)
-					</p>
-
 					{filteredMonthTransactions &&
 						filteredMonthTransactions.length > 0 && (
 							<div className="mt-6 border-t border-t-border-subtle pt-5">
@@ -340,7 +340,7 @@ export function PlannerDashboardClient({
 										</h4>
 									</div>
 
-									<div className="flex items-center gap-4">
+									<div className="flex items-center  gap-4">
 										{/* 🚀 ZMIANA: Dynamiczna suma widoczna nawet po zwinięciu */}
 										<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500">
 											Suma:{" "}
@@ -365,7 +365,7 @@ export function PlannerDashboardClient({
 
 								{isCurrentMonthOpen && (
 									<div className="animate-in fade-in slide-in-from-top-2 duration-300">
-										<div className="mb-6 space-y-3 p-4 bg-black/5 dark:bg-white/5 rounded-xl border border-t-border-subtle">
+										<div className="mb-6 space-y-3 p-4 rounded-xl border border-t-border-subtle">
 											<div className="flex justify-between items-center mb-1">
 												<span className="text-[9px] font-black uppercase tracking-widest text-t-text-secondary">
 													Struktura kapitału
@@ -543,7 +543,8 @@ export function PlannerDashboardClient({
 											/>
 											<div className="flex flex-col overflow-hidden flex-1">
 												<span className="text-xs font-bold text-t-text-secondary truncate pr-2">
-													{plan.name || plan.targetCategory}
+													{plan.name ||
+														`${CATEGORY_LABELS[plan.targetCategory as keyof typeof CATEGORY_LABELS]}`}
 												</span>
 												<span className="text-[9px] font-mono text-t-text-tertiary">
 													{plan.ticker || "Brak tickera"} • {plan.plannedDate}

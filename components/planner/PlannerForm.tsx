@@ -84,8 +84,8 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 		form.reset({
 			...form.getValues(),
 			category: (mode === "bond" ? "BONDS" : "") as any,
-			ticker: mode === "bond" ? "EDO" : "",
-			name: mode === "bond" ? "Obligacje EDO" : "",
+			ticker: "", // 👈 Zostawiamy puste, seria zostanie wybrana przy realizacji
+			name: mode === "bond" ? "Zakup: Obligacje Skarbowe" : "", // 👈 Ogólna nazwa planu zamiast sztywnego EDO
 		});
 	};
 

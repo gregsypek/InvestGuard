@@ -8,7 +8,12 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { CATEGORY_LABELS, COLORS, inputStyles } from "@/lib/constants";
+import {
+	BOND_CONFIG,
+	CATEGORY_LABELS,
+	COLORS,
+	inputStyles,
+} from "@/lib/constants";
 import {
 	CalendarIcon,
 	CheckSquare,
@@ -47,16 +52,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlannerSchema } from "@/lib/validations/planner";
 import PremiumDeleteModal from "../shared/PremiumDeleteModal";
 import { SimpleSwitch } from "../ui/SimpleSwitchProps";
 import { Slider } from "../ui/slider";
 import { fetchMagicFillData } from "@/lib/actions/magic-actions";
-import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
-import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
 
 // EN: Extend the Plan type to include the related Portfolio name
 type PlanWithPortfolio = InvestmentPlan & {
@@ -162,14 +163,6 @@ export function PlanCard({
 	// 🚀 Sprawdzamy, czy oryginalny cel na ten miesiąc został już osiągnięty
 	const originalTarget = plan.originalValue ?? plan.value;
 	const isGoalMet = alreadyInvested >= originalTarget;
-	// console.log("🚀 ~ PlanCard ~ alreadyInvested:", alreadyInvested);
-
-	// const suggestedValue = Math.max(0, plan.value - alreadyInvested);
-
-	// 3. 🚀 OPCJONALNIE: Zaktualizuj domyślny stan, by podpowiadał pomniejszoną kwotę
-	// const [finalValue, setFinalValue] = useState<number | string>(
-	// 	suggestedValue > 0 ? suggestedValue : plan.value,
-	// );
 
 	// --- STANY DLA PÓL EDYCYJNYCH ---
 	const [finalName, setFinalName] = useState(
@@ -396,13 +389,13 @@ export function PlanCard({
 	return (
 		<div
 			className={cn(
-				"group relative rounded-2xl p-4 transition-all duration-300   flex-1",
+				"group relative rounded-2xl p-4 transition-all duration-300  flex min-w-[350px] flex-col h-full",
 				// ZMIANA: Przejście na zmienne systemowe
 				"bg-t-bg-base border border-t-border hover:border-t-border-subtle",
 				isLocked && "backdrop-blur-[1px] opacity-90",
 			)}
 		>
-			<div className="flex flex-col gap-4">
+			<div className="flex flex-col justify-center gap-4 flex-1">
 				{/* NAGŁÓWEK KARTY */}
 				<div className="flex justify-between items-start gap-3">
 					<div className="space-y-2 min-w-0 flex-1">
@@ -424,7 +417,7 @@ export function PlanCard({
 								}}
 							/>
 
-							<h3 className="text-sm font-bold truncate text-t-text-primary flex-1 min-w-[150px]">
+							<h3 className="text-sm font-bold truncate text-t-text-primary w-[180px] flex-1 ">
 								{plan.name ||
 									`Zakup: ${CATEGORY_LABELS[plan.targetCategory as keyof typeof CATEGORY_LABELS] || plan.targetCategory}`}
 							</h3>
@@ -434,26 +427,28 @@ export function PlanCard({
 									{plan.conviction}%
 								</span>
 							)}
-
-							{isLocked && (
-								<div className="flex items-center w-full sm:w-auto mt-1 sm:mt-0">
-									<div
-										className="flex items-center  gap-2 flex-1  pe-2.5 py-1  
+						</div>
+						{isLocked ? (
+							<div className="flex items-center w-full sm:w-auto mt-1 sm:mt-0">
+								{/* <div className="flex items-center w-full sm:w-auto mt-1 sm:mt-0"> */}
+								<div
+									className="flex items-center  gap-2 flex-1  pe-2.5 py-1  
 									 sm:w-auto"
-									>
-										<Clock className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-500" />
-										<div className="flex flex-col leading-none">
-											{/* <span className="text-[9px] hidden xl:block font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
+								>
+									<Clock className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-500" />
+									<div className="flex flex-col leading-none">
+										{/* <span className="text-[9px] hidden xl:block font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
 												Oczekiwanie
 											</span> */}
-											<span className="text-[10px] font-bold text-t-text-secondary whitespace-nowrap">
-												Dostępny od ({plan.plannedDate})
-											</span>
-										</div>
+										<span className="text-[10px] font-normal text-t-text-secondary whitespace-nowrap">
+											Dostępny od ({plan.plannedDate})
+										</span>
 									</div>
 								</div>
-							)}
-						</div>
+							</div>
+						) : (
+							<div className="h-[26px]" aria-hidden="true" />
+						)}
 
 						<p className="text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest truncate">
 							{
@@ -486,7 +481,7 @@ export function PlanCard({
 				</div>
 
 				{/* WARTOŚCI I TERMIN */}
-				<div className="grid grid-cols-2 gap-4 pt-2 border-t border-t-border-subtle">
+				<div className="flex gap-8 pt-2 border-t border-t-border-subtle">
 					<div className="flex flex-wrap gap-2 items-center">
 						<p className="font-mono text-xs text-t-text-secondary">
 							Planowana kwota:
@@ -506,34 +501,34 @@ export function PlanCard({
 						</p>
 					</div>
 				</div>
-
-				{/* 🚀 SMART UI: Komunikat widoczny bezpośrednio na karcie */}
-				{isGoalMet ? (
-					<div className="mt-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
-						<div className="flex items-center gap-2">
-							<span className="text-emerald-500 text-xs">✅</span>
-							<span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-								Cel Osiągnięty
+				<div className="mt-auto flex flex-col gap-2 pt-2">
+					{/* 🚀 SMART UI: Komunikat widoczny bezpośrednio na karcie */}
+					{isGoalMet ? (
+						<div className="mt-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
+							<div className="flex items-center gap-2">
+								<span className="text-emerald-500 text-xs">✅</span>
+								<span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+									Cel Osiągnięty
+								</span>
+							</div>
+							<span className="text-xs  text-t-text-primary">
+								{alreadyInvested.toLocaleString("pl-PL")} PLN
 							</span>
 						</div>
-						<span className="text-xs font-black text-t-text-primary">
-							{alreadyInvested.toLocaleString("pl-PL")} PLN
-						</span>
-					</div>
-				) : alreadyInvested > 0 ? (
-					<div className="mt-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
-						<div className="flex items-center gap-2">
-							<span className="text-amber-500 text-xs">💡</span>
-							<span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-500">
-								Zainwestowano w tym m-cu:
+					) : alreadyInvested > 0 ? (
+						<div className="mt-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
+							<div className="flex items-center gap-2">
+								<span className="text-amber-500 text-xs">💡</span>
+								<span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-500">
+									Zainwestowano w tym m-cu:
+								</span>
+							</div>
+							<span className="text-xs text-t-text-primary">
+								{alreadyInvested.toLocaleString("pl-PL")} PLN
 							</span>
 						</div>
-						<span className="text-xs font-black text-t-text-primary">
-							{alreadyInvested.toLocaleString("pl-PL")} PLN
-						</span>
-					</div>
-				) : null}
-
+					) : null}
+				</div>
 				{/* NOTATKA */}
 				{plan.rationale && (
 					<div className="mt-2 text-[11px] text-t-text-secondary leading-relaxed italic border-l-2 border-blue-500/40 pl-3 py-1 bg-t-bg-base/50 rounded-r-lg">
@@ -666,47 +661,101 @@ export function PlanCard({
 												</Select>
 											</div>
 										) : (
-											/* Jeśli wpisuje z palca (tak jak do tej pory) */
+											/* Jeśli wpisuje z palca (lub wybiera typ obligacji) */
 											<div className="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-												<div className="space-y-2">
-													<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center justify-between">
-														<span>Ostateczny Ticker (Wymagany)</span>
-														{!isCash && (
+												{isBond ? (
+													// 🚀 SELEKTOR DLA OBLIGACJI
+													<div className="col-span-1 sm:col-span-2 space-y-2">
+														<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center justify-between">
+															<span>Wybierz typ obligacji (Wymagane)</span>
 															<span className="text-amber-500">*</span>
+														</Label>
+														<Select
+															value={finalTicker}
+															onValueChange={(value) => setFinalTicker(value)}
+														>
+															<SelectTrigger
+																className={cn(
+																	inputStyles,
+																	"bg-t-bg-base border-t-border",
+																)}
+															>
+																<SelectValue placeholder="Wybierz serię (np. EDO, ROD)..." />
+															</SelectTrigger>
+															<SelectContent>
+																{Object.entries(BOND_CONFIG).map(
+																	([key, config]) => (
+																		<SelectItem
+																			key={key}
+																			value={key}
+																			className="cursor-pointer"
+																		>
+																			<div className="flex items-center gap-2">
+																				<div
+																					className={cn(
+																						"w-2 h-2 rounded-full",
+																						config.color,
+																					)}
+																				/>
+																				<span className="font-medium">
+																					{config.label}
+																				</span>
+																			</div>
+																		</SelectItem>
+																	),
+																)}
+															</SelectContent>
+														</Select>
+
+														{/* Podgląd dynamicznie generowanej nazwy seryjnej */}
+														{finalTicker && (
+															<p className="text-[10px] text-t-text-tertiary italic mt-1">
+																Ostateczna seria i nazwa:{" "}
+																<span className="font-bold text-emerald-500">
+																	{finalName}
+																</span>
+															</p>
 														)}
-													</Label>
-													<Input
-														value={finalTicker}
-														onChange={(e) =>
-															setFinalTicker(e.target.value.toUpperCase())
-														}
-														className={cn(
-															inputStyles,
-															"bg-t-bg-base border-t-border font-mono",
-														)}
-														placeholder="Np. AAPL.US"
-														required={!isCash}
-													/>
-												</div>
-												<div className="space-y-2">
-													<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-														Oficjalna nazwa
-													</Label>
-													<Input
-														value={finalName}
-														onChange={(e) => setFinalName(e.target.value)}
-														className={cn(
-															inputStyles,
-															"bg-t-bg-base border-t-border font-black text-amber-600 dark:text-amber-500 uppercase",
-														)}
-														placeholder="Np. Apple Inc."
-													/>
-													{plan.targetCategory === "BONDS" && (
-														<p className="text-[10px] text-t-text-tertiary italic">
-															* Nazwa generowana automatycznie
-														</p>
-													)}
-												</div>
+													</div>
+												) : (
+													// 🚀 STANDARDOWE INPUTY DLA AKCJI/KRYPTO/ZŁOTA
+													<>
+														<div className="space-y-2">
+															<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center justify-between">
+																<span>Ostateczny Ticker (Wymagany)</span>
+																{!isCash && (
+																	<span className="text-amber-500">*</span>
+																)}
+															</Label>
+															<Input
+																value={finalTicker}
+																onChange={(e) =>
+																	setFinalTicker(e.target.value.toUpperCase())
+																}
+																className={cn(
+																	inputStyles,
+																	"bg-t-bg-base border-t-border font-mono",
+																)}
+																placeholder="Np. AAPL.US"
+																required={!isCash}
+															/>
+														</div>
+														<div className="space-y-2">
+															<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+																Oficjalna nazwa
+															</Label>
+															<Input
+																value={finalName}
+																onChange={(e) => setFinalName(e.target.value)}
+																className={cn(
+																	inputStyles,
+																	"bg-t-bg-base border-t-border font-black text-amber-600 dark:text-amber-500 uppercase",
+																)}
+																placeholder="Np. Apple Inc."
+															/>
+														</div>
+													</>
+												)}
 											</div>
 										)}
 									</div>

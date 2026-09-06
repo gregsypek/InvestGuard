@@ -136,7 +136,7 @@ export function PlannerDashboardClient({
 		value: string,
 		onChange: (val: string) => void,
 	) => (
-		<div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg px-2 py-1.5 focus-within:border-t-border transition-colors w-full sm:w-auto shrink-0">
+		<div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg px-2 py-1.5 focus-within:border-t-border transition-colors sm:w-auto shrink-0">
 			<span className="hidden sm:inline-block text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
 				Zakres:
 			</span>
@@ -146,7 +146,7 @@ export function PlannerDashboardClient({
 					onChange(e.target.value);
 					setSelectedTxs([]);
 				}}
-				className="bg-transparent text-t-text-primary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate max-w-[160px]"
+				className="bg-transparent text-t-text-primary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate w-full "
 			>
 				{portfolioOptions.map((opt) => (
 					<option key={opt.id} value={opt.id} className="bg-t-bg-panel">
@@ -171,7 +171,7 @@ export function PlannerDashboardClient({
 					onChange(e.target.value);
 					setSelectedTxs([]); // 👈 Resetuje zaznaczenia przy zmianie kategorii
 				}}
-				className="bg-transparent text-t-text-primary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate max-w-[160px]"
+				className="bg-transparent text-t-text-primary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate w-full"
 			>
 				<option value="ALL" className="bg-t-bg-panel">
 					Wszystkie
@@ -569,7 +569,7 @@ export function PlannerDashboardClient({
 				subtitle="Lista zaplanowanych zakupów"
 				description="Na jej podstawie możesz monitorować nadchodzące inwestycje i zarządzać nimi w czasie."
 				action={
-					<div className="flex flex-col-reverse sm:flex-row items-end sm:items-center gap-3">
+					<div className="flex flex-row justify-end items-center gap-3">
 						<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg">
 							<span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
 								Zostało: {listTotalValue.toLocaleString("pl-PL")} PLN

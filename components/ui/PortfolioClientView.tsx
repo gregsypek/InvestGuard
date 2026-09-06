@@ -142,7 +142,7 @@ export default function PortfoliosClientView({
 			<select
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
-				className="bg-transparent text-t-text-primary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate max-w-[160px]"
+				className="bg-transparent text-t-text-primary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate w-full"
 			>
 				{portfolioOptions.map((opt) => (
 					<option key={opt.id} value={opt.id} className="bg-t-bg-panel">

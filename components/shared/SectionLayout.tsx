@@ -24,19 +24,25 @@ export const SectionLayout = ({
 	action,
 	children,
 }: SectionLayoutProps) => (
-	// ZMIANA: border-white/5 -> border-t-border
-	<section className="flex flex-col gap-5 md:gap-6 py-12 px-4 sm:py-10 md:px-6 md:py-12 xl:py-18">
-		<div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-			<div>
+	<section
+		className="flex flex-col 
+	py-8 px-4 sm:py-10 md:px-6 md:py-12 xl:py-18"
+	>
+		<div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 lg:gap-6">
+			<div className="flex-1 min-w-0">
 				<SectionHeader title={title} icon={titleIcon} className="mb-2" />
 				<SubHeader
 					title={subtitle}
 					description={description}
-					className="pb-4"
+					className="pb-2 lg:pb-4"
 				/>
 			</div>
-			{action && <div className="shrink-0 sm:mb-1 self-end">{action}</div>}
+
+			{action && (
+				<div className="shrink-0 self-end w-full sm:w-auto mb-4">{action}</div>
+			)}
 		</div>
-		<div className="w-full mt-4 md:mt-8">{children}</div>
+
+		<div className="w-full mt-2 md:mt-4">{children}</div>
 	</section>
 );

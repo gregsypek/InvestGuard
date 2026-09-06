@@ -66,7 +66,7 @@ export function PlannerClientList({
 	return (
 		<div className="flex flex-col gap-6">
 			{/* PŁASKIE FILTRY (W JEDNEJ LINII) */}
-			<div className="flex flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
+			<div className="flex flex-row justify-end items-center gap-2 sm:gap-3 w-full sm:w-auto">
 				{/* Kategoria */}
 				{availableCategories.length > 0 && (
 					<div className="flex flex-1 sm:flex-none sm:w-56 items-center gap-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg px-2 py-1.5 focus-within:border-t-border transition-colors overflow-hidden">

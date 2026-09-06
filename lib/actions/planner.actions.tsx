@@ -113,9 +113,12 @@ export async function executePlan(
 				// 🚀 1. UJEDNOLICONE NAZEWNICTWO OBLIGACJI (Zgodne z importem XTB)
 				const currentTicker = finalTickerParam || plan.ticker || "CASH";
 
+				// Zabezpieczenie: wyciągamy samo EDO0936, nawet jeśli z frontu przyjdzie "Obligacje EDO0936"
+				const cleanBondName = finalNameParam?.replace("Obligacje ", "").trim();
+
 				const resolvedTicker =
-					isBond && finalNameParam
-						? `${finalNameParam}_${purchaseDateStr}`
+					isBond && cleanBondName
+						? `${cleanBondName}_${purchaseDateStr}`
 						: currentTicker;
 
 				if (!resolvedTicker && !isCash) {
@@ -125,10 +128,9 @@ export async function executePlan(
 				}
 
 				const resolvedName =
-					isBond && finalNameParam
-						? `Obligacje ${finalNameParam}`
+					isBond && cleanBondName
+						? `Obligacje ${cleanBondName}`
 						: finalNameParam || plan.name || resolvedTicker;
-
 				// 🚀 2. SZUKAMY AKTYWA (Teraz bez wyjątku dla obligacji, by wyłapać duplikaty!)
 				const existingAsset = await tx.asset.findFirst({
 					where: {
@@ -241,6 +243,10 @@ export async function executePlan(
 						},
 					});
 				}
+				// 🚀 5. ZAPIS HISTORII Z UNIKALNYM ID DLA OBLIGACJI (Zgodnym z importerem XTB)
+				const uniqueExternalId = isBond
+					? `BOND_${resolvedTicker}` // tworzy: BOND_EDO0936_2026-09-04
+					: `PLAN_${resolvedTicker}_${executionDate.getTime()}_${calculatedQuantity}`;
 
 				await tx.transactionHistory.create({
 					data: {
@@ -256,7 +262,7 @@ export async function executePlan(
 						category: targetCategory,
 						executedAt: executionDate,
 						rationale: executionNote || plan.rationale || "Realizacja planu",
-						externalId: `PLAN_${resolvedTicker}_${executionDate.getTime()}_${calculatedQuantity}`,
+						externalId: uniqueExternalId, // 👈 TUTAJ ZMIANA: używamy naszej nowej zmiennej
 					},
 				});
 
@@ -298,6 +304,16 @@ export async function executePlan(
 		);
 	} catch (error: any) {
 		console.error("Execute Plan Error:", error);
+
+		// 🚀 NOWE: Przechwytujemy twardą blokadę bazy i zwracamy czytelny komunikat
+		if (error.code === "P2002") {
+			return {
+				success: false,
+				error:
+					"Ta transakcja (ten sam walor i data) jest już zaksięgowana w portfelu. Zamknij plan bez księgowania.",
+			};
+		}
+
 		return { success: false, error: error.message || "Błąd bazy danych" };
 	}
 }

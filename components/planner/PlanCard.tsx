@@ -116,18 +116,52 @@ export function PlanCard({
 	// 3. 🚀 Dynamiczna aktualizacja kwoty w formularzu
 	const [finalValue, setFinalValue] = useState<number | string>(plan.value);
 
-	// 2. 🚀 NOWA LOGIKA: Odporna na wielkość liter (Case-insensitive)
+	// 2. 🚀 NOWA LOGIKA: Dynamiczne wykrywanie (Kategoria lub Ticker)
 	const alreadyInvested = useMemo(() => {
-		if (!plan.ticker || currentMonthTransactions.length === 0) return 0;
-		const targetTicker = plan.ticker.toUpperCase();
-		return currentMonthTransactions
-			.filter(
-				(tx) =>
-					tx.portfolioId === plan.portfolioId &&
-					tx.ticker?.toUpperCase() === targetTicker,
-			)
-			.reduce((sum, tx) => sum + Math.abs(tx.executedValue), 0); // 👈 Math.abs rozwiązuje problem np -400 zł (kwota z importu)
-	}, [currentMonthTransactions, plan]);
+		let historySum = 0;
+
+		if (currentMonthTransactions.length > 0) {
+			historySum = currentMonthTransactions
+				.filter((tx) => {
+					// 1. Zawsze musi zgadzać się portfel
+					if (tx.portfolioId !== plan.portfolioId) return false;
+
+					const activeTicker = (finalTicker || plan.ticker || "")
+						.toUpperCase()
+						.trim();
+					const txTicker = (tx.ticker || "").toUpperCase();
+
+					// 2. Jeśli mamy konkretny ticker (zapisany w planie lub wpisywany w modalu)
+					if (activeTicker) {
+						if (plan.targetCategory === "BONDS") {
+							return txTicker.includes(activeTicker); // Szukanie częściowe dla obligacji
+						}
+						return txTicker === activeTicker; // Dokładne dopasowanie dla reszty
+					}
+
+					// 3. 🚀 Jeśli brak tickera, sumujemy całą kategorię
+					return tx.category === plan.targetCategory;
+				})
+				.reduce((sum, tx) => sum + Math.abs(tx.executedValue), 0);
+		}
+
+		// Pamięć bazy danych (oryginalna kwota - to co zostało)
+		const planRecordSum = (plan.originalValue ?? plan.value) - plan.value;
+
+		return Math.max(historySum, planRecordSum);
+	}, [
+		currentMonthTransactions,
+		plan.portfolioId,
+		plan.targetCategory,
+		finalTicker,
+		plan.ticker,
+		plan.originalValue,
+		plan.value,
+	]);
+
+	// 🚀 Sprawdzamy, czy oryginalny cel na ten miesiąc został już osiągnięty
+	const originalTarget = plan.originalValue ?? plan.value;
+	const isGoalMet = alreadyInvested >= originalTarget;
 	// console.log("🚀 ~ PlanCard ~ alreadyInvested:", alreadyInvested);
 
 	// const suggestedValue = Math.max(0, plan.value - alreadyInvested);
@@ -172,6 +206,17 @@ export function PlanCard({
 			toast.error("Kurs zakupu nie może być ujemny.");
 			return;
 		}
+
+		// 🚀 NOWE: Zabezpieczenie wielokrotności dla obligacji
+		if (isBond) {
+			if (Number(finalValue) % effectivePrice !== 0) {
+				toast.error(
+					`Kwota obligacji musi być wielokrotnością ${effectivePrice} PLN.`,
+				);
+				return;
+			}
+		}
+
 		// 🚀 NOWE: Wyliczamy idealny kurs na podstawie Wolumenu
 		let effectiveExchangeRate = exchangeRate;
 		if (!isCash && !isBond && volume && effectivePrice > 0) {
@@ -359,9 +404,9 @@ export function PlanCard({
 		>
 			<div className="flex flex-col gap-4">
 				{/* NAGŁÓWEK KARTY */}
-				<div className="flex justify-between items-start">
-					<div className="space-y-1">
-						<div className="flex items-center gap-2">
+				<div className="flex justify-between items-start gap-3">
+					<div className="space-y-2 min-w-0 flex-1">
+						<div className="flex flex-wrap items-center gap-2">
 							{plan.isRecurring && (
 								<div
 									className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20"
@@ -371,32 +416,36 @@ export function PlanCard({
 								</div>
 							)}
 							<span
-								className="h-2.5 w-2.5 rounded-full"
+								className="h-2.5 w-2.5 rounded-full shrink-0"
 								style={{
 									backgroundColor:
 										COLORS[plan.targetCategory as keyof typeof COLORS] ||
 										"#ccc",
 								}}
 							/>
-							<h3 className="text-sm font-bold truncate text-t-text-primary">
+
+							<h3 className="text-sm font-bold truncate text-t-text-primary flex-1 min-w-[150px]">
 								{plan.name ||
 									`Zakup: ${CATEGORY_LABELS[plan.targetCategory as keyof typeof CATEGORY_LABELS] || plan.targetCategory}`}
 							</h3>
+
 							{plan.conviction && (
-								<span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 tabular-nums">
+								<span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 tabular-nums shrink-0">
 									{plan.conviction}%
 								</span>
 							)}
 
 							{isLocked && (
-								<div className="flex items-center justify-end">
-									{/* ZMIANA: Złoty status blokady z nowym layoutem */}
-									<div className="flex items-center gap-2 bg-amber-500/10 dark:bg-amber-500/5 px-3 py-1 rounded-lg border border-amber-500/20">
-										<Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500" />
-										<div className="flex flex-col line-height-1">
-											<span className="text-[9px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
+								<div className="flex items-center w-full sm:w-auto mt-1 sm:mt-0">
+									<div
+										className="flex items-center  gap-2 flex-1  pe-2.5 py-1  
+									 sm:w-auto"
+									>
+										<Clock className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-500" />
+										<div className="flex flex-col leading-none">
+											{/* <span className="text-[9px] hidden xl:block font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
 												Oczekiwanie
-											</span>
+											</span> */}
 											<span className="text-[10px] font-bold text-t-text-secondary whitespace-nowrap">
 												Dostępny od ({plan.plannedDate})
 											</span>
@@ -405,7 +454,8 @@ export function PlanCard({
 								</div>
 							)}
 						</div>
-						<p className="text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest">
+
+						<p className="text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest truncate">
 							{
 								CATEGORY_LABELS[
 									plan.targetCategory as keyof typeof CATEGORY_LABELS
@@ -416,7 +466,7 @@ export function PlanCard({
 					</div>
 
 					{/* PRZYCISKI AKCJI */}
-					<div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+					<div className="flex items-center gap-1 shrink-0 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
 						<button
 							onClick={() => setIsOpen(true)}
 							className="p-2.5 rounded-xl bg-t-hover text-t-text-secondary hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
@@ -457,8 +507,20 @@ export function PlanCard({
 					</div>
 				</div>
 
-				{/* 🚀 DODANE: Komunikat widoczny bezpośrednio na karcie */}
-				{alreadyInvested > 0 && (
+				{/* 🚀 SMART UI: Komunikat widoczny bezpośrednio na karcie */}
+				{isGoalMet ? (
+					<div className="mt-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
+						<div className="flex items-center gap-2">
+							<span className="text-emerald-500 text-xs">✅</span>
+							<span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+								Cel Osiągnięty
+							</span>
+						</div>
+						<span className="text-xs font-black text-t-text-primary">
+							{alreadyInvested.toLocaleString("pl-PL")} PLN
+						</span>
+					</div>
+				) : alreadyInvested > 0 ? (
 					<div className="mt-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
 						<div className="flex items-center gap-2">
 							<span className="text-amber-500 text-xs">💡</span>
@@ -470,7 +532,7 @@ export function PlanCard({
 							{alreadyInvested.toLocaleString("pl-PL")} PLN
 						</span>
 					</div>
-				)}
+				) : null}
 
 				{/* NOTATKA */}
 				{plan.rationale && (
@@ -500,9 +562,9 @@ export function PlanCard({
 								Uzupełnij ostateczne parametry transakcji rynkowej.
 							</DialogDescription>
 						</DialogHeader>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 py-4 md:py-6 overflow-x-hidden">
 							{/* DATA ZAKUPU */}
-							<div className={cn(!isBond && "col-span-2", "space-y-2")}>
+							<div className="col-span-1 space-y-2">
 								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 									Data zakupu
 								</Label>
@@ -516,7 +578,7 @@ export function PlanCard({
 
 							{/* OPROCENTOWANIE */}
 							{isBond && (
-								<div className="space-y-2">
+								<div className="col-span-1 space-y-2">
 									<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 										Oprocentowanie (%)
 									</Label>
@@ -539,14 +601,14 @@ export function PlanCard({
 							)}
 
 							{/* SEKCJA: NAZWA */}
-							<div className="col-span-2 space-y-2">
+							<div className="col-span-1 md:col-span-2 space-y-2">
 								<div className="flex items-center justify-between">
 									<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 										Nazwa aktywa (seria)
 									</Label>
 								</div>
 								{/* SEKCJA: WPROWADZENIE DANYCH SPÓŁKI */}
-								<div className="col-span-2 space-y-4 rounded-xl border border-t-border p-4 bg-t-bg-base/50">
+								<div className="col-span-1 md:col-span-2 space-y-4 rounded-xl border border-t-border p-4 bg-t-bg-base/50">
 									{/* PRZEŁĄCZNIK TRYBU WPROWADZANIA */}
 									{!isCash && targetPortfolioAssets.length > 0 && (
 										<div className="flex flex-wrap items-center gap-2 mb-2 p-1.5 w-fit bg-t-bg-panel rounded-xl border border-t-border-subtle">
@@ -581,9 +643,8 @@ export function PlanCard({
 
 									{/* INPUTY DANYCH (Ticker + Nazwa) */}
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										{/* Jeśli używa listy (istniejące aktywo) */}
 										{selectedAssetId !== "new" ? (
-											<div className="col-span-2 space-y-2 animate-in fade-in">
+											<div className="col-span-1 md:col-span-2 space-y-2 animate-in fade-in">
 												<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 													Wybierz zasób z portfela (Odziedziczy Ticker i Nazwę)
 												</Label>
@@ -606,7 +667,7 @@ export function PlanCard({
 											</div>
 										) : (
 											/* Jeśli wpisuje z palca (tak jak do tej pory) */
-											<>
+											<div className="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
 												<div className="space-y-2">
 													<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center justify-between">
 														<span>Ostateczny Ticker (Wymagany)</span>
@@ -646,7 +707,7 @@ export function PlanCard({
 														</p>
 													)}
 												</div>
-											</>
+											</div>
 										)}
 									</div>
 								</div>
@@ -666,46 +727,74 @@ export function PlanCard({
 									</p>
 								)} */}
 							</div>
+
 							{/* OSTATECZNA KWOTA */}
-							<div className="space-y-2">
-								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-									Kwota ostateczna (PLN)
-								</Label>
-								<Input
-									type="number"
-									inputMode="decimal"
-									value={finalValue}
-									onChange={(e) =>
-										setFinalValue(e.target.value.replace(",", "."))
-									}
-									className={cn(
-										inputStyles,
-										"bg-t-bg-base border-t-border font-mono",
-									)}
-								/>
+							<div className="col-span-1 md:col-span-2 flex flex-col gap-4 sm:flex-row">
+								<div className="space-y-2">
+									<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+										Kwota ostateczna (PLN)
+									</Label>
+									<Input
+										type="number"
+										inputMode="decimal"
+										required
+										value={finalValue}
+										onChange={(e) =>
+											setFinalValue(e.target.value.replace(",", "."))
+										}
+										className={cn(
+											inputStyles,
+											"bg-t-bg-base border-t-border font-mono",
+										)}
+									/>
+									{/* 🚀 NOWE: Zabezpieczenie dla obligacji (Ostrzeżenie UI) */}
+									{isBond &&
+										Number(finalValue) % (Number(purchasePrice) || 100) !==
+											0 && (
+											<p className="text-[10px] font-bold text-rose-500 mt-1">
+												Kwota musi być wielokrotnością ceny za sztukę (
+												{purchasePrice} PLN).
+											</p>
+										)}
+								</div>
+								{/* WSKAŹNIK UI W MODALU: Smart Goal Detection */}
+								{isGoalMet ? (
+									<div className="mt-3 mb-1 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-start gap-2 animate-in fade-in">
+										<span className="text-emerald-500 text-xs mt-0.5">✅</span>
+										<div className="flex flex-col">
+											<span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+												Miesięczny plan zrealizowany
+											</span>
+											<span className="text-xs text-t-text-secondary mt-0.5 font-medium">
+												Wykryto historyczne wpłaty na kwotę{" "}
+												<b className="text-t-text-primary">
+													{alreadyInvested.toLocaleString("pl-PL")} PLN
+												</b>
+												. Możesz zamknąć ten plan bez ponownego księgowania.
+											</span>
+										</div>
+									</div>
+								) : alreadyInvested > 0 ? (
+									<div className="mt-3 mb-1 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-2 animate-in fade-in">
+										<span className="text-amber-500 text-xs mt-0.5">💡</span>
+										<div className="flex flex-col">
+											<span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-500">
+												Częściowa realizacja
+											</span>
+											<span className="text-xs text-t-text-secondary mt-0.5 font-medium">
+												Ten walor był już kupowany na kwotę{" "}
+												<b className="text-t-text-primary">
+													{alreadyInvested.toLocaleString("pl-PL")} PLN
+												</b>
+												. Upewnij się, jakiej kwoty dokładnie brakuje.
+											</span>
+										</div>
+									</div>
+								) : null}
 							</div>
 
-							{/* WSKAŹNIK UI: Wykryto zakupy */}
-							{alreadyInvested > 0 && (
-								<div className="mt-3 mb-1 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-2">
-									<span className="text-amber-500 text-xs mt-0.5">💡</span>
-									<div className="flex flex-col">
-										<span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-500">
-											Wykryto zakupy w tym miesiącu
-										</span>
-										<span className="text-xs text-t-text-secondary mt-0.5 font-medium">
-											Ten walor był już kupowany na kwotę{" "}
-											<b className="text-t-text-primary">
-												{alreadyInvested.toLocaleString("pl-PL")} PLN
-											</b>
-											. Upewnij się, jakiej kwoty dokładnie brakuje.
-										</span>
-									</div>
-								</div>
-							)}
-
 							{/* CENA, WALUTA I WOLUMEN */}
-							<div className="col-span-2 space-y-4 rounded-xl border border-t-border p-4 bg-t-bg-base/50">
+							<div className="col-span-1 md:col-span-2 space-y-4 rounded-xl border border-t-border p-4 bg-t-bg-base/50">
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									{/* CENA I WALUTA */}
 									<div className="space-y-2">
@@ -762,6 +851,7 @@ export function PlanCard({
 											<Input
 												type="number"
 												step="any"
+												required={!isCash}
 												value={volume}
 												onChange={(e) =>
 													setVolume(e.target.valueAsNumber || "")
@@ -796,7 +886,7 @@ export function PlanCard({
 								)}
 							</div>
 							{/* SEKCJA KSIĘGOWANIA */}
-							<div className="col-span-2 space-y-4 rounded-xl border border-t-border p-5 bg-black/5 dark:bg-white/5">
+							<div className="col-span-1 md:col-span-2 space-y-4 rounded-xl border border-t-border p-5 bg-black/5 dark:bg-white/5">
 								<div className="flex items-center justify-between">
 									<div className="space-y-1">
 										<Label className="text-sm font-bold text-t-text-primary">
@@ -839,7 +929,7 @@ export function PlanCard({
 							</div>
 
 							{/* NOTATKA */}
-							<div className="col-span-2 space-y-2">
+							<div className="col-span-1 md:col-span-2 space-y-2">
 								<Label className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 									Notatka z transakcji
 								</Label>
@@ -853,7 +943,7 @@ export function PlanCard({
 
 							{/* EN: CONVICTION SLIDER (Oparty o useState) */}
 							{plan.targetCategory === "BOOSTER" && (
-								<div className="space-y-4 col-span-2">
+								<div className="col-span-1 md:col-span-2 space-y-4">
 									<div className=" flex justify-between items-center ">
 										<Label className="text-sm font-bold text-t-text-primary">
 											Poziom przekonania
@@ -890,7 +980,11 @@ export function PlanCard({
 							<Button
 								type="submit"
 								disabled={
-									isPending || (isBooked && !sourcePortfolioId) || isLocked
+									isPending ||
+									(isBooked && !sourcePortfolioId) ||
+									isLocked ||
+									(isBond &&
+										Number(finalValue) % (Number(purchasePrice) || 100) !== 0) // 👈 DODANE
 								}
 								className={cn(
 									"w-full sm:flex-1 h-12 font-black uppercase tracking-widest text-xs rounded-xl transition-all duration-300",

@@ -1,4 +1,5 @@
 import Aside from "@/components/Aside";
+import { ChartProvider } from "@/components/providers/ChartProvider";
 import Header from "@/components/Header";
 import { LoginButton } from "@/components/shared/header/LoginButton";
 import { MarketTicker } from "@/components/MarketTicker";
@@ -141,34 +142,36 @@ export default async function RootLayout({
 	];
 	return (
 		<div className="flex h-screen overflow-hidden bg-background">
-			<Aside />
-			<div className="flex flex-col flex-1 min-w-0">
-				<Header
-					selectedPortfolioId={selectedPortfolioId}
-					portfolios={portfolios}
-					userButton={userControl}
-					userRole={userRole}
-					lastUpdated={lastUpdated}
-				/>
-				<main className="flex-1 overflow-y-auto">
-					{!hideMarketTicker && tickerData.length > 0 && (
-						<MarketTicker data={tickerData} />
-					)}
+			<ChartProvider>
+				<Aside />
+				<div className="flex flex-col flex-1 min-w-0">
+					<Header
+						selectedPortfolioId={selectedPortfolioId}
+						portfolios={portfolios}
+						userButton={userControl}
+						userRole={userRole}
+						lastUpdated={lastUpdated}
+					/>
+					<main className="flex-1 overflow-y-auto">
+						{!hideMarketTicker && tickerData.length > 0 && (
+							<MarketTicker data={tickerData} />
+						)}
 
-					{/* Zamiast sztywnego p-6, używamy responsywnego paddingu, 
+						{/* Zamiast sztywnego p-6, używamy responsywnego paddingu, 
               a górny margines (pt-0) pozwala Hero sekcji przylegać do góry */}
-					{/* <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
+						{/* <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
 						{children}
 					</div> */}
-					{/* 1. Główny wrapper rozciągnięty na pełny ekran z tłem systemowym */}
-					<div className="w-full min-h-screen bg-t-bg-base transition-colors duration-300">
-						{/* 2. Wewnętrzny kontener trzymający strukturę i szerokość treści */}
-						<div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
-							{children}
+						{/* 1. Główny wrapper rozciągnięty na pełny ekran z tłem systemowym */}
+						<div className="w-full min-h-screen bg-t-bg-base transition-colors duration-300">
+							{/* 2. Wewnętrzny kontener trzymający strukturę i szerokość treści */}
+							<div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
+								{children}
+							</div>
 						</div>
-					</div>
-				</main>
-			</div>
+					</main>
+				</div>
+			</ChartProvider>
 		</div>
 	);
 }

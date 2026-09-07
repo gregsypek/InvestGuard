@@ -16,6 +16,7 @@ import { AssetFilterPanel } from "../shared/AssetFilterPanel";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { CategoryTable } from "@/components/CategoryTable";
 import GlobalAnalyticsCharts from "./GlobalAnalyticsCharts";
+import { GlobalFiltersBar } from "./GlobalFiltersBar";
 import { InlineChartFilters } from "./InlineChartFilters";
 import { InteractiveChartSection } from "../InteractiveChartSection";
 import PortfolioCard from "@/components/PortfolioCard";
@@ -41,15 +42,18 @@ export default function PortfoliosClientView({
 	portfolios,
 	portfolioId: initialPortfolioId,
 	isDemo = false,
+	snapshots,
 	realSnapshots = [],
 }: Props) {
 	// 1. Zaciągamy z kontekstu tylko to, czego potrzebujemy na tej stronie
 	const { chartMode, selectedIds } = useChartContext();
 
-
-
 	// 3. Wyliczamy dane dla wykresu "Wyścig Portfeli"
-	const { portfoliosComparisonData } = usePortfoliosComparison(realSnapshots);
+	const { portfoliosComparisonData } = usePortfoliosComparison(
+		portfolios,
+		snapshots,
+		realSnapshots,
+	);
 
 	// === BRAKUJĄCE STANY LOKALNE ===
 	const [chartsPortfolioId, setChartsPortfolioId] = useState<string>("ALL");
@@ -208,6 +212,7 @@ export default function PortfoliosClientView({
 				</div>
 			</SectionLayout>
 			{/* SEKCJA 2: Wyścig Portfeli */}
+
 			<SectionLayout
 				title="Wyścig Portfeli"
 				titleIcon={WalletCards}
@@ -221,7 +226,8 @@ export default function PortfoliosClientView({
 							key={`compare-${chartMode}`}
 							data={portfoliosComparisonData}
 							portfolios={portfolios}
-							activeIds={selectedIds}
+							// ZMIANA: Zamiast selectedIds z contextu, dajemy wszystkie ID
+							activeIds={portfolios.map((p) => p.id)}
 							chartMode={chartMode}
 						/>
 					</div>

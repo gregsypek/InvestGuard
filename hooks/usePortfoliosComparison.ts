@@ -8,8 +8,6 @@ export function usePortfoliosComparison(
 	snapshots: SimulatedSnapshot[] = [],
 	realSnapshots: SimulatedSnapshot[] = [],
 ) {
-	console.log("🚀 ~ usePortfoliosComparison ~ realSnapshots:", realSnapshots);
-	console.log("🚀 ~ usePortfoliosComparison ~ snapshots:", snapshots);
 	const { chartMode, dataMode } = useChartContext();
 
 	const portfoliosComparisonData = useMemo(() => {

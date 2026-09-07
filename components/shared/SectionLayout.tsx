@@ -26,7 +26,7 @@ export const SectionLayout = ({
 }: SectionLayoutProps) => (
 	<section
 		className="flex flex-col 
-	py-8 px-4 sm:py-10 md:px-6 md:py-12 xl:py-18"
+	py-8 px-4 sm:py-10 md:px-6 md:py-12"
 	>
 		<div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 lg:gap-6">
 			<div className="flex-1 min-w-0">

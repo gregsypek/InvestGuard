@@ -34,8 +34,9 @@ interface Props {
 	isDemo?: boolean;
 	portfolioId?: string;
 	categoryTotals: Record<string, number>;
-	snapshots: SimulatedSnapshot[];
+	snapshots?: SimulatedSnapshot[];
 	realSnapshots?: SimulatedSnapshot[];
+	oldestRealSnapshotDate?: Date;
 }
 
 export default function PortfoliosClientView({
@@ -44,6 +45,7 @@ export default function PortfoliosClientView({
 	isDemo = false,
 	snapshots,
 	realSnapshots = [],
+	oldestRealSnapshotDate,
 }: Props) {
 	// 1. Zaciągamy z kontekstu tylko to, czego potrzebujemy na tej stronie
 	const { chartMode, selectedIds } = useChartContext();
@@ -220,7 +222,10 @@ export default function PortfoliosClientView({
 				description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w PLN.`}
 			>
 				<div className="h-[400px] mt-6 flex flex-col">
-					<InlineChartFilters portfolios={portfolios} />
+					<InlineChartFilters
+						portfolios={portfolios}
+						oldestRealSnapshotDate={oldestRealSnapshotDate}
+					/>
 					<div className="flex-1 min-h-0 mt-2">
 						<PortfoliosComparisonChart
 							key={`compare-${chartMode}`}

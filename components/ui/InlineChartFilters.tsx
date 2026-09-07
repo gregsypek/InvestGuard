@@ -1,5 +1,7 @@
 "use client";
 
+import { differenceInDays, startOfYear } from "date-fns";
+
 import { DatePickerWithRange } from "../shared/DatePickerWithRange";
 import { FilterBadge } from "../shared/FilterBadge";
 import { Info } from "lucide-react";
@@ -8,8 +10,10 @@ import { useChartContext } from "../providers/ChartProvider";
 
 export function InlineChartFilters({
 	portfolios,
+	oldestRealSnapshotDate,
 }: {
 	portfolios: PortfolioWithAssets[];
+	oldestRealSnapshotDate?: Date;
 }) {
 	// 1. Zaciągamy dodatkowo stany kalendarza z kontekstu
 	const {
@@ -23,6 +27,44 @@ export function InlineChartFilters({
 		toDate,
 		handleDateRangeSelect,
 	} = useChartContext();
+
+	// 1. LOGIKA SPRAWDZANIA DOSTĘPNOŚCI DLA TRYBU 'REAL'
+	const isRangeDisabledForReal = (range: string) => {
+		// Jeśli tryb to symulacja albo brak daty bazowej - nie blokujemy
+		if (dataMode === "SIMULATED" || !oldestRealSnapshotDate) return false;
+
+		// Bezpieczne parsowanie daty (Next.js może przekazać string z serwera)
+		const oldestDate = new Date(oldestRealSnapshotDate);
+		console.log("🚀 ~ isRangeDisabledForReal ~ oldestDate:", oldestDate);
+		if (isNaN(oldestDate.getTime())) return false;
+
+		const daysAvailable = differenceInDays(new Date(), oldestDate);
+		console.log("🚀 ~ isRangeDisabledForReal ~ daysAvailable:", daysAvailable);
+
+		// Nowe, bardziej rygorystyczne progi blokowania:
+		switch (range) {
+			case "1M":
+				return daysAvailable < 7; // Wymaga min. tygodnia danych
+			case "3M":
+				return daysAvailable < 30; // Wymaga min. miesiąca
+			case "YTD":
+				// Zablokuj YTD, jeśli od początku roku minęło więcej dni niż mamy w bazie
+				// (np. mamy wrzesień, więc YTD to 250 dni. Mamy 16 dni danych = blokujemy)
+				const daysSinceYearStart = differenceInDays(
+					new Date(),
+					startOfYear(new Date()),
+				);
+				return daysAvailable < daysSinceYearStart;
+			case "1Y":
+				return daysAvailable < 90; // Wymaga min. 3 miesięcy (90 dni)
+			case "3Y":
+				return daysAvailable < 365; // Wymaga min. 1 roku
+			case "5Y":
+				return daysAvailable < 1095; // Wymaga min. 3 lat
+			default:
+				return false; // 1W, MAX, CUSTOM są zawsze aktywne
+		}
+	};
 
 	return (
 		<div className="flex flex-col gap-4 mb-4">
@@ -103,17 +145,29 @@ export function InlineChartFilters({
 						onChange={(e) => handleRangeChange(e.target.value)}
 						className="w-full bg-transparent text-t-text-secondary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate"
 					>
-						{/* 2. Dodaliśmy opcję CUSTOM na wypadek wyboru z kalendarza */}
 						{["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX", "CUSTOM"].map(
-							(range) => (
-								<option key={range} value={range} className="bg-t-bg-panel">
-									{range}
-								</option>
-							),
+							(range) => {
+								// 2. WYWOŁANIE BLOKADY
+								const isDisabled = isRangeDisabledForReal(range);
+
+								return (
+									<option
+										key={range}
+										value={range}
+										disabled={isDisabled}
+										className={
+											isDisabled
+												? "bg-t-bg-panel text-slate-600 opacity-50"
+												: "bg-t-bg-panel"
+										}
+									>
+										{range} {isDisabled ? "(Brak danych)" : ""}
+									</option>
+								);
+							},
 						)}
 					</select>
 				</div>
-
 				{/* 3. Komponent kalendarza wpięty tuż obok selektora */}
 				<div className="shrink-0">
 					<DatePickerWithRange

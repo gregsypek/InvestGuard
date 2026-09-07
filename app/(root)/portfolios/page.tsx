@@ -136,6 +136,16 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 		endDate,
 	);
 
+	// NOWE ZAPYTANIE: Szukamy najstarszego snapshotu ze WSZYSTKICH w bazie dla tego usera
+	const oldestSnapshotRecord = await db.portfolioSnapshot.findFirst({
+		where: { portfolio: { userId: session.user.id } },
+		orderBy: { date: "asc" },
+		select: { date: true },
+	});
+
+	// Zapisujemy datę (lub datę dzisiejszą, jeśli pusto)
+	const oldestRealSnapshotDate = oldestSnapshotRecord?.date || new Date();
+
 	return (
 		<div className="space-y-10">
 			<PortfoliosHeader
@@ -159,6 +169,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 				categoryTotals={categoryTotals}
 				realSnapshots={realSnapshots}
 				snapshots={simulatedSnapshots}
+				oldestRealSnapshotDate={oldestRealSnapshotDate}
 			/>
 		</div>
 	);

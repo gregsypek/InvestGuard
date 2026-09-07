@@ -8,6 +8,7 @@ import {
 	PieChart,
 	Plus,
 	TrendingUp,
+	WalletCards,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -15,43 +16,57 @@ import { AssetFilterPanel } from "../shared/AssetFilterPanel";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { CategoryTable } from "@/components/CategoryTable";
 import GlobalAnalyticsCharts from "./GlobalAnalyticsCharts";
+import { InlineChartFilters } from "./InlineChartFilters";
 import { InteractiveChartSection } from "../InteractiveChartSection";
 import PortfolioCard from "@/components/PortfolioCard";
 import { PortfolioWithAssets } from "@/lib/types";
+import { PortfoliosComparisonChart } from "../dashboard/PortfoliosComparisonChart";
 import { SafeActionButton } from "./SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
+import { SimulatedSnapshot } from "./useDashboardData";
 import { cn } from "@/lib/utils";
+import { useChartContext } from "../providers/ChartProvider";
+import { usePortfoliosComparison } from "@/hooks/usePortfoliosComparison";
 
 interface Props {
 	portfolios: PortfolioWithAssets[];
 	isDemo?: boolean;
 	portfolioId?: string;
 	categoryTotals: Record<string, number>;
+	snapshots: SimulatedSnapshot[];
+	realSnapshots?: SimulatedSnapshot[];
 }
 
 export default function PortfoliosClientView({
 	portfolios,
 	portfolioId: initialPortfolioId,
-	categoryTotals, // Zostawiamy dla wstecznej kompatybilności, ale wyliczymy własne
 	isDemo = false,
+	realSnapshots = [],
 }: Props) {
-	// --- 1. STANY DLA STRUKTURY INWESTYCJI (Wykresy) ---
+	// 1. Zaciągamy z kontekstu tylko to, czego potrzebujemy na tej stronie
+	const { chartMode, selectedIds } = useChartContext();
+
+
+
+	// 3. Wyliczamy dane dla wykresu "Wyścig Portfeli"
+	const { portfoliosComparisonData } = usePortfoliosComparison(realSnapshots);
+
+	// === BRAKUJĄCE STANY LOKALNE ===
 	const [chartsPortfolioId, setChartsPortfolioId] = useState<string>("ALL");
 	const [chartsHideClosed, setChartsHideClosed] = useState(true);
 	const [chartsSortBy, setChartsSortBy] = useState("VALUE");
 	const [chartsFilterCategory, setChartsFilterCategory] = useState("ALL");
 
-	// --- 2. STAN DLA TABELI ALOKACJI ---
 	const [tablePortfolioId, setTablePortfolioId] = useState<string>("ALL");
-
-	// --- 3. STAN DLA ANALIZY WZROSTU ---
 	const [growthPortfolioId, setGrowthPortfolioId] = useState<string>("ALL");
 
-	// Wspólne opcje wyboru portfela
-	const portfolioOptions = [
-		{ id: "ALL", label: "Wszystkie portfele" },
-		...portfolios.map((p) => ({ id: p.id, label: p.name })),
-	];
+	// === BRAKUJĄCA TABLICA OPCJI PORTFELI ===
+	const portfolioOptions = useMemo(() => {
+		return [
+			{ id: "ALL", label: "Wszystkie portfele" },
+			...portfolios.map((p) => ({ id: p.id, label: p.name })),
+		];
+	}, [portfolios]);
 
 	// --- LOGIKA: STRUKTURA INWESTYCJI ---
 	const chartsAssets = useMemo(() => {
@@ -192,7 +207,26 @@ export default function PortfoliosClientView({
 					</div>
 				</div>
 			</SectionLayout>
-
+			{/* SEKCJA 2: Wyścig Portfeli */}
+			<SectionLayout
+				title="Wyścig Portfeli"
+				titleIcon={WalletCards}
+				subtitle="Porównanie Strategii"
+				description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w PLN.`}
+			>
+				<div className="h-[400px] mt-6 flex flex-col">
+					<InlineChartFilters portfolios={portfolios} />
+					<div className="flex-1 min-h-0 mt-2">
+						<PortfoliosComparisonChart
+							key={`compare-${chartMode}`}
+							data={portfoliosComparisonData}
+							portfolios={portfolios}
+							activeIds={selectedIds}
+							chartMode={chartMode}
+						/>
+					</div>
+				</div>
+			</SectionLayout>
 			{/* SEKCJA 2: Struktura Inwestycji */}
 			<SectionLayout
 				title="Struktura Inwestycji"

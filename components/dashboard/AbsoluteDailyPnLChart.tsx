@@ -54,55 +54,82 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		1000,
 	);
 	const cashDomain = maxCashFlow * 1.1;
+	// --- POPRAWIONE OBLICZENIA (TWR) ---
+	let twrMultiplier = 1;
+	let totalPnL = 0;
 
-	// EN: Aggregate trend for the whole visible period — shown as a small badge
-	const totalPnL = data.reduce((acc, d) => acc + d.exactChangePLN, 0);
-	const firstDay = data[0];
-	// EN: Approximate baseline = portfolio value before the first day's own change
-	const baselineValue =
-		(firstDay?.totalPortfolioValue ?? 0) - (firstDay?.exactChangePLN ?? 0) || 1;
-	const pnlPercent = (totalPnL / Math.abs(baselineValue)) * 100;
+	data.forEach((d) => {
+		totalPnL += d.exactChangePLN;
+		// Kapitał pracujący na początku danego dnia (wycena końcowa minus dzisiejszy zysk minus dzisiejsze wpłaty)
+		const startingCapital =
+			d.totalPortfolioValue - d.exactChangePLN - d.netCashFlow;
+
+		if (startingCapital > 0) {
+			twrMultiplier *= 1 + d.exactChangePLN / startingCapital;
+		}
+	});
+
+	const pnlPercent = (twrMultiplier - 1) * 100;
 	const isPeriodPositive = totalPnL >= 0;
 
-	// FIX: this is a plain function returning JSX — NOT a component declared
-	// during render. Call it as trendBadge(true), never as <TrendBadge />,
-	// otherwise React remounts it (and resets its state) on every render.
 	const trendBadge = (compact = false) => (
-		<div
-			className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
-				isPeriodPositive
-					? "bg-emerald-500/10 border-emerald-500/20"
-					: "bg-rose-500/10 border-rose-500/20"
-			}`}
-		>
-			{isPeriodPositive ? (
-				<TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-			) : (
-				<TrendingDown className="w-3.5 h-3.5 text-rose-400" />
-			)}
-			<span
-				className={`text-[11px] font-bold tabular-nums ${
-					isPeriodPositive ? "text-emerald-400" : "text-rose-400"
+		<div className="flex items-center gap-2">
+			<div
+				className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
+					isPeriodPositive
+						? "bg-emerald-500/10 border-emerald-500/20"
+						: "bg-rose-500/10 border-rose-500/20"
 				}`}
 			>
-				{isPeriodPositive ? "+" : ""}
-				{pnlPercent.toFixed(2)}%
-			</span>
-			{!compact && (
+				{isPeriodPositive ? (
+					<TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+				) : (
+					<TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+				)}
 				<span
-					className={`text-[10px] font-semibold tabular-nums opacity-80 ${
+					className={`text-[11px] font-bold tabular-nums ${
 						isPeriodPositive ? "text-emerald-400" : "text-rose-400"
 					}`}
 				>
-					(
-					{new Intl.NumberFormat("pl-PL", {
-						style: "currency",
-						currency: "PLN",
-						maximumFractionDigits: 0,
-					}).format(totalPnL)}
-					)
+					{isPeriodPositive ? "+" : ""}
+					{pnlPercent.toFixed(2)}%
 				</span>
-			)}
+				{!compact && (
+					<span
+						className={`text-[10px] font-semibold tabular-nums opacity-80 ${
+							isPeriodPositive ? "text-emerald-400" : "text-rose-400"
+						}`}
+					>
+						(
+						{new Intl.NumberFormat("pl-PL", {
+							style: "currency",
+							currency: "PLN",
+							maximumFractionDigits: 0,
+						}).format(totalPnL)}
+						)
+					</span>
+				)}
+			</div>
+
+			{/* TOOLTIP INFORMACYJNY TWR */}
+			{
+				<div className="group relative flex items-center justify-center cursor-help">
+					<div className="w-5 h-5 rounded-full border border-slate-400 flex items-center justify-center">
+						<span className="text-[9px] font-bold text-slate-400 inverted-colors  transition-colors">
+							i
+						</span>
+					</div>
+					<div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-56 p-2.5 bg-slate-800 border border-slate-700/60 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+						<p className="text-[10px] text-slate-300 leading-relaxed normal-case">
+							<strong className="text-white block mb-1">
+								Stopa TWR (Time-Weighted Return)
+							</strong>
+							Pokazuje czystą skuteczność portfela. Ignoruje wpływ Twoich wpłat
+							i wypłat w tym okresie, traktując je neutralnie.
+						</p>
+					</div>
+				</div>
+			}
 		</div>
 	);
 

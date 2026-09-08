@@ -4,6 +4,7 @@ import { CategoryStatus, PortfolioWithAssets, Transaction } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 import DashboardAnalytics from "./DashboardAnalytics";
+import { SimulatedSnapshot } from "./useDashboardData";
 
 interface Props {
 	portfolio: PortfolioWithAssets;
@@ -14,6 +15,9 @@ interface Props {
 
 	userName?: string | null;
 	isDemo?: boolean;
+	snapshots?: SimulatedSnapshot[];
+	realSnapshots?: SimulatedSnapshot[];
+	oldestRealSnapshotDate?: Date;
 }
 
 export default function DashboardClientView({
@@ -22,6 +26,9 @@ export default function DashboardClientView({
 	allPortfoliosWithCash,
 	transactions,
 	isDemo,
+	snapshots = [],
+	realSnapshots = [],
+	oldestRealSnapshotDate,
 }: Props) {
 	const [hasMounted, setHasMounted] = useState(false);
 
@@ -40,6 +47,9 @@ export default function DashboardClientView({
 				allPortfoliosWithCash={allPortfoliosWithCash}
 				isDemo={isDemo}
 				transactions={transactions} // EN: Pass transactions to the analytics component
+				snapshots={snapshots} // Z wygenerowanej historii
+				realSnapshots={realSnapshots}
+				oldestRealSnapshotDate={oldestRealSnapshotDate}
 			/>
 		</div>
 	);

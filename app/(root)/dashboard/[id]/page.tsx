@@ -8,21 +8,24 @@ import { auth } from "@/auth";
 import { calculateGapAnalysis } from "@/lib/calculations";
 import { db } from "@/lib/db";
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
+import { getPortfolioSnapshotsHistory } from "@/lib/services/history-engine";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 interface Props {
 	params: Promise<{ id: string }>; // ZMIANA: Z searchParams na params (jesteśmy w [id] czyli dynamicznym segmencie)
+	searchParams: Promise<{ range?: string; from?: string; to?: string }>; //ponieważ nasz nowy serwis historyczny potrzebuje wiedzieć, jaki zakres dat użytkownik wybrał w URL (np. ?range=1M)
 }
 
-export default async function DashboardPage({ params }: Props) {
+export default async function DashboardPage({ params, searchParams }: Props) {
 	const session = await auth();
 
 	if (!session?.user?.id) {
 		redirect("/sign-in");
 	}
-
+	// 1. Oczekujemy na parametry (wymóg w Next.js 15)
+	const resolvedSearchParams = await searchParams;
 	const { id } = await params;
 
 	const guardedResult = await getGuardedPortfolio({
@@ -87,12 +90,22 @@ export default async function DashboardPage({ params }: Props) {
 	// 4. Obliczenia i render
 	const portfolioStatus = calculateGapAnalysis(portfolio);
 
+	// 2. 🚀 WYWOŁANIE NASZEGO SERWISU HISTORYCZNEGO DLA 1 PORTFELA
+	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
+		await getPortfolioSnapshotsHistory(
+			[portfolio], // Przekazujemy ten jeden portfel
+			resolvedSearchParams,
+			session.user.id,
+		);
 	return (
 		<DashboardClientView
 			portfolio={portfolio}
 			portfolioStatus={portfolioStatus}
 			allPortfoliosWithCash={allPortfoliosWithCash}
 			transactions={portfolio.transactionHistories}
+			snapshots={simulatedSnapshots} // 👈 PRZEKAZUJEMY DO KLIENTA
+			realSnapshots={realSnapshots}
+			oldestRealSnapshotDate={oldestRealSnapshotDate}
 		/>
 	);
 }

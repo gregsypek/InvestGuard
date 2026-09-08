@@ -2,6 +2,7 @@
 
 import {
 	ArrowRightCircle,
+	Banknote,
 	ChartArea,
 	History,
 	ListOrdered,
@@ -14,15 +15,20 @@ import {
 import { CategoryStatus, PortfolioWithAssets, Transaction } from "@/lib/types";
 import { useMemo, useState } from "react";
 
+import { AbsoluteDailyPnLChart } from "../dashboard/AbsoluteDailyPnLChart";
 import { AssetFilterPanel } from "../shared/AssetFilterPanel";
 import AssetLedger from "../AssetLedgerTable";
 import { CATEGORY_LABELS } from "@/lib/constants";
+import { InlineChartFilters } from "./InlineChartFilters";
 import { InteractiveChartSection } from "../InteractiveChartSection";
 import PortfolioCharts from "../PortfolioCharts";
 import RecentActivityCard from "./assets/RecentActivityCard";
 import { SafeActionButton } from "./SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
+import { SimulatedSnapshot } from "./useDashboardData";
 import StrategyHealthTable from "@/app/portfel/components/StrategyHealthTable";
+import { useAbsoluteDailyPnL } from "@/hooks/useAbsoluteDailyPnL";
+import { useChartContext } from "../providers/ChartProvider";
 import { useSearchParams } from "next/navigation";
 import { useSortedAssets } from "@/lib/hooks/useSortedAssets";
 
@@ -32,6 +38,9 @@ interface Props {
 	transactions: Transaction[];
 	allPortfoliosWithCash: { id: string; name: string }[];
 	isDemo?: boolean;
+	snapshots?: SimulatedSnapshot[]; // DODANE
+	realSnapshots?: SimulatedSnapshot[];
+	oldestRealSnapshotDate?: Date;
 }
 
 const DashboardAnalytics = ({
@@ -40,7 +49,15 @@ const DashboardAnalytics = ({
 	transactions,
 	allPortfoliosWithCash,
 	isDemo,
+	snapshots = [],
+	realSnapshots = [],
+	oldestRealSnapshotDate,
 }: Props) => {
+	// 3. Zaciągnij potrzebne dane do wykresu
+	const { chartMode } = useChartContext();
+	const { absoluteChartData } = useAbsoluteDailyPnL(snapshots, realSnapshots);
+
+	//
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams.get("newAssetId");
@@ -51,6 +68,10 @@ const DashboardAnalytics = ({
 	const [visibleCount, setVisibleCount] = useState(6);
 	const [filterCategory, setFilterCategory] = useState("ALL");
 
+	const totalValue = useMemo(
+		() => portfolio.assets.reduce((sum, a) => sum + (a.currentValue || 0), 0),
+		[portfolio.assets],
+	);
 	const filteredAndSortedAssets = useSortedAssets(
 		assets,
 		transactions,
@@ -102,8 +123,26 @@ const DashboardAnalytics = ({
 				<StrategyHealthTable data={portfolioStatus} />
 			</SectionLayout>
 
-			{/* 2. SEKCJA: OSTATNIE AKTYWA */}
+			{/* 2. NOWA SEKCJA: NOMINALNY WYNIK DZIENNY */}
+			<SectionLayout
+				title="Nominalny Wynik Dzienny"
+				titleIcon={Banknote}
+				subtitle="Faktyczna kwota wypracowana na rynku"
+				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują wpłaty i wypłaty z tego dnia."
+			>
+				<div className="h-[400px] mt-6 flex flex-col">
+					{/* Używamy naszego odchudzonego paska filtrów (bez pigułek portfeli, bo jesteśmy w jednym konkretnym portfelu) */}
+					<InlineChartFilters
+						portfolios={[portfolio]}
+						oldestRealSnapshotDate={oldestRealSnapshotDate}
+					/>
+					<div className="flex-1 min-h-0 mt-2">
+						<AbsoluteDailyPnLChart key={chartMode} data={absoluteChartData} />
+					</div>
+				</div>
+			</SectionLayout>
 			{/* 2. SEKCJA: KARTY AKTYWÓW */}
+
 			<SectionLayout
 				title="Karty Aktywów"
 				titleIcon={History}

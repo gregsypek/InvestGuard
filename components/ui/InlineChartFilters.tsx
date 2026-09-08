@@ -11,9 +11,11 @@ import { useChartContext } from "../providers/ChartProvider";
 export function InlineChartFilters({
 	portfolios,
 	oldestRealSnapshotDate,
+	showModeToggle = true,
 }: {
 	portfolios: PortfolioWithAssets[];
 	oldestRealSnapshotDate?: Date;
+	showModeToggle?: boolean;
 }) {
 	// 1. Zaciągamy dodatkowo stany kalendarza z kontekstu
 	const {
@@ -73,23 +75,26 @@ export function InlineChartFilters({
 				{/* Ponieważ usunęliśmy pigułki portfeli, wyrównujemy ten kontener do prawej lub rozciągamy */}
 				<div className="flex flex-wrap items-center gap-4 w-full justify-end">
 					{/* PLN / PERCENTAGE Toggle */}
-					<div className="flex items-center gap-2">
-						<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
-							Wartość:
-						</span>
-						<FilterBadge
-							id="VALUE"
-							label="PLN"
-							isSelected={chartMode === "VALUE"}
-							onToggle={() => setChartMode("VALUE")}
-						/>
-						<FilterBadge
-							id="PERCENTAGE"
-							label="%"
-							isSelected={chartMode === "PERCENTAGE"}
-							onToggle={() => setChartMode("PERCENTAGE")}
-						/>
-					</div>
+					{/* WARUNKOWE RENDEROWANIE PLN / PERCENTAGE Toggle */}
+					{showModeToggle && (
+						<div className="flex items-center gap-2">
+							<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
+								Wartość:
+							</span>
+							<FilterBadge
+								id="VALUE"
+								label="PLN"
+								isSelected={chartMode === "VALUE"}
+								onToggle={() => setChartMode("VALUE")}
+							/>
+							<FilterBadge
+								id="PERCENTAGE"
+								label="%"
+								isSelected={chartMode === "PERCENTAGE"}
+								onToggle={() => setChartMode("PERCENTAGE")}
+							/>
+						</div>
+					)}
 
 					{/* REAL / SIMULATED Toggle z Tooltipem */}
 					<div className="flex items-center gap-2 relative">
@@ -135,7 +140,7 @@ export function InlineChartFilters({
 			</div>
 
 			{/* ROW 2: Zakres Dat + Kalendarz */}
-			<div className="flex flex-row items-center gap-2 sm:gap-3">
+			<div className="flex flex-row items-center justify-end gap-2 sm:gap-3">
 				<div className="flex flex-1 sm:flex-none sm:w-56 items-center gap-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg px-2 py-1.5 focus-within:border-t-border transition-colors overflow-hidden">
 					<span className="hidden sm:block text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
 						Zakres:

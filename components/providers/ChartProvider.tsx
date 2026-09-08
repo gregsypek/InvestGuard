@@ -1,6 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, {
+	createContext,
+	useContext,
+	useState,
+	useTransition,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { DateRange } from "react-day-picker";
@@ -19,11 +24,13 @@ interface ChartContextType {
 	toDate: Date | undefined;
 	handleRangeChange: (range: string) => void;
 	handleDateRangeSelect: (range: DateRange | undefined) => void;
+	isPending: boolean;
 }
 
 const ChartContext = createContext<ChartContextType | null>(null);
 
 export function ChartProvider({ children }: { children: React.ReactNode }) {
+	const [isPending, startTransition] = useTransition();
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -53,13 +60,15 @@ export function ChartProvider({ children }: { children: React.ReactNode }) {
 
 	// Update URL when predefined range changes
 	const handleRangeChange = (range: string) => {
-		const params = new URLSearchParams(searchParams.toString());
-		params.set("range", range);
-		if (range !== "CUSTOM") {
-			params.delete("from");
-			params.delete("to");
-		}
-		router.push(`${pathname}?${params.toString()}`, { scroll: false });
+		startTransition(() => {
+			const params = new URLSearchParams(searchParams.toString());
+			params.set("range", range);
+			if (range !== "CUSTOM") {
+				params.delete("from");
+				params.delete("to");
+			}
+			router.push(`${pathname}?${params.toString()}`, { scroll: false });
+		});
 	};
 
 	// Update URL for custom date selection
@@ -93,6 +102,7 @@ export function ChartProvider({ children }: { children: React.ReactNode }) {
 				toDate,
 				handleRangeChange,
 				handleDateRangeSelect,
+				isPending,
 			}}
 		>
 			{children}

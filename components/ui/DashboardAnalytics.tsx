@@ -6,6 +6,7 @@ import {
 	ChartArea,
 	History,
 	ListOrdered,
+	Loader2,
 	Pencil,
 	PieChart,
 	Plus,
@@ -54,7 +55,7 @@ const DashboardAnalytics = ({
 	oldestRealSnapshotDate,
 }: Props) => {
 	// 3. Zaciągnij potrzebne dane do wykresu
-	const { chartMode } = useChartContext();
+	const { chartMode, isPending } = useChartContext();
 	const { absoluteChartData } = useAbsoluteDailyPnL(snapshots, realSnapshots);
 
 	//
@@ -135,8 +136,22 @@ const DashboardAnalytics = ({
 					<InlineChartFilters
 						portfolios={[portfolio]}
 						oldestRealSnapshotDate={oldestRealSnapshotDate}
+						showModeToggle={false} // Wyłączamy przełącznik PLN/% dla tej sekcji
 					/>
-					<div className="flex-1 min-h-0 mt-2">
+					{/* KONTENER Z WYKRESEM I SPINNEREM */}
+					<div className="relative flex-1 min-h-0 mt-2">
+						{/* NAKŁADKA ŁADUJĄCA */}
+						{isPending && (
+							<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-2xl transition-all duration-300 flex items-center justify-center">
+								<div className="flex flex-col items-center gap-3 bg-slate-900/90 border border-slate-700/50 p-4 rounded-2xl shadow-2xl">
+									<Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+									<span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+										Przeliczanie...
+									</span>
+								</div>
+							</div>
+						)}
+						{/* <div className="flex-1 min-h-0 mt-2"> */}
 						<AbsoluteDailyPnLChart key={chartMode} data={absoluteChartData} />
 					</div>
 				</div>

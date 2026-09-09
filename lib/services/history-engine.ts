@@ -4,15 +4,47 @@ import { generatePortfolioHistory } from "@/app/lib/history-engine"; // Dopasuj 
 
 export async function getPortfolioSnapshotsHistory(
 	portfolios: PortfolioWithAssets[],
-	searchParams: { range?: string; from?: string; to?: string },
+	searchParams: {
+		range?: string;
+		from?: string;
+		to?: string;
+		dataMode?: string;
+	},
 	userId: string,
 ) {
-	const allAssets = portfolios.flatMap((p) => p.assets);
-	const range = searchParams.range || "1M";
+	// 1. ZACZYNAMY OD POBRANIA NAJSTARSZEJ DATY TYLKO DLA PRZEKAZANYCH PORTFELI
+	const oldestSnapshotRecord = await db.portfolioSnapshot.findFirst({
+		where: {
+			portfolioId: { in: portfolios.map((p) => p.id) }, // 👈 KLUCZOWA ZMIANA
+		},
+		orderBy: { date: "asc" },
+		select: { date: true },
+	});
 
+	// Jeśli nie ma zrzutów (np. nowy portfel), ustawiamy dzisiejszą datę
+	const oldestRealSnapshotDate = oldestSnapshotRecord?.date || new Date();
+
+	// 2. OBLICZAMY DOSTĘPNE DNI
+	const today = new Date();
+	const daysAvailable = Math.floor(
+		(today.getTime() - oldestRealSnapshotDate.getTime()) /
+			(1000 * 60 * 60 * 24),
+	);
+
+	// 3. INTELIGENTNY DOMYŚLNY WYBÓR (1W dla > 2 dni, YTD dla reszty)
+	const defaultRange = daysAvailable > 2 ? "1W" : "YTD";
+
+	// Jeśli w URL nie ma filtra (np. przy pierwszym wejściu), użyj domyślnego
+	const range = searchParams.range || defaultRange;
+
+	const allAssets = portfolios.flatMap((p) => p.assets);
 	let daysBack = 30;
 	let endDate = new Date();
-	const today = new Date();
+
+	const oldestDate = oldestSnapshotRecord?.date;
+
+	// Możesz też wysterować domyślny tryb danych (REAL / SIMULATED)
+	// Jeśli zarządzasz trybem przez URL lub stan, przekażesz go analogicznie.
 
 	switch (range) {
 		case "1W":
@@ -40,14 +72,7 @@ export async function getPortfolioSnapshotsHistory(
 			daysBack = 1825;
 			break;
 		case "MAX":
-			const oldestDate = allAssets.reduce((oldest, asset) => {
-				const assetDate = new Date(asset.purchaseDate || asset.createdAt);
-				return assetDate < oldest ? assetDate : oldest;
-			}, today);
-			daysBack = Math.ceil(
-				(today.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24),
-			);
-			daysBack = Math.max(30, daysBack + 5);
+			daysBack = daysAvailable > 0 ? daysAvailable + 5 : 30;
 			break;
 		case "CUSTOM":
 			if (searchParams.to) endDate = new Date(searchParams.to);
@@ -89,14 +114,6 @@ export async function getPortfolioSnapshotsHistory(
 		dailyChange: 0,
 		isPositive: true,
 	}));
-
-	// 🚀 NOWE: Pobieramy najstarszą datę raz, żeby filtry wszędzie działały
-	const oldestSnapshotRecord = await db.portfolioSnapshot.findFirst({
-		where: { portfolio: { userId } },
-		orderBy: { date: "asc" },
-		select: { date: true },
-	});
-	const oldestRealSnapshotDate = oldestSnapshotRecord?.date || new Date();
 
 	return {
 		simulatedSnapshots,

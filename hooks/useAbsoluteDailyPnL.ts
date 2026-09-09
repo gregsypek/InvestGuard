@@ -47,6 +47,7 @@ export function useAbsoluteDailyPnL(
 				exactChangePLN: Number(dayExactChangePLN.toFixed(2)),
 				totalPortfolioValue: Number(snap.totalValue.toFixed(2)),
 				netCashFlow: Number(dayNetCashFlow.toFixed(2)),
+				isLive: snap.id === "LIVE",
 			});
 		});
 

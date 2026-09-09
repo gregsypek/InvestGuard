@@ -14,7 +14,7 @@ import {
 	TrendingUp,
 } from "lucide-react";
 import { CategoryStatus, PortfolioWithAssets, Transaction } from "@/lib/types";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "../dashboard/AbsoluteDailyPnLChart";
 import { AssetFilterPanel } from "../shared/AssetFilterPanel";
@@ -54,25 +54,82 @@ const DashboardAnalytics = ({
 	realSnapshots = [],
 	oldestRealSnapshotDate,
 }: Props) => {
-	// 3. Zaciągnij potrzebne dane do wykresu
-	const { chartMode, isPending } = useChartContext();
-	const { absoluteChartData } = useAbsoluteDailyPnL(snapshots, realSnapshots);
-
-	//
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams.get("newAssetId");
 
-	// 🚀 ZMIANA 1: Stany dla nowych filtrów i paginacji
+	// 1. Zaciągamy kontekst (bez absoluteChartData, zrobimy to niżej!)
+	const { chartMode, isPending } = useChartContext();
+
+	// 2. Stany dla filtrów i paginacji
 	const [hideClosed, setHideClosed] = useState(true);
 	const [sortBy, setSortBy] = useState("ACTIVITY");
 	const [visibleCount, setVisibleCount] = useState(6);
 	const [filterCategory, setFilterCategory] = useState("ALL");
 
-	const totalValue = useMemo(
-		() => portfolio.assets.reduce((sum, a) => sum + (a.currentValue || 0), 0),
-		[portfolio.assets],
+	// 3. Wyliczamy obecną (żywą) wartość portfela i kapitał
+	const liveTotalValue = useMemo(
+		() => assets.reduce((sum, a) => sum + (a.currentValue || 0), 0),
+		[assets],
 	);
+
+	const liveInvestedValue = useMemo(
+		() => assets.reduce((sum, a) => sum + (a.investedCapital || 0), 0),
+		[assets],
+	);
+
+	// 4. Wstrzykujemy punkt "Na żywo" na koniec tablic
+	const addLiveSnapshot = useCallback(
+		(arr: any[]) => {
+			const liveSnapshot = {
+				id: "LIVE",
+				portfolioId: portfolio.id,
+				date: new Date(), // Dzisiejsza data
+				totalValue: liveTotalValue,
+				investedValue: liveInvestedValue,
+				dailyChange: 0,
+				isPositive: true,
+			};
+
+			if (!arr || arr.length === 0) return [liveSnapshot];
+
+			const todayStr = new Date().toISOString().split("T")[0];
+			const lastDateStr = new Date(arr[arr.length - 1].date)
+				.toISOString()
+				.split("T")[0];
+
+			if (todayStr === lastDateStr) {
+				return [...arr.slice(0, -1), liveSnapshot];
+			}
+			return [...arr, liveSnapshot];
+		},
+		[portfolio.id, liveTotalValue, liveInvestedValue],
+	);
+
+	// const combinedSnapshots = useMemo(
+	// 	() => addLiveSnapshot(snapshots),
+	// 	[snapshots, addLiveSnapshot], // 👈 Zmienione
+	// );
+
+	// const combinedRealSnapshots = useMemo(
+	// 	() => addLiveSnapshot(realSnapshots),
+	// 	[realSnapshots, addLiveSnapshot], // 👈 Zmienione
+	// );
+	// 🚀 ZMIANA: Symulacja leci z czystymi, oryginalnymi danymi (bez dzisiejszego LIVE)
+	const combinedSnapshots = snapshots;
+
+	// Słupek LIVE doklejamy TYLKO do danych realnych
+	const combinedRealSnapshots = useMemo(
+		() => addLiveSnapshot(realSnapshots),
+		[realSnapshots, addLiveSnapshot],
+	);
+	// 5. DOPIERO TUTAJ wywołujemy hooka z gotowymi (połączonymi) danymi
+	const { absoluteChartData } = useAbsoluteDailyPnL(
+		combinedSnapshots,
+		combinedRealSnapshots,
+	);
+
+	// 6. Reszta logiki sortowania i kategorii
 	const filteredAndSortedAssets = useSortedAssets(
 		assets,
 		transactions,
@@ -85,13 +142,9 @@ const DashboardAnalytics = ({
 	const hasMore = visibleCount < filteredAndSortedAssets.length;
 	const canCollapse = visibleCount > 6;
 
-	// 2. 🚀 Dynamicznie wyciągamy tylko te kategorie, które są w portfelu!
 	const activeCategories = useMemo(() => {
-		// Tworzymy unikalny zbiór (Set) kategorii z aktywów (i rzutujemy na string)
 		const uniqueCats = Array.from(
-			new Set(assets.map((a) => a.category).filter(Boolean)), //Każda wartość w JS jest albo truthy (prawdziwa), albo falsy (fałszywa).
-			// Falsy to: null, undefined, "" (pusty string), 0, false, NaN.
-			// Truthy to: każdy niepusty tekst (np. "BONDS"), liczba różna od zera, obiekt itd.
+			new Set(assets.map((a) => a.category).filter(Boolean)),
 		) as string[];
 
 		return uniqueCats.map((cat) => ({

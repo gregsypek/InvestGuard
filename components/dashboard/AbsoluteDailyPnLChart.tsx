@@ -25,6 +25,7 @@ interface AbsolutePnLDataPoint {
 	exactChangePLN: number;
 	totalPortfolioValue: number;
 	netCashFlow: number;
+	isLive?: boolean; // 👈 DODANE
 }
 
 interface AbsoluteDailyPnLChartProps {
@@ -134,23 +135,46 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	);
 
 	// EN: Custom legend — small colored dots instead of Recharts' default squares
-	const renderLegend = () => (
-		<div className="flex items-center justify-center gap-6 pt-3">
-			<div className="flex items-center gap-2">
-				<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-				<span className="text-[11px] font-semibold text-slate-400 tracking-wide">
-					Dzienny Wynik Rynkowy
-				</span>
-			</div>
-			<div className="flex items-center gap-2">
-				<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-				<span className="text-[11px] font-semibold text-slate-400 tracking-wide">
-					Wpłaty / Wypłaty
-				</span>
-			</div>
-		</div>
-	);
+	const renderLegend = () => {
+		// Wyciągamy dzisiejszy punkt Live (jeśli istnieje)
+		const liveEntry = data.find((d) => d.isLive);
+		console.log("🚀 ~ renderLegend ~ liveEntry:", liveEntry);
+		const isTodayPositive = (liveEntry?.exactChangePLN ?? 0) >= 0;
 
+		return (
+			<div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-3">
+				<div className="flex items-center gap-2">
+					<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" />
+					<span className="text-[11px] font-semibold text-slate-400 tracking-wide">
+						Dzienny Wynik Rynkowy
+					</span>
+				</div>
+
+				{/* WARUNKOWE RENDEROWANIE: Pokazujemy "Wynik z dzisiaj" TYLKO w trybie Realnym z punktem LIVE */}
+				{liveEntry && (
+					<div className="flex items-center gap-2 animate-in fade-in duration-200">
+						<span
+							className={`inline-block w-3 h-3 rounded-sm border border-dashed shrink-0 ${
+								isTodayPositive
+									? "bg-emerald-400/20 border-emerald-400"
+									: "bg-rose-400/20 border-rose-400"
+							}`}
+						/>
+						<span className="text-[11px] font-semibold text-slate-400 tracking-wide">
+							Wynik z dzisiaj
+						</span>
+					</div>
+				)}
+
+				<div className="flex items-center gap-2">
+					<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />
+					<span className="text-[11px] font-semibold text-slate-400 tracking-wide">
+						Wpłaty / Wypłaty
+					</span>
+				</div>
+			</div>
+		);
+	};
 	// EN: Reusable chart content for normal and expanded views
 	const chartContent = (
 		<ResponsiveContainer width="100%" height="100%">
@@ -268,20 +292,36 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 				<Bar
 					yAxisId="left"
 					dataKey="exactChangePLN"
-					name="Dzienny Wynik Rynkowy"
+					name="Dzienny Wynik Rynkowy2"
 					radius={[6, 6, 6, 6]}
 					maxBarSize={28}
 				>
-					{data.map((entry, index) => (
-						<Cell
-							key={`cell-${index}`}
-							fill={
-								entry.exactChangePLN >= 0
-									? "url(#positiveBarGradient)"
-									: "url(#negativeBarGradient)"
-							}
-						/>
-					))}
+					{data.map((entry, index) => {
+						const isPositive = entry.exactChangePLN >= 0;
+						return (
+							<Cell
+								key={`cell-${index}`}
+								fill={
+									entry.isLive
+										? isPositive
+											? "rgba(52, 211, 153, 0.2)" // Przezroczysty zielony dla LIVE
+											: "rgba(251, 113, 133, 0.2)" // Przezroczysty czerwony dla LIVE
+										: isPositive
+											? "url(#positiveBarGradient)"
+											: "url(#negativeBarGradient)"
+								}
+								stroke={
+									entry.isLive
+										? isPositive
+											? "#34d399" // Zielona ramka dla LIVE
+											: "#fb7185" // Czerwona ramka dla LIVE
+										: "none"
+								}
+								strokeDasharray={entry.isLive ? "4 4" : "none"} // Przerywana linia dla LIVE
+								strokeWidth={entry.isLive ? 2 : 0}
+							/>
+						);
+					})}
 				</Bar>
 
 				{/* EN: Soft fill under the cash flow line, purely decorative */}
@@ -409,14 +449,17 @@ function AbsolutePnLTooltip({ active, payload, label }: any) {
 			payload.find((p: any) => p.dataKey === "exactChangePLN")?.value || 0;
 		const netCashFlow =
 			payload.find((p: any) => p.dataKey === "netCashFlow")?.value || 0;
-		const totalValue = payload[0].payload.totalPortfolioValue;
+
+		// Wyciągamy payload bezpiecznie z dowolnego elementu zestawu Recharts
+		const rawPayload = payload[0]?.payload || {};
+		const totalValue = rawPayload.totalPortfolioValue || 0;
+		const isLive = Boolean(rawPayload.isLive);
 
 		const isPositive = changeValue >= 0;
 		const date = new Date(label);
 
 		return (
 			<div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/40 rounded-2xl p-4 shadow-2xl shadow-black/40 min-w-[230px] overflow-hidden">
-				{/* EN: Thin accent bar on top, colored by the day's result */}
 				<div
 					className={`absolute top-0 left-0 right-0 h-[2px] ${
 						isPositive
@@ -425,9 +468,16 @@ function AbsolutePnLTooltip({ active, payload, label }: any) {
 					}`}
 				/>
 
-				<p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-800 pb-2">
-					{format(date, "dd MMMM yyyy", { locale: pl })}
-				</p>
+				<div className="flex items-center justify-between gap-2 mb-3 border-b border-slate-800 pb-2">
+					<p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+						{format(date, "dd MMMM yyyy", { locale: pl })}
+					</p>
+					{isLive && (
+						<span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider animate-pulse">
+							Na żywo
+						</span>
+					)}
+				</div>
 
 				<div className="space-y-1 mb-3">
 					<p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">

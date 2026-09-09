@@ -7,6 +7,7 @@ import { FilterBadge } from "../shared/FilterBadge";
 import { Info } from "lucide-react";
 import { PortfolioWithAssets } from "@/lib/types";
 import { useChartContext } from "../providers/ChartProvider";
+import { useEffect } from "react";
 
 export function InlineChartFilters({
 	portfolios,
@@ -37,7 +38,6 @@ export function InlineChartFilters({
 
 		// Bezpieczne parsowanie daty (Next.js może przekazać string z serwera)
 		const oldestDate = new Date(oldestRealSnapshotDate);
-		console.log("🚀 ~ isRangeDisabledForReal ~ oldestDate:", oldestDate);
 		if (isNaN(oldestDate.getTime())) return false;
 
 		const daysAvailable = differenceInDays(new Date(), oldestDate);
@@ -68,6 +68,23 @@ export function InlineChartFilters({
 		}
 	};
 
+	// INTELIGENTNE PRZEŁĄCZANIE TRYBU
+	useEffect(() => {
+		// Przerywamy, jeśli brakuje nam daty bazowej
+		if (!oldestRealSnapshotDate) return;
+
+		const daysAvailable = differenceInDays(
+			new Date(),
+			new Date(oldestRealSnapshotDate),
+		);
+
+		// Automatyczne ustawienie trybu w oparciu wyłącznie o ilość dni
+		if (daysAvailable > 2) {
+			setDataMode("REAL");
+		} else {
+			setDataMode("SIMULATED");
+		}
+	}, [oldestRealSnapshotDate, setDataMode]); // Zależności się nie zmieniają
 	return (
 		<div className="flex flex-col gap-4 mb-4">
 			{/* ROW 1: Tryb PLN/% oraz Źródło Danych (Realne/Symulacja) */}

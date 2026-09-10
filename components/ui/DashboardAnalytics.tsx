@@ -84,7 +84,7 @@ const DashboardAnalytics = ({
 			const liveSnapshot = {
 				id: "LIVE",
 				portfolioId: portfolio.id,
-				date: new Date(), // Dzisiejsza data
+				date: new Date(),
 				totalValue: liveTotalValue,
 				investedValue: liveInvestedValue,
 				dailyChange: 0,
@@ -93,14 +93,8 @@ const DashboardAnalytics = ({
 
 			if (!arr || arr.length === 0) return [liveSnapshot];
 
-			const todayStr = new Date().toISOString().split("T")[0];
-			const lastDateStr = new Date(arr[arr.length - 1].date)
-				.toISOString()
-				.split("T")[0];
-
-			if (todayStr === lastDateStr) {
-				return [...arr.slice(0, -1), liveSnapshot];
-			}
+			// PO PROSTU DOKLEJAMY SŁUPEK LIVE NA KONIEC
+			// (Usunięto warunek arr.slice(0, -1), który nadpisywał zrzuty z bazy)
 			return [...arr, liveSnapshot];
 		},
 		[portfolio.id, liveTotalValue, liveInvestedValue],

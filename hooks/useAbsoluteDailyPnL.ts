@@ -28,7 +28,15 @@ export function useAbsoluteDailyPnL(
 		let lastValue = 0;
 
 		sortedSnapshots.forEach((snap, index) => {
-			const dateStr = new Date(snap.date).toISOString().split("T")[0];
+			const adjustedDate = new Date(snap.date);
+
+			// KOREKTA DATY: Jeśli prawdziwy zrzut z bazy zapisał się między 00:00 a 05:00 rano,
+			// przypisujemy go wizualnie do dnia poprzedniego (jako zamknięcie wczorajszej sesji).
+			if (snap.id !== "LIVE" && adjustedDate.getHours() < 5) {
+				adjustedDate.setDate(adjustedDate.getDate() - 1);
+			}
+
+			const dateStr = adjustedDate.toISOString().split("T")[0];
 			let dayNetCashFlow = 0;
 			let dayExactChangePLN = 0;
 

@@ -14,7 +14,7 @@ export function InlineChartFilters({
 	portfolios,
 	oldestRealSnapshotDate,
 	showModeToggle = true,
-	showPortfolioSelector = true, // 👈 Flaga włączająca pigułki portfeli
+	showPortfolioSelector = true, 
 }: {
 	portfolios: PortfolioWithAssets[];
 	oldestRealSnapshotDate?: Date;
@@ -59,13 +59,13 @@ export function InlineChartFilters({
 				);
 				return daysAvailable < daysSinceYearStart;
 			case "1Y":
-				return daysAvailable < 90;
+				return daysAvailable < 90; // Wymaga min. 3 miesięcy (90 dni)
 			case "3Y":
-				return daysAvailable < 365;
+				return daysAvailable < 365; // Wymaga min. 1 roku
 			case "5Y":
-				return daysAvailable < 1095;
+				return daysAvailable < 1095; // Wymaga min. 3 lat
 			default:
-				return false;
+				return false; // 1W, MAX, CUSTOM są zawsze aktywne
 		}
 	};
 
@@ -169,6 +169,10 @@ export function InlineChartFilters({
 								<p className="text-[10px] text-slate-300 leading-relaxed">
 									<strong className="text-white block mb-0.5">Realne:</strong>
 									Wykres bazuje na zrzutach wycen zapisanych w bazie danych.
+									Zrzuty są zapisywane od momentu utworzenia portfela kadego
+									dnia po godzinie 23:59. Jeśli portfel został utworzony w ciągu
+									dnia, pierwszy zrzut zostanie zapisany dopiero następnego
+									dnia.{" "}
 								</p>
 								<div className="h-px w-full bg-slate-700/50 my-1.5" />
 								<p className="text-[10px] text-slate-300 leading-relaxed">

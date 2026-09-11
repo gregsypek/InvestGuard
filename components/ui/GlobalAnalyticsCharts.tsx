@@ -277,13 +277,13 @@ export default function GlobalAnalyticsCharts({
 		);
 	}
 	// --- 4. KOMPONENTY NAPRAWIAJĄCE "Missing display name" ---
-	const BarLabelTop10 = (props: RechartsLabelProps) =>
-		renderBarLabelLogic(props, barDataTop10);
-	BarLabelTop10.displayName = "BarLabelTop10";
+	// const BarLabelTop10 = (props: RechartsLabelProps) =>
+	// 	renderBarLabelLogic(props, barDataTop10);
+	// BarLabelTop10.displayName = "BarLabelTop10";
 
-	const BarLabelAll = (props: RechartsLabelProps) =>
-		renderBarLabelLogic(props, allBarData);
-	BarLabelAll.displayName = "BarLabelAll";
+	// const BarLabelAll = (props: RechartsLabelProps) =>
+	// 	renderBarLabelLogic(props, allBarData);
+	// BarLabelAll.displayName = "BarLabelAll";
 	return (
 		<>
 			<div className="grid lg:grid-cols-2 gap-6 items-stretch border border-t-border bg-t-bg-panel rounded-2xl p-6">

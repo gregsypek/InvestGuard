@@ -272,17 +272,19 @@ export function PortfolioChart({
 					}}
 				/>
 
-				{/* Linia wpłaconego kapitału */}
-				<Line
-					type="stepAfter"
-					dataKey="invested"
-					stroke="#64748b"
-					strokeWidth={2}
-					strokeDasharray="5 5"
-					dot={false}
-					activeDot={false}
-					opacity={0.6}
-				/>
+				{/* Linia wpłaconego kapitału - renderujemy TYLKO w trybie kwotowym (VALUE) */}
+				{mode === "VALUE" && (
+					<Line
+						type="stepAfter"
+						dataKey="invested"
+						stroke="#64748b"
+						strokeWidth={2}
+						strokeDasharray="5 5"
+						dot={false}
+						activeDot={false}
+						opacity={0.6}
+					/>
+				)}
 
 				{/* Kropki transakcji na wykresie */}
 				{transactions.length > 0 && (

@@ -38,6 +38,7 @@ export default async function ActivityPage({
 
 	const cookieStore = await cookies();
 	const defaultPortfolioId = cookieStore.get("selectedPortfolioId")?.value;
+
 	// =================================================================
 	// 1. OPTYMALIZACJA: Pobieramy tylko ID i Nazwy portfeli (do filtra).
 	// Zero aktywów i historii! (Zapytanie szybsze o 99%)
@@ -61,7 +62,15 @@ export default async function ActivityPage({
 	const search = resolvedParams.search || "";
 	const category = resolvedParams.category || "ALL";
 	const sort = resolvedParams.sort || "date_desc";
-	const portfolioFilter = resolvedParams.portfolio || "ALL";
+	// 🚀 KLUCZOWA ZMIANA: Inteligentny fallback do ciasteczka
+	const portfolioFilter =
+		resolvedParams.portfolio || defaultPortfolioId || "ALL";
+
+	// 1. FILTROWANIE PORTFELI NA PODSTAWIE HEADERA/URL
+	const activePortfolios =
+		portfolioFilter === "ALL"
+			? userPortfolios
+			: userPortfolios.filter((p) => p.id === portfolioFilter);
 
 	// =================================================================
 	// 3. POBIERANIE TRANSAKCJI (Bezpieczne, oparte o sesję)
@@ -97,12 +106,6 @@ export default async function ActivityPage({
 
 	const { data: transactions, meta } = result;
 
-	// 1. FILTROWANIE PORTFELI NA PODSTAWIE HEADERA (URL)
-	const activePortfolios =
-		portfolioFilter === "ALL"
-			? userPortfolios
-			: userPortfolios.filter((p) => p.id === portfolioFilter);
-
 	// 1. Filtrujemy portfele przekazywane do wykresu
 	// const filteredPortfolios =
 	// 	portfolioFilter === "ALL"
@@ -136,10 +139,25 @@ export default async function ActivityPage({
 		return `/activity?${params.toString()}`;
 	};
 
+	// 1. Obliczamy całkowitą wycenę aktywów z aktualnie przeglądanych portfeli
+	const currentTotalValue = activePortfolios.reduce((sum, portfolio) => {
+		const assetsValue = portfolio.assets.reduce(
+			(assetSum, asset) => assetSum + Number(asset.currentValue),
+			0,
+		);
+		return sum + assetsValue;
+	}, 0);
+
+	// 2. Ustalamy dynamiczną nazwę dla okruszków (breadcrumbs)
+	const activePortfolioName =
+		portfolioFilter === "ALL"
+			? "Wszystkie Portfele"
+			: activePortfolios[0]?.name || "Nieznany Portfel";
+
 	return (
 		<div>
 			{/* NAGŁÓWEK GŁÓWNY */}
-			<ActivityHeader
+			{/* <ActivityHeader
 				totalTransactions={meta.totalCount}
 				currentPage={currentPage}
 				totalPages={meta.totalPages}
@@ -151,6 +169,12 @@ export default async function ActivityPage({
 						</span>
 					</nav>
 				}
+			/> */}
+			<ActivityHeader
+				totalTransactions={meta.totalCount}
+				portfolioName={activePortfolioName}
+				totalValue={currentTotalValue}
+				hasActiveFilters={search !== "" || category !== "ALL"}
 			/>
 
 			{/* NOWA SEKCJA: INTERAKTYWNY WYKRES */}

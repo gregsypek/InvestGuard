@@ -57,8 +57,9 @@ export default function Header({
 	const router = useRouter();
 
 	// 1. Pobieramy ID z URL (to jest nadrzędne nad ciasteczkiem!)
-	const urlPortfolioId = searchParams.get("portfolioId");
-
+	// ZMIANA 1: Header musi sprawdzać również "portfolio" z adresu URL
+	const urlPortfolioId =
+		searchParams.get("portfolioId") || searchParams.get("portfolio");
 	// 2. Szukamy ID w ścieżce dla wszystkich modułów
 	const strategy = searchParams.get("s");
 	const segments = pathname.split("/");
@@ -105,6 +106,9 @@ export default function Header({
 
 		if (pathname === "/planner") {
 			router.push(`/planner?portfolioId=${id}`);
+		} else if (pathname === "/activity" || pathname.startsWith("/activity")) {
+			// 🚀 ZMIANA 2: Zostajemy na historii i bezpiecznie doklejamy parametr
+			router.push(`/activity?portfolio=${id}`);
 		} else {
 			router.push(`/dashboard/${id}`);
 		}

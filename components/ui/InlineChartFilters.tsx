@@ -1,6 +1,7 @@
 "use client";
 
 import { differenceInDays, startOfYear } from "date-fns";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { DatePickerWithRange } from "../shared/DatePickerWithRange";
 import { FilterBadge } from "../shared/FilterBadge";
@@ -13,12 +14,17 @@ export function InlineChartFilters({
 	portfolios,
 	oldestRealSnapshotDate,
 	showModeToggle = true,
+	showPortfolioSelector = true, // 👈 Flaga włączająca pigułki portfeli
 }: {
 	portfolios: PortfolioWithAssets[];
 	oldestRealSnapshotDate?: Date;
 	showModeToggle?: boolean;
+	showPortfolioSelector?: boolean;
 }) {
-	// 1. Zaciągamy dodatkowo stany kalendarza z kontekstu
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParamsRaw = useSearchParams();
+	// Zaciągamy stany z kontekstu (w tym selectedIds i togglePortfolio do pigułek)
 	const {
 		chartMode,
 		setChartMode,
@@ -29,48 +35,41 @@ export function InlineChartFilters({
 		fromDate,
 		toDate,
 		handleDateRangeSelect,
+		selectedIds,
+		togglePortfolio,
 	} = useChartContext();
 
-	// 1. LOGIKA SPRAWDZANIA DOSTĘPNOŚCI DLA TRYBU 'REAL'
 	const isRangeDisabledForReal = (range: string) => {
-		// Jeśli tryb to symulacja albo brak daty bazowej - nie blokujemy
 		if (dataMode === "SIMULATED" || !oldestRealSnapshotDate) return false;
 
-		// Bezpieczne parsowanie daty (Next.js może przekazać string z serwera)
 		const oldestDate = new Date(oldestRealSnapshotDate);
 		if (isNaN(oldestDate.getTime())) return false;
 
 		const daysAvailable = differenceInDays(new Date(), oldestDate);
-		console.log("🚀 ~ isRangeDisabledForReal ~ daysAvailable:", daysAvailable);
 
-		// Nowe, bardziej rygorystyczne progi blokowania:
 		switch (range) {
 			case "1M":
-				return daysAvailable < 7; // Wymaga min. tygodnia danych
+				return daysAvailable < 7;
 			case "3M":
-				return daysAvailable < 30; // Wymaga min. miesiąca
+				return daysAvailable < 30;
 			case "YTD":
-				// Zablokuj YTD, jeśli od początku roku minęło więcej dni niż mamy w bazie
-				// (np. mamy wrzesień, więc YTD to 250 dni. Mamy 16 dni danych = blokujemy)
 				const daysSinceYearStart = differenceInDays(
 					new Date(),
 					startOfYear(new Date()),
 				);
 				return daysAvailable < daysSinceYearStart;
 			case "1Y":
-				return daysAvailable < 90; // Wymaga min. 3 miesięcy (90 dni)
+				return daysAvailable < 90;
 			case "3Y":
-				return daysAvailable < 365; // Wymaga min. 1 roku
+				return daysAvailable < 365;
 			case "5Y":
-				return daysAvailable < 1095; // Wymaga min. 3 lat
+				return daysAvailable < 1095;
 			default:
-				return false; // 1W, MAX, CUSTOM są zawsze aktywne
+				return false;
 		}
 	};
 
-	// INTELIGENTNE PRZEŁĄCZANIE TRYBU
 	useEffect(() => {
-		// Przerywamy, jeśli brakuje nam daty bazowej
 		if (!oldestRealSnapshotDate) return;
 
 		const daysAvailable = differenceInDays(
@@ -78,21 +77,67 @@ export function InlineChartFilters({
 			new Date(oldestRealSnapshotDate),
 		);
 
-		// Automatyczne ustawienie trybu w oparciu wyłącznie o ilość dni
 		if (daysAvailable > 2) {
 			setDataMode("REAL");
 		} else {
 			setDataMode("SIMULATED");
 		}
-	}, [oldestRealSnapshotDate, setDataMode]); // Zależności się nie zmieniają
+	}, [oldestRealSnapshotDate, setDataMode]);
+
 	return (
 		<div className="flex flex-col gap-4 mb-4">
-			{/* ROW 1: Tryb PLN/% oraz Źródło Danych (Realne/Symulacja) */}
+			{/* ROW 1: Pigułki Portfeli (jeśli włączone) + Tryb PLN/% oraz Źródło Danych */}
 			<div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-				{/* Ponieważ usunęliśmy pigułki portfeli, wyrównujemy ten kontener do prawej lub rozciągamy */}
-				<div className="flex flex-wrap items-center gap-4 w-full justify-end">
-					{/* PLN / PERCENTAGE Toggle */}
-					{/* WARUNKOWE RENDEROWANIE PLN / PERCENTAGE Toggle */}
+				{/* LEWA STRONA: Pigułki wyboru portfeli */}
+				{/* {showPortfolioSelector && portfolios.length > 0 && (
+					<div className="flex flex-wrap items-center gap-2">
+						<FilterBadge
+							id="ALL"
+							label="Wszystkie"
+							isSelected={selectedIds.includes("ALL")}
+							onToggle={() => togglePortfolio("ALL")}
+						/>
+						{portfolios.map((p) => (
+							<FilterBadge
+								key={p.id}
+								id={p.id}
+								label={p.name}
+								isSelected={selectedIds.includes(p.id)}
+								onToggle={() => togglePortfolio(p.id)}
+							/>
+						))}
+					</div>
+				)} */}
+				{showPortfolioSelector && portfolios.length > 0 && (
+					<div className="flex flex-1 xl:flex-none xl:w-56 items-center gap-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg px-2 py-1.5 focus-within:border-t-border transition-colors overflow-hidden">
+						<span className="hidden sm:block text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
+							Portfel:
+						</span>
+						<select
+							value={selectedIds[0] || "ALL"}
+							onChange={(e) => {
+								const newId = e.target.value;
+								const params = new URLSearchParams(searchParamsRaw.toString());
+								if (newId === "ALL") params.delete("portfolio");
+								else params.set("portfolio", newId);
+								router.push(`${pathname}?${params.toString()}`);
+							}}
+							className="w-full bg-transparent text-t-text-secondary text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer truncate"
+						>
+							<option value="ALL" className="bg-t-bg-panel">
+								Wszystkie
+							</option>
+							{portfolios.map((p) => (
+								<option key={p.id} value={p.id} className="bg-t-bg-panel">
+									{p.name}
+								</option>
+							))}
+						</select>
+					</div>
+				)}
+
+				{/* PRAWA STRONA: PLN/% oraz Realne/Symulacja */}
+				<div className="flex flex-wrap items-center gap-4 w-full xl:w-auto justify-end ml-auto">
 					{showModeToggle && (
 						<div className="flex items-center gap-2">
 							<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
@@ -113,7 +158,6 @@ export function InlineChartFilters({
 						</div>
 					)}
 
-					{/* REAL / SIMULATED Toggle z Tooltipem */}
 					<div className="flex items-center gap-2 relative">
 						<div className="group flex items-center gap-1 cursor-help">
 							<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
@@ -125,18 +169,13 @@ export function InlineChartFilters({
 								<p className="text-[10px] text-slate-300 leading-relaxed">
 									<strong className="text-white block mb-0.5">Realne:</strong>
 									Wykres bazuje na zrzutach wycen zapisanych w bazie danych.
-									Zrzuty są zapisywane od momentu utworzenia portfela kadego
-									dnia po godzinie 23:59. Jeśli portfel został utworzony w ciągu
-									dnia, pierwszy zrzut zostanie zapisany dopiero następnego
-									dnia.{" "}
 								</p>
 								<div className="h-px w-full bg-slate-700/50 my-1.5" />
 								<p className="text-[10px] text-slate-300 leading-relaxed">
 									<strong className="text-white block mb-0.5">
 										Symulacja:
 									</strong>
-									Wykres generowany wstecznie na podstawie historii Twoich
-									transakcji.
+									Wykres generowany wstecznie na podstawie historii transakcji.
 								</p>
 							</div>
 						</div>
@@ -169,7 +208,6 @@ export function InlineChartFilters({
 					>
 						{["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX", "CUSTOM"].map(
 							(range) => {
-								// 2. WYWOŁANIE BLOKADY
 								const isDisabled = isRangeDisabledForReal(range);
 
 								return (
@@ -190,7 +228,6 @@ export function InlineChartFilters({
 						)}
 					</select>
 				</div>
-				{/* 3. Komponent kalendarza wpięty tuż obok selektora */}
 				<div className="shrink-0">
 					<DatePickerWithRange
 						from={fromDate}

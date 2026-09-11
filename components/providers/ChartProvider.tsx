@@ -3,11 +3,13 @@
 import React, {
 	createContext,
 	useContext,
+	useEffect,
 	useState,
 	useTransition,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import Cookies from "js-cookie";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 
@@ -30,16 +32,22 @@ interface ChartContextType {
 const ChartContext = createContext<ChartContextType | null>(null);
 
 export function ChartProvider({ children }: { children: React.ReactNode }) {
+	const searchParams = useSearchParams();
+	const portfolioParam = searchParams.get("portfolio");
 	const [isPending, startTransition] = useTransition();
 	const router = useRouter();
 	const pathname = usePathname();
-	const searchParams = useSearchParams();
 
 	// Local state for UI toggles
 	const [chartMode, setChartMode] = useState<"VALUE" | "PERCENTAGE">("VALUE");
 	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("SIMULATED");
-	const [selectedIds, setSelectedIds] = useState<string[]>(["ALL"]);
 
+	// 1. Czysty start (odczytujemy URL, potem Cookie, potem ALL) - to wystarczy!
+	const [selectedIds, setSelectedIds] = useState<string[]>(() => {
+		if (portfolioParam) return [portfolioParam];
+		const cookiePortfolioId = Cookies.get("selectedPortfolioId");
+		return cookiePortfolioId ? [cookiePortfolioId] : ["ALL"];
+	});
 	// Extract date ranges from URL parameters
 	const activeRange = searchParams.get("range") || "1M";
 	const currentFrom = searchParams.get("from") || "";

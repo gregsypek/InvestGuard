@@ -1,4 +1,4 @@
-import { AlertCircle, ListOrdered } from "lucide-react";
+import { AlertCircle, ChartArea, ListOrdered } from "lucide-react";
 import {
 	Pagination,
 	PaginationContent,
@@ -10,11 +10,14 @@ import {
 import { ActivityHeader } from "@/components/ActivityHeader";
 import ActivityTable from "@/components/shared/ActivityTable";
 import { ExportReport } from "@/components/history/ExportReport";
+import { HistoryChartSection } from "@/components/history/HistoryChartSection";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { getPortfolioSnapshotsHistory } from "@/lib/services/history-engine";
 import { getTransactionHistory } from "@/lib/actions/history.actions";
 import { redirect } from "next/navigation";
 
@@ -27,18 +30,24 @@ export default async function ActivityPage({
 		category?: string;
 		sort?: string;
 		portfolio?: string;
+		range?: string;
 	}>;
 }) {
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
 
+	const cookieStore = await cookies();
+	const defaultPortfolioId = cookieStore.get("selectedPortfolioId")?.value;
 	// =================================================================
 	// 1. OPTYMALIZACJA: Pobieramy tylko ID i Nazwy portfeli (do filtra).
 	// Zero aktywów i historii! (Zapytanie szybsze o 99%)
 	// =================================================================
 	const userPortfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
-		select: { id: true, name: true },
+		include: {
+			assets: true,
+			transactionHistories: true,
+		},
 		orderBy: { createdAt: "desc" },
 	});
 
@@ -88,6 +97,33 @@ export default async function ActivityPage({
 
 	const { data: transactions, meta } = result;
 
+	// 1. FILTROWANIE PORTFELI NA PODSTAWIE HEADERA (URL)
+	const activePortfolios =
+		portfolioFilter === "ALL"
+			? userPortfolios
+			: userPortfolios.filter((p) => p.id === portfolioFilter);
+
+	// 1. Filtrujemy portfele przekazywane do wykresu
+	// const filteredPortfolios =
+	// 	portfolioFilter === "ALL"
+	// 		? userPortfolios
+	// 		: userPortfolios.filter((p) => p.id === portfolioFilter);
+
+	// 2. Pobieramy historię TYLKO dla wybranych portfeli
+	// const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
+	// 	await getPortfolioSnapshotsHistory(
+	// 		filteredPortfolios, // 👈 ZAMIAST userPortfolios
+	// 		{ range: resolvedParams.range || "1Y" },
+	// 		session.user.id,
+	// 	);
+	// 2. GENEROWANIE DANYCH DO WYKRESU TYLKO DLA WYBRANYCH PORTFELI
+	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
+		await getPortfolioSnapshotsHistory(
+			activePortfolios, // 👈 ZMIANA: Przekazujemy tylko przefiltrowane portfele
+			{ range: resolvedParams.range || "1Y" },
+			session.user.id,
+		);
+
 	const createPageUrl = (pageNumber: number) => {
 		const params = new URLSearchParams();
 		if (resolvedParams.search) params.set("search", resolvedParams.search);
@@ -116,6 +152,23 @@ export default async function ActivityPage({
 					</nav>
 				}
 			/>
+
+			{/* NOWA SEKCJA: INTERAKTYWNY WYKRES */}
+			<SectionLayout
+				title="Analiza Wykresowa"
+				titleIcon={ChartArea}
+				subtitle="Twoje inwestycje w czasie"
+				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
+			>
+				<HistoryChartSection
+					portfolios={activePortfolios}
+					transactions={transactions}
+					simulatedSnapshots={simulatedSnapshots}
+					realSnapshots={realSnapshots}
+					oldestRealSnapshotDate={oldestRealSnapshotDate}
+					defaultPortfolioId={defaultPortfolioId}
+				/>
+			</SectionLayout>
 
 			{/* GŁÓWNA SEKCJA */}
 			<SectionLayout

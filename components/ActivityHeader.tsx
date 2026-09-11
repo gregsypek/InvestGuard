@@ -1,23 +1,23 @@
 // components/history/ActivityHeader.tsx
-import { FileText, History } from "lucide-react";
+import { Filter, History, Wallet2 } from "lucide-react";
 
 import { ValueCard } from "./shared/ValueCard";
 
 interface ActivityHeaderProps {
 	totalTransactions: number;
-	currentPage: number;
-	totalPages: number;
-	customBreadcrumbs?: React.ReactNode;
+	portfolioName: string;
+	totalValue: number;
+	hasActiveFilters: boolean;
 }
 
 export function ActivityHeader({
 	totalTransactions,
-	currentPage,
-	totalPages,
-	customBreadcrumbs,
+	portfolioName,
+	totalValue,
+	hasActiveFilters,
 }: ActivityHeaderProps) {
 	return (
-		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-900  text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
+		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-900 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
 			{/* --- TEKSTURA SVG (Giełdowe Świece Japońskie z maskowaniem) --- */}
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
@@ -32,14 +32,24 @@ export function ActivityHeader({
 
 			{/* GÓRA: Nawigacja i Tytuł */}
 			<div className="relative z-10">
-				{customBreadcrumbs}
+				<nav className="text-sm text-slate-400 italic flex items-center gap-1.5">
+					Historia /{" "}
+					<span className="text-amber-400 font-medium lowercase">
+						{portfolioName}
+					</span>
+					{hasActiveFilters && (
+						<span className="flex items-center gap-1 ml-2 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest not-italic">
+							<Filter className="w-3 h-3" /> Aktywne filtry
+						</span>
+					)}
+				</nav>
 				<div className="mt-2">
 					<h1 className="text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">
 						Historia Operacji
 					</h1>
 					<p className="text-slate-400 font-medium mt-1 text-sm md:text-base">
-						Zapis transakcji ze wszystkich portfeli, z możliwością filtrowania i
-						szczegółowego wglądu w każdą operację.
+						Zapis transakcji z możliwością filtrowania i szczegółowego wglądu w
+						każdą operację.
 					</p>
 				</div>
 			</div>
@@ -62,15 +72,16 @@ export function ActivityHeader({
 					</div>
 				</div>
 
-				{/* PRAWA STRONA: Paginacja ze złotym/bursztynowym akcentem */}
+				{/* PRAWA STRONA: Wycena widoku zamiast stron */}
 				<div className="flex self-start sm:justify-end flex-wrap gap-8 md:gap-12 overflow-x-auto no-scrollbar">
-					<ValueCard label="Strona rejestru" icon={FileText}>
+					<ValueCard label="Bieżąca Wycena" icon={Wallet2}>
 						<div className="flex items-baseline gap-1.5 font-mono">
-							<span className="text-2xl font-bold tracking-tight text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
-								{currentPage}
-							</span>
-							<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-								z {totalPages}
+							<span className="text-2xl font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+								{new Intl.NumberFormat("pl-PL", {
+									style: "currency",
+									currency: "PLN",
+									maximumFractionDigits: 0,
+								}).format(totalValue)}
 							</span>
 						</div>
 					</ValueCard>

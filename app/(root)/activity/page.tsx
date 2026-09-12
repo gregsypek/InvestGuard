@@ -62,19 +62,18 @@ export default async function ActivityPage({
 	const search = resolvedParams.search || "";
 	const category = resolvedParams.category || "ALL";
 	const sort = resolvedParams.sort || "date_desc";
-	// 🚀 KLUCZOWA ZMIANA: Inteligentny fallback do ciasteczka
 	const portfolioFilter =
 		resolvedParams.portfolio || defaultPortfolioId || "ALL";
 
-	// 1. FILTROWANIE PORTFELI NA PODSTAWIE HEADERA/URL
-	const activePortfolios =
-		portfolioFilter === "ALL"
-			? userPortfolios
-			: userPortfolios.filter((p) => p.id === portfolioFilter);
+	// 1. ZAWSZE POBIERAMY ZRZUTY DLA WSZYSTKICH PORTFELI (Wykres przefiltruje je w locie)
+	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
+		await getPortfolioSnapshotsHistory(
+			userPortfolios,
+			{ range: resolvedParams.range || "1Y" },
+			session.user.id,
+		);
 
-	// =================================================================
-	// 3. POBIERANIE TRANSAKCJI (Bezpieczne, oparte o sesję)
-	// =================================================================
+	// 2. POBIERAMY TRANSAKCJE DLA TABELI (Tylko dla wybranego portfela i tylko 10 sztuk na stronę)
 	const result = await getTransactionHistory(
 		currentPage,
 		10,
@@ -96,36 +95,32 @@ export default async function ActivityPage({
 		);
 	}
 
-	// ZMIANA: Sprawdzamy wszystkie aktywne filtry (w tym portfolio)
 	const hasActiveFilters =
 		search !== "" || category !== "ALL" || portfolioFilter !== "ALL";
-
 	if (result.meta.totalCount === 0 && !hasActiveFilters) {
 		return <PortfolioEmptyState variant="ACTIVITY" />;
 	}
 
 	const { data: transactions, meta } = result;
 
-	// 1. Filtrujemy portfele przekazywane do wykresu
-	// const filteredPortfolios =
-	// 	portfolioFilter === "ALL"
-	// 		? userPortfolios
-	// 		: userPortfolios.filter((p) => p.id === portfolioFilter);
-
-	// 2. Pobieramy historię TYLKO dla wybranych portfeli
-	// const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
-	// 	await getPortfolioSnapshotsHistory(
-	// 		filteredPortfolios, // 👈 ZAMIAST userPortfolios
-	// 		{ range: resolvedParams.range || "1Y" },
-	// 		session.user.id,
-	// 	);
-	// 2. GENEROWANIE DANYCH DO WYKRESU TYLKO DLA WYBRANYCH PORTFELI
-	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
-		await getPortfolioSnapshotsHistory(
-			activePortfolios, // 👈 ZMIANA: Przekazujemy tylko przefiltrowane portfele
-			{ range: resolvedParams.range || "1Y" },
-			session.user.id,
+	// 3. OBLICZENIA DLA NAGŁÓWKA
+	const activePortfolios =
+		portfolioFilter === "ALL"
+			? userPortfolios
+			: userPortfolios.filter((p) => p.id === portfolioFilter);
+	const currentTotalValue = activePortfolios.reduce((sum, portfolio) => {
+		return (
+			sum +
+			portfolio.assets.reduce(
+				(assetSum, asset) => assetSum + Number(asset.currentValue),
+				0,
+			)
 		);
+	}, 0);
+	const activePortfolioName =
+		portfolioFilter === "ALL"
+			? "Wszystkie Portfele"
+			: activePortfolios[0]?.name || "Nieznany Portfel";
 
 	const createPageUrl = (pageNumber: number) => {
 		const params = new URLSearchParams();
@@ -133,48 +128,19 @@ export default async function ActivityPage({
 		if (resolvedParams.category)
 			params.set("category", resolvedParams.category);
 		if (resolvedParams.sort) params.set("sort", resolvedParams.sort);
-		if (resolvedParams.portfolio)
-			params.set("portfolio", resolvedParams.portfolio);
+		if (portfolioFilter !== "ALL") params.set("portfolio", portfolioFilter);
 		params.set("page", pageNumber.toString());
 		return `/activity?${params.toString()}`;
 	};
 
-	// 1. Obliczamy całkowitą wycenę aktywów z aktualnie przeglądanych portfeli
-	const currentTotalValue = activePortfolios.reduce((sum, portfolio) => {
-		const assetsValue = portfolio.assets.reduce(
-			(assetSum, asset) => assetSum + Number(asset.currentValue),
-			0,
-		);
-		return sum + assetsValue;
-	}, 0);
-
-	// 2. Ustalamy dynamiczną nazwę dla okruszków (breadcrumbs)
-	const activePortfolioName =
-		portfolioFilter === "ALL"
-			? "Wszystkie Portfele"
-			: activePortfolios[0]?.name || "Nieznany Portfel";
-
 	return (
 		<div>
-			{/* NAGŁÓWEK GŁÓWNY */}
-			{/* <ActivityHeader
-				totalTransactions={meta.totalCount}
-				currentPage={currentPage}
-				totalPages={meta.totalPages}
-				customBreadcrumbs={
-					<nav className="text-sm text-slate-400 italic">
-						Historia /{" "}
-						<span className="text-amber-400 font-medium lowercase">
-							wszystko
-						</span>
-					</nav>
-				}
-			/> */}
 			<ActivityHeader
 				totalTransactions={meta.totalCount}
-				portfolioName={activePortfolioName}
-				totalValue={currentTotalValue}
-				hasActiveFilters={search !== "" || category !== "ALL"}
+				hasActiveFilters={
+					search !== "" || category !== "ALL" || portfolioFilter !== "ALL"
+				}
+				portfolios={userPortfolios}
 			/>
 
 			{/* NOWA SEKCJA: INTERAKTYWNY WYKRES */}
@@ -185,12 +151,11 @@ export default async function ActivityPage({
 				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
 			>
 				<HistoryChartSection
-					portfolios={activePortfolios}
+					portfolios={activePortfolios} //  Wykres dostaje tylko aktywne portfele!
 					transactions={transactions}
 					simulatedSnapshots={simulatedSnapshots}
 					realSnapshots={realSnapshots}
 					oldestRealSnapshotDate={oldestRealSnapshotDate}
-					defaultPortfolioId={defaultPortfolioId}
 				/>
 			</SectionLayout>
 

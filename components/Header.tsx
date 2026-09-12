@@ -57,9 +57,9 @@ export default function Header({
 	const router = useRouter();
 
 	// 1. Pobieramy ID z URL (to jest nadrzędne nad ciasteczkiem!)
-	// ZMIANA 1: Header musi sprawdzać również "portfolio" z adresu URL
 	const urlPortfolioId =
 		searchParams.get("portfolioId") || searchParams.get("portfolio");
+
 	// 2. Szukamy ID w ścieżce dla wszystkich modułów
 	const strategy = searchParams.get("s");
 	const segments = pathname.split("/");
@@ -84,17 +84,18 @@ export default function Header({
 	};
 
 	const idFromPath = getPathId();
-	// EN: Extract ID from the environment (URL or Path) and verify its existence
-	// Wyciągamy ID ze środowiska (URL lub ścieżka) i sprawdzamy, czy istnieje w bazie
 	const currentEnvId = urlPortfolioId || idFromPath;
-	const isCurrentValid = portfolios.some((p) => p.id === currentEnvId);
-	// EN: Consolidated logic: Priority: Valid URL ID > Cookie/Server Prop > Empty string
-	// Priorytet: Poprawne ID z adresu > Ciasteczko/Serwer > Pusty string
-	const rawId = isCurrentValid
-		? (currentEnvId ?? "")
-		: (selectedPortfolioId ?? "");
 
+	// Sprawdzamy, czy to konkretny portfel, czy polecenie widoku globalnego
+	const isCurrentValid = portfolios.some((p) => p.id === currentEnvId);
+	const isAll = currentEnvId === "ALL";
+
+	// Przepuszczamy "ALL" do renderowania, ale nie do ciasteczka
+	const rawId =
+		isCurrentValid || isAll ? currentEnvId : (selectedPortfolioId ?? "");
 	const displayValue = isDemoMode ? "" : rawId;
+
+	// const isGlobalHome = pathname === "/" || displayValue === "ALL";
 
 	const handlePortfolioChange = (id: string) => {
 		if (id === "enter-demo") {
@@ -139,9 +140,8 @@ export default function Header({
 	}, [selectedPortfolioId, pathname, urlPortfolioId, idFromPath, router]);
 
 	// WARUNKI STYLOWANIA
-	const isGlobalHome = pathname === "/"; // 1. Wykrywamy stronę główną
+	const isGlobalHome = pathname === "/" || displayValue === "ALL"; // 🚀 ZMIANA: Wykrywamy Widok Globalny na podstawie wartości, nie tylko ścieżki
 
-	// 2. Alert pojawia się TYLKO, gdy nie jesteśmy w demo i NIE jesteśmy na stronie głównej
 	const hasNoPortfolioSelected =
 		!displayValue && portfolios.length > 0 && !isDemoMode && !isGlobalHome;
 
@@ -289,27 +289,23 @@ export default function Header({
 				<div className="w-full">
 					<Select
 						key={isDemoMode ? "demo" : `real-${displayValue}`}
-						value={displayValue || undefined}
+						// 🚀 KLUCZOWE: Jeśli displayValue to "ALL", dajemy undefined, by wymusić placeholder!
+						value={
+							displayValue === "ALL" ? undefined : displayValue || undefined
+						}
 						onValueChange={handlePortfolioChange}
 					>
 						<SelectTrigger
 							className={cn(
 								"w-full md:w-80 font-black text-[10px] md:text-[11px] uppercase tracking-widest h-11 rounded-xl transition-all duration-500 ease-in-out border outline-none focus:ring-0",
-								// 1. Zwykły stan (Wybrany portfel)
 								displayValue &&
+									displayValue !== "ALL" &&
 									!isDemoMode &&
 									"bg-black/5 dark:bg-white/5 border-t-border-subtle hover:border-blue-500/30 text-t-text-primary shadow-sm",
-
-								// 2. ALERT STATE: Brak wybranego portfela (Premium Glow)
 								hasNoPortfolioSelected &&
 									"bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-500 shadow-[0_0_20px_-3px_rgba(245,158,11,0.3)] animate-pulse hover:animate-none hover:bg-amber-500/20",
-
-								// 3. WIDOK GLOBALNY (Nowy, elegancki stan dla strony głównej)
 								isGlobalHome &&
-									!displayValue &&
 									"bg-blue-600/10 border-blue-500/30 text-blue-500 dark:text-blue-400 shadow-[0_0_15px_-3px_rgba(59,130,246,0.15)]",
-
-								// 4. Demo Mode
 								isDemoMode &&
 									"border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)]",
 							)}
@@ -319,9 +315,8 @@ export default function Header({
 									<GraduationCap className="h-4 w-4 shrink-0 text-emerald-500" />
 								) : hasNoPortfolioSelected ? (
 									<AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-								) : isGlobalHome && !displayValue ? (
-									// IKONA DLA WIDOKU GLOBALNEGO
-									<Wallet2 className="h-4 w-4 shrink-0 text-blue-500" />
+								) : isGlobalHome ? (
+									<Globe2 className="h-4 w-4 shrink-0 text-blue-500" />
 								) : (
 									<WalletCards className="h-4 w-4 shrink-0 text-blue-500" />
 								)}
@@ -331,8 +326,8 @@ export default function Header({
 										placeholder={
 											isDemoMode
 												? "Tryb Edukacyjny"
-												: isGlobalHome && !displayValue
-													? "WIDOK GLOBALNY" // TEKST DLA WIDOKU GLOBALNEGO
+												: isGlobalHome
+													? "WIDOK GLOBALNY" // <- Tu pojawi się tekst
 													: portfolios.length === 0
 														? "Brak portfeli"
 														: "WYBIERZ PORTFEL..."
@@ -361,7 +356,6 @@ export default function Header({
 
 							<SelectSeparator className="bg-t-border-subtle mx-1 my-1" />
 
-							{/* Opcja wejścia w demo */}
 							<SelectItem
 								value="enter-demo"
 								className="text-xs font-bold tracking-wide rounded-xl text-emerald-600 dark:text-emerald-500 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer py-2.5 transition-colors"
@@ -378,7 +372,7 @@ export default function Header({
 
 			{/* PRAWA STRONA */}
 			<div className="flex items-center gap-2 md:gap-3">
-				{isGlobalHome && !displayValue ? (
+				{isGlobalHome ? (
 					/* WIDOK GLOBALNY: Odznaka (Badge) informacyjna */
 					<div className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl shadow-sm h-11">
 						<Globe2 className="w-4 h-4 text-blue-400 animate-[spin_12s_linear_infinite]" />
@@ -392,7 +386,7 @@ export default function Header({
 						</div>
 					</div>
 				) : (
-					/* WIDOK PORTFELA: Twój dotychczasowy komponent */
+					/* WIDOK PORTFELA */
 					<RefreshButton
 						portfolioId={displayValue}
 						role={userRole}

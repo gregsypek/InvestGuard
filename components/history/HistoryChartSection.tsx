@@ -4,7 +4,7 @@ import { PortfolioWithAssets, Transaction } from "@/lib/types";
 
 import { InlineChartFilters } from "@/components/ui/InlineChartFilters";
 import { Loader2 } from "lucide-react";
-import { PortfolioChart } from "../dashboard/PortfolioCharts"; // lub odpowiednia ścieżka do wykresu
+import { PortfolioChart } from "../dashboard/PortfolioCharts";
 import { SimulatedSnapshot } from "@/components/ui/useDashboardData";
 import { prepareChartAnalytics } from "@/lib/chart-helpers";
 import { useChartContext } from "@/components/providers/ChartProvider";
@@ -16,49 +16,46 @@ interface HistoryChartSectionProps {
 	simulatedSnapshots: SimulatedSnapshot[];
 	realSnapshots: SimulatedSnapshot[];
 	oldestRealSnapshotDate?: Date;
-	defaultPortfolioId?: string;
 }
 
 export function HistoryChartSection({
 	portfolios,
 	transactions,
-	simulatedSnapshots, // Opcjonalny w tym układzie, ale zostawiamy dla spójności propsów
+	simulatedSnapshots,
 	realSnapshots,
 	oldestRealSnapshotDate,
-	defaultPortfolioId,
 }: HistoryChartSectionProps) {
-	console.log(
-		"🚀 ~ HistoryChartSection ~ defaultPortfolioId:",
-		defaultPortfolioId,
-	);
-	// 1. Zaciągamy ustawienia z Contextu (PRZYWRACAMY selectedIds do filtrowania!)
+	const fullTransactionHistory = useMemo(() => {
+		return portfolios.flatMap(
+			(p) => p.transactionHistories || [],
+		) as unknown as Transaction[];
+	}, [portfolios]);
+
+	// 1. Zaciągamy selectedIds z kontekstu
 	const { chartMode, dataMode, isPending, activeRange, selectedIds } =
 		useChartContext();
 
-	// 2. Mapujemy dane wyjściowe pod PortfolioChart
 	const portfolioChartData = useMemo(() => {
 		// =========================================================
-		// USUWAMY LOKALNE FILTROWANIE - PAGE.TSX ZROBIŁ TO ZA NAS!
+		// FILTROWANIE PO PIGUŁKACH Z KONTEKSTU (BŁYSKAWICZNE W PAMIĘCI)
 		// =========================================================
+		const activePortfolios = selectedIds.includes("ALL")
+			? portfolios
+			: portfolios.filter((p) => selectedIds.includes(p.id));
+
+		const activeRealSnapshots = selectedIds.includes("ALL")
+			? realSnapshots
+			: realSnapshots.filter((snap) => selectedIds.includes(snap.portfolioId));
 
 		// TRYB REALNY
-		if (dataMode === "REAL" && realSnapshots.length > 0) {
-			const groupedByDate = realSnapshots.reduce(
-				// <- Używamy realSnapshots bezpośrednio
+		if (dataMode === "REAL" && activeRealSnapshots.length > 0) {
+			const groupedByDate = activeRealSnapshots.reduce(
 				(acc: any, snap: any) => {
 					const dateStr = new Date(snap.date).toISOString().split("T")[0];
-
-					if (!acc[dateStr]) {
-						acc[dateStr] = {
-							date: dateStr,
-							totalValue: 0,
-							investedValue: 0,
-						};
-					}
-
+					if (!acc[dateStr])
+						acc[dateStr] = { date: dateStr, totalValue: 0, investedValue: 0 };
 					acc[dateStr].totalValue += Number(snap.totalValue);
 					acc[dateStr].investedValue += Number(snap.investedValue);
-
 					return acc;
 				},
 				{},
@@ -74,7 +71,6 @@ export function HistoryChartSection({
 				const investedVal = Number(snap.investedValue.toFixed(2));
 				const percentageValue =
 					investedVal > 0 ? ((totalVal - investedVal) / investedVal) * 100 : 0;
-
 				return {
 					date: snap.date,
 					value:
@@ -86,10 +82,8 @@ export function HistoryChartSection({
 			});
 		}
 
-		// =========================================================
-		// TRYB SYMULOWANY: Stary, gładki silnik oparty na transakcjach
-		// =========================================================
-		const allAssets = portfolios.flatMap((p) => p.assets);
+		// TRYB SYMULOWANY
+		const allAssets = activePortfolios.flatMap((p) => p.assets);
 		const totalInvoiced = allAssets.reduce(
 			(sum, a) => sum + Number(a.investedCapital),
 			0,
@@ -98,24 +92,23 @@ export function HistoryChartSection({
 			(sum, a) => sum + Number(a.currentValue),
 			0,
 		);
-
 		const currentRoiFactor = totalInvoiced > 0 ? totalValue / totalInvoiced : 1;
 
-		// Używamy przefiltrowanych transakcji!
+		const activeTransactions = activePortfolios.flatMap(
+			(p) => p.transactionHistories || [],
+		) as any;
 		const { areaPoints } = prepareChartAnalytics(
-			transactions, // <- Używamy transactions z props
+			activeTransactions,
 			currentRoiFactor,
 		);
 
 		return areaPoints.map((point) => {
 			let normalizedDate = new Date().toISOString().split("T")[0];
-
 			const [month, year] = point.name.split(".");
 			if (month && year) {
 				const fullYear = parseInt(year) > 50 ? `19${year}` : `20${year}`;
 				normalizedDate = `${fullYear}-${month}-28`;
 			}
-
 			const investedVal = point.wkład;
 			const totalVal = point.wycena;
 			const percentageValue =
@@ -130,34 +123,24 @@ export function HistoryChartSection({
 				invested: investedVal,
 			};
 		});
-	}, [realSnapshots, dataMode, chartMode, portfolios, transactions]);
-
+	}, [realSnapshots, dataMode, chartMode, portfolios, selectedIds]); // 👈 Zależność od selectedIds wymusza natychmiastowe przeliczenie!
 	return (
 		<div className="flex flex-col h-full w-full">
-			{/* FILTRY - Przywracamy pigułki portfeli! */}
 			<InlineChartFilters
 				portfolios={portfolios}
 				oldestRealSnapshotDate={oldestRealSnapshotDate}
 				showModeToggle={true}
-				showPortfolioSelector={false} // 👈 USTAWIAMY NA FALSE
+				showPortfolioSelector={false}
 			/>
-
 			<div className="relative h-[400px] w-full mt-4">
 				{isPending && (
-					<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-2xl transition-all duration-300 flex items-center justify-center">
-						<div className="flex flex-col items-center gap-3 bg-slate-900/90 border border-slate-700/50 p-4 rounded-2xl shadow-2xl">
-							<Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-							<span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-								Przeliczanie...
-							</span>
-						</div>
+					<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-2xl flex items-center justify-center">
+						<Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
 					</div>
 				)}
-
 				<PortfolioChart
 					key={`${chartMode}-${dataMode}-${activeRange}`}
 					data={portfolioChartData}
-					// Przekazujemy prosto transactions, bez lokalnego .filter()
 					transactions={transactions}
 					mode={chartMode}
 				/>

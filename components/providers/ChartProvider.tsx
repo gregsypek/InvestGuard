@@ -3,7 +3,7 @@
 import React, {
 	createContext,
 	useContext,
-	useEffect,
+	useMemo,
 	useState,
 	useTransition,
 } from "react";
@@ -42,20 +42,14 @@ export function ChartProvider({ children }: { children: React.ReactNode }) {
 	const [chartMode, setChartMode] = useState<"VALUE" | "PERCENTAGE">("VALUE");
 	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("SIMULATED");
 
-	// 1. Czysty start (odczytujemy URL, potem Cookie, potem ALL) - to wystarczy!
+	// 1. STAN WYPROWADZANY Z URL / CIASTECZKA (Brak useState dla selectedIds!)
+	// 1. Inicjalizacja z URL lub Ciasteczka (tylko na start)
 	const [selectedIds, setSelectedIds] = useState<string[]>(() => {
 		if (portfolioParam) return [portfolioParam];
 		const cookiePortfolioId = Cookies.get("selectedPortfolioId");
 		return cookiePortfolioId ? [cookiePortfolioId] : ["ALL"];
 	});
-	// Extract date ranges from URL parameters
-	const activeRange = searchParams.get("range") || "1M";
-	const currentFrom = searchParams.get("from") || "";
-	const currentTo = searchParams.get("to") || "";
-	const fromDate = currentFrom ? new Date(currentFrom) : undefined;
-	const toDate = currentTo ? new Date(currentTo) : undefined;
-
-	// Toggle portfolio selection
+	// 2. Błyskawiczny multi-select w pamięci (BEZ router.push!)
 	const togglePortfolio = (id: string) => {
 		setSelectedIds((prev) => {
 			if (id === "ALL") return ["ALL"];
@@ -65,6 +59,31 @@ export function ChartProvider({ children }: { children: React.ReactNode }) {
 			return newIds.length === 0 ? ["ALL"] : newIds;
 		});
 	};
+
+	// 1. Inicjalizacja z ciasteczka lub URL
+	// const [selectedIds, setSelectedIds] = useState<string[]>(() => {
+	// 	if (portfolioParam) return [portfolioParam];
+	// 	const cookiePortfolioId = Cookies.get("selectedPortfolioId");
+	// 	return cookiePortfolioId ? [cookiePortfolioId] : ["ALL"];
+	// });
+
+	// 🚀 DODANE: Obsługa zakresów dat i czasu z URL (naprawia błędy TypeScript)
+	const activeRange = searchParams.get("range") || "1M";
+	const currentFrom = searchParams.get("from") || "";
+	const currentTo = searchParams.get("to") || "";
+	const fromDate = currentFrom ? new Date(currentFrom) : undefined;
+	const toDate = currentTo ? new Date(currentTo) : undefined;
+
+	// 2. togglePortfolio pozwala w locie zmieniać stan!
+	// const togglePortfolio = (id: string) => {
+	// 	setSelectedIds((prev) => {
+	// 		if (id === "ALL") return ["ALL"];
+	// 		const newIds = prev.includes(id)
+	// 			? prev.filter((p) => p !== id)
+	// 			: [...prev.filter((p) => p !== "ALL"), id];
+	// 		return newIds.length === 0 ? ["ALL"] : newIds;
+	// 	});
+	// };
 
 	// Update URL when predefined range changes
 	const handleRangeChange = (range: string) => {

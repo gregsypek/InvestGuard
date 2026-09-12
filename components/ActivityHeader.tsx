@@ -1,24 +1,50 @@
-// components/history/ActivityHeader.tsx
+"use client";
+
 import { Filter, History, Wallet2 } from "lucide-react";
 
+import { FilterBadge } from "./shared/FilterBadge";
 import { ValueCard } from "./shared/ValueCard";
+import { useChartContext } from "./providers/ChartProvider";
 
 interface ActivityHeaderProps {
-	totalTransactions: number;
-	portfolioName: string;
-	totalValue: number;
+	totalTransactions: number; // (Możesz to zostawić dla kompatybilności z page.tsx)
 	hasActiveFilters: boolean;
+	portfolios: any[];
 }
 
 export function ActivityHeader({
-	totalTransactions,
-	portfolioName,
-	totalValue,
 	hasActiveFilters,
+	portfolios,
 }: ActivityHeaderProps) {
+	// Usunięto isPending, ponieważ FilterBadge nie obsługuje disabled
+	const { selectedIds, togglePortfolio } = useChartContext();
+
+	const dynamicName = selectedIds.includes("ALL")
+		? "Wszystkie Portfele"
+		: selectedIds.length === 1
+			? portfolios.find((p) => p.id === selectedIds[0])?.name ||
+				"Nieznany Portfel"
+			: "Wiele Portfeli";
+
+	const dynamicTotalValue = portfolios
+		.filter((p) => selectedIds.includes("ALL") || selectedIds.includes(p.id))
+		.reduce(
+			(sum, p) =>
+				sum +
+				p.assets.reduce(
+					(assetSum: number, a: any) => assetSum + Number(a.currentValue),
+					0,
+				),
+			0,
+		);
+
+	// 🚀 ZMIANA: Dynamiczne liczenie transakcji z klikniętych portfeli
+	const dynamicTotalTransactions = portfolios
+		.filter((p) => selectedIds.includes("ALL") || selectedIds.includes(p.id))
+		.reduce((sum, p) => sum + (p.transactionHistories?.length || 0), 0);
+
 	return (
-		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-900 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
-			{/* --- TEKSTURA SVG (Giełdowe Świece Japońskie z maskowaniem) --- */}
+		<header className="relative overflow-hidden flex flex-col gap-6 w-full bg-slate-900 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
 				style={{
@@ -30,41 +56,56 @@ export function ActivityHeader({
 				}}
 			/>
 
-			{/* GÓRA: Nawigacja i Tytuł */}
 			<div className="relative z-10">
 				<nav className="text-sm text-slate-400 italic flex items-center gap-1.5">
 					Historia /{" "}
 					<span className="text-amber-400 font-medium lowercase">
-						{portfolioName}
+						{dynamicName}
 					</span>
-					{hasActiveFilters && (
+					{/* {hasActiveFilters && (
 						<span className="flex items-center gap-1 ml-2 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest not-italic">
-							<Filter className="w-3 h-3" /> Aktywne filtry
+							<Filter className="w-3 h-3" /> Aktywne filtry w tabeli
 						</span>
-					)}
+					)} */}
 				</nav>
 				<div className="mt-2">
 					<h1 className="text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">
 						Historia Operacji
 					</h1>
-					<p className="text-slate-400 font-medium mt-1 text-sm md:text-base">
-						Zapis transakcji z możliwością filtrowania i szczegółowego wglądu w
-						każdą operację.
-					</p>
 				</div>
 			</div>
 
-			{/* DÓŁ: Główne Statystyki */}
+			<div className="relative z-10 flex items-center flex-wrap gap-2 py-2">
+				<span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">
+					Wybierz portfel:
+				</span>
+				<FilterBadge
+					id="ALL"
+					label="Wszystkie Portfele"
+					isSelected={selectedIds.includes("ALL")}
+					onToggle={() => togglePortfolio("ALL")}
+				/>
+				{portfolios.map((p) => (
+					<FilterBadge
+						key={p.id}
+						id={p.id}
+						label={p.name}
+						isSelected={selectedIds.includes(p.id)}
+						onToggle={() => togglePortfolio(p.id)}
+					/>
+				))}
+			</div>
+
 			<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pb-2 md:pb-0">
-				{/* OGROMNA LICZBA OPERACJI - Główny punkt skupienia */}
 				<div className="space-y-1">
 					<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[10px] uppercase mb-1">
 						<History className="w-3.5 h-3.5" />
-						<span>Zarejestrowane operacje</span>
+						<span>Wszystkie Zarejestrowane</span>
 					</div>
 					<div className="flex items-baseline gap-2">
 						<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
-							{totalTransactions}
+							{/* 🚀 ZMIANA: Wyświetlamy nasz dynamiczny stan */}
+							{dynamicTotalTransactions}
 						</h2>
 						<span className="text-xl md:text-2xl text-slate-500 font-bold uppercase">
 							szt.
@@ -72,7 +113,6 @@ export function ActivityHeader({
 					</div>
 				</div>
 
-				{/* PRAWA STRONA: Wycena widoku zamiast stron */}
 				<div className="flex self-start sm:justify-end flex-wrap gap-8 md:gap-12 overflow-x-auto no-scrollbar">
 					<ValueCard label="Bieżąca Wycena" icon={Wallet2}>
 						<div className="flex items-baseline gap-1.5 font-mono">
@@ -81,7 +121,7 @@ export function ActivityHeader({
 									style: "currency",
 									currency: "PLN",
 									maximumFractionDigits: 0,
-								}).format(totalValue)}
+								}).format(dynamicTotalValue)}
 							</span>
 						</div>
 					</ValueCard>

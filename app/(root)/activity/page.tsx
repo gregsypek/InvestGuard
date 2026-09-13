@@ -165,7 +165,7 @@ export default async function ActivityPage({
 				titleIcon={ListOrdered}
 				subtitle="Dokładny zapis każdej zrealizowanej operacji."
 				description="Tabela zawiera szczegółową historię Twoich zakupów, sprzedaży, wpłat gotówkowych i dywidend. Dzięki niej możesz dokładnie śledzić przepływ kapitału pomiędzy portfelami oraz wyciągać wnioski na podstawie historycznych decyzji (przeglądając notatki)."
-				action={<ExportReport data={transactions} />}
+				// action={<ExportReport data={transactions} />}
 			>
 				<ActivityTable
 					transactions={transactions}

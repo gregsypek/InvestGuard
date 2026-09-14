@@ -8,7 +8,6 @@ const prisma = new PrismaClient({
 	adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
-// Pomocnicza funkcja do cofania się w czasie (np. o 30 dni)
 const getPastDate = (daysAgo: number) => {
 	const date = new Date();
 	date.setDate(date.getDate() - daysAgo);
@@ -22,7 +21,6 @@ async function main() {
 	});
 	console.log("🚀 Rozpoczynam generowanie Pokazowego Portfela (Demo)...");
 
-	// 1. Tworzenie użytkownika testowego
 	const hashedPassword = await bcrypt.hash("demo123", 10);
 	const user = await prisma.user.upsert({
 		where: { email: "demo@example.com" },
@@ -35,7 +33,6 @@ async function main() {
 		},
 	});
 
-	// 2. Tworzenie Portfela
 	const portfolio = await prisma.portfolio.upsert({
 		where: { id: "demo-portfolio-id" },
 		update: {},
@@ -51,53 +48,10 @@ async function main() {
 
 	console.log("✅ Użytkownik i Portfel utworzeni.");
 
-	// 3. Tworzenie Walorów (Assets)
-	const assetApple = await prisma.asset.create({
-		data: {
-			portfolioId: portfolio.id,
-			name: "Apple Inc.",
-			ticker: "AAPL",
-			category: "DEVELOPED",
-			quantity: 50,
-			investedCapital: 37500.0,
-			currentValue: 44025.0,
-			purchaseDate: getPastDate(45),
-			updatedAt: new Date(),
-		},
-	});
-
-	const assetSP500 = await prisma.asset.create({
-		data: {
-			portfolioId: portfolio.id,
-			name: "S&P 500 ETF",
-			ticker: "SPY",
-			category: "DEVELOPED",
-			quantity: 20,
-			investedCapital: 40000.0,
-			currentValue: 45000.0,
-			purchaseDate: getPastDate(85),
-			updatedAt: new Date(),
-		},
-	});
-
-	const assetBTC = await prisma.asset.create({
-		data: {
-			portfolioId: portfolio.id,
-			name: "Bitcoin",
-			ticker: "BTC",
-			category: "CRYPTO",
-			quantity: 0.15,
-			investedCapital: 38000.0,
-			currentValue: 39750.0,
-			purchaseDate: getPastDate(60),
-			updatedAt: new Date(),
-		},
-	});
-
-	// Poprawiono wycenę obligacji o narosłe odsetki (ok. 160 PLN zysku po 90 dniach)
-	const assetBonds = await prisma.asset.create({
-		data: {
-			portfolioId: portfolio.id,
+	// --- 1. WALORY (Dodano więcej Boosterów i Krypto do testowania Alpha) ---
+	const assetsData = [
+		// Bezpieczna Baza (Ignorowana przez stronę Alpha)
+		{
 			name: "Obligacje Skarbowe (TOS)",
 			ticker: "TOS",
 			category: "BONDS",
@@ -105,29 +59,48 @@ async function main() {
 			investedCapital: 10000.0,
 			currentValue: 10160.0,
 			purchaseDate: getPastDate(90),
-			interestRate: 6.5,
-			updatedAt: new Date(),
 		},
-	});
-
-	const assetBondsEDO = await prisma.asset.create({
-		data: {
-			portfolioId: portfolio.id,
-			name: "Obligacje Skarbowe 10-letnie (EDO)",
-			ticker: "EDO1133",
-			category: "BONDS",
-			quantity: 50,
-			investedCapital: 5000.0, // 50 sztuk po 100 PLN
-			currentValue: 5074.5, // 5000 + ok. 74.5 PLN odsetek (7.25% przez 75 dni)
-			purchaseDate: getPastDate(75),
-			interestRate: 7.25, // Wyższe oprocentowanie dla 10-latek
-			updatedAt: new Date(),
+		{
+			name: "S&P 500 ETF",
+			ticker: "SPY",
+			category: "DEVELOPED",
+			quantity: 20,
+			investedCapital: 40000.0,
+			currentValue: 45000.0,
+			purchaseDate: getPastDate(85),
 		},
-	});
 
-	const assetNvidia = await prisma.asset.create({
-		data: {
-			portfolioId: portfolio.id,
+		// KRYPTOWALUTY (Sekcja Alpha)
+		{
+			name: "Bitcoin",
+			ticker: "BTC",
+			category: "CRYPTO",
+			quantity: 0.15,
+			investedCapital: 38000.0,
+			currentValue: 39750.0,
+			purchaseDate: getPastDate(60),
+		},
+		{
+			name: "Ethereum",
+			ticker: "ETH",
+			category: "CRYPTO",
+			quantity: 2.5,
+			investedCapital: 15000.0,
+			currentValue: 18500.0,
+			purchaseDate: getPastDate(50),
+		},
+		{
+			name: "Solana",
+			ticker: "SOL",
+			category: "CRYPTO",
+			quantity: 45,
+			investedCapital: 4500.0,
+			currentValue: 12000.0,
+			purchaseDate: getPastDate(80),
+		}, // Duży zysk (Top Performer)
+
+		// AKCJE BOOSTER (Sekcja Alpha)
+		{
 			name: "NVIDIA Corporation",
 			ticker: "NVDA",
 			category: "BOOSTER",
@@ -138,14 +111,9 @@ async function main() {
 			expectedRoi: 75.0,
 			conviction: 90,
 			riskLevel: "HIGH",
-			rationale: "Dominacja w segmencie sztucznej inteligencji i układów GPU.",
-			updatedAt: new Date(),
+			rationale: "Dominacja GPU.",
 		},
-	});
-
-	const assetPalantir = await prisma.asset.create({
-		data: {
-			portfolioId: portfolio.id,
+		{
 			name: "Palantir Technologies",
 			ticker: "PLTR",
 			category: "BOOSTER",
@@ -156,35 +124,48 @@ async function main() {
 			expectedRoi: 50.0,
 			conviction: 80,
 			riskLevel: "MEDIUM-HIGH",
-			rationale: "Kontrakty rządowe i dynamiczny wzrost platformy AIP.",
-			updatedAt: new Date(),
+			rationale: "AIP rośnie.",
 		},
-	});
+		{
+			name: "Tesla Inc.",
+			ticker: "TSLA",
+			category: "BOOSTER",
+			quantity: 25,
+			investedCapital: 22000.0,
+			currentValue: 19500.0,
+			purchaseDate: getPastDate(30),
+			expectedRoi: 30.0,
+			conviction: 55,
+			riskLevel: "HIGH",
+			rationale: "Zniżka cen w Chinach, ryzyko.",
+		}, // Aktywo na minusie (Psuje Win Rate)
+	];
 
-	console.log("✅ Wszystkie walory dodane.");
+	for (const a of assetsData) {
+		await prisma.asset.create({
+			data: { ...a, portfolioId: portfolio.id, updatedAt: new Date() } as any,
+		});
+	}
 
-	// 4. Historia Transakcji (Zbilansowane kwotowo)
+	// --- 2. HISTORIA TRANSAKCJI (Dodano sprzedaże, by przetestować zyski i wypłaty w Alpha) ---
 	const transactions = [
 		{
-			portfolioId: portfolio.id,
 			type: "DEPOSIT",
-			executedValue: 160000.0, // Zwiększono depozyt startowy do 160k, by pokryć wszystkie zakupy i zostawić gotówkę
+			executedValue: 200000.0,
 			executedAt: getPastDate(90),
 			assetName: "Wpłata PLN",
 			category: "CASH",
 		},
 		{
-			portfolioId: portfolio.id,
 			ticker: "TOS",
 			type: "BUY",
 			quantity: 100,
 			executedValue: 10000.0,
 			executedAt: getPastDate(90),
-			assetName: "Obligacje Skarbowe",
+			assetName: "Obligacje",
 			category: "BONDS",
 		},
 		{
-			portfolioId: portfolio.id,
 			ticker: "SPY",
 			type: "BUY",
 			quantity: 20,
@@ -194,7 +175,15 @@ async function main() {
 			category: "DEVELOPED",
 		},
 		{
-			portfolioId: portfolio.id,
+			ticker: "SOL",
+			type: "BUY",
+			quantity: 45,
+			executedValue: 4500.0,
+			executedAt: getPastDate(80),
+			assetName: "Solana",
+			category: "CRYPTO",
+		},
+		{
 			ticker: "BTC",
 			type: "BUY",
 			quantity: 0.1,
@@ -204,37 +193,42 @@ async function main() {
 			category: "CRYPTO",
 		},
 		{
-			portfolioId: portfolio.id,
 			ticker: "NVDA",
 			type: "BUY",
 			quantity: 15,
 			executedValue: 18000.0,
 			executedAt: getPastDate(60),
-			assetName: "NVIDIA Corporation",
+			assetName: "NVIDIA",
 			category: "BOOSTER",
 		},
 		{
-			portfolioId: portfolio.id,
-			ticker: "AAPL",
+			ticker: "ETH",
 			type: "BUY",
-			quantity: 50,
-			executedValue: 37500.0,
-			executedAt: getPastDate(45),
-			assetName: "Apple Inc.",
-			category: "DEVELOPED",
+			quantity: 2.5,
+			executedValue: 15000.0,
+			executedAt: getPastDate(50),
+			assetName: "Ethereum",
+			category: "CRYPTO",
 		},
 		{
-			portfolioId: portfolio.id,
 			ticker: "PLTR",
 			type: "BUY",
 			quantity: 40,
 			executedValue: 8000.0,
 			executedAt: getPastDate(45),
-			assetName: "Palantir Technologies",
+			assetName: "Palantir",
 			category: "BOOSTER",
 		},
 		{
-			portfolioId: portfolio.id,
+			ticker: "TSLA",
+			type: "BUY",
+			quantity: 25,
+			executedValue: 22000.0,
+			executedAt: getPastDate(30),
+			assetName: "Tesla",
+			category: "BOOSTER",
+		},
+		{
 			ticker: "BTC",
 			type: "BUY",
 			quantity: 0.05,
@@ -243,44 +237,47 @@ async function main() {
 			assetName: "Bitcoin",
 			category: "CRYPTO",
 		},
+
+		// SYMULACJA SPRZEDAŻY Z ZYSKIEM (W połowie okresu sprzedajemy część NVDA, żeby zobaczyć jak reagują wskaźniki Alpha)
 		{
-			portfolioId: portfolio.id,
-			ticker: "EDO1133",
-			type: "BUY",
-			quantity: 50,
-			executedValue: 5000.0,
-			executedAt: getPastDate(75), // Kupione 75 dni temu
-			assetName: "Obligacje 10-letnie",
-			category: "BONDS",
+			ticker: "NVDA",
+			type: "SELL",
+			quantity: 5,
+			executedValue: 8500.0,
+			executedAt: getPastDate(10),
+			assetName: "NVIDIA",
+			category: "BOOSTER",
+			rationale: "Realizacja części zysków po rajdzie.",
 		},
 	];
 
 	for (const tx of transactions) {
-		await prisma.transactionHistory.create({ data: tx as any });
+		await prisma.transactionHistory.create({
+			data: { ...tx, portfolioId: portfolio.id } as any,
+		});
 	}
 
-	console.log("✅ Historia transakcji wygenerowana.");
-
-	// 5. Generowanie sztucznych Snaphotów na 90 dni wstecz
-	console.log("⏳ Generowanie historycznych wycen portfela (Snapshots)...");
-
-	let currentInvested = 50000; // Start z 90 dni temu: Obligacje (10k) + SPY (40k)
-	let baseValue = 50000;
-
+	// --- 3. SNAPSHOTY (Zrzuty wyceny całego portfela wstecz) ---
+	let currentInvested = 0;
 	const snapshots = [];
+
 	for (let i = 90; i >= 0; i--) {
 		const date = getPastDate(i);
 		date.setUTCHours(0, 0, 0, 0);
 
-		const marketFluctuation = Math.sin(i / 5) * 2000 + Math.cos(i / 2) * 1000;
+		// Odwzorowanie dodawania kapitału w czasie w oparciu o transakcje wyżej
+		if (i === 90) currentInvested += 10000;
+		if (i === 85) currentInvested += 40000;
+		if (i === 80) currentInvested += 4500;
+		if (i === 60) currentInvested += 43000;
+		if (i === 50) currentInvested += 15000;
+		if (i === 45) currentInvested += 8000;
+		if (i === 30) currentInvested += 22000;
+		if (i === 15) currentInvested += 13000;
+		if (i === 10) currentInvested -= 8500; // Odejmujemy wypłatę ze sprzedaży
 
-		// Synchronizacja kapitału z realnymi datami zakupów z tablicy transakcji
-		if (i === 75) currentInvested += 5000; // Zakup obligacji 10-letnich
-		if (i === 60) currentInvested += 25000 + 18000; // Zakup BTC + Nvidia
-		if (i === 45) currentInvested += 37500 + 8000; // Zakup Apple + Palantir
-		if (i === 15) currentInvested += 13000; // Dokupienie BTC
-
-		baseValue = currentInvested + (90 - i) * 180 + marketFluctuation;
+		const marketFluctuation = Math.sin(i / 5) * 4000 + Math.cos(i / 2) * 2000;
+		const baseValue = currentInvested + (90 - i) * 350 + marketFluctuation;
 
 		snapshots.push({
 			portfolioId: portfolio.id,
@@ -295,15 +292,14 @@ async function main() {
 		skipDuplicates: true,
 	});
 
-	console.log("✅ Wgrano 90 dni historii dla trybu Rzeczywistego!");
 	console.log(
-		"🎉 Seedowanie zakończone sukcesem. Możesz się zalogować jako demo@example.com (hasło: demo123)",
+		"✅ Zakończono seedowanie bogatych danych testowych dla Alpha Selection.",
 	);
 }
 
 main()
 	.catch((e) => {
-		console.error("❌ Błąd podczas seedowania:", e);
+		console.error("❌ Błąd:", e);
 		process.exit(1);
 	})
 	.finally(async () => {

@@ -108,7 +108,7 @@ export function InlineChartFilters({
 						))}
 					</div>
 				)} */}
-				{showPortfolioSelector && portfolios.length > 0 && (
+				{/* {showPortfolioSelector && portfolios.length > 0 && (
 					<div className="flex flex-1 xl:flex-none xl:w-56 items-center gap-2 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg px-2 py-1.5 focus-within:border-t-border transition-colors overflow-hidden">
 						<span className="hidden sm:block text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">
 							Portfel:
@@ -134,7 +134,7 @@ export function InlineChartFilters({
 							))}
 						</select>
 					</div>
-				)}
+				)} */}
 
 				{/* PRAWA STRONA: PLN/% oraz Realne/Symulacja */}
 				<div className="flex flex-wrap items-center gap-4 w-full xl:w-auto justify-end ml-auto">

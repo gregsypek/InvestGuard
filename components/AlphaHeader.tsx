@@ -28,22 +28,6 @@ export function AlphaHeader({
 		"ALL",
 	);
 
-	// 🚀 ZMIANA: Prawidłowa identyfikacja Krypto (po kategorii z bazy lub tickerze)
-	// const isAssetCrypto = (a: any) =>
-	// 	a.category === "CRYPTO" ||
-	// 	!!a.ticker?.match(/BTC|ETH|SOL|ADA|DOGE|XRP|DOT/i);
-
-	// const hasCrypto = assets.some(isAssetCrypto);
-	// const hasStocks = assets.some((a) => !isAssetCrypto(a));
-	// const showPills = hasCrypto && hasStocks;
-
-	// const filteredAssets = useMemo(() => {
-	// 	if (filterMode === "ALL") return assets;
-	// 	return assets.filter((a) =>
-	// 		filterMode === "CRYPTO" ? isAssetCrypto(a) : !isAssetCrypto(a),
-	// 	);
-	// }, [assets, filterMode]);
-
 	// 🚀 ZMIANA: Czyste i bezpośrednie sprawdzanie po Twoim Enumie z bazy danych
 	const isCrypto = (a: any) => a.category === "CRYPTO";
 	const isBooster = (a: any) => a.category === "BOOSTER"; // BOOSTER to w naszej strategii Akcje

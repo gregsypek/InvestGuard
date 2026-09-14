@@ -1,18 +1,21 @@
-import { ChartArea, ListOrdered, Rocket, Wrench } from "lucide-react";
 import {
-	getPortfolioAssets,
-	getPortfolioCategories,
-} from "@/lib/actions/portfolio.actions";
+	Activity,
+	Banknote,
+	ChartArea,
+	ListOrdered,
+	Rocket,
+} from "lucide-react";
 
 import { AlphaHeader } from "@/components/AlphaHeader";
 import AlphaLedgerTable from "@/components/AlphaLedgerTable";
-import { BulkMigrationTool } from "@/components/alpha/MigrationTool";
+import { AlphaPnLClient } from "@/components/alpha/AlphaPnLClient";
+import { AlphaStressTest } from "@/components/alpha/AlphaStressTest";
 import { Button } from "@/components/ui/button";
-// import type { Category } from "@prisma/client";
 import { InteractiveChartSection } from "@/components/InteractiveChartSection";
 import Link from "next/link";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
+import { db } from "@/lib/db";
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 import { redirect } from "next/navigation";
 
@@ -25,23 +28,41 @@ export default async function AlphaSelectionPage({
 	if (!session?.user?.id) redirect("/sign-in");
 
 	// =====================================================================
-	// 1. WYWOŁANIE STRAŻNIKA (Pobiera portfel, aktywa i historię za 1 razem!)
+	// 1. WYWOŁANIE STRAŻNIKA (Pobiera portfel, aktywa i historię)
 	// =====================================================================
 	const { portfolio, portfolioId, errorComponent } = await getGuardedPortfolio({
 		searchParams,
 		userId: session.user.id,
 	});
 
-	if (errorComponent) {
-		return errorComponent;
-	}
-
-	// Od tego miejsca mamy 100% pewności, że portfolio istnieje
-	const activeId = portfolioId;
-	const targetUrl = `/dashboard/${activeId}/add-asset?cat=BOOSTER`;
+	if (errorComponent) return errorComponent;
 
 	// =====================================================================
-	// 2. PRZYGOTOWANIE DANYCH (Rzutowanie z Decimal do Number)
+	// 2. POBRANIE HISTORII Z BAZY (Dla kształtu wykresu Nominalnego PnL)
+	// =====================================================================
+	const rawSnapshots = await db.portfolioSnapshot.findMany({
+		where: { portfolioId: portfolioId },
+		orderBy: { date: "asc" },
+	});
+
+	let prevTotal = 0;
+	let prevInvested = 0;
+	const absoluteChartData = rawSnapshots.map((snap, index) => {
+		const netCashFlow = Number(snap.investedValue) - prevInvested;
+		const exactChangePLN = Number(snap.totalValue) - prevTotal - netCashFlow;
+
+		prevTotal = Number(snap.totalValue);
+		prevInvested = Number(snap.investedValue);
+
+		return {
+			date: snap.date.toISOString(),
+			globalChangePLN: index === 0 ? 0 : exactChangePLN, // Kształt zmienności z całego portfela
+			globalTotalValue: Number(snap.totalValue),
+		};
+	});
+
+	// =====================================================================
+	// 3. PRZYGOTOWANIE DANYCH (Filtrowanie Akcji Booster i Krypto)
 	// =====================================================================
 	const formattedAssets = portfolio.assets.map((asset) => ({
 		...asset,
@@ -57,107 +78,33 @@ export default async function AlphaSelectionPage({
 		ticker: tx.ticker || null,
 	}));
 
-	// =====================================================================
-	// 3. OBLICZENIA (Wykonywane błyskawicznie w pamięci RAM, bez DB)
-	// =====================================================================
-
-	// Całkowita wartość portfela (zabezpieczenie na dzielenie przez 0)
 	const globalTotalValue =
 		formattedAssets.reduce((sum, a) => sum + a.currentValue, 0) || 1;
 
-	// Aktywa Alpha
-	const alphaCategories = ["BOOSTER"];
-	const alphaAssets = formattedAssets
-		.filter((a) => alphaCategories.includes(a.category))
-		.sort((a, b) => b.currentValue - a.currentValue);
-
-	// KPI
-	const alphaTotalValue = alphaAssets.reduce(
-		(sum, a) => sum + a.currentValue,
-		0,
+	// Wyciągamy tylko interesujące nas kategorie dla sekcji Alpha
+	const alphaCategories = ["BOOSTER", "CRYPTO"];
+	const alphaAssets = formattedAssets.filter((a) =>
+		alphaCategories.includes(a.category),
 	);
-	const alphaTotalInvested = alphaAssets.reduce(
-		(sum, a) => sum + a.investedCapital,
-		0,
+	const alphaTransactions = formattedTransactions.filter((t) =>
+		alphaCategories.includes(t.category),
 	);
 
-	const realAlphaShare = (alphaTotalValue / globalTotalValue) * 100;
-
-	const alphaRoi =
-		alphaTotalInvested > 0
-			? ((alphaTotalValue - alphaTotalInvested) / alphaTotalInvested) * 100
-			: 0;
+	const targetUrl = `/dashboard/${portfolioId}/add-asset?cat=BOOSTER`;
 
 	// =====================================================================
-	// 4. WYKRES: Agregacja transakcji
-	// =====================================================================
-	const boosterTransactions = formattedTransactions.filter(
-		(t) => t.category === "BOOSTER",
-	);
-
-	const aggregatedData: Record<string, { name: string; wklad: number }> = {};
-	let cumulative = 0;
-
-	boosterTransactions.forEach((t) => {
-		const dateKey = new Date(t.executedAt).toLocaleDateString("pl-PL", {
-			day: "2-digit",
-			month: "2-digit",
-		});
-
-		cumulative += t.executedValue;
-		aggregatedData[dateKey] = {
-			name: dateKey,
-			wklad: cumulative,
-		};
-	});
-
-	// =====================================================================
-	// 5. MIGRACJA: Narzędzia do migracji innych aktywów
-	// =====================================================================
-	const [categoriesResult, assetsResult] = await Promise.all([
-		getPortfolioCategories(activeId),
-		getPortfolioAssets(activeId),
-	]);
-
-	const filteredAssets = assetsResult.success
-		? assetsResult.data.filter(
-				(asset) => asset.category !== "BONDS" && asset.category !== "CASH",
-			)
-		: [];
-
-	const filteredCategories = categoriesResult.success
-		? categoriesResult.categories.filter(
-				(cat) => cat !== "BONDS" && cat !== "CASH",
-			)
-		: [];
-
-	// =====================================================================
-	// 6. RENDEROWANIE WIDOKU
+	// 4. RENDEROWANIE WIDOKU
 	// =====================================================================
 	return (
-		<div className="">
-			<AlphaHeader
-				globalTotalValue={globalTotalValue}
-				alphaTotalValue={alphaTotalValue}
-				realAlphaShare={realAlphaShare}
-				alphaRoi={alphaRoi}
-				// opcjonalnie: activePositions={4}
-				customBreadcrumbs={
-					<div className="flex items-center gap-2 mb-2">
-						<nav className="text-sm text-slate-400 italic">
-							Narzędzia /{" "}
-							<span className="text-rose-400 font-medium lowercase">Alpha</span>
-						</nav>
-					</div>
-				}
-			/>
+		<div>
+			<AlphaHeader assets={alphaAssets} globalTotalValue={globalTotalValue} />
 
-			{/* GŁÓWNA SEKCJA: Analityka i Wykres w nowym standardzie */}
+			{/* GŁÓWNA SEKCJA: Analityka i Wykres Interaktywny */}
 			<SectionLayout
 				title="Analityka Wyników Alpha"
 				titleIcon={ChartArea}
 				subtitle="Wydajność strategii"
-				description="Wizualizacja trendu wartości oraz historia wpłat wyłącznie dla kapitału podwyższonego ryzyka (Booster)."
+				description="Wizualizacja trendu wartości oraz historia wpłat dla kapitału podwyższonego ryzyka (Booster i Krypto)."
 				action={
 					<Button
 						asChild
@@ -170,27 +117,47 @@ export default async function AlphaSelectionPage({
 					</Button>
 				}
 			>
-				{/* Kontener systemowy z tłem panelu (Glassmorphism w trybie ciemnym) */}
 				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
 					<InteractiveChartSection
-						// Przekazujemy wszystkie transakcje zgodnie z zaleceniem
-						transactions={formattedTransactions}
-						// Aktywa filtrowane dla wykresu
-						assets={formattedAssets.filter((a) => a.category === "BOOSTER")}
+						transactions={alphaTransactions}
+						assets={alphaAssets}
 					/>
 				</div>
 			</SectionLayout>
 
-			{/* SEKCJA TABELA LEDGERA */}
+			{/* NOWA SEKCJA: Nominalny Wynik Dzienny z wyliczaniem hybrydowym */}
+			<SectionLayout
+				title="Nominalny Wynik Dzienny"
+				titleIcon={Banknote}
+				subtitle="Faktyczna kwota wypracowana na rynku"
+				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują wpłaty i wypłaty z tego dnia."
+			>
+				<AlphaPnLClient
+					snapshotsData={absoluteChartData}
+					transactions={alphaTransactions}
+					assets={alphaAssets}
+				/>
+			</SectionLayout>
+
+			{/* NOWA SEKCJA: Symulator Szoków (Stress Test) */}
+			<SectionLayout
+				title="Symulacja Szoków Rynkowych"
+				titleIcon={Activity}
+				subtitle="Stress-test portfela Alpha"
+				description="Sprawdź, jak potencjalne tąpnięcia lub rajdy w wybranych sektorach wpłyną na Twoją ogólną wycenę i ROI."
+			>
+				<AlphaStressTest assets={alphaAssets} />
+			</SectionLayout>
+
+			{/* SEKCJA: Tabela Ledger */}
 			<SectionLayout
 				title="Szczegółowe Pozycje Alpha"
 				titleIcon={ListOrdered}
-				subtitle="Twoje aktywa Booster"
-				description="Lista wszystkich aktywów z kategorii Booster wraz z kluczowymi informacjami, zyskami i możliwością szybkiej edycji pozycji."
+				subtitle="Twoje aktywa Booster i Krypto"
+				description="Lista wszystkich aktywów o podwyższonym ryzyku wraz z kluczowymi informacjami, zyskami i możliwością szybkiej edycji pozycji."
 			>
-				{/* Pudełko systemowe dla tabeli (identyczne jak na stronie Historii) */}
 				<div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-t-border bg-t-bg-panel shadow-sm p-1 md:p-0">
-					<AlphaLedgerTable portfolioId={activeId} />
+					<AlphaLedgerTable activeBoosterAssets={alphaAssets} />
 				</div>
 			</SectionLayout>
 		</div>

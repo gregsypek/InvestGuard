@@ -109,7 +109,7 @@ export const allWeatherPortfolio: PortfolioWithAssets = {
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	description: null,
-	goal: null,
+	goal: 1000000,
 
 	assets: [
 		createDemoAsset({
@@ -183,7 +183,7 @@ export const classicPortfolio: PortfolioWithAssets = {
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	description: null,
-	goal: null,
+	goal: 1000000,
 
 	assets: [
 		createDemoAsset({
@@ -231,7 +231,7 @@ export const yalePortfolio: PortfolioWithAssets = {
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	description: null,
-	goal: null,
+	goal: 1000000,
 
 	assets: [
 		createDemoAsset({

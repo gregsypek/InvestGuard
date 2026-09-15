@@ -255,12 +255,13 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 				<YAxis
 					yAxisId="right"
 					orientation="right"
+					width={85}
 					axisLine={false}
 					tickLine={false}
 					tick={{ fontSize: 10, fill: "#3b82f6", fontWeight: 600 }}
 					// FIX: zero now returns an actual empty string instead of being
 					// passed through Intl.NumberFormat (which coerced "" -> 0 -> "0 zł")
-					tickFormatter={(val) =>
+					tickFormatter={(val) => 
 						val === 0
 							? ""
 							: `${new Intl.NumberFormat("pl-PL", {
@@ -268,7 +269,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 									maximumFractionDigits: 1,
 								}).format(val)} zł`
 					}
-					width={58}
 					// WYMUSZAMY SYMETRIĘ WZGLĘDEM ZERA
 					domain={[-cashDomain, cashDomain]}
 				/>

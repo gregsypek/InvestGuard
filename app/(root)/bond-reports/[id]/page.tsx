@@ -1,10 +1,19 @@
-import { ChartArea, History, Landmark, Plus } from "lucide-react";
+import {
+	Banknote,
+	ChartArea,
+	History,
+	Landmark,
+	Plus,
+	ShieldCheck,
+} from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 
 import AssetCard from "@/components/ui/assets/RecentActivityCard";
 import { BondHeader } from "@/components/BondHeader";
 import BondLedgerTable from "@/components/BondLedgerTable";
+import { BondPnLClient } from "@/components/bonds/BondPnLClient";
 import { Button } from "@/components/ui/button";
+import { InflationShieldClient } from "@/components/bonds/InflationShieldClient";
 import { InteractiveChartSection } from "@/components/InteractiveChartSection";
 import Link from "next/link";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
@@ -54,16 +63,50 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 	const data = await getBondsData(id);
 	if (!data) return notFound();
 
+	// POBIERAMY INFLACJĘ (Sortujemy rosnąco, żeby najstarsze były na początku dla wykresu)
+	const inflationHistory = await db.inflationRate.findMany({
+		orderBy: { yearMonth: "asc" },
+	});
+
 	const { bonds, stats, portfolioName } = data;
 	const recentBonds = [...bonds].slice(0, 6);
 	const isEmpty = bonds.length === 0;
+
+	// Sumujemy fizyczną ilość wszystkich obligacji
+	const totalBondsQuantity = bonds.reduce(
+		(sum, b) => sum + (b.quantity || 0),
+		0,
+	);
+	// =====================================================================
+	// 2. POBRANIE HISTORII Z BAZY (Dla kształtu wykresu Nominalnego PnL)
+	// =====================================================================
+	const rawSnapshots = await db.portfolioSnapshot.findMany({
+		where: { portfolioId: portfolio.id },
+		orderBy: { date: "asc" },
+	});
+
+	let prevTotal = 0;
+	let prevInvested = 0;
+	const absoluteChartData = rawSnapshots.map((snap, index) => {
+		const netCashFlow = Number(snap.investedValue) - prevInvested;
+		const exactChangePLN = Number(snap.totalValue) - prevTotal - netCashFlow;
+
+		prevTotal = Number(snap.totalValue);
+		prevInvested = Number(snap.investedValue);
+
+		return {
+			date: snap.date.toISOString(),
+			globalChangePLN: index === 0 ? 0 : exactChangePLN, // Kształt zmienności z całego portfela
+			globalTotalValue: Number(snap.totalValue),
+		};
+	});
 
 	return (
 		<div>
 			{/* NAGŁÓWEK GŁÓWNY (Z zintegrowanymi statystykami) */}
 			<BondHeader
 				title="Moje Obligacje"
-				totalBonds={bonds.length}
+				totalBonds={totalBondsQuantity}
 				stats={stats}
 				portfolioName={portfolioName}
 			/>
@@ -144,6 +187,29 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 					/>
 				</div>
 			</SectionLayout>
+
+			<SectionLayout
+				title="Nominalny Wynik Dzienny"
+				titleIcon={Banknote}
+				subtitle="Faktyczna kwota wypracowana na odsetkach"
+				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich obligacji danego dnia."
+			>
+				<BondPnLClient
+					snapshotsData={absoluteChartData} // Pamiętaj, by pobrać zrzuty z DB tak samo jak na stronie Alpha
+					transactions={portfolio?.transactionHistories || []}
+					assets={portfolio.assets}
+				/>
+			</SectionLayout>
+
+			<SectionLayout
+				title="Tarcza Antyinflacyjna"
+				titleIcon={ShieldCheck}
+				subtitle="Ochrona siły nabywczej"
+				description="Porównanie uśrednionego oprocentowania Twojego portfela obligacji z oficjalnymi odczytami inflacji GUS. Sprawdź, czy generujesz realny zysk."
+			>
+				<InflationShieldClient inflationData={inflationHistory} bonds={bonds} />
+			</SectionLayout>
+
 			{/* GŁÓWNA SEKCJA (Z tabelą i przyciskiem) */}
 			<SectionLayout
 				title="Portfel Obligacji"

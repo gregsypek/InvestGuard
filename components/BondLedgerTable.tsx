@@ -8,7 +8,6 @@ import {
 	Filter,
 	HandCoins,
 	Lock,
-	TableCellsMerge,
 } from "lucide-react";
 import React, { Fragment, useMemo, useState, useTransition } from "react";
 import {
@@ -37,7 +36,6 @@ import { SellAssetModal } from "./SellAssetModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-// 🚀 1. Dodajemy rozszerzony typ, żeby TS wiedział o nowym polu
 interface ExtendedBond extends Bond {
 	currentPeriodRate?: number;
 	hasGlobalConfig?: boolean;
@@ -57,7 +55,6 @@ export default function BondLedgerTable({
 	const [assetToSell, setAssetToSell] = useState<Asset | null>(null);
 	const [isPending, startTransition] = useTransition();
 
-	// 🚀 NOWOŚĆ: Stan wybranego roku do filtrowania (Domyślnie obecny rok)
 	const [selectedYear, setSelectedYear] = useState<string>(
 		new Date().getFullYear().toString(),
 	);
@@ -67,7 +64,6 @@ export default function BondLedgerTable({
 		name: p.name,
 	}));
 
-	// 🚀 NOWOŚĆ: Generowanie listy dostępnych lat na podstawie danych
 	const availableYears = useMemo(() => {
 		const years = new Set(
 			initialBonds.map((b) =>
@@ -77,13 +73,11 @@ export default function BondLedgerTable({
 		return Array.from(years).sort((a, b) => b.localeCompare(a));
 	}, [initialBonds]);
 
-	// 🚀 ZMIANA: Grupowanie uwzględniające filtr roku
 	const groupedBonds = useMemo(() => {
 		const groups: Record<string, ExtendedBond[]> = {};
 		initialBonds.forEach((bond) => {
 			const bondYear = new Date(bond.purchaseDate).getFullYear().toString();
 
-			// Pomijamy obligacje, jeśli nie pasują do wybranego roku (i nie wybrano "ALL")
 			if (selectedYear !== "ALL" && bondYear !== selectedYear) return;
 
 			const ticker = bond.ticker ?? "NIEZNANE";
@@ -114,13 +108,11 @@ export default function BondLedgerTable({
 		return Math.max(0, Math.min(100, (current / total) * 100));
 	};
 
-	// 🚀 NOWOŚĆ: Funkcja wyliczająca aktualny okres odsetkowy (lata od zakupu + 1)
 	const getCurrentPeriod = (purchaseDate: Date | string) => {
 		const start = new Date(purchaseDate).getTime();
 		const now = new Date().getTime();
 		if (now < start) return 1;
 
-		// Dzielimy różnicę czasu przez długość roku w milisekundach
 		const yearsDiff = (now - start) / (1000 * 60 * 60 * 24 * 365.25);
 		return Math.floor(yearsDiff) + 1;
 	};
@@ -169,7 +161,6 @@ export default function BondLedgerTable({
 
 	return (
 		<div className="w-full flex flex-col gap-4">
-			{/* 🚀 NOWOŚĆ: PASEK FILTROWANIA PO ROKU */}
 			{availableYears.length > 0 && (
 				<div className="flex items-center gap-2 overflow-x-auto p-2 scrollbar-hide">
 					<div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-lg text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
@@ -206,304 +197,391 @@ export default function BondLedgerTable({
 				</div>
 			)}
 
-			<Table className="w-full min-w-[800px]">
-				<TableHeader>
-					<TableRow className="border-b border-t-border-subtle hover:bg-transparent">
-						<TableHead className="sticky left-0 z-20 bg-t-bg-sticky text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4 pl-6 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.3)]">
-							Seria / Zakup
-						</TableHead>
-						<TableHead className=" text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4">
-							Wykup / Postęp
-						</TableHead>
-						<TableHead className=" text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4">
-							Oprocentowanie
-						</TableHead>
-						<TableHead className=" text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4">
-							Kapitał / Wycena
-						</TableHead>
-						<TableHead className=" text-right text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4 pr-6">
-							Akcje
-						</TableHead>
-					</TableRow>
-				</TableHeader>
-
-				<TableBody>
-					{Object.keys(groupedBonds).length === 0 && (
-						<TableRow>
-							<TableCell
-								colSpan={5}
-								className="py-12 text-center text-t-text-tertiary text-sm font-bold border-none"
-							>
-								Brak obligacji dla wybranego roku ({selectedYear}).
-							</TableCell>
+			{/* WERSJA DESKTOP */}
+			<div className="hidden md:block">
+				<Table className="w-full min-w-[800px]">
+					<TableHeader>
+						<TableRow className="border-b border-t-border-subtle hover:bg-transparent">
+							<TableHead className="sticky left-0 z-20 bg-t-bg-sticky text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4 pl-6 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.3)]">
+								Seria / Zakup
+							</TableHead>
+							<TableHead className=" text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4">
+								Wykup / Postęp
+							</TableHead>
+							<TableHead className=" text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4">
+								Oprocentowanie
+							</TableHead>
+							<TableHead className=" text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4">
+								Kapitał / Wycena
+							</TableHead>
+							<TableHead className=" text-right text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none py-4 pr-6">
+								Akcje
+							</TableHead>
 						</TableRow>
-					)}
+					</TableHeader>
 
-					{Object.entries(groupedBonds).map(
-						([ticker, transzes], groupIndex) => {
-							const totalVal = transzes.reduce(
-								(s, t) => s + (t.currentValue || 0),
-								0,
-							);
-							const isOpen = openGroups.includes(ticker);
-							const isEvenGroup = groupIndex % 2 === 1;
+					<TableBody>
+						{Object.keys(groupedBonds).length === 0 && (
+							<TableRow>
+								<TableCell
+									colSpan={5}
+									className="py-12 text-center text-t-text-tertiary text-sm font-bold border-none"
+								>
+									Brak obligacji dla wybranego roku ({selectedYear}).
+								</TableCell>
+							</TableRow>
+						)}
 
-							return (
-								<Fragment key={ticker}>
-									<TableRow
-										onClick={() => toggleGroup(ticker)}
+						{Object.entries(groupedBonds).map(
+							([ticker, transzes], groupIndex) => {
+								const totalVal = transzes.reduce(
+									(s, t) => s + (t.currentValue || 0),
+									0,
+								);
+								const isOpen = openGroups.includes(ticker);
+								const isEvenGroup = groupIndex % 2 === 1;
+
+								return (
+									<Fragment key={ticker}>
+										<TableRow
+											onClick={() => toggleGroup(ticker)}
+											className={cn(
+												"cursor-pointer border-b border-t-border-subtle transition-colors group",
+												isOpen
+													? "bg-blue-500/5 dark:bg-blue-500/10"
+													: isEvenGroup
+														? "bg-t-bg-base/50 dark:bg-t-bg-base/30 hover:bg-t-hover"
+														: "hover:bg-t-hover",
+											)}
+										>
+											<TableCell className="sticky left-0 z-10 pl-6 py-4 border-none bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.3)]">
+												<div className="flex items-center gap-3">
+													{isOpen ? (
+														<ChevronDown
+															size={20}
+															className="text-blue-500 shrink-0"
+														/>
+													) : (
+														<ChevronRight
+															size={20}
+															className="text-blue-500 shrink-0"
+														/>
+													)}
+													<div className="flex flex-col">
+														<span className="text-sm font-bold text-t-text-primary uppercase tracking-wider whitespace-nowrap">
+															{ticker}
+														</span>
+														<span className="text-[10px] font-bold tracking-widest text-blue-600 dark:text-blue-400 uppercase mt-0.5 whitespace-nowrap">
+															{transzes.length} szt.
+														</span>
+													</div>
+												</div>
+											</TableCell>
+
+											<TableCell
+												colSpan={2}
+												className="py-4 border-none text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest whitespace-nowrap"
+											>
+												Podsumowanie grupy
+											</TableCell>
+
+											<TableCell className="py-4 border-none font-mono font-bold text-t-text-primary whitespace-nowrap">
+												{totalVal.toLocaleString("pl-PL", {
+													minimumFractionDigits: 2,
+													maximumFractionDigits: 2,
+												})}
+												<span className="text-[10px] text-t-text-tertiary ml-1">
+													PLN
+												</span>
+											</TableCell>
+											<TableCell className="py-4 border-none" />
+										</TableRow>
+
+										{isOpen &&
+											transzes.map((bond, childIndex) => {
+												const mDate = getMaturityDate(bond);
+												const progressValue = calculateProgress(
+													bond.purchaseDate,
+													mDate,
+												);
+												const currentPeriod = getCurrentPeriod(
+													bond.purchaseDate,
+												);
+												const isEvenChild = childIndex % 2 === 1;
+
+												return (
+													<TableRow
+														key={bond.id}
+														className={cn(
+															"border-b border-t-border-subtle transition-colors relative group hover:bg-t-hover",
+															isEvenChild
+																? "bg-t-bg-base/30 dark:bg-black/20"
+																: "",
+														)}
+													>
+														<TableCell className="sticky left-0 z-10 p-0 border-none bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.3)]">
+															<div className="relative w-full h-full pl-14 pr-4 py-4 flex flex-col justify-center">
+																<div className="absolute left-8 top-0 bottom-0 w-px bg-blue-500/30 group-hover:bg-blue-500/50 transition-colors" />
+																<div className="absolute left-8 top-1/2 w-4 h-px bg-blue-500/30 group-hover:bg-blue-500/50 transition-colors" />
+
+																<div className="flex flex-col gap-1.5 relative z-10">
+																	<input
+																		type="text"
+																		defaultValue={bond.name || ticker}
+																		className="bg-transparent border-b border-transparent hover:border-t-border-subtle focus:border-blue-500 outline-none text-[11px] font-bold text-t-text-primary uppercase w-28 transition-colors"
+																	/>
+																	<div className="flex items-center gap-1.5 text-[10px] text-t-text-secondary font-bold tracking-widest uppercase whitespace-nowrap">
+																		<Calendar
+																			size={12}
+																			className="opacity-70 text-blue-500"
+																		/>
+																		{new Date(
+																			bond.purchaseDate,
+																		).toLocaleDateString("pl-PL")}
+																	</div>
+																	<div className="flex flex-col">
+																		<span className="text-[10px] font-black text-t-text-primary tracking-widest uppercase whitespace-nowrap">
+																			{bond.quantity} szt.
+																		</span>
+																	</div>
+																</div>
+															</div>
+														</TableCell>
+
+														<TableCell className="py-4 border-none">
+															<div className="flex flex-col gap-1.5">
+																<span className="text-[10px] font-bold tracking-widest uppercase text-t-text-secondary flex items-center gap-1.5 whitespace-nowrap">
+																	<Clock
+																		size={12}
+																		className="opacity-70 text-blue-400"
+																	/>
+																	{mDate.toLocaleDateString("pl-PL")}
+																</span>
+																<Progress
+																	value={progressValue}
+																	className="h-1.5 w-28 bg-black/5 dark:bg-white/5 border border-t-border-subtle"
+																	indicatorColor="bg-blue-500"
+																/>
+															</div>
+														</TableCell>
+
+														<TableCell className="py-4 border-none">
+															<div className="flex flex-col items-start gap-1.5">
+																{bond.hasGlobalConfig ? (
+																	<div
+																		className="flex items-center gap-1.5 bg-black/5 dark:bg-white/5 px-2 py-1.5 rounded-lg border border-t-border-subtle cursor-help"
+																		title="Oprocentowanie bazowe jest automatycznie zarządzane przez List Emisyjny w Panelu Ustawień"
+																	>
+																		<Lock
+																			size={12}
+																			className="text-t-text-tertiary"
+																		/>
+																		<span className="text-[11px] font-bold text-t-text-primary">
+																			{bond.interestRate?.toFixed(2)}%
+																		</span>
+																	</div>
+																) : (
+																	<QuickAdjustCell
+																		currentValue={bond.interestRate || 0}
+																		assetId={bond.id}
+																		onUpdate={updateBondInterestRate}
+																		label={`${bond.interestRate || 0}%`}
+																	/>
+																)}
+
+																{bond.currentPeriodRate !== undefined &&
+																	bond.currentPeriodRate !==
+																		bond.interestRate && (
+																		<span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+																			Bieżące:{" "}
+																			{bond.currentPeriodRate.toFixed(2)}%
+																		</span>
+																	)}
+																<span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+																	Okres Odsetkowy: {currentPeriod}
+																</span>
+															</div>
+														</TableCell>
+
+														<TableCell className="py-4 border-none">
+															<div className="flex flex-col items-start gap-1">
+																<span className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center gap-1 whitespace-nowrap">
+																	Wkład:{" "}
+																	{bond.investedCapital?.toLocaleString(
+																		"pl-PL",
+																		{
+																			minimumFractionDigits: 2,
+																			maximumFractionDigits: 2,
+																		},
+																	)}{" "}
+																	PLN
+																</span>
+
+																<QuickAdjustCell
+																	currentValue={bond.currentValue || 0}
+																	assetId={bond.id}
+																	onUpdate={updateBondValue}
+																	label={`${bond.currentValue?.toLocaleString()} PLN`}
+																/>
+
+																{bond.currentValue &&
+																bond.investedCapital &&
+																bond.currentValue > bond.investedCapital ? (
+																	<span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded mt-0.5 whitespace-nowrap">
+																		+
+																		{(
+																			bond.currentValue - bond.investedCapital
+																		).toLocaleString("pl-PL", {
+																			minimumFractionDigits: 2,
+																			maximumFractionDigits: 2,
+																		})}{" "}
+																		PLN
+																	</span>
+																) : null}
+															</div>
+														</TableCell>
+
+														<TableCell className="pr-6 py-4 border-none">
+															<div className="flex justify-end gap-1">
+																<button
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		const assetFromBond: Asset = {
+																			...bond,
+																			category: "BONDS",
+																			portfolioId: portfolioId,
+																			targetPercentage: 55,
+																			isObserved: false,
+																			purchaseDate: new Date(bond.purchaseDate),
+																			createdAt: new Date(),
+																			updatedAt: new Date(),
+																			dailyChange: 0,
+																			nominalValue: bond.currentValue ?? null,
+																			rationale: null,
+																			timeHorizon: null,
+																			expectedRoi: null,
+																			conviction: null,
+																			riskLevel: null,
+																			rateType: null,
+																			interestRate: bond.interestRate ?? null,
+																			maturityDate: bond.maturityDate
+																				? new Date(bond.maturityDate)
+																				: null,
+																		};
+																		setAssetToSell(assetFromBond);
+																	}}
+																	className="p-2 bg-blue-500/10 hover:bg-blue-500 text-blue-600 dark:text-blue-400 hover:text-white rounded-xl transition-all border border-blue-500/20"
+																	title="Wykup / Sprzedaż"
+																>
+																	<HandCoins size={14} />
+																</button>
+
+																<DeleteButton
+																	id={bond.id}
+																	onDelete={handleDeleteBond}
+																	title="Usuwanie Transzy Obligacji"
+																	confirmMsg="Czy na pewno chcesz bezpowrotnie usunąć wybraną transzę obligacji?"
+																/>
+															</div>
+														</TableCell>
+													</TableRow>
+												);
+											})}
+									</Fragment>
+								);
+							},
+						)}
+					</TableBody>
+				</Table>
+			</div>
+
+			{/* WERSJA MOBILE (KARTY Z LINIĄ ODCIĘCIA) */}
+			<div className="flex flex-col gap-6 p-3 md:hidden">
+				{Object.entries(groupedBonds).map(([ticker, transzes]) => (
+					<div
+						key={ticker}
+						className="flex flex-col bg-t-bg-base rounded-2xl overflow-hidden shadow-sm border border-t-border-subtle"
+					>
+						<div className="bg-black/5 dark:bg-white/5 p-4 border-b border-t-border-subtle flex justify-between items-center">
+							<div className="flex flex-col">
+								<span className="text-sm font-black text-t-text-primary uppercase tracking-wider">
+									{ticker}
+								</span>
+								<span className="text-[10px] font-bold tracking-widest text-blue-500 uppercase mt-0.5">
+									{transzes.length} szt.
+								</span>
+							</div>
+							<div className="text-right font-mono font-bold text-t-text-primary">
+								{transzes
+									.reduce((s, t) => s + (t.currentValue || 0), 0)
+									.toLocaleString("pl-PL", { maximumFractionDigits: 0 })}{" "}
+								PLN
+							</div>
+						</div>
+
+						<div className="flex flex-col">
+							{transzes.map((bond, idx) => {
+								const currentPeriod = getCurrentPeriod(bond.purchaseDate);
+								const isLast = idx === transzes.length - 1;
+
+								return (
+									<div
+										key={bond.id}
 										className={cn(
-											"cursor-pointer border-b border-t-border-subtle transition-colors group",
-											isOpen
-												? "bg-blue-500/5 dark:bg-blue-500/10"
-												: isEvenGroup
-													? "bg-t-bg-base/50 dark:bg-t-bg-base/30 hover:bg-t-hover"
-													: "hover:bg-t-hover",
+											"p-4 relative",
+											!isLast &&
+												"border-b-2 border-dashed border-t-border-subtle/60 pb-5 mb-1",
 										)}
 									>
-										<TableCell className="sticky left-0 z-10 pl-6 py-4 border-none bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.3)]">
-											<div className="flex items-center gap-3">
-												{isOpen ? (
-													<ChevronDown
-														size={20}
-														className="text-blue-500 shrink-0"
-													/>
-												) : (
-													<ChevronRight
-														size={20}
-														className="text-blue-500 shrink-0"
-													/>
-												)}
-												<div className="flex flex-col">
-													<span className="text-sm font-bold text-t-text-primary uppercase tracking-wider whitespace-nowrap">
-														{ticker}
+										<div className="flex justify-between items-start mb-3">
+											<div>
+												<h3 className="font-bold text-sm text-t-text-primary uppercase">
+													{bond.name || ticker}
+												</h3>
+												<div className="flex items-center gap-1.5 text-[10px] text-t-text-secondary font-bold tracking-widest uppercase mt-1">
+													<Calendar size={12} className="text-blue-500" />
+													{new Date(bond.purchaseDate).toLocaleDateString(
+														"pl-PL",
+													)}
+												</div>
+											</div>
+											<span className="text-[10px] font-black text-t-text-primary tracking-widest uppercase bg-black/5 dark:bg-white/5 px-2 py-1 rounded-md border border-t-border-subtle">
+												{bond.quantity} szt.
+											</span>
+										</div>
+
+										<div className="flex justify-between items-end mt-4">
+											<div className="flex flex-col gap-1">
+												<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
+													Oprocentowanie
+												</span>
+												<div className="flex items-center gap-2">
+													<span className="text-sm font-black text-t-text-primary">
+														{bond.interestRate?.toFixed(2)}%
 													</span>
-													<span className="text-[10px] font-bold tracking-widest text-blue-600 dark:text-blue-400 uppercase mt-0.5 whitespace-nowrap">
-														{transzes.length} szt.
+													<span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+														Okres: {currentPeriod}
 													</span>
 												</div>
 											</div>
-										</TableCell>
-
-										<TableCell
-											colSpan={2}
-											className="py-4 border-none text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest whitespace-nowrap"
-										>
-											Podsumowanie grupy
-										</TableCell>
-
-										<TableCell className="py-4 border-none font-mono font-bold text-t-text-primary whitespace-nowrap">
-											{totalVal.toLocaleString("pl-PL", {
-												minimumFractionDigits: 2,
-												maximumFractionDigits: 2,
-											})}
-											<span className="text-[10px] text-t-text-tertiary ml-1">
-												PLN
-											</span>
-										</TableCell>
-										<TableCell className="py-4 border-none" />
-									</TableRow>
-
-									{isOpen &&
-										transzes.map((bond, childIndex) => {
-											const mDate = getMaturityDate(bond);
-											const progressValue = calculateProgress(
-												bond.purchaseDate,
-												mDate,
-											);
-											const currentPeriod = getCurrentPeriod(bond.purchaseDate);
-											const isEvenChild = childIndex % 2 === 1;
-
-											return (
-												<TableRow
-													key={bond.id}
-													className={cn(
-														"border-b border-t-border-subtle transition-colors relative group hover:bg-t-hover",
-														isEvenChild
-															? "bg-t-bg-base/30 dark:bg-black/20"
-															: "",
-													)}
-												>
-													<TableCell className="sticky left-0 z-10 p-0 border-none bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.3)]">
-														<div className="relative w-full h-full pl-14 pr-4 py-4 flex flex-col justify-center">
-															<div className="absolute left-8 top-0 bottom-0 w-px bg-blue-500/30 group-hover:bg-blue-500/50 transition-colors" />
-															<div className="absolute left-8 top-1/2 w-4 h-px bg-blue-500/30 group-hover:bg-blue-500/50 transition-colors" />
-
-															<div className="flex flex-col gap-1.5 relative z-10">
-																<input
-																	type="text"
-																	defaultValue={bond.name || ticker}
-																	className="bg-transparent border-b border-transparent hover:border-t-border-subtle focus:border-blue-500 outline-none text-[11px] font-bold text-t-text-primary uppercase w-28 transition-colors"
-																	onBlur={(e) =>
-																		console.log(
-																			"Update name for:",
-																			bond.id,
-																			e.target.value,
-																		)
-																	}
-																/>
-																<div className="flex items-center gap-1.5 text-[10px] text-t-text-secondary font-bold tracking-widest uppercase whitespace-nowrap">
-																	<Calendar
-																		size={12}
-																		className="opacity-70 text-blue-500"
-																	/>
-																	{new Date(
-																		bond.purchaseDate,
-																	).toLocaleDateString("pl-PL")}
-																</div>
-																<div className="flex flex-col">
-																	<span className="text-[10px] font-black text-t-text-primary tracking-widest uppercase whitespace-nowrap">
-																		{bond.quantity} szt.
-																	</span>
-																</div>
-															</div>
-														</div>
-													</TableCell>
-
-													<TableCell className="py-4 border-none">
-														<div className="flex flex-col gap-1.5">
-															<span className="text-[10px] font-bold tracking-widest uppercase text-t-text-secondary flex items-center gap-1.5 whitespace-nowrap">
-																<Clock
-																	size={12}
-																	className="opacity-70 text-blue-400"
-																/>
-																{mDate.toLocaleDateString("pl-PL")}
-															</span>
-															<Progress
-																value={progressValue}
-																className="h-1.5 w-28 bg-black/5 dark:bg-white/5 border border-t-border-subtle"
-																indicatorColor="bg-blue-500"
-															/>
-														</div>
-													</TableCell>
-
-													{/* 🚀 ZMIANA: Dodano wyświetlanie bieżącego okresu odsetkowego pod kontrolką w kolumnie Oprocentowanie[cite: 6] */}
-													<TableCell className="py-4 border-none">
-														<div className="flex flex-col items-start gap-1.5">
-															{/* 🚀 LOGIKA: Jeśli ma konfigurację z Panelu, to blokujemy edycję */}
-															{bond.hasGlobalConfig ? (
-																<div
-																	className="flex items-center gap-1.5 bg-black/5 dark:bg-white/5 px-2 py-1.5 rounded-lg border border-t-border-subtle cursor-help"
-																	title="Oprocentowanie bazowe jest automatycznie zarządzane przez List Emisyjny w Panelu Ustawień"
-																>
-																	<Lock
-																		size={12}
-																		className="text-t-text-tertiary"
-																	/>
-																	<span className="text-[11px] font-bold text-t-text-primary">
-																		{bond.interestRate?.toFixed(2)}%
-																	</span>
-																</div>
-															) : (
-																<QuickAdjustCell
-																	currentValue={bond.interestRate || 0}
-																	assetId={bond.id}
-																	onUpdate={updateBondInterestRate}
-																	label={`${bond.interestRate || 0}%`}
-																/>
-															)}
-
-															{bond.currentPeriodRate !== undefined &&
-																bond.currentPeriodRate !==
-																	bond.interestRate && (
-																	<span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-																		Bieżące: {bond.currentPeriodRate.toFixed(2)}
-																		%
-																	</span>
-																)}
-															<span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-																Okres Odsetkowy: {currentPeriod}
-															</span>
-														</div>
-													</TableCell>
-
-													<TableCell className="py-4 border-none">
-														<div className="flex flex-col items-start gap-1">
-															<span className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center gap-1 whitespace-nowrap">
-																Wkład:{" "}
-																{bond.investedCapital?.toLocaleString("pl-PL", {
-																	minimumFractionDigits: 2,
-																	maximumFractionDigits: 2,
-																})}{" "}
-																PLN
-															</span>
-
-															<QuickAdjustCell
-																currentValue={bond.currentValue || 0}
-																assetId={bond.id}
-																onUpdate={updateBondValue}
-																label={`${bond.currentValue?.toLocaleString()} PLN`}
-															/>
-
-															{bond.currentValue &&
-															bond.investedCapital &&
-															bond.currentValue > bond.investedCapital ? (
-																<span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded mt-0.5 whitespace-nowrap">
-																	+
-																	{(
-																		bond.currentValue - bond.investedCapital
-																	).toLocaleString("pl-PL", {
-																		minimumFractionDigits: 2,
-																		maximumFractionDigits: 2,
-																	})}{" "}
-																	PLN
-																</span>
-															) : null}
-														</div>
-													</TableCell>
-
-													<TableCell className="pr-6 py-4 border-none">
-														<div className="flex justify-end gap-1">
-															<button
-																onClick={(e) => {
-																	e.stopPropagation();
-																	const assetFromBond: Asset = {
-																		...bond,
-																		category: "BONDS",
-																		portfolioId: portfolioId,
-																		targetPercentage: 55,
-																		isObserved: false,
-																		purchaseDate: new Date(bond.purchaseDate),
-																		createdAt: new Date(),
-																		updatedAt: new Date(),
-																		dailyChange: 0,
-																		nominalValue: bond.currentValue ?? null,
-																		rationale: null,
-																		timeHorizon: null,
-																		expectedRoi: null,
-																		conviction: null,
-																		riskLevel: null,
-																		rateType: null,
-																		interestRate: bond.interestRate ?? null,
-																		maturityDate: bond.maturityDate
-																			? new Date(bond.maturityDate)
-																			: null,
-																	};
-																	setAssetToSell(assetFromBond);
-																}}
-																className="p-2 bg-blue-500/10 hover:bg-blue-500 text-blue-600 dark:text-blue-400 hover:text-white rounded-xl transition-all border border-blue-500/20"
-																title="Wykup / Sprzedaż"
-															>
-																<HandCoins size={14} />
-															</button>
-
-															<DeleteButton
-																id={bond.id}
-																onDelete={handleDeleteBond}
-																title="Usuwanie Transzy Obligacji"
-																confirmMsg="Czy na pewno chcesz bezpowrotnie usunąć wybraną transzę obligacji? Usunięcie wpisu wpłynie na wyliczenia wartości całego portfela."
-															/>
-														</div>
-													</TableCell>
-												</TableRow>
-											);
-										})}
-								</Fragment>
-							);
-						},
-					)}
-				</TableBody>
-			</Table>
+											<div className="flex flex-col items-end gap-1 text-right">
+												<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
+													Wycena PLN
+												</span>
+												<span className="text-sm font-black font-mono text-emerald-500">
+													{bond.currentValue?.toLocaleString("pl-PL", {
+														maximumFractionDigits: 0,
+													})}
+												</span>
+											</div>
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				))}
+			</div>
 
 			{assetToSell && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

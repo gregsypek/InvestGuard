@@ -85,3 +85,59 @@ export async function deleteBondConfig(id: string) {
 		return { success: false, error: "Błąd usuwania." };
 	}
 }
+
+// ==========================================
+// 3. MASOWE WProwadzanie (Mass-Entry)
+// ==========================================
+
+export async function addMultipleInflationRates(
+	rates: { yearMonth: string; value: number }[],
+) {
+	try {
+		await db.$transaction(
+			rates.map((rate) =>
+				db.inflationRate.upsert({
+					where: { yearMonth: rate.yearMonth },
+					update: { value: rate.value },
+					create: { yearMonth: rate.yearMonth, value: rate.value },
+				}),
+			),
+		);
+		revalidatePath("/settings");
+		revalidatePath("/dashboard");
+		return { success: true };
+	} catch (error) {
+		console.error("Bulk inflation error:", error);
+		return { success: false, error: "Błąd podczas masowego zapisu inflacji." };
+	}
+}
+
+export async function addMultipleBondConfigs(
+	configs: {
+		seriesCode: string;
+		firstYearRate: number;
+		margin: number | null;
+	}[],
+) {
+	try {
+		await db.$transaction(
+			configs.map((conf) =>
+				db.bondSeriesConfig.upsert({
+					where: { seriesCode: conf.seriesCode.toUpperCase() },
+					update: { firstYearRate: conf.firstYearRate, margin: conf.margin },
+					create: {
+						seriesCode: conf.seriesCode.toUpperCase(),
+						firstYearRate: conf.firstYearRate,
+						margin: conf.margin,
+					},
+				}),
+			),
+		);
+		revalidatePath("/settings");
+		revalidatePath("/dashboard");
+		return { success: true };
+	} catch (error) {
+		console.error("Bulk config error:", error);
+		return { success: false, error: "Błąd podczas masowego zapisu serii." };
+	}
+}

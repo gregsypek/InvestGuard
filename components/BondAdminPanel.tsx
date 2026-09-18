@@ -21,6 +21,7 @@ import {
 } from "@/lib/actions/admin-bonds";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
+import { InflationRate } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -302,7 +303,7 @@ export function BondsAdminPanel() {
 							</button>
 							{openInfYears.includes(year) && (
 								<div className="flex flex-col">
-									{groupedInflation[year].map((inf) => (
+									{groupedInflation[year].map((inf: InflationRate) => (
 										<div
 											key={inf.id}
 											className="flex justify-between items-center p-3 border-t border-t-border-subtle hover:bg-t-hover transition-colors"

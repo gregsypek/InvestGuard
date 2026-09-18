@@ -110,6 +110,7 @@ export const allWeatherPortfolio: PortfolioWithAssets = {
 	updatedAt: new Date(),
 	description: null,
 	goal: 1000000,
+	colorTheme: "indigo",
 
 	assets: [
 		createDemoAsset({
@@ -184,6 +185,7 @@ export const classicPortfolio: PortfolioWithAssets = {
 	updatedAt: new Date(),
 	description: null,
 	goal: 1000000,
+	colorTheme: "blue",
 
 	assets: [
 		createDemoAsset({
@@ -232,6 +234,7 @@ export const yalePortfolio: PortfolioWithAssets = {
 	updatedAt: new Date(),
 	description: null,
 	goal: 1000000,
+	colorTheme: "emerald",
 
 	assets: [
 		createDemoAsset({
@@ -331,6 +334,7 @@ export const demoPlans = [
 			targetDeveloped: 30,
 			targetGold: 7.5,
 			targetCommodities: 7.5,
+			colorTheme: "blue",
 		},
 	},
 	{
@@ -353,6 +357,7 @@ export const demoPlans = [
 			name: "Klasyczny 60/40",
 			targetBonds: 40,
 			targetDeveloped: 60,
+			colorTheme: "indigo",
 		},
 	},
 ];

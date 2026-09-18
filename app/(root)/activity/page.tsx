@@ -192,7 +192,7 @@ export default async function ActivityPage({
 
 							<div className="text-[10px] font-bold uppercase tracking-widest px-6 text-t-text-secondary">
 								Strona{" "}
-								<span className="text-amber-500 mx-1">{currentPage}</span> z{" "}
+								<span className="text-theme-primary mx-1">{currentPage}</span> z{" "}
 								{meta.totalPages}
 							</div>
 

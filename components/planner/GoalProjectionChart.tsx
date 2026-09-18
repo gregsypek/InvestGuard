@@ -157,7 +157,7 @@ export function GoalProjectionChart({ portfolios }: GoalProjectionChartProps) {
 		<div className="space-y-4 h-full flex flex-col">
 			<div className="flex justify-between items-baseline px-1">
 				<div className="text-right">
-					<span className="text-3xl font-black text-blue-600 dark:text-blue-400 tabular-nums tracking-tighter">
+					<span className="text-3xl font-black text-theme-primary tabular-nums tracking-tighter">
 						{isUnreachable ? "30+" : years}
 					</span>
 					<span className="text-[10px] font-bold ml-1.5 uppercase tracking-widest text-t-text-tertiary">

@@ -286,7 +286,7 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 						className={cn(
 							"flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
 							viewMode === "FLAT"
-								? "bg-white dark:bg-slate-800 shadow-sm text-blue-500"
+								? "bg-white dark:bg-slate-800 shadow-sm text-theme-primary"
 								: "text-slate-500 hover:text-slate-300",
 						)}
 					>
@@ -298,7 +298,7 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 						className={cn(
 							"flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
 							viewMode === "GROUPED"
-								? "bg-white dark:bg-slate-800 shadow-sm text-emerald-500"
+								? "bg-white dark:bg-slate-800 shadow-sm text-theme-primary"
 								: "text-slate-500 hover:text-slate-300",
 						)}
 					>

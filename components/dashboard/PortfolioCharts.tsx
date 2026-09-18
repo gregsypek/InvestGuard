@@ -173,8 +173,16 @@ export function PortfolioChart({
 			>
 				<defs>
 					<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-						<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+						<stop
+							offset="5%"
+							stopColor="var(--theme-primary)"
+							stopOpacity={0.3}
+						/>
+						<stop
+							offset="95%"
+							stopColor="var(--theme-primary)"
+							stopOpacity={0}
+						/>
 					</linearGradient>
 					<filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%">
 						<feGaussianBlur stdDeviation="4" result="blur" />
@@ -259,14 +267,14 @@ export function PortfolioChart({
 				<Area
 					type="monotone"
 					dataKey="value"
-					stroke="#3b82f6"
-					strokeWidth={3.5}
+					stroke="var(--theme-primary)"
+					strokeWidth={2.5}
 					fillOpacity={1}
-					fill="url(#colorValue)"
+					fill="transparent"
 					filter="url(#glowBlue)"
 					activeDot={{
 						r: 6,
-						fill: "#3b82f6",
+						fill: "var(--theme-primary)",
 						stroke: "#1e293b",
 						strokeWidth: 2,
 					}}

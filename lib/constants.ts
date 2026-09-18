@@ -152,7 +152,7 @@ export const CATEGORY_CONFIG = [
 		targetKey: "targetCustom",
 		name: "Niestandardowe",
 		color: "bg-portfolio-custom",
-	}
+	},
 ] as const; // Dodanie tego sprawi, że TypeScript będzie widział konkretne wartości zamiast stringów;
 
 export const COLORS: Record<string, string> = {
@@ -184,13 +184,12 @@ export const CATEGORY_DETAILS: Record<
 	UNKNOWN: { label: "Nieznana", color: "bg-gray-500", icon: "❓" },
 	REAL_ESTATE: { label: "Nieruchomości", color: "bg-teal-500", icon: "🏠" },
 	CUSTOM: { label: "Niestandardowe", color: "bg-indigo-500", icon: "⚙️" },
-	
 };
 
 // EN: Shared focus styles to remove thick ring and use subtle border instead
 // UI: Wspólne style dla focusa, aby usunąć gruby ring i użyć subtelnego borderu
 export const inputStyles = cn(
-	"h-10 w-full bg-background/50 border-border2 transition-all shadow-none",
+	"h-10 w-full transition-all shadow-none",
 	"focus:bg-background focus:border-blue-500 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none",
 );
 

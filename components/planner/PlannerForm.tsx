@@ -427,10 +427,11 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 						/>
 					</div>
 
-					<div className="flex justify-end pt-4">
+					<div className="flex justify-end pt-4 ">
 						<SubmitButton
 							label="Zapisz plan"
 							isLoading={form.formState.isSubmitting}
+							className="text-black"
 						/>
 					</div>
 				</form>

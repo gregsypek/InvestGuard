@@ -97,7 +97,9 @@ export function AlphaHeader({
 			<div className="relative z-10">
 				<nav className="text-sm text-slate-400 italic flex items-center gap-1.5">
 					Narzędzia /{" "}
-					<span className="text-rose-400 font-medium lowercase">Alpha</span>
+					<span className="text-theme-primary font-medium lowercase">
+						Alpha
+					</span>
 				</nav>
 				<div className="mt-2">
 					<h1 className="text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">

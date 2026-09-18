@@ -108,7 +108,7 @@ export default async function AlphaSelectionPage({
 				action={
 					<Button
 						asChild
-						className="bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow-sm transition-colors h-10 px-5"
+						className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
 					>
 						<Link href={targetUrl} className="flex items-center gap-2">
 							<Rocket className="w-4 h-4" />

@@ -119,7 +119,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 				action={
 					<Button
 						asChild
-						className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-sm transition-colors h-10 px-5"
+						className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
 					>
 						<Link
 							href={`/bond-reports/${id}/add-asset`}
@@ -219,7 +219,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 				action={
 					<Button
 						asChild
-						className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-sm transition-colors h-10 px-5"
+						className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
 					>
 						<Link
 							href={`/bond-reports/${id}/add-asset`}

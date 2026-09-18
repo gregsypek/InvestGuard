@@ -59,7 +59,7 @@ export function ActivityHeader({
 			<div className="relative z-10">
 				<nav className="text-sm text-slate-400 italic flex items-center gap-1.5">
 					Historia /{" "}
-					<span className="text-amber-400 font-medium lowercase">
+					<span className="text-theme-primary font-medium lowercase">
 						{dynamicName}
 					</span>
 					{/* {hasActiveFilters && (

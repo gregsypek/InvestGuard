@@ -65,7 +65,7 @@ export function PlannerHeader({
 				<div className="flex self-start sm:justify-end flex-wrap gap-8 md:gap-12 overflow-x-auto no-scrollbar">
 					<ValueCard label="Zaplanowane aktywa" icon={CalendarClock}>
 						<div className="flex items-baseline gap-1.5 font-mono">
-							<span className="text-2xl font-bold tracking-tight text-violet-400 drop-shadow-[0_0_8px_rgba(139,92,246,0.4)]">
+							<span className="text-2xl font-bold tracking-tight text-theme-primary drop-shadow-[0_0_8px_rgba(139,92,246,0.4)]">
 								{plannedCount}
 							</span>
 							<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">

@@ -33,7 +33,7 @@ export function SubmitButton({
 				"font-bold transition-all duration-300 active:scale-95 shadow-sm rounded-2xl",
 
 				// 🚀 ZMIANA: Solidne tło w kolorze motywu, biały tekst i elegancki "glow" przy hoverze
-				"bg-[color-mix(in_srgb,var(--theme-primary),black_20%)] text-white hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer",
+				"bg-[color-mix(in_srgb,var(--theme-primary),black_10%)]  hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer",
 
 				// Obsługa zablokowanego stanu (neutralna szarość)
 				"disabled:bg-t-bg-base disabled:text-t-text-tertiary disabled:border-t-border disabled:shadow-none disabled:opacity-70 disabled:cursor-not-allowed",

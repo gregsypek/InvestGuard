@@ -298,7 +298,7 @@ export default function Header({
 								displayValue &&
 									displayValue !== "ALL" &&
 									!isDemoMode &&
-									"bg-theme-soft/50 border-theme-border text-theme-primary shadow-sm hover:bg-theme-soft",
+									"dark:bg-t-bg-sticky border-theme-border text-theme-primary shadow-sm hover:bg-theme-soft",
 
 								// KIEDY BRAK PORTFELA:
 								hasNoPortfolioSelected &&

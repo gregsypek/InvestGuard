@@ -86,7 +86,7 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 							step="5"
 							value={cryptoShock}
 							onChange={(e) => setCryptoShock(Number(e.target.value))}
-							className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+							className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-theme-primary"
 						/>
 					</div>
 
@@ -121,7 +121,7 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 							step="5"
 							value={stocksShock}
 							onChange={(e) => setStocksShock(Number(e.target.value))}
-							className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+							className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-theme-primary"
 						/>
 					</div>
 

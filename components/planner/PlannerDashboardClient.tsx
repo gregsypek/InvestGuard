@@ -571,8 +571,8 @@ export function PlannerDashboardClient({
 				description="Na jej podstawie możesz monitorować nadchodzące inwestycje i zarządzać nimi w czasie."
 				action={
 					<div className="flex flex-row justify-end items-center gap-3">
-						<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg">
-							<span className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+						<div className="flex items-center gap-2  border border-blue-500/20 px-3 py-1.5 rounded-lg">
+							<span className="text-[10px] font-black uppercase tracking-widest text-theme-primary">
 								Zostało: {listTotalValue.toLocaleString("pl-PL")} PLN
 							</span>
 						</div>

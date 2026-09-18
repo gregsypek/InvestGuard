@@ -82,6 +82,111 @@
 	--color-popover-foreground: var(--popover-foreground);
 
 	--color-muted-foreground: var(--muted-foreground);
+
+	/* 🚀 1. MÓWIMY TAILWINDOWI: UŻYWAJ ZMIENNYCH CSS (nie przypisuj na sztywno!) */
+	--color-theme-primary: var(--theme-primary);
+	--color-theme-soft: var(--theme-soft);
+	--color-theme-border: var(--theme-border);
+}
+
+/* 🚀 DODAJ TO: Wymuszamy ponowne obliczanie zmiennych Tailwinda dla zagnieżdżonych elementów! */
+:root,
+[data-theme] {
+	--color-theme-primary: var(--theme-primary);
+	--color-theme-soft: var(--theme-soft);
+	--color-theme-border: var(--theme-border);
+}
+/* 
+  =========================================
+  MOTYWY KOLORYSTYCZNE PORTFELI
+  =========================================
+*/
+
+/* 🚀 WARTOŚĆ DOMYŚLNA (BLUE) */
+:root,
+[data-theme="blue"] {
+	--theme-primary: #3b82f6;
+	--theme-soft: rgba(59, 130, 246, 0.1);
+	--theme-border: rgba(59, 130, 246, 0.3);
+}
+
+/* 🚀 3. NADPISYWANIE DLA POSZCZEGÓLNYCH MOTYWÓW */
+[data-theme="indigo"] {
+	--theme-primary: #6366f1;
+	--theme-soft: rgba(99, 102, 241, 0.1);
+	--theme-border: rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="violet"] {
+	--theme-primary: #8b5cf6;
+	--theme-soft: rgba(139, 92, 246, 0.1);
+	--theme-border: rgba(139, 92, 246, 0.3);
+}
+
+[data-theme="purple"] {
+	--theme-primary: #a855f7;
+	--theme-soft: rgba(168, 85, 247, 0.1);
+	--theme-border: rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="fuchsia"] {
+	--theme-primary: #d946ef;
+	--theme-soft: rgba(217, 70, 239, 0.1);
+	--theme-border: rgba(217, 70, 239, 0.3);
+}
+
+[data-theme="pink"] {
+	--theme-primary: #ec4899;
+	--theme-soft: rgba(236, 72, 153, 0.1);
+	--theme-border: rgba(236, 72, 153, 0.3);
+}
+
+[data-theme="emerald"] {
+	--theme-primary: #10b981;
+	--theme-soft: rgba(16, 185, 129, 0.1);
+	--theme-border: rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="teal"] {
+	--theme-primary: #14b8a6;
+	--theme-soft: rgba(20, 184, 166, 0.1);
+	--theme-border: rgba(20, 184, 166, 0.3);
+}
+
+[data-theme="cyan"] {
+	--theme-primary: #06b6d4;
+	--theme-soft: rgba(6, 182, 212, 0.1);
+	--theme-border: rgba(6, 182, 212, 0.3);
+}
+
+[data-theme="sky"] {
+	--theme-primary: #0ea5e9;
+	--theme-soft: rgba(14, 165, 233, 0.1);
+	--theme-border: rgba(14, 165, 233, 0.3);
+}
+
+[data-theme="amber"] {
+	--theme-primary: #f59e0b;
+	--theme-soft: rgba(245, 158, 11, 0.1);
+	--theme-border: rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="orange"] {
+	--theme-primary: #f97316;
+	--theme-soft: rgba(249, 115, 22, 0.1);
+	--theme-border: rgba(249, 115, 22, 0.3);
+}
+
+[data-theme="lime"] {
+	--theme-primary: #84cc16;
+	--theme-soft: rgba(132, 204, 22, 0.1);
+	--theme-border: rgba(132, 204, 22, 0.3);
+}
+
+[data-theme="slate"] {
+	--theme-primary: #64748b;
+	--theme-soft: rgba(100, 116, 139, 0.1);
+	--theme-border: rgba(100, 116, 139, 0.3);
 }
 
 @theme inline {

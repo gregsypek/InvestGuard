@@ -114,6 +114,8 @@ model Portfolio {
   transactionHistories TransactionHistory[]
   // portfolioSnapshots   PortfolioSnapshot[]
   snapshots            PortfolioSnapshot[]
+
+  colorTheme String @default("blue")
 }
 
 model InvestmentPlan {

@@ -28,7 +28,9 @@ export const PortfolioSchema = z.object({
 		.union([z.string(), z.number()])
 		.optional()
 		.transform((val) => (val === "" || val == null ? undefined : Number(val)))
-		.pipe(z.number().positive("Purpose must be a positive number").optional()),
+		.pipe(z.number().positive("Cel powinien być dodatni").optional()),
+
+	colorTheme: z.string().default("blue"),
 	// Nowe pola strategii
 	targetDeveloped: z.coerce.number().min(0).max(100).default(0),
 	targetEmerging: z.coerce.number().min(0).max(100).default(0),

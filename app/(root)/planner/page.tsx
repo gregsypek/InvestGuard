@@ -128,7 +128,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 					<div className="flex items-center gap-2 mb-2">
 						<nav className="text-sm text-slate-400 italic">
 							Narzędzia /{" "}
-							<span className="text-blue-400 font-medium lowercase">
+							<span className="text-theme-primary font-medium lowercase">
 								Planer
 							</span>
 						</nav>

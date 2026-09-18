@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Asset } from "@prisma/client";
 import { Button } from "./ui/button";
+import Cookies from "js-cookie";
 import { DeleteButton } from "./DeleteButton";
 import Link from "next/link";
 import { PortfolioWithAssets } from "@/lib/types";
@@ -21,6 +22,9 @@ interface PortfolioCardProps {
 const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 	const { id, name, goal, assets, colorTheme } = p;
 	console.log("🚀 ~ PortfolioCard ~ colorTheme:", colorTheme);
+	// 🚀 Pobieramy ID z ciasteczka i sprawdzamy, czy to ten portfel
+	const isActive = Cookies.get("selectedPortfolioId") === id;
+	console.log("🚀 ~ PortfolioCard ~ isActive:", isActive);
 
 	// Tryb Demo zawsze wymusza "emerald", w przeciwnym razie bierzemy kolor z bazy
 	const theme = isDemo ? "emerald" : colorTheme || "blue";
@@ -42,16 +46,18 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 	return (
 		<Card
 			key={id}
-			// Usunięto data-theme z głównej karty - teraz dziedziczy ona globalny, spójny motyw aplikacji
 			className={cn(
 				"relative overflow-hidden transition-all duration-300 flex flex-col h-full w-full",
 				"bg-t-bg-panel border border-t-border",
-				"border-l-[2px] border-l-theme-primary",
+
+				// Zastosowanie !important gwarantuje, że lewa ramka przebije się przez domyślny 'border'
+				isActive && "!border-l-[2px] !border-l-theme-primary",
+
 				"hover:border-theme-border hover:shadow-[0_8px_30px_var(--theme-soft)]",
 			)}
 		>
 			{/* Tło Gradientu */}
-			<div className="absolute inset-0 bg-gradient-to-r from-theme-soft via-transparent to-transparent opacity-100 dark:opacity-50 pointer-events-none transition-opacity" />
+			{/* <div className="absolute inset-0  via-transparent to-transparent opacity-100 dark:opacity-50 pointer-events-none transition-opacity" /> */}
 
 			{/* Znak wodny */}
 			<div className="absolute -bottom-6 -right-6 opacity-[0.04] dark:opacity-[0.02] pointer-events-none text-theme-primary">
@@ -137,7 +143,7 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 
 						<Progress
 							value={Math.min(progress, 100)}
-							className="h-1.5 bg-slate-200 dark:bg-slate-800/80 shadow-inner [&>div]:bg-theme-primary"
+							className="h-1.5 bg-slate-200 dark:bg-slate-800/80 shadow-inner [&>div]:bg-theme-primary opacity-40"
 						/>
 
 						{progress > 100 && (

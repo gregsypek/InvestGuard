@@ -34,7 +34,7 @@ export function BondHeader({
 	backHref,
 }: BondHeaderProps) {
 	return (
-		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-900  text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
+		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-950 bg-gradient-to-r from-theme-primary/20 dark:from-theme-primary/10 via-slate-900 to-slate-950 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
 			{/* --- TEKSTURA SVG (Szmaragdowe linie/wykresy) --- */}
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
@@ -54,7 +54,7 @@ export function BondHeader({
 						{backHref && (
 							<Link
 								href={backHref}
-								className="inline-flex items-center transition-all text-blue-500 hover:text-blue-400 cursor-pointer font-medium mr-1"
+								className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
 							>
 								<ChevronLeft className="h-4 w-4" />
 								<span>Wróć</span>
@@ -62,7 +62,9 @@ export function BondHeader({
 						)}
 						{!backHref && <span>Obligacje</span>}
 						<span className="text-slate-500">/</span>
-						<span className="text-blue-400 font-medium">{portfolioName}</span>
+						<span className="text-theme-primary font-medium">
+							{portfolioName}
+						</span>
 					</nav>
 				)}
 				<div className="mt-2">
@@ -70,7 +72,7 @@ export function BondHeader({
 						{title}
 					</h1>
 					<p className="text-slate-400 font-medium mt-1 text-sm md:text-base max-w-2xl flex items-center gap-2">
-						<ShieldCheck className="h-4 w-4 text-blue-500" />
+						<ShieldCheck className="h-4 w-4 text-theme-primary" />
 						<span>Bezpieczny kapitał i ochrona przed inflacją.</span>
 					</p>
 				</div>
@@ -109,6 +111,7 @@ export function BondHeader({
 
 					<ValueCard label="Zysk (Odsetki)" icon={TrendingUp}>
 						<div className="flex items-baseline gap-1.5 font-mono">
+							{/* Zysk pozostawiamy w kolorze szmaragdowym, ponieważ symbolizuje wzrost */}
 							<span className="text-xl font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
 								+{stats.profit}
 							</span>

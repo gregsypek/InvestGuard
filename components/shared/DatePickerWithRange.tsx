@@ -53,7 +53,7 @@ export function DatePickerWithRange({
 						variant={"outline"}
 						className={cn(
 							"w-fit justify-start text-left font-bold text-[11px] tracking-wider transition-all duration-300 hover:cursor-pointer",
-							" border-t-border-subtle bg-slate-800/80 hover:bg-slate-800/20 text-slate-300 dark:text-slate-400 hover:text-slate-100 rounded-lg h-8 px-3 ml-2 border-l",
+							" border-t-border-subtle bg-slate-800 hover:bg-slate-800/80 text-slate-300 dark:text-slate-400 hover:text-slate-100 rounded-lg h-8 px-3 ml-2 border-l",
 							!date && "text-slate-500 ",
 						)}
 					>

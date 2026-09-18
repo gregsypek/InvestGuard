@@ -19,7 +19,8 @@ export const PortfoliosHeader = ({
 	customBreadcrumbs,
 }: PortfoliosHeaderProps) => {
 	return (
-		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-900  text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
+		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-950 bg-gradient-to-r from-theme-primary/20 dark:from-theme-primary/10 via-slate-900 to-slate-950 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
+			{" "}
 			{/* --- TEKSTURA SVG (Giełdowe Świece Japońskie z maskowaniem) --- */}
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
@@ -31,7 +32,6 @@ export const PortfoliosHeader = ({
 						"radial-gradient(circle at 90% 2%, black 5%, transparent 20%)",
 				}}
 			/>
-
 			{/* GÓRA: Nawigacja i Tytuł */}
 			<div className="relative z-10">
 				{customBreadcrumbs}
@@ -45,7 +45,6 @@ export const PortfoliosHeader = ({
 					</p>
 				</div>
 			</div>
-
 			{/* DÓŁ: Główne Statystyki */}
 			<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pb-2 md:pb-0">
 				{/* OGROMNA Całkowita Wartość - WYRÓŻNIONA (Dokładnie jak w DashboardHeader) */}
@@ -72,7 +71,7 @@ export const PortfoliosHeader = ({
 					{/* Liczba portfeli z customowym neonowym akcentem */}
 					<ValueCard label="Liczba portfeli" icon={Briefcase}>
 						<div className="flex items-baseline gap-1.5 font-mono">
-							<span className="text-2xl font-bold tracking-tight text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]">
+							<span className="text-2xl font-bold tracking-tight text-theme-primary drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]">
 								{portfoliosCount}
 							</span>
 							<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">

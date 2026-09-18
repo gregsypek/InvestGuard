@@ -84,7 +84,8 @@ export function AlphaHeader({
 			: 0;
 
 	return (
-		<header className="relative overflow-hidden flex flex-col gap-6 w-full bg-slate-900 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
+		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-950 bg-gradient-to-r from-theme-primary/20 dark:from-theme-primary/10 via-slate-900 to-slate-950 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
+			{" "}
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
 				style={{
@@ -93,7 +94,6 @@ export function AlphaHeader({
 						"radial-gradient(circle at 95% 2%, black 0%, transparent 20%)",
 				}}
 			/>
-
 			<div className="relative z-10">
 				<nav className="text-sm text-slate-400 italic flex items-center gap-1.5">
 					Narzędzia /{" "}
@@ -105,7 +105,6 @@ export function AlphaHeader({
 					</h1>
 				</div>
 			</div>
-
 			{showPills && (
 				<div className="relative z-10 flex items-center flex-wrap gap-2 py-2">
 					<span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2 flex items-center gap-1.5">
@@ -131,7 +130,6 @@ export function AlphaHeader({
 					/>
 				</div>
 			)}
-
 			<div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-end justify-between gap-8 pb-2 md:pb-0 border-t border-white/10 pt-6">
 				<div className="space-y-1 shrink-0">
 					<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[10px] uppercase mb-1">

@@ -52,7 +52,7 @@ export default async function NewPortfolioPage() {
 							<span>Portfele</span>
 						</Link>
 						<span className="text-muted-foreground">/</span>
-						<span className="text-primary font-medium lowercase italic">
+						<span className="text-theme-primary font-medium lowercase italic">
 							Nowy
 						</span>
 					</nav>

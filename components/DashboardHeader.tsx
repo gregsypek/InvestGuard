@@ -89,7 +89,8 @@ export const DashboardHeader = ({
 
 	return (
 		// ZMIANA: W dzień głęboki granat (slate-950), w nocy pełna węglowa czerń z systemu (t-bg-base)
-		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-900  text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
+		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-950 bg-gradient-to-r from-theme-primary/20 dark:from-theme-primary/10 via-slate-900 to-slate-950 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
+			{" "}
 			{/* --- TEKSTURA SVG (Giełdowe Świece Japońskie z płynnym maskowaniem) --- */}
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
@@ -105,7 +106,6 @@ export const DashboardHeader = ({
 						"radial-gradient(circle at 90% 2%, black 5%, transparent 20%)",
 				}}
 			/>
-
 			{/* GÓRA: Zawsze widoczna */}
 			<div className="relative z-10">
 				{customBreadcrumbs || defaultBreadcrumbs}
@@ -135,10 +135,8 @@ export const DashboardHeader = ({
 							className={cn(
 								"group flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 shadow-sm border",
 								isSettingsPage
-									? // EN: Neutral style for "Go Back" action
-										"bg-slate-800/40 hover:bg-slate-700/60 border-slate-700/50 text-slate-300 hover:text-white"
-									: // EN: Highlighted style for "Manage" action
-										"bg-blue-900/20 hover:bg-blue-800/40 border-blue-500/30 hover:border-blue-400/60 text-blue-400 hover:text-blue-300",
+									? "bg-slate-800/40 hover:bg-slate-700/60 border-slate-700/50 text-slate-300 hover:text-white"
+									: "bg-theme-soft hover:opacity-80 border-theme-border text-theme-primary",
 							)}
 						>
 							{isSettingsPage ? (
@@ -156,7 +154,6 @@ export const DashboardHeader = ({
 					)}
 				</div>
 			</div>
-
 			{/* DÓŁ: Statystyki */}
 			<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pb-2 md:pb-0">
 				{/* OGROMNA Całkowita Wartość - WYRÓŻNIONA */}

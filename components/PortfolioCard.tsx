@@ -14,78 +14,16 @@ import { cn } from "@/lib/utils";
 import { deletePortfolio } from "@/lib/actions/portfolio.actions";
 
 interface PortfolioCardProps {
-	portfolio: PortfolioWithAssets;
+	portfolio: PortfolioWithAssets & { colorTheme?: string };
 	isDemo?: boolean;
 }
 
-// EN: Premium Fintech Color Palettes for the "Wallet" look with stronger left-to-right gradients
-const PALETTES = [
-	{
-		name: "emerald",
-		borderLeft: "border-l-emerald-500",
-		text: "text-emerald-600 dark:text-emerald-400",
-		bgHover:
-			"hover:border-emerald-500/40 hover:shadow-[0_8px_30px_rgba(16,185,129,0.15)]",
-		progress: "[&>div]:bg-emerald-600 dark:[&>div]:bg-emerald-500",
-		gradient: "from-emerald-500/30 via-emerald-500/5 to-transparent",
-		watermark: "text-emerald-500",
-	},
-	{
-		name: "blue",
-		borderLeft: "border-l-blue-500",
-		text: "text-blue-600 dark:text-blue-400",
-		bgHover:
-			"hover:border-blue-500/40 hover:shadow-[0_8px_30px_rgba(59,130,246,0.15)]",
-		progress: "[&>div]:bg-blue-600 dark:[&>div]:bg-blue-500",
-		gradient: "from-blue-500/30 via-blue-500/5 to-transparent",
-		watermark: "text-blue-500",
-	},
-	{
-		name: "violet",
-		borderLeft: "border-l-violet-500",
-		text: "text-violet-600 dark:text-violet-400",
-		bgHover:
-			"hover:border-violet-500/40 hover:shadow-[0_8px_30px_rgba(139,92,246,0.15)]",
-		progress: "[&>div]:bg-violet-600 dark:[&>div]:bg-violet-500",
-		gradient: "from-violet-500/30 via-violet-500/5 to-transparent",
-		watermark: "text-violet-500",
-	},
-	{
-		name: "amber",
-		borderLeft: "border-l-amber-500",
-		text: "text-amber-600 dark:text-amber-400",
-		bgHover:
-			"hover:border-amber-500/40 hover:shadow-[0_8px_30px_rgba(245,158,11,0.15)]",
-		progress: "[&>div]:bg-amber-600 dark:[&>div]:bg-amber-500",
-		gradient: "from-amber-500/30 via-amber-500/5 to-transparent",
-		watermark: "text-amber-500",
-	},
-	{
-		name: "rose",
-		borderLeft: "border-l-rose-500",
-		text: "text-rose-600 dark:text-rose-400",
-		bgHover:
-			"hover:border-rose-500/40 hover:shadow-[0_8px_30px_rgba(244,63,94,0.15)]",
-		progress: "[&>div]:bg-rose-600 dark:[&>div]:bg-rose-500",
-		gradient: "from-rose-500/30 via-rose-500/5 to-transparent",
-		watermark: "text-rose-500",
-	},
-];
-
-// EN: Simple hash function to always assign the same color to the same portfolio ID
-const getPaletteForId = (id: string, isDemo?: boolean) => {
-	if (isDemo) return PALETTES[0]; // Demo is always Emerald
-
-	let hash = 0;
-	for (let i = 0; i < id.length; i++) {
-		hash = id.charCodeAt(i) + ((hash << 5) - hash);
-	}
-	return PALETTES[Math.abs(hash) % PALETTES.length];
-};
-
 const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
-	const { id, name, goal, assets } = p;
-	const palette = getPaletteForId(id, isDemo);
+	const { id, name, goal, assets, colorTheme } = p;
+	console.log("🚀 ~ PortfolioCard ~ colorTheme:", colorTheme);
+
+	// Tryb Demo zawsze wymusza "emerald", w przeciwnym razie bierzemy kolor z bazy
+	const theme = isDemo ? "emerald" : colorTheme || "blue";
 
 	const totalValue = assets.reduce(
 		(sum: number, asset: Asset) => sum + asset.currentValue,
@@ -93,7 +31,6 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 	);
 	const progress = p.goal ? (totalValue / p.goal) * 100 : 0;
 
-	// EN: URL mapping
 	const getDemoHref = (id: string) => {
 		if (id === "demo-dalio") return "/demo?s=dalio";
 		if (id === "demo-yale") return "/demo?s=yale";
@@ -105,45 +42,34 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 	return (
 		<Card
 			key={id}
+			// Usunięto data-theme z głównej karty - teraz dziedziczy ona globalny, spójny motyw aplikacji
 			className={cn(
 				"relative overflow-hidden transition-all duration-300 flex flex-col h-full w-full",
 				"bg-t-bg-panel border border-t-border",
-				// ZMIANA: Gruby, "fizyczny" pasek z LEWEJ strony (border-l-[6px])
-				"border-l-[2px]",
-				palette.borderLeft,
-				palette.bgHover,
+				"border-l-[2px] border-l-theme-primary",
+				"hover:border-theme-border hover:shadow-[0_8px_30px_var(--theme-soft)]",
 			)}
 		>
-			{/* ZMIANA: Gradient idący od lewej do prawej (bg-gradient-to-r) i znacznie mocniejszy */}
-			<div
-				className={cn(
-					"absolute inset-0 bg-gradient-to-r opacity-100 dark:opacity-[0.35] pointer-events-none transition-opacity",
-					palette.gradient,
-				)}
-			/>
+			{/* Tło Gradientu */}
+			<div className="absolute inset-0 bg-gradient-to-r from-theme-soft via-transparent to-transparent opacity-100 dark:opacity-50 pointer-events-none transition-opacity" />
 
-			{/* Znak wodny w rogu */}
-			<div
-				className={cn(
-					"absolute -bottom-6 -right-6 opacity-[0.04] dark:opacity-[0.02] pointer-events-none",
-					palette.watermark,
-				)}
-			>
+			{/* Znak wodny */}
+			<div className="absolute -bottom-6 -right-6 opacity-[0.04] dark:opacity-[0.02] pointer-events-none text-theme-primary">
 				<Wallet2 className="w-40 h-40" />
 			</div>
 
 			<CardHeader className="pb-2 relative z-10">
 				<CardTitle className="flex justify-between items-start gap-2">
-					<div className="flex items-center gap-2 overflow-hidden">
-						<BriefcaseBusiness
-							className={cn("w-5 h-5 shrink-0", palette.text)}
-						/>
+					{/* 🚀 DODANO data-theme TYLKO TUTAJ: Tytuł i ikona otrzymują unikalny, przypisany z bazy kolor */}
+					{/* TUTAJ DODAŁEM: data-theme={theme} */}
+					<div
+						className="flex items-center gap-2 overflow-hidden"
+						data-theme={theme}
+					>
+						<BriefcaseBusiness className="w-5 h-5 shrink-0 text-theme-primary" />
 						<Link
 							href={mainHref}
-							className={cn(
-								"truncate hover:underline font-bold tracking-tight transition-colors",
-								palette.text,
-							)}
+							className="truncate hover:underline font-bold tracking-tight transition-colors "
 						>
 							{name}
 						</Link>
@@ -179,7 +105,6 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 			</CardHeader>
 
 			<CardContent className="space-y-4 flex flex-col flex-1 pt-0 relative z-10">
-				{/* ZMIANA: Dodano gap-2 i flex-1 z min-w-0 dla obsługi długich kwot */}
 				<div className="flex justify-between items-end gap-2">
 					<div className="min-w-0 flex-1">
 						<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest font-bold mb-1">
@@ -189,9 +114,7 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 							className="text-2xl font-black text-t-text-primary tracking-tighter truncate"
 							title={`${totalValue.toLocaleString("pl-PL", { minimumFractionDigits: 2 })} PLN`}
 						>
-							{totalValue.toLocaleString("pl-PL", {
-								minimumFractionDigits: 2,
-							})}
+							{totalValue.toLocaleString("pl-PL", { minimumFractionDigits: 2 })}
 							<span className="text-[10px] font-bold text-t-text-tertiary tracking-normal ml-1">
 								PLN
 							</span>
@@ -207,29 +130,18 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 						<div className="flex justify-between text-[10px] uppercase tracking-wide font-bold">
 							<span className="text-t-text-tertiary">
 								Cel:{" "}
-								{goal.toLocaleString("pl-PL", {
-									minimumFractionDigits: 2,
-								})}{" "}
-								PLN
+								{goal.toLocaleString("pl-PL", { minimumFractionDigits: 2 })} PLN
 							</span>
-							<span className={palette.text}>{progress.toFixed(1)}%</span>
+							<span className="text-theme-primary">{progress.toFixed(1)}%</span>
 						</div>
 
 						<Progress
 							value={Math.min(progress, 100)}
-							className={cn(
-								"h-1.5 bg-slate-200 dark:bg-slate-800/80 shadow-inner",
-								palette.progress,
-							)}
+							className="h-1.5 bg-slate-200 dark:bg-slate-800/80 shadow-inner [&>div]:bg-theme-primary"
 						/>
 
 						{progress > 100 && (
-							<p
-								className={cn(
-									"text-[10px] font-bold uppercase tracking-widest",
-									palette.text,
-								)}
-							>
+							<p className="text-[10px] font-bold uppercase tracking-widest text-theme-primary">
 								Cel osiągnięty! 🚀
 							</p>
 						)}

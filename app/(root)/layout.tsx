@@ -5,7 +5,7 @@ import { LoginButton } from "@/components/shared/header/LoginButton";
 import { MarketTicker } from "@/components/MarketTicker";
 import UserButton from "@/components/shared/header/UserButton";
 import { auth } from "@/auth";
-import { cookies } from "next/headers"; // Importujemy narzędzie do ciasteczek
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getStockLogo } from "@/lib/utils";
 
@@ -16,7 +16,6 @@ export default async function RootLayout({
 }) {
 	const session = await auth();
 
-	// === SZUKAMY NAJŚWIEŻSZEJ DATY ===
 	let lastUpdated = null;
 
 	if (session?.user?.id) {
@@ -35,7 +34,6 @@ export default async function RootLayout({
 	const hideMarketTicker =
 		cookieStore.get("hide_market_ticker")?.value === "true";
 
-	// === POBIERANIE DANYCH Z BAZY DO PASKA ===
 	let tickerIndices: { symbol: string; price: number; dailyChange: number }[] =
 		[];
 	if (!hideMarketTicker) {
@@ -45,44 +43,43 @@ export default async function RootLayout({
 	}
 
 	const userRole = session?.user?.role || "REGULAR";
-
-	// const marketRates = await db.exchangeRate.findMany();
-
-	// console.log("🚀 ~ RootLayout ~ marketRates:", marketRates);
-
-	// EN: Get real userId from session or null
-	// PL: Pobieramy realne ID użytkownika z sesji
 	const userId = session?.user?.id;
 
-	// EN: Fetch portfolios belonging to the logged-in user
-	// PL: Pobieramy portfele należące do zalogowanego użytkownika
+	// 🚀 KLUCZOWA ZMIANA 1: Pobieramy colorTheme z bazy!
 	const portfolios = userId
 		? await db.portfolio.findMany({
 				where: { userId },
-				select: { id: true, name: true },
+				select: { id: true, name: true, colorTheme: true },
 			})
 		: [];
 
 	const selectedPortfolioId =
 		cookieStore.get("selectedPortfolioId")?.value || "";
 
+	// 🚀 KLUCZOWA ZMIANA 2: Ustalamy aktywny motyw
+	const activePortfolio = portfolios.find((p) => p.id === selectedPortfolioId);
+	let effectiveTheme = activePortfolio?.colorTheme || "blue";
+
+	// Wymuszenie koloru dla trybu demo i widoku globalnego
+	if (selectedPortfolioId.startsWith("demo-")) {
+		effectiveTheme = "emerald";
+	} else if (selectedPortfolioId === "ALL") {
+		effectiveTheme = "indigo";
+	}
+
 	const userControl = session ? <UserButton /> : <LoginButton />;
 
 	const fxRates = await db.exchangeRate.findMany();
-	// Pobierz tylko aktywa rynkowe (bez obligacji), żeby pokazać ich "ruch" na pasku
 	const marketAssets = await db.asset.findMany({
 		where: {
 			portfolioId: selectedPortfolioId,
-			// EN: Exclude assets that belong to either BONDS or CASH categories
 			category: {
 				notIn: ["BONDS", "CASH"],
 			},
 		},
 	});
 
-	// Sformatuj dane dla komponentu
 	const tickerData = [
-		// 1. Kursy walut
 		...fxRates.map((fx) => ({
 			label: fx.code.replace("PLN", "/PLN"),
 			value: fx.value.toFixed(4) + " PLN",
@@ -90,21 +87,10 @@ export default async function RootLayout({
 			// Zmiana na Google API dla lepszej wykrywalności logo
 			logo: `https://www.google.com/s2/favicons?domain=${fx.code.substring(0, 3).toLowerCase()}.com&sz=128`,
 		})),
-
-		// 2. Aktywa rynkowe
 		...marketAssets.map((asset) => {
 			const currentPrice =
 				asset.quantity > 0 ? asset.currentValue / asset.quantity : 0;
-
-			// EN: Use the stored daily change for the ticker instead of total P&L
-			// PL: Używamy zapisanej zmiany dziennej dla paska zamiast całkowitego zysku
 			const displayChange = asset.dailyChange || 0;
-			// const changePct =
-			// 	asset.investedCapital > 0
-			// 		? ((asset.currentValue - asset.investedCapital) /
-			// 				asset.investedCapital) *
-			// 			100
-			// 		: 0;
 
 			return {
 				label: (asset.name || asset.ticker || "").slice(0, 25),
@@ -113,21 +99,17 @@ export default async function RootLayout({
 						minimumFractionDigits: 2,
 						maximumFractionDigits: 2,
 					}) + " PLN",
-				// EN: Show the 24h change with a plus/minus sign
-				// PL: Pokazujemy zmianę 24h z plusem lub minusem
 				change:
 					(displayChange >= 0 ? "+" : "") + displayChange.toFixed(2) + "%",
 				logo: getStockLogo(asset.ticker),
 			};
 		}),
-		// 2. INDEKSY GLOBALNE Z BAZY (To, co pobrała Prisma!)
 		...tickerIndices.map((idx) => {
 			const isPositive = idx.dailyChange >= 0;
 			return {
 				label: idx.symbol === "GOLD" ? "ZŁOTO" : idx.symbol,
 				value: idx.price.toLocaleString("pl-PL", { maximumFractionDigits: 2 }),
 				change: (isPositive ? "+" : "") + idx.dailyChange.toFixed(2) + "%",
-				// Sprytne dobranie ikonek z Google dla indeksów
 				logo: `https://www.google.com/s2/favicons?domain=${
 					idx.symbol === "SP500"
 						? "spglobal.com"
@@ -141,7 +123,12 @@ export default async function RootLayout({
 		}),
 	];
 	return (
-		<div className="flex h-screen overflow-hidden bg-background">
+		// 🚀 KLUCZOWA ZMIANA 3: Wstrzyknięcie atrybutu data-theme={effectiveTheme}
+		<div
+			id="app-wrapper"
+			className="flex h-screen overflow-hidden bg-background"
+			data-theme={effectiveTheme}
+		>
 			<ChartProvider>
 				<Aside />
 				<div className="flex flex-col flex-1 min-w-0">
@@ -157,11 +144,6 @@ export default async function RootLayout({
 							<MarketTicker data={tickerData} />
 						)}
 
-						{/* Zamiast sztywnego p-6, używamy responsywnego paddingu, 
-              a górny margines (pt-0) pozwala Hero sekcji przylegać do góry */}
-						{/* <div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
-						{children}
-					</div> */}
 						{/* 1. Główny wrapper rozciągnięty na pełny ekran z tłem systemowym */}
 						<div className="w-full min-h-screen bg-t-bg-base transition-colors duration-300">
 							{/* 2. Wewnętrzny kontener trzymający strukturę i szerokość treści */}

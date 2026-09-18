@@ -37,11 +37,12 @@ import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 
 interface HeaderProps {
-	portfolios: { id: string; name: string }[];
+	portfolios: { id: string; name: string; colorTheme?: string }[];
 	userButton: React.ReactNode;
 	selectedPortfolioId: string;
 	userRole: string;
 	lastUpdated?: string | null;
+	colorTheme?: string;
 }
 
 export default function Header({
@@ -56,29 +57,30 @@ export default function Header({
 	const isDemoMode = pathname.startsWith("/demo");
 	const router = useRouter();
 
-	// 1. Pobieramy ID z URL (to jest nadrzędne nad ciasteczkiem!)
 	const urlPortfolioId =
 		searchParams.get("portfolioId") || searchParams.get("portfolio");
 
-	// 2. Szukamy ID w ścieżce dla wszystkich modułów
 	const strategy = searchParams.get("s");
 	const segments = pathname.split("/");
 	const getPathId = () => {
-		const keys = [
+		const targetKeys = [
 			"dashboard",
 			"edit",
 			"planner",
 			"bond-reports",
 			"portfolios",
 			"alpha-selection",
+			"settings",
 		];
-		const keyIndex = segments.findIndex((s) => keys.includes(s));
-		if (
-			keyIndex !== -1 &&
-			segments[keyIndex + 1] &&
-			segments[keyIndex + 1] !== "new"
-		) {
-			return segments[keyIndex + 1];
+
+		// Przeszukujemy adres URL OD KOŃCA, aby najpierw złapać "edit", a nie "portfolios"
+		for (let i = segments.length - 1; i >= 0; i--) {
+			if (targetKeys.includes(segments[i])) {
+				const possibleId = segments[i + 1];
+				if (possibleId && possibleId !== "new") {
+					return possibleId;
+				}
+			}
 		}
 		return "";
 	};
@@ -86,16 +88,12 @@ export default function Header({
 	const idFromPath = getPathId();
 	const currentEnvId = urlPortfolioId || idFromPath;
 
-	// Sprawdzamy, czy to konkretny portfel, czy polecenie widoku globalnego
 	const isCurrentValid = portfolios.some((p) => p.id === currentEnvId);
 	const isAll = currentEnvId === "ALL";
 
-	// Przepuszczamy "ALL" do renderowania, ale nie do ciasteczka
 	const rawId =
 		isCurrentValid || isAll ? currentEnvId : (selectedPortfolioId ?? "");
 	const displayValue = isDemoMode ? "" : rawId;
-
-	// const isGlobalHome = pathname === "/" || displayValue === "ALL";
 
 	const handlePortfolioChange = (id: string) => {
 		if (id === "enter-demo") {
@@ -108,15 +106,12 @@ export default function Header({
 		if (pathname === "/planner") {
 			router.push(`/planner?portfolioId=${id}`);
 		} else if (pathname === "/activity" || pathname.startsWith("/activity")) {
-			// 🚀 ZMIANA 2: Zostajemy na historii i bezpiecznie doklejamy parametr
 			router.push(`/activity?portfolio=${id}`);
 		} else {
 			router.push(`/dashboard/${id}`);
 		}
 	};
 
-	// EN: Sync cookie with URL/Path to prevent "lost" selection
-	// Synchronizacja ciasteczka z URL
 	useEffect(() => {
 		if (pathname.startsWith("/demo")) return;
 
@@ -126,8 +121,7 @@ export default function Header({
 			Cookies.set("selectedPortfolioId", currentId, { expires: 30, path: "/" });
 		}
 	}, [urlPortfolioId, idFromPath, pathname]);
-	// EN: Auto-redirect if we have a saved ID but no ID in URL on main pages
-	// Auto-przekierowanie
+
 	useEffect(() => {
 		const isMainPage = pathname === "/dashboard" || pathname === "/planner";
 		if (isMainPage && selectedPortfolioId && !urlPortfolioId && !idFromPath) {
@@ -139,15 +133,36 @@ export default function Header({
 		}
 	}, [selectedPortfolioId, pathname, urlPortfolioId, idFromPath, router]);
 
-	// WARUNKI STYLOWANIA
-	const isGlobalHome = pathname === "/" || displayValue === "ALL"; // 🚀 ZMIANA: Wykrywamy Widok Globalny na podstawie wartości, nie tylko ścieżki
+	// NOWY KOD: Błyskawiczna aktualizacja motywu na żywo w przeglądarce!
+	// NOWY KOD: Błyskawiczna aktualizacja motywu na żywo w przeglądarce!
+	useEffect(() => {
+		// 1. Znajdź aktywny portfel w pobranej liście
+		const activePortfolio = portfolios.find((p) => p.id === currentEnvId);
+
+		// 2. Ustal docelowy kolor (Demo = emerald, Globalny = indigo, Zwykły = z bazy)
+		const theme = isDemoMode
+			? "emerald"
+			: isAll
+				? "indigo"
+				: activePortfolio?.colorTheme || "blue";
+
+		// 3. Wstrzyknij kolor bezpośrednio do głównego wrappera aplikacji
+		const wrapper = document.getElementById("app-wrapper");
+		if (wrapper) {
+			wrapper.setAttribute("data-theme", theme);
+		}
+
+		// 🚀 4. KLUCZOWE DLA MENU (RADIX PORTALS): Dodajemy motyw do całego dokumentu!
+		document.documentElement.setAttribute("data-theme", theme);
+	}, [currentEnvId, portfolios, isDemoMode, isAll]);
+
+	const isGlobalHome = pathname === "/" || displayValue === "ALL";
 
 	const hasNoPortfolioSelected =
 		!displayValue && portfolios.length > 0 && !isDemoMode && !isGlobalHome;
 
 	return (
 		<header className="flex justify-between items-center p-3 md:px-5 border-b border-t-border-subtle sticky top-0 z-50 bg-white/70 dark:bg-t-bg-sticky backdrop-blur-md shadow-sm">
-			{/* LEWA STRONA: Hamburger (Mobile) + Selektor Portfela */}
 			<div className="flex items-center gap-3 flex-1">
 				{/* MOBILNY HAMBURGER */}
 				<div className="md:hidden">
@@ -165,9 +180,7 @@ export default function Header({
 								Nawigacja i ustawienia profilu
 							</SheetDescription>
 
-							{/* Mobilny Nagłówek: Logo */}
 							<div className="p-5 border-b border-t-border-subtle flex items-center gap-3 bg-black/5 dark:bg-white/5">
-								{/* Logo owinięte w SheetTrigger */}
 								<SheetTrigger asChild>
 									<Link
 										href="/"
@@ -192,26 +205,15 @@ export default function Header({
 												style={{ width: "auto", height: "auto" }}
 											/>
 										</div>
-										<span
-											className={cn(
-												"text-xl font-black tracking-tighter",
-												isDemoMode ? "text-emerald-500" : "text-t-text-primary",
-											)}
-										>
+										{/* Tutaj również wpada kolor dynamiczny */}
+										<span className="text-xl font-black tracking-tighter text-theme-primary">
 											{APP_NAME}
-											<span
-												className={
-													isDemoMode ? "text-emerald-500" : "text-blue-500"
-												}
-											>
-												.
-											</span>
+											<span className="text-theme-primary">.</span>
 										</span>
 									</Link>
 								</SheetTrigger>
 							</div>
 
-							{/* Mobilna Nawigacja */}
 							<div className="flex-1 flex flex-col p-4 space-y-1.5 overflow-y-auto">
 								{NAV_ITEMS.map((item) => {
 									const isActive = isDemoMode
@@ -238,9 +240,7 @@ export default function Header({
 												className={cn(
 													"flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all",
 													isActive
-														? isDemoMode
-															? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-															: "bg-blue-600/10 text-blue-600 dark:text-blue-400"
+														? "bg-theme-soft text-theme-primary"
 														: "hover:bg-black/5 dark:hover:bg-white/5 text-t-text-secondary hover:text-t-text-primary",
 													isDemoMode &&
 														!["/dashboard", "/portfolios", "/planner"].includes(
@@ -253,9 +253,7 @@ export default function Header({
 													className={cn(
 														"w-5 h-5",
 														isActive
-															? isDemoMode
-																? "text-emerald-500"
-																: "text-blue-500"
+															? "text-theme-primary"
 															: "text-t-text-tertiary",
 													)}
 												/>
@@ -266,7 +264,6 @@ export default function Header({
 								})}
 							</div>
 
-							{/* Dolna sekcja mobilna */}
 							<div className="p-5 border-t border-t-border-subtle flex items-center justify-between bg-black/5 dark:bg-white/5">
 								<div className="flex items-center gap-3 hover:cursor-pointer">
 									<ModeToggle />
@@ -284,12 +281,10 @@ export default function Header({
 						</SheetContent>
 					</Sheet>
 				</div>
-
-				{/* SELEKTOR PORTFELA - WERSJA PREMIUM */}
+				{/* SELEKTOR PORTFELA - WERSJA DYNAMICZNA */}
 				<div className="w-full">
 					<Select
 						key={isDemoMode ? "demo" : `real-${displayValue}`}
-						// 🚀 KLUCZOWE: Jeśli displayValue to "ALL", dajemy undefined, by wymusić placeholder!
 						value={
 							displayValue === "ALL" ? undefined : displayValue || undefined
 						}
@@ -297,37 +292,41 @@ export default function Header({
 					>
 						<SelectTrigger
 							className={cn(
-								"w-full md:w-80 font-black text-[10px] md:text-[11px] uppercase tracking-widest h-11 rounded-xl transition-all duration-500 ease-in-out border outline-none focus:ring-0",
+								"w-full md:w-80 font-black text-[10px] md:text-[11px] uppercase tracking-widest h-11 rounded-xl transition-all duration-300 ease-in-out border outline-none focus:ring-0",
+
+								// 🚀 KIEDY PORTFEL JEST WYBRANY (Główny stan - to tutaj zniknęły kolory!):
 								displayValue &&
 									displayValue !== "ALL" &&
 									!isDemoMode &&
-									"bg-black/5 dark:bg-white/5 border-t-border-subtle hover:border-blue-500/30 text-t-text-primary shadow-sm",
+									"bg-theme-soft/50 border-theme-border text-theme-primary shadow-sm hover:bg-theme-soft",
+
+								// KIEDY BRAK PORTFELA:
 								hasNoPortfolioSelected &&
 									"bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-500 shadow-[0_0_20px_-3px_rgba(245,158,11,0.3)] animate-pulse hover:animate-none hover:bg-amber-500/20",
-								isGlobalHome &&
-									"bg-blue-600/10 border-blue-500/30 text-blue-500 dark:text-blue-400 shadow-[0_0_15px_-3px_rgba(59,130,246,0.15)]",
-								isDemoMode &&
-									"border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)]",
+
+								// KIEDY TRYB DEMO LUB GLOBALNY:
+								(isGlobalHome || isDemoMode) &&
+									"bg-theme-soft/50 border-theme-border text-theme-primary shadow-sm hover:bg-theme-soft",
 							)}
 						>
 							<div className="flex items-center gap-2 overflow-hidden">
 								{isDemoMode ? (
-									<GraduationCap className="h-4 w-4 shrink-0 text-emerald-500" />
+									<GraduationCap className="h-4 w-4 shrink-0 text-theme-primary" />
 								) : hasNoPortfolioSelected ? (
 									<AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
 								) : isGlobalHome ? (
-									<Globe2 className="h-4 w-4 shrink-0 text-blue-500" />
+									<Globe2 className="h-4 w-4 shrink-0 text-theme-primary" />
 								) : (
-									<WalletCards className="h-4 w-4 shrink-0 text-blue-500" />
+									<WalletCards className="h-4 w-4 shrink-0 text-theme-primary" />
 								)}
 
-								<div className="truncate text-left mt-1">
+								<div className="truncate text-left mt-1 text-theme-primary">
 									<SelectValue
 										placeholder={
 											isDemoMode
 												? "Tryb Edukacyjny"
 												: isGlobalHome
-													? "WIDOK GLOBALNY" // <- Tu pojawi się tekst
+													? "WIDOK GLOBALNY"
 													: portfolios.length === 0
 														? "Brak portfeli"
 														: "WYBIERZ PORTFEL..."
@@ -337,7 +336,7 @@ export default function Header({
 							</div>
 						</SelectTrigger>
 
-						<SelectContent className="rounded-2xl border border-t-border-subtle bg-t-bg-panel shadow-2xl p-1.5 z-100">
+						<SelectContent className="rounded-2xl border border-theme-border bg-t-bg-panel shadow-2xl p-1.5 z-100">
 							<div className="flex items-center gap-2 px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-t-text-tertiary">
 								<Wallet2 className="h-3.5 w-3.5" />
 								TWOJE PORTFELE
@@ -348,7 +347,7 @@ export default function Header({
 								<SelectItem
 									key={p.id}
 									value={p.id}
-									className="text-xs font-bold tracking-wide rounded-xl cursor-pointer focus:bg-blue-600/10 focus:text-blue-500 dark:focus:text-blue-400 py-2.5 transition-colors"
+									className="text-xs font-bold tracking-wide rounded-xl cursor-pointer hover:bg-theme-soft focus:bg-theme-soft focus:text-theme-primary py-2.5 transition-colors"
 								>
 									{p.name}
 								</SelectItem>
@@ -358,7 +357,7 @@ export default function Header({
 
 							<SelectItem
 								value="enter-demo"
-								className="text-xs font-bold tracking-wide rounded-xl text-emerald-600 dark:text-emerald-500 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer py-2.5 transition-colors"
+								className="text-xs font-bold tracking-wide rounded-xl text-emerald-600 dark:text-emerald-500 hover:bg-emerald-500/10 focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 cursor-pointer py-2.5 transition-colors"
 							>
 								<div className="flex items-center gap-2">
 									<GraduationCap className="h-4 w-4" />
@@ -367,20 +366,20 @@ export default function Header({
 							</SelectItem>
 						</SelectContent>
 					</Select>
-				</div>
+				</div>{" "}
 			</div>
 
 			{/* PRAWA STRONA */}
 			<div className="flex items-center gap-2 md:gap-3">
 				{isGlobalHome ? (
-					/* WIDOK GLOBALNY: Odznaka (Badge) informacyjna */
-					<div className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl shadow-sm h-11">
-						<Globe2 className="w-4 h-4 text-blue-400 animate-[spin_12s_linear_infinite]" />
+					/* WIDOK GLOBALNY: Odznaka dziedzicząca motyw (indigo z layout.tsx) */
+					<div className="flex items-center gap-2 px-3 py-2 bg-theme-soft border border-theme-border rounded-xl shadow-sm h-11">
+						<Globe2 className="w-4 h-4 text-theme-primary animate-[spin_12s_linear_infinite]" />
 						<div className="hidden md:flex flex-col text-left justify-center">
-							<span className="text-[9px] font-black uppercase tracking-widest text-blue-500/70 mb-0.5 leading-none">
+							<span className="text-[9px] font-black uppercase tracking-widest opacity-70 text-theme-primary mb-0.5 leading-none">
 								Kontekst
 							</span>
-							<span className="text-[10px] font-bold text-blue-400 leading-none">
+							<span className="text-[10px] font-bold text-theme-primary leading-none">
 								RYNKI GLOBALNE
 							</span>
 						</div>

@@ -22,6 +22,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
 import { Input } from "@/components/ui/input";
+import { Palette } from "lucide-react"; // Import new icon
 import { SubmitButton } from "./ui/SubmitButton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,24 @@ interface PortfolioFormProps {
 	initialData?: Omit<Portfolio, "assets">;
 }
 
+// Map themes to their hex values for display in the picker
+const THEME_OPTIONS = [
+	{ id: "blue", color: "#3b82f6", label: "Niebieski" },
+	{ id: "indigo", color: "#6366f1", label: "Indygo" },
+	{ id: "violet", color: "#8b5cf6", label: "Fioletowy" },
+	{ id: "purple", color: "#a855f7", label: "Purpurowy" },
+	{ id: "fuchsia", color: "#d946ef", label: "Fuksja" },
+	{ id: "pink", color: "#ec4899", label: "Różowy" },
+	{ id: "emerald", color: "#10b981", label: "Szmaragdowy" },
+	{ id: "teal", color: "#14b8a6", label: "Morski" },
+	{ id: "cyan", color: "#06b6d4", label: "Cyjan" },
+	{ id: "sky", color: "#0ea5e9", label: "Błękitny" },
+	{ id: "amber", color: "#f59e0b", label: "Bursztynowy" },
+	{ id: "orange", color: "#f97316", label: "Pomarańczowy" },
+	{ id: "lime", color: "#84cc16", label: "Limonkowy" },
+	{ id: "slate", color: "#64748b", label: "Stalowy" },
+];
+
 export default function PortfolioForm({
 	initialData,
 	portfolioId: initialPortfolioId,
@@ -44,18 +63,19 @@ export default function PortfolioForm({
 	const searchParams = useSearchParams();
 	const isEditMode = !!initialData?.id;
 
-	// console.log("Dane wejściowe:", initialData);
-
 	const effectivePortfolioId =
 		initialPortfolioId || Cookies.get("selectedPortfolioId");
 
-	// 1. Initialize form with explicit type for validation values
 	const form = useForm<z.input<typeof PortfolioSchema>>({
 		resolver: zodResolver(PortfolioSchema),
 		defaultValues: {
 			name: initialData?.name ?? "",
 			description: initialData?.description ?? "",
 			goal: initialData?.goal ?? 0,
+
+			// Initialize the new field
+			colorTheme: (initialData as any)?.colorTheme ?? "blue",
+
 			targetDeveloped: initialData?.targetDeveloped ?? 0,
 			targetEmerging: initialData?.targetEmerging ?? 0,
 			targetBonds: initialData?.targetBonds ?? 0,
@@ -64,13 +84,11 @@ export default function PortfolioForm({
 			targetCash: initialData?.targetCash ?? 0,
 			targetCrypto: initialData?.targetCrypto ?? 0,
 			targetCommodities: initialData?.targetCommodities ?? 0,
-			// 🚀 NOWE W DOMYŚLNYCH:
 			targetRealEstate: initialData?.targetRealEstate ?? 0,
 			targetCustom: initialData?.targetCustom ?? 0,
 		},
 	});
 
-	// 2. Watch all target fields for live calculation
 	const targets = useWatch({
 		control: form.control,
 		name: [
@@ -82,24 +100,17 @@ export default function PortfolioForm({
 			"targetCash",
 			"targetCrypto",
 			"targetCommodities",
-			// 🚀 NOWE NASŁUCHIWANE:
 			"targetRealEstate",
 			"targetCustom",
 		],
 	});
 
-	// EN: Shared focus styles to remove thick ring and use subtle border instead
-	// UI: Wspólne style dla focusa, aby usunąć gruby ring i użyć subtelnego borderu
-
-	// 3. Calculate total % (casting to number avoids the 'unknown' error)
 	const totalAllocation = (targets as number[]).reduce(
 		(acc: number, val) => acc + (Number(val) || 0),
 		0,
 	);
 
 	useEffect(() => {
-		// Jeśli jesteśmy w edycji, NIE dopisujemy parametru do URL.
-		// Header i tak go teraz znajdzie dzięki poprawce powyżej.
 		if (isEditMode) return;
 
 		if (effectivePortfolioId && !searchParams.get("portfolioId")) {
@@ -109,9 +120,7 @@ export default function PortfolioForm({
 		}
 	}, [effectivePortfolioId, pathname, router, searchParams, isEditMode]);
 
-	// ✅ W onSubmit musimy sparsować dane, aby zamienić je na typy wynikowe (infer)
 	async function onSubmit(data: z.input<typeof PortfolioSchema>) {
-		// Przekształcamy surowe dane z formularza na czyste dane dla bazy
 		const validatedValues = PortfolioSchema.parse(data);
 
 		const result = (
@@ -122,14 +131,10 @@ export default function PortfolioForm({
 
 		if (result.success) {
 			toast.success(isEditMode ? "Updated! ✏️" : "Created! 🚀");
-			// Kluczowe: Pobieramy ID (z wyniku lub z initialData)
 			const targetId = result?.id || initialData?.id;
 
 			if (targetId) {
-				// 1. Przekierowanie na listę z parametrem aktywnego portfela
 				router.push(`/portfolios?portfolioId=${targetId}`);
-
-				// 2. Wymuszenie odświeżenia komponentów klienta, by "zaciągnęły" nowe dane
 				router.refresh();
 			}
 		} else {
@@ -140,7 +145,6 @@ export default function PortfolioForm({
 	const inputStyles =
 		"h-12 bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-blue-500 rounded-xl px-4 text-sm font-medium text-t-text-primary transition-colors";
 
-	// 4. Helper z ulepszonym designem dla pól docelowych (%)
 	const renderTargetField = (
 		name: keyof PortfolioFormValues,
 		label: string,
@@ -159,7 +163,7 @@ export default function PortfolioForm({
 								type="number"
 								{...field}
 								value={(field.value as number) ?? 0}
-								className={cn(inputStyles, "pr-8 font-mono")} // font-mono dla lepszej czytelności cyfr
+								className={cn(inputStyles, "pr-8 font-mono")}
 							/>
 							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-t-text-tertiary pointer-events-none">
 								%
@@ -174,22 +178,8 @@ export default function PortfolioForm({
 
 	return (
 		<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-6 sm:p-8 shadow-sm">
-			{/* Zamiast starego CustomCardHeader używamy zintegrowanego, eleganckiego nagłówka */}
-			{/* <div className="mb-8 border-b border-t-border-subtle pb-6">
-				<h2 className="text-2xl font-black tracking-tight text-t-text-primary flex items-center gap-3">
-					<Pencil className="h-6 w-6 text-blue-500" />
-					{isEditMode ? `Edycja: ${initialData?.name}` : "Nowy Portfel"}
-				</h2>
-				<p className="text-sm font-medium text-t-text-tertiary mt-1">
-					{isEditMode
-						? "Zaktualizuj założenia i alokację dla swojego portfela."
-						: "Zdefiniuj podstawowe parametry i docelową alokację dla nowego portfela inwestycyjnego."}
-				</p>
-			</div> */}
-
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-					{/* GŁÓWNE DANE */}
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 						<FormField
 							control={form.control}
@@ -261,7 +251,46 @@ export default function PortfolioForm({
 						)}
 					/>
 
-					{/* SEKCJA ALOKACJI CELOWEJ */}
+					{/* NEW SECTION: COLOR THEME PICKER */}
+					<div className="pt-4 space-y-4">
+						<div className="flex items-center gap-2">
+							<Palette className="w-4 h-4 text-t-text-secondary" />
+							<h3 className="text-sm font-bold text-t-text-primary">
+								Motyw Kolorystyczny
+							</h3>
+						</div>
+
+						<FormField
+							control={form.control}
+							// @ts-ignore - Assuming Prisma type is updated
+							name="colorTheme"
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<div className="flex flex-wrap gap-3">
+											{THEME_OPTIONS.map((theme) => (
+												<button
+													key={theme.id}
+													type="button"
+													onClick={() => field.onChange(theme.id)}
+													className={cn(
+														"w-8 h-8 rounded-full transition-all duration-200 border-2",
+														field.value === theme.id
+															? "scale-110 shadow-md ring-2 ring-offset-2 ring-offset-t-bg-panel ring-t-text-primary/20 border-t-text-primary"
+															: "border-transparent opacity-70 hover:opacity-100 hover:scale-105",
+													)}
+													style={{ backgroundColor: theme.color }}
+													title={theme.label}
+												/>
+											))}
+										</div>
+									</FormControl>
+									<FormMessage className="text-xs text-rose-500" />
+								</FormItem>
+							)}
+						/>
+					</div>
+
 					<div className="mt-8 pt-8 border-t border-t-border-subtle space-y-6">
 						<div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
 							<div>
@@ -273,7 +302,6 @@ export default function PortfolioForm({
 								</p>
 							</div>
 
-							{/* Badzik z sumą (Zgodny z kolorami Systemu) */}
 							<div
 								className={cn(
 									"px-4 py-1.5 rounded-lg text-[10px] uppercase tracking-widest font-black border flex items-center justify-center whitespace-nowrap",
@@ -295,7 +323,6 @@ export default function PortfolioForm({
 							{renderTargetField("targetCash", "Gotówka")}
 							{renderTargetField("targetCrypto", "Krypto")}
 							{renderTargetField("targetCommodities", "Surowce")}
-							{/* 🚀 NOWE WYŚWIETLANE POLA: */}
 							{renderTargetField("targetRealEstate", "Nieruchomości")}
 							{renderTargetField("targetCustom", "Alternatywne")}
 						</div>
@@ -309,7 +336,6 @@ export default function PortfolioForm({
 					</div>
 
 					<div className="flex justify-end pt-6 border-t border-t-border-subtle">
-						{/* Upewnij się, że Twój SubmitButton przyjmuje className lub jest ostylowany tak jak reszta (np. niebieski bg-blue-600) */}
 						<SubmitButton
 							label={isEditMode ? "Aktualizuj Portfel" : "Stwórz Portfel"}
 							isLoading={form.formState.isSubmitting}

@@ -53,7 +53,7 @@ const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 						"absolute top-0 left-0 h-full transition-all duration-1000 ease-out rounded-full",
 						isCompleted
 							? "bg-emerald-500 shadow-none dark:shadow-[0_0_10px_rgba(52,211,153,0.8)]"
-							: "bg-blue-600 dark:bg-blue-500 shadow-none dark:shadow-[0_0_10px_rgba(59,130,246,0.6)]",
+							: "bg-theme-primary shadow-none dark:shadow-[0_0_10px_rgba(59,130,246,0.6)]",
 					)}
 					style={{ width: `${Math.min(progress, 100)}%` }}
 				/>

@@ -217,7 +217,7 @@ const DashboardAnalytics = ({
 						icon={Plus}
 						isDemo={isDemo}
 						variant="outline"
-						className="border-slate-800 bg-slate-800 text-slate-300"
+						className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
 						href={`/dashboard/${portfolio.id}/add-asset`}
 					/>
 				}
@@ -273,7 +273,7 @@ const DashboardAnalytics = ({
 							{hasMore && (
 								<button
 									onClick={() => setVisibleCount((prev) => prev + 6)}
-									className="flex-1 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400 transition-all flex items-center justify-center"
+									className="flex-1 h-12 rounded-xl bg-theme-soft border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest text-theme-primary transition-all flex items-center justify-center"
 								>
 									Pokaż więcej ({filteredAndSortedAssets.length - visibleCount})
 								</button>
@@ -304,7 +304,7 @@ const DashboardAnalytics = ({
 						icon={Pencil}
 						variant="outline"
 						isDemo={isDemo}
-						className="border-slate-800 bg-slate-800 text-slate-300"
+						className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
 						href={`/portfolios/edit/${portfolio.id}`}
 					/>
 				}
@@ -339,7 +339,7 @@ const DashboardAnalytics = ({
 						icon={Plus}
 						isDemo={isDemo}
 						variant="outline"
-						className="border-slate-800 bg-slate-800 text-slate-300"
+						className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
 						href={`/dashboard/${portfolio.id}/add-asset`}
 					/>
 				}

@@ -33,7 +33,13 @@ export function AssetFilterPanel({
 	return (
 		<div className="flex flex-col gap-3 mb-6">
 			{/* RZĄD 1: Zakres i Widok (Płasko, bez otoczki) */}
-			<div className="flex items-center justify-between gap-4">
+			<div
+				className="flex items-center justify-end
+			
+			
+			
+			gap-4"
+			>
 				{/* Selektor Portfela */}
 				{portfolioOptions.length > 0 && onPortfolioChange && (
 					<div className="flex items-center gap-2">

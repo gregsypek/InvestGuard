@@ -38,6 +38,7 @@ export async function createPortfolio(values: PortfolioFormValues) {
 		});
 
 		revalidatePath("/portfolios");
+		revalidatePath("/", "layout"); // <-- Dodaj to tutaj również
 
 		return {
 			success: true,
@@ -71,6 +72,8 @@ export async function updatePortfolio(id: string, values: PortfolioFormValues) {
 		// Refresh cache to reflect changes in UI
 		revalidatePath("/portfolios");
 		revalidatePath("/dashboard");
+		// NOWE: Odświeżamy główny layout, aby Header i tło zaktualizowały kolor natychmiast!
+		revalidatePath("/", "layout");
 
 		return { success: true };
 	} catch (error) {

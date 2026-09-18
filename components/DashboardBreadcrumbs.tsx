@@ -43,7 +43,7 @@ export const DashboardBreadcrumbs = ({
 				<span
 					className={cn(
 						"transition-colors italic",
-						isAddAssetPage ? "" : "text-primary font-medium lowercase",
+						isAddAssetPage ? "" : "text-theme-primary font-medium lowercase",
 					)}
 				>
 					{name.toLocaleLowerCase()}

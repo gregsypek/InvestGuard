@@ -189,6 +189,42 @@
 	--theme-border: rgba(100, 116, 139, 0.3);
 }
 
+[data-theme="red"] {
+	--theme-primary: #ef4444;
+	--theme-soft: rgba(239, 68, 68, 0.1);
+	--theme-border: rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="rose"] {
+	--theme-primary: #f43f5e;
+	--theme-soft: rgba(244, 63, 94, 0.1);
+	--theme-border: rgba(244, 63, 94, 0.3);
+}
+
+[data-theme="green"] {
+	--theme-primary: #22c55e;
+	--theme-soft: rgba(34, 197, 94, 0.1);
+	--theme-border: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="yellow"] {
+	--theme-primary: #eab308;
+	--theme-soft: rgba(234, 179, 8, 0.1);
+	--theme-border: rgba(234, 179, 8, 0.3);
+}
+
+[data-theme="zinc"] {
+	--theme-primary: #71717a;
+	--theme-soft: rgba(113, 113, 122, 0.1);
+	--theme-border: rgba(113, 113, 122, 0.3);
+}
+
+[data-theme="stone"] {
+	--theme-primary: #78716c;
+	--theme-soft: rgba(120, 113, 108, 0.1);
+	--theme-border: rgba(120, 113, 108, 0.3);
+}
+
 @theme inline {
 	/* Mapping CSS variables to Tailwind utility classes */
 	--color-background: var(--background);

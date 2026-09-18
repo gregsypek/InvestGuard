@@ -52,6 +52,13 @@ const THEME_OPTIONS = [
 	{ id: "orange", color: "#f97316", label: "Pomarańczowy" },
 	{ id: "lime", color: "#84cc16", label: "Limonkowy" },
 	{ id: "slate", color: "#64748b", label: "Stalowy" },
+	// EN: Newly added matching Tailwind 500 colors
+	{ id: "red", color: "#ef4444", label: "Czerwony" },
+	{ id: "rose", color: "#f43f5e", label: "Różany" },
+	{ id: "green", color: "#22c55e", label: "Zielony" },
+	{ id: "yellow", color: "#eab308", label: "Żółty" },
+	{ id: "zinc", color: "#71717a", label: "Cynkowy" },
+	{ id: "stone", color: "#78716c", label: "Kamienny" },
 ];
 
 export default function PortfolioForm({
@@ -262,7 +269,6 @@ export default function PortfolioForm({
 
 						<FormField
 							control={form.control}
-							// @ts-ignore - Assuming Prisma type is updated
 							name="colorTheme"
 							render={({ field }) => (
 								<FormItem>

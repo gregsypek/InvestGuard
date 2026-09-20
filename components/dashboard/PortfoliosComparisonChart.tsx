@@ -18,11 +18,11 @@ import {
 	Minimize2,
 	WalletCards,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
+import { useState } from "react";
 
 interface PortfolioDataPoint {
 	date: string | Date;
@@ -37,7 +37,36 @@ interface PortfolioInfo {
 interface PortfoliosComparisonChartProps {
 	data: PortfolioDataPoint[];
 	portfolios: PortfolioInfo[];
-	activeIds: string[]; // NOWY PROP: ID portfeli zaznaczonych na pasku głównym
+	activeIds: string[]; // ID portfeli zaznaczonych na pasku głównym
+	chartMode: "VALUE" | "PERCENTAGE";
+}
+
+// ----------------------------------------------------------------------
+// INTERFEJSY TYPÓW DLA RECHARTS )
+// ----------------------------------------------------------------------
+// interface LegendPayloadItem {
+// 	dataKey: string | number;
+// 	color: string;
+// 	value: string;
+// }
+interface LegendPayloadItem {
+	dataKey?: string | number | ((obj: unknown) => unknown);
+	color?: string;
+	value?: React.ReactNode;
+}
+
+interface TooltipPayloadItem {
+	dataKey: string;
+	value: number;
+	name: string;
+	color: string;
+}
+
+interface ComparisonTooltipProps {
+	active?: boolean;
+	payload?: TooltipPayloadItem[];
+	label?: string | Date;
+	hiddenLines: Record<string, boolean>;
 	chartMode: "VALUE" | "PERCENTAGE";
 }
 
@@ -57,18 +86,23 @@ export function PortfoliosComparisonChart({
 	chartMode,
 }: PortfoliosComparisonChartProps) {
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
+	const [prevActiveIds, setPrevActiveIds] = useState<string>("");
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	// MAGICZNA LOGIKA: Synchronizacja widoczności z górnym paskiem (ale pozwala na ręczne nadpisanie)
-	useEffect(() => {
-		const initialHiddenState: Record<string, boolean> = {};
+	// ======================================================================
+	// FIX: REAGOWANIE NA ZMIANY PROPSÓW BEZ USEEFFECT (Unikamy re-renderów)
+	// ======================================================================
+	const currentActiveIdsStr = activeIds.join(",");
+	if (currentActiveIdsStr !== prevActiveIds) {
+		setPrevActiveIds(currentActiveIdsStr);
+		const nextHidden: Record<string, boolean> = {};
 		portfolios.forEach((p) => {
-			const isActive = activeIds.includes("ALL") || activeIds.includes(p.id);
-			initialHiddenState[p.id] = !isActive; // Ukryj, jeśli nie jest zaznaczony
+			nextHidden[p.id] = !(
+				activeIds.includes("ALL") || activeIds.includes(p.id)
+			);
 		});
-		// TODO: fix cascading errors warning
-		setHiddenLines(initialHiddenState);
-	}, [activeIds, portfolios]);
+		setHiddenLines(nextHidden);
+	}
 
 	const toggleLine = (dataKey: string) => {
 		setHiddenLines((prev) => ({
@@ -93,46 +127,54 @@ export function PortfoliosComparisonChart({
 	const maxAbsValue = Math.max(...allValues.map(Math.abs), 5);
 	const yDomain = Math.ceil(maxAbsValue * 1.1);
 
-	const renderCustomLegend = ({ payload }: any) => (
-		<div className="mt-4">
-			<ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
-				{payload.map((entry: any) => {
-					const dataKey = String(entry.dataKey);
-					const isHidden = hiddenLines[dataKey];
+	const renderCustomLegend = ({
+		payload,
+	}: {
+		payload?: readonly LegendPayloadItem[];
+	}) => {
+		if (!payload) return null;
 
-					return (
-						<li
-							key={dataKey}
-							onClick={() => toggleLine(dataKey)}
-							className={`flex items-center gap-1.5 transition-all duration-300 cursor-pointer ${
-								isHidden
-									? "opacity-40 grayscale"
-									: "opacity-100 hover:opacity-80 hover:scale-105"
-							}`}
-						>
-							{!isHidden ? (
-								<CheckCircle2
-									className="w-4 h-4"
-									style={{
-										color: entry.color,
-										filter: `drop-shadow(0 0 4px ${entry.color}80)`,
-									}}
-								/>
-							) : (
-								<Circle className="w-4 h-4" style={{ color: entry.color }} />
-							)}
-							<span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
-								{entry.value}
-							</span>
-						</li>
-					);
-				})}
-			</ul>
-			<p className="text-[9px] text-center text-slate-500 uppercase tracking-widest font-bold mt-4 opacity-70">
-				💡 Kliknij w nazwę portfela, aby włączyć lub wyłączyć go z wykresu
-			</p>
-		</div>
-	);
+		return (
+			<div className="mt-4">
+				<ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
+					{payload.map((entry) => {
+						const dataKey = String(entry.dataKey);
+						const isHidden = hiddenLines[dataKey];
+
+						return (
+							<li
+								key={dataKey}
+								onClick={() => toggleLine(dataKey)}
+								className={`flex items-center gap-1.5 transition-all duration-300 cursor-pointer ${
+									isHidden
+										? "opacity-40 grayscale"
+										: "opacity-100 hover:opacity-80 hover:scale-105"
+								}`}
+							>
+								{!isHidden ? (
+									<CheckCircle2
+										className="w-4 h-4"
+										style={{
+											color: entry.color,
+											filter: `drop-shadow(0 0 4px ${entry.color}80)`,
+										}}
+									/>
+								) : (
+									<Circle className="w-4 h-4" style={{ color: entry.color }} />
+								)}
+								<span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+									{entry.value}
+								</span>
+							</li>
+						);
+					})}
+				</ul>
+				<p className="text-[9px] text-center text-slate-500 uppercase tracking-widest font-bold mt-4 opacity-70">
+					💡 Kliknij w nazwę portfela, aby włączyć lub wyłączyć go z wykresu
+				</p>
+			</div>
+		);
+	};
 
 	const chartContent = (
 		<ResponsiveContainer width="100%" height="100%">
@@ -201,7 +243,7 @@ export function PortfoliosComparisonChart({
 
 	if (isExpanded) {
 		return (
-			<div className="fixed inset-0 z-[100] bg-slate-950/97 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
+			<div className="fixed inset-0 z-100 bg-slate-950/97 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
 				<div className="relative flex justify-between items-center mb-6">
 					<div className="flex items-start gap-3 flex-col  sm:flex-row">
 						<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
@@ -252,19 +294,21 @@ function ComparisonTooltip({
 	label,
 	hiddenLines,
 	chartMode,
-}: any) {
+}: ComparisonTooltipProps) {
 	if (active && payload && payload.length) {
 		const sortedPayload = [...payload]
-			.filter((entry: any) => !(hiddenLines && hiddenLines[entry.dataKey]))
+			.filter((entry) => !(hiddenLines && hiddenLines[entry.dataKey]))
 			.sort((a, b) => b.value - a.value);
 
 		return (
-			<div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/40 rounded-2xl p-4 shadow-2xl min-w-[220px]">
+			<div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/40 rounded-2xl p-4 shadow-2xl min-w-55">
 				<p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-800 pb-2">
-					{format(new Date(label), "dd MMMM yyyy", { locale: pl })}
+					{format(new Date(label as string | Date), "dd MMMM yyyy", {
+						locale: pl,
+					})}
 				</p>
 				<div className="space-y-2.5">
-					{sortedPayload.map((entry: any, index: number) => {
+					{sortedPayload.map((entry, index) => {
 						const isPositive = entry.value >= 0;
 						return (
 							<div

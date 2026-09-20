@@ -146,7 +146,9 @@ const CustomTooltip = ({ active, payload, label, isMulti }: any) => {
 	return null;
 };
 
-export function GoalProjectionChart({ portfolios }: GoalProjectionChartProps) {
+export function GoalProjectionChart({
+	portfolios = [],
+}: GoalProjectionChartProps) {
 	const { data, years, isUnreachable, globalTarget } = useMemo(
 		() => generateProjection(portfolios),
 		[portfolios],

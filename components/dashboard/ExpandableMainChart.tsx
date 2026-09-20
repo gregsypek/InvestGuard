@@ -11,7 +11,7 @@ import {
 	YAxis,
 } from "recharts";
 import { Maximize2, Minimize2 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { ChartLegend } from "./ChartLegend";
 import { format } from "date-fns";
@@ -36,6 +36,12 @@ export function ExpandableMainChart({
 	chartMode,
 }: ExpandableMainChartProps) {
 	const [isFullscreen, setIsFullscreen] = useState(false);
+	const [isMounted, setIsMounted] = useState(false);
+
+	useEffect(() => {
+		const timer = setTimeout(() => setIsMounted(true), 0);
+		return () => clearTimeout(timer);
+	}, []);
 
 	const mergedData = useMemo(() => {
 		if (!data || data.length === 0) return [];
@@ -88,30 +94,10 @@ export function ExpandableMainChart({
 		});
 	}, [data, transactions]);
 
-	// Komponent Legendy
-	// const ChartLegend = () => (
-	// 	<div className="flex flex-wrap items-center gap-3 sm:gap-6 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3 pl-2">
-	// 		<div className="flex items-center gap-1.5">
-	// 			<div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-	// 			{chartMode === "VALUE" ? "Wartość Portfela" : "Zwrot Portfela"}
-	// 		</div>
-	// 		{transactions.length > 0 && (
-	// 			<>
-	// 				<div className="flex items-center gap-1.5">
-	// 					<div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-	// 					Kupno / Wpłata
-	// 				</div>
-	// 				<div className="flex items-center gap-1.5">
-	// 					<div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
-	// 					Sprzedaż / Wypłata
-	// 				</div>
-	// 			</>
-	// 		)}
-	// 	</div>
-	// );
-
-	const chartContentElement = (
-		<ResponsiveContainer width="100%" height="100%" minHeight={200}>
+	const chartContentElement = !isMounted ? (
+		<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-xl min-h-[200px]" />
+	) : (
+		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 			<ComposedChart
 				data={mergedData}
 				margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
@@ -221,14 +207,31 @@ export function ExpandableMainChart({
 	);
 }
 
-function CustomChartTooltip({ active, payload, label, chartMode }: any) {
+// ----------------------------------------------------------------------
+// TYPY DLA TOOLTIPA (Koniec z 'any'!)
+// ----------------------------------------------------------------------
+interface CustomTooltipProps {
+	active?: boolean;
+	payload?: any[];
+	label?: string;
+	chartMode: "VALUE" | "PERCENTAGE";
+}
+
+function CustomChartTooltip({
+	active,
+	payload,
+	label,
+	chartMode,
+}: CustomTooltipProps) {
 	if (active && payload && payload.length) {
 		const data = payload[0].payload;
-		const dateStr = format(new Date(label), "dd MMMM yyyy", { locale: pl });
+		const dateStr = format(new Date(label as string), "dd MMMM yyyy", {
+			locale: pl,
+		});
 		const valueStr =
 			chartMode === "PERCENTAGE"
 				? `${data.value.toFixed(2)}%`
-				: `${data.value.toFixed(2)} PLN`;
+				: `${formatCurrency(data.value)} PLN`;
 
 		return (
 			<div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-xl p-4 shadow-xl z-50 min-w-[200px]">
@@ -262,7 +265,6 @@ function CustomChartTooltip({ active, payload, label, chartMode }: any) {
 											{formatCurrency(Math.abs(tx.executedValue || 0))} PLN
 										</span>
 									</div>
-									{/* Nowość: Data ukrytej transakcji w Tooltipie */}
 									<span className="text-[9px] text-slate-500 mt-0.5">
 										{tx.formattedDate}
 									</span>

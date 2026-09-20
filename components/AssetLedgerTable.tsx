@@ -23,7 +23,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import React, { useMemo, useState, useTransition } from "react";
+import React, { useEffect, useMemo, useState, useTransition } from "react";
 import {
 	Table,
 	TableBody,
@@ -42,7 +42,6 @@ import { AdjustAssetModal } from "./AdjustAssetModal";
 import { AssetFilterPanel } from "./shared/AssetFilterPanel";
 import { AssetHistoryChart } from "./history/AssetHistoryChart";
 import { AssetLogo } from "./shared/AssetLogo";
-import { FilterBadge } from "./shared/FilterBadge";
 import Link from "next/link";
 import PaginatedBar from "./shared/PaginatedBar";
 import PremiumDeleteModal from "./shared/PremiumDeleteModal";
@@ -91,6 +90,13 @@ const AssetLedgerTable = ({
 	const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
 	const [isPending, startTransition] = useTransition();
+
+	const [isChartMounted, setIsChartMounted] = useState(false);
+
+	useEffect(() => {
+		const t = setTimeout(() => setIsChartMounted(true), 0);
+		return () => clearTimeout(t);
+	}, []);
 
 	// --- LOGIKA AGREGACJI (HUB & SPOKE) ---
 	const assetsWithPL = useMemo(() => {
@@ -697,58 +703,65 @@ const AssetLedgerTable = ({
 																	kapitału
 																</p>
 																<div className="flex-1 w-full min-h-[150px]">
-																	<ResponsiveContainer
-																		width="100%"
-																		height="100%"
-																	>
-																		<AreaChart data={chartData}>
-																			<defs>
-																				<linearGradient
-																					id={`colorAmount-${asset.id}`}
-																					x1="0"
-																					y1="0"
-																					x2="0"
-																					y2="1"
-																				>
-																					<stop
-																						offset="5%"
-																						stopColor={categoryColor}
-																						stopOpacity={0.4}
-																					/>
-																					<stop
-																						offset="95%"
-																						stopColor={categoryColor}
-																						stopOpacity={0}
-																					/>
-																				</linearGradient>
-																			</defs>
-																			<Tooltip
-																				contentStyle={{
-																					backgroundColor: "var(--t-bg-panel)",
-																					border: "1px solid var(--t-border)",
-																					borderRadius: "8px",
-																					fontSize: "11px",
-																					fontWeight: "600",
-																					color: "var(--t-text-primary)",
-																				}}
-																				itemStyle={{ color: categoryColor }}
-																			/>
-																			<Area
-																				type="stepAfter"
-																				dataKey="amount"
-																				stroke={categoryColor}
-																				fillOpacity={1}
-																				fill={`url(#colorAmount-${asset.id})`}
-																				strokeWidth={2}
-																				dot={{
-																					r: 3,
-																					fill: categoryColor,
-																					stroke: "var(--t-bg-panel)",
-																					strokeWidth: 2,
-																				}}
-																			/>
-																		</AreaChart>
-																	</ResponsiveContainer>
+																	{!isChartMounted ? (
+																		<div className="w-full h-full min-h-[150px] animate-pulse bg-slate-800/10 rounded-xl" />
+																	) : (
+																		<ResponsiveContainer
+																			width="100%"
+																			height="100%"
+																			minWidth={1}
+																			minHeight={1}
+																		>
+																			<AreaChart data={chartData}>
+																				<defs>
+																					<linearGradient
+																						id={`colorAmount-${asset.id}`}
+																						x1="0"
+																						y1="0"
+																						x2="0"
+																						y2="1"
+																					>
+																						<stop
+																							offset="5%"
+																							stopColor={categoryColor}
+																							stopOpacity={0.4}
+																						/>
+																						<stop
+																							offset="95%"
+																							stopColor={categoryColor}
+																							stopOpacity={0}
+																						/>
+																					</linearGradient>
+																				</defs>
+																				<Tooltip
+																					contentStyle={{
+																						backgroundColor:
+																							"var(--t-bg-panel)",
+																						border: "1px solid var(--t-border)",
+																						borderRadius: "8px",
+																						fontSize: "11px",
+																						fontWeight: "600",
+																						color: "var(--t-text-primary)",
+																					}}
+																					itemStyle={{ color: categoryColor }}
+																				/>
+																				<Area
+																					type="stepAfter"
+																					dataKey="amount"
+																					stroke={categoryColor}
+																					fillOpacity={1}
+																					fill={`url(#colorAmount-${asset.id})`}
+																					strokeWidth={2}
+																					dot={{
+																						r: 3,
+																						fill: categoryColor,
+																						stroke: "var(--t-bg-panel)",
+																						strokeWidth: 2,
+																					}}
+																				/>
+																			</AreaChart>
+																		</ResponsiveContainer>
+																	)}
 																</div>
 															</div>
 

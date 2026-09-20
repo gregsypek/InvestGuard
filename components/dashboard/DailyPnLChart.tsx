@@ -10,8 +10,10 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { useEffect, useState } from "react";
 
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 
 interface PnLDataPoint {
@@ -25,6 +27,13 @@ interface DailyPnLChartProps {
 }
 
 export function DailyPnLChart({ data }: DailyPnLChartProps) {
+	const [isMounted, setIsMounted] = useState(false);
+
+	useEffect(() => {
+		const timer = setTimeout(() => setIsMounted(true), 0);
+		return () => clearTimeout(timer);
+	}, []);
+
 	if (!data || data.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-full opacity-60">
@@ -35,8 +44,14 @@ export function DailyPnLChart({ data }: DailyPnLChartProps) {
 		);
 	}
 
+	if (!isMounted) {
+		return (
+			<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-xl" />
+		);
+	}
+
 	return (
-		<ResponsiveContainer width="100%" height="100%">
+		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 			<BarChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
 				{/* Subtelna siatka z tyłu, tylko poziome linie dla odniesienia do zera */}
 				<CartesianGrid
@@ -81,11 +96,17 @@ export function DailyPnLChart({ data }: DailyPnLChartProps) {
 // ----------------------------------------------------------------------
 // Dedykowany dymek z plusem/minusem
 // ----------------------------------------------------------------------
-function CustomPnLTooltip({ active, payload, label }: any) {
+interface CustomTooltipProps {
+	active?: boolean;
+	payload?: { value: number }[];
+	label?: string;
+}
+
+function CustomPnLTooltip({ active, payload, label }: CustomTooltipProps) {
 	if (active && payload && payload.length) {
 		const value = payload[0].value;
 		const isPositive = value >= 0;
-		const date = new Date(label);
+		const date = new Date(label as string);
 
 		return (
 			<div className="bg-slate-900/90 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-xl">
@@ -96,10 +117,7 @@ function CustomPnLTooltip({ active, payload, label }: any) {
 					className={`text-lg font-black ${isPositive ? "text-emerald-500" : "text-rose-500"}`}
 				>
 					{isPositive ? "+" : ""}
-					{new Intl.NumberFormat("pl-PL", {
-						style: "currency",
-						currency: "PLN",
-					}).format(value)}
+					{formatCurrency(value, 2)} PLN
 				</p>
 			</div>
 		);

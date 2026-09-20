@@ -19,10 +19,10 @@ import {
 	TrendingDown,
 	TrendingUp,
 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
-import { useState } from "react";
 
 interface BenchmarkDataPoint {
 	date: string;
@@ -33,6 +33,12 @@ interface BenchmarkDataPoint {
 interface PortfolioBenchmarkChartProps {
 	data: BenchmarkDataPoint[];
 	userIndices: string[];
+}
+
+interface LegendPayloadItem {
+	dataKey?: string | number | ((obj: unknown) => unknown);
+	color?: string;
+	value?: React.ReactNode;
 }
 
 const INDEX_COLORS: Record<string, string> = {
@@ -50,6 +56,12 @@ export function PortfolioBenchmarkChart({
 }: PortfolioBenchmarkChartProps) {
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [isMounted, setIsMounted] = useState(false);
+
+	useEffect(() => {
+		const timer = setTimeout(() => setIsMounted(true), 0);
+		return () => clearTimeout(timer);
+	}, []);
 
 	const toggleLine = (dataKey: string) => {
 		setHiddenLines((prev) => ({
@@ -73,7 +85,7 @@ export function PortfolioBenchmarkChart({
 	const currentPortfolioPct = lastDay?.portfolioPct || 0;
 	const isPortfolioPositive = currentPortfolioPct >= 0;
 
-	// Maksymalne odchylenia do symetrii osi Y (opcjonalne, ale ładnie wygląda przy małych wahaniach)
+	// Maksymalne odchylenia do symetrii osi Y
 	const allValues = data.flatMap((d) => [
 		d.portfolioPct,
 		...userIndices.map((idx) => Number(d[idx]) || 0),
@@ -109,19 +121,20 @@ export function PortfolioBenchmarkChart({
 		</div>
 	);
 
-	// Własna, w pełni kontrolowana legenda UI
-	// Własna, w pełni kontrolowana legenda UI
-	const renderCustomLegend = ({ payload }: any) => {
+	const renderCustomLegend = ({
+		payload,
+	}: {
+		payload?: readonly LegendPayloadItem[];
+	}) => {
+		if (!payload) return null;
+
 		return (
 			<div className="mt-4">
 				<ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
-					{payload.map((entry: any) => {
-						// Zabezpieczenie przed błędem z Recharts
+					{payload.map((entry) => {
 						const dataKey = String(entry.dataKey);
 						const isHidden = hiddenLines[dataKey];
 						const isPortfolio = dataKey === "portfolioPct";
-
-						// Dla portfela wymuszamy zielony kolor
 						const itemColor = isPortfolio ? "#10b981" : entry.color;
 
 						return (
@@ -165,8 +178,10 @@ export function PortfolioBenchmarkChart({
 		);
 	};
 
-	const chartContent = (
-		<ResponsiveContainer width="100%" height="100%">
+	const chartContent = !isMounted ? (
+		<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-xl min-h-[200px]" />
+	) : (
+		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 			<LineChart
 				data={data}
 				margin={{ top: 10, right: 10, left: -10, bottom: 20 }}
@@ -178,7 +193,6 @@ export function PortfolioBenchmarkChart({
 						<stop offset="100%" stopColor="#059669" />
 					</linearGradient>
 
-					{/* Delikatny efekt świecenia dla linii Głównego Portfela */}
 					<filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
 						<feGaussianBlur stdDeviation="3" result="blur" />
 						<feMerge>
@@ -221,17 +235,15 @@ export function PortfolioBenchmarkChart({
 					wrapperStyle={{ zIndex: 100 }}
 				/>
 
-				{/* 🚀 ZMODYFIKOWANA LEGENDA */}
 				<Legend
 					content={renderCustomLegend}
 					verticalAlign="bottom"
 					wrapperStyle={{
-						paddingTop: "24px", // Odsuwa legendę od linii wykresu
-						position: "relative", // Zapobiega nakładaniu się z Tooltipem
+						paddingTop: "24px",
+						position: "relative",
 					}}
 				/>
 
-				{/* Zwykłe indeksy - renderowane pod spodem */}
 				{userIndices.map((indexKey) => (
 					<Line
 						key={indexKey}
@@ -247,7 +259,6 @@ export function PortfolioBenchmarkChart({
 					/>
 				))}
 
-				{/* Twój portfel - Renderowany na samym końcu (zawsze na wierzchu) */}
 				<Line
 					type="monotone"
 					dataKey="portfolioPct"
@@ -324,14 +335,27 @@ export function PortfolioBenchmarkChart({
 	);
 }
 
-// Custom Tooltip z funkcją Leaderboardu (od najwyższego wyniku)
-function BenchmarkTooltip({ active, payload, label, hiddenLines }: any) {
-	if (active && payload && payload.length) {
-		const date = new Date(label);
+// ----------------------------------------------------------------------
+// TYPY DLA TOOLTIPA
+// ----------------------------------------------------------------------
+interface BenchmarkTooltipProps {
+	active?: boolean;
+	payload?: any[];
+	label?: string;
+	hiddenLines?: Record<string, boolean>;
+}
 
-		// Sortowanie payloadu po wartości (malejąco) - tworzy ładny ranking
+function BenchmarkTooltip({
+	active,
+	payload,
+	label,
+	hiddenLines,
+}: BenchmarkTooltipProps) {
+	if (active && payload && payload.length) {
+		const date = new Date(label as string);
+
 		const sortedPayload = [...payload]
-			.filter((entry: any) => !(hiddenLines && hiddenLines[entry.dataKey]))
+			.filter((entry) => !(hiddenLines && hiddenLines[entry.dataKey]))
 			.sort((a, b) => b.value - a.value);
 
 		const mainPortfolioEntry = sortedPayload.find(
@@ -343,7 +367,6 @@ function BenchmarkTooltip({ active, payload, label, hiddenLines }: any) {
 
 		return (
 			<div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/40 rounded-2xl p-4 shadow-2xl shadow-black/40 min-w-[200px] overflow-hidden">
-				{/* Kolorowy pasek na górze bazujący na wyniku portfela */}
 				<div
 					className={`absolute top-0 left-0 right-0 h-[2px] ${
 						isMainPositive
@@ -356,7 +379,7 @@ function BenchmarkTooltip({ active, payload, label, hiddenLines }: any) {
 					{format(date, "dd MMMM yyyy", { locale: pl })}
 				</p>
 				<div className="space-y-2.5">
-					{sortedPayload.map((entry: any, index: number) => {
+					{sortedPayload.map((entry, index) => {
 						const isPositive = entry.value >= 0;
 						const isPortfolio = entry.dataKey === "portfolioPct";
 

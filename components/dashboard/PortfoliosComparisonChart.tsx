@@ -18,11 +18,11 @@ import {
 	Minimize2,
 	WalletCards,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
-import { useState } from "react";
 
 interface PortfolioDataPoint {
 	date: string | Date;
@@ -88,7 +88,12 @@ export function PortfoliosComparisonChart({
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
 	const [prevActiveIds, setPrevActiveIds] = useState<string>("");
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [hasMounted, setHasMounted] = useState(false);
 
+	useEffect(() => {
+		const t = setTimeout(() => setHasMounted(true), 0);
+		return () => clearTimeout(t);
+	}, []);
 	// ======================================================================
 	// FIX: REAGOWANIE NA ZMIANY PROPSÓW BEZ USEEFFECT (Unikamy re-renderów)
 	// ======================================================================
@@ -177,67 +182,76 @@ export function PortfoliosComparisonChart({
 	};
 
 	const chartContent = (
-		<ResponsiveContainer width="100%" height="100%">
-			<LineChart
-				data={data}
-				margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-			>
-				<CartesianGrid
-					strokeDasharray="2 6"
-					vertical={false}
-					stroke="rgba(148,163,184,0.08)"
-				/>
-				<XAxis
-					dataKey="date"
-					axisLine={false}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
-					tickMargin={12}
-					tickFormatter={(val) =>
-						format(new Date(val), "dd MMM", { locale: pl })
-					}
-				/>
-				<YAxis
-					axisLine={false}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
-					tickFormatter={(val) =>
-						chartMode === "PERCENTAGE"
-							? `${val > 0 ? "+" : ""}${val}%`
-							: `${(val / 1000).toFixed(0)}k`
-					}
-					domain={
-						chartMode === "PERCENTAGE" ? [-yDomain, yDomain] : ["auto", "auto"]
-					}
-				/>
-				<ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" strokeWidth={1} />
-				<Tooltip
-					content={
-						<ComparisonTooltip
-							hiddenLines={hiddenLines}
-							chartMode={chartMode}
-						/>
-					}
-					cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
-				/>
-				<Legend content={renderCustomLegend} />
-
-				{portfolios.map((p, idx) => (
-					<Line
-						key={p.id}
-						type="monotone"
-						dataKey={p.id}
-						name={p.name}
-						stroke={COLORS[idx % COLORS.length]}
-						strokeWidth={3}
-						dot={false}
-						activeDot={{ r: 5, strokeWidth: 0 }}
-						hide={hiddenLines[p.id]}
-						isAnimationActive={true}
-						animationDuration={800}
+		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+			{" "}
+			{hasMounted && (
+				<LineChart
+					data={data}
+					margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+				>
+					<CartesianGrid
+						strokeDasharray="2 6"
+						vertical={false}
+						stroke="rgba(148,163,184,0.08)"
 					/>
-				))}
-			</LineChart>
+					<XAxis
+						dataKey="date"
+						axisLine={false}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
+						tickMargin={12}
+						tickFormatter={(val) =>
+							format(new Date(val), "dd MMM", { locale: pl })
+						}
+					/>
+					<YAxis
+						axisLine={false}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
+						tickFormatter={(val) =>
+							chartMode === "PERCENTAGE"
+								? `${val > 0 ? "+" : ""}${val}%`
+								: `${(val / 1000).toFixed(0)}k`
+						}
+						domain={
+							chartMode === "PERCENTAGE"
+								? [-yDomain, yDomain]
+								: ["auto", "auto"]
+						}
+					/>
+					<ReferenceLine
+						y={0}
+						stroke="rgba(148,163,184,0.25)"
+						strokeWidth={1}
+					/>
+					<Tooltip
+						content={
+							<ComparisonTooltip
+								hiddenLines={hiddenLines}
+								chartMode={chartMode}
+							/>
+						}
+						cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
+					/>
+					<Legend content={renderCustomLegend} />
+
+					{portfolios.map((p, idx) => (
+						<Line
+							key={p.id}
+							type="monotone"
+							dataKey={p.id}
+							name={p.name}
+							stroke={COLORS[idx % COLORS.length]}
+							strokeWidth={3}
+							dot={false}
+							activeDot={{ r: 5, strokeWidth: 0 }}
+							hide={hiddenLines[p.id]}
+							isAnimationActive={true}
+							animationDuration={800}
+						/>
+					))}
+				</LineChart>
+			)}
 		</ResponsiveContainer>
 	);
 

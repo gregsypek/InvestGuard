@@ -1,20 +1,13 @@
 "use client";
 
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
-import {
-	Cell,
-	Legend,
-	LegendPayload,
-	Pie,
-	PieChart,
-	ResponsiveContainer,
-	Tooltip,
-} from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { CheckCircle2, Circle, PieChart as PieChartIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { CategoryStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 interface PortfolioPieChartProps {
 	title: string;
@@ -34,7 +27,12 @@ export default function PortfolioPieChart({
 	// 🚀 STATE: Aktualnie podświetlony kawałek (do środka donuta)
 	const [activeIndex, setActiveIndex] = useState<number | null>(null);
 	const [hasMounted, setHasMounted] = useState(false);
+	const [isChartMounted, setIsChartMounted] = useState(false);
 
+	useEffect(() => {
+		const t = setTimeout(() => setIsChartMounted(true), 0);
+		return () => clearTimeout(t);
+	}, []);
 	useEffect(() => {
 		const t = setTimeout(() => setHasMounted(true), 0);
 		return () => clearTimeout(t);
@@ -170,7 +168,10 @@ export default function PortfolioPieChart({
 
 			{/* 🚀 ZMIANA: Zmniejszyliśmy wysokość (np. h-[260px]) - to jest kontener WYŁĄCZNIE na donuta */}
 			<div className="w-full h-[260px] min-h-[260px] relative mt-4">
-				{isEmpty ? (
+				{!isChartMounted ? (
+					// Szkielet ładowania o dokładnych wymiarach wykresu kołowego
+					<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-full scale-90" />
+				) : isEmpty ? (
 					<div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 pb-8">
 						<div className="rounded-full border border-t-border bg-t-bg-base p-6 shadow-inner">
 							<PieChartIcon className="h-10 w-10 text-t-text-tertiary" />
@@ -200,21 +201,9 @@ export default function PortfolioPieChart({
 									</span>
 									<span className="text-xl font-black text-t-text-primary leading-tight mt-0.5">
 										{dataKey === "actualPercentage"
-											? new Intl.NumberFormat("pl-PL", {
-													style: "currency",
-													currency: "PLN",
-													maximumFractionDigits: 0,
-												}).format(activeItem.actualAmount)
-											: // 🚀 ZMIANA 1: Pokazujemy kwotę celu (Total Portfolio * (Weight / 100)) zamiast suchego 55%
-												new Intl.NumberFormat("pl-PL", {
-													style: "currency",
-													currency: "PLN",
-													maximumFractionDigits: 0,
-												}).format(
-													totalVisibleAmount * (activeItem.weight / 100),
-												)}
+											? `${formatCurrency(activeItem.actualAmount, 0)} PLN`
+											: `${formatCurrency(totalVisibleAmount * (activeItem.weight / 100), 0)} PLN`}
 									</span>
-									{/* 🚀 ZMIANA 2: Procent wyświetlamy jako dodatkową metkę (dla obu trybów) */}
 									<span className="text-[10px] font-bold text-t-text-tertiary mt-1 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
 										{dataKey === "actualPercentage"
 											? `${activeItem.actualPercentage.toFixed(2)}% obecnie`
@@ -227,13 +216,8 @@ export default function PortfolioPieChart({
 										{dataKey === "actualPercentage" ? "WARTOŚĆ" : "CEL (RAZEM)"}
 									</span>
 									<span className="text-lg font-black text-t-text-primary leading-tight mt-0.5">
-										{new Intl.NumberFormat("pl-PL", {
-											style: "currency",
-											currency: "PLN",
-											maximumFractionDigits: 0,
-										}).format(totalVisibleAmount)}
+										{formatCurrency(totalVisibleAmount, 0)} PLN
 									</span>
-									{/* Opcjonalny dopisek pod kwotą główną dla Docelowej Strategii */}
 									{dataKey === "weight" && (
 										<span className="text-[9px] font-bold text-t-text-tertiary mt-1 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
 											{totalVisibleWeight}% zainwestowano
@@ -243,7 +227,12 @@ export default function PortfolioPieChart({
 							)}
 						</div>
 
-						<ResponsiveContainer width="100%" height="100%">
+						<ResponsiveContainer
+							width="100%"
+							height="100%"
+							minWidth={1}
+							minHeight={1}
+						>
 							<PieChart>
 								<Pie
 									data={visibleData}
@@ -257,8 +246,8 @@ export default function PortfolioPieChart({
 									minAngle={8}
 									stroke="var(--t-bg-panel)"
 									strokeWidth={2}
-									labelLine={false} // Wyłączamy domyślne kreski Recharts
-									label={renderCustomizedLabel} // Wrzucamy nasze procenty
+									labelLine={false}
+									label={renderCustomizedLabel}
 									onMouseEnter={(_, index) => setActiveIndex(index)}
 									onMouseLeave={() => setActiveIndex(null)}
 								>
@@ -270,8 +259,6 @@ export default function PortfolioPieChart({
 										/>
 									))}
 								</Pie>
-
-								{/* <Legend content={renderCustomLegend} verticalAlign="bottom" /> */}
 							</PieChart>
 						</ResponsiveContainer>
 					</>

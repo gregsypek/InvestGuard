@@ -15,10 +15,10 @@ import {
 	YAxis,
 } from "recharts";
 import { Maximize2, Minimize2, TrendingDown, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
-import { useState } from "react";
 
 interface AbsolutePnLDataPoint {
 	date: string;
@@ -35,7 +35,12 @@ interface AbsoluteDailyPnLChartProps {
 export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	// EN: State to handle fullscreen expansion
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [isMounted, setIsMounted] = useState(false);
 
+	useEffect(() => {
+		const timer = setTimeout(() => setIsMounted(true), 0);
+		return () => clearTimeout(timer);
+	}, []);
 	if (!data || data.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-full opacity-60">
@@ -176,8 +181,10 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		);
 	};
 	// EN: Reusable chart content for normal and expanded views
-	const chartContent = (
-		<ResponsiveContainer width="100%" height="100%">
+	const chartContent = !isMounted ? (
+		<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-xl min-h-[250px]" />
+	) : (
+		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 			<ComposedChart
 				data={data}
 				margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
@@ -261,7 +268,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 					tick={{ fontSize: 10, fill: "#3b82f6", fontWeight: 600 }}
 					// FIX: zero now returns an actual empty string instead of being
 					// passed through Intl.NumberFormat (which coerced "" -> 0 -> "0 zł")
-					tickFormatter={(val) => 
+					tickFormatter={(val) =>
 						val === 0
 							? ""
 							: `${new Intl.NumberFormat("pl-PL", {

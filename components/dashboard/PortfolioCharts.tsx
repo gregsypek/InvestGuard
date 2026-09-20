@@ -167,7 +167,8 @@ export function PortfolioChart({
 
 	// --- RENDEROWANIE WYKRESU ---
 	const chartContent = (
-		<ResponsiveContainer width="100%" height="100%">
+		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+			{" "}
 			<ComposedChart
 				data={mergedData}
 				margin={{ top: 10, right: 10, left: 10, bottom: 0 }}

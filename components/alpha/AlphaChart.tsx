@@ -9,10 +9,18 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { useEffect, useState } from "react";
 
 import { AlphaPoint } from "../InteractiveChartSection";
 
 export function AlphaChart({ data }: { data: AlphaPoint[] }) {
+	const [isChartMounted, setIsChartMounted] = useState(false);
+
+	useEffect(() => {
+		const t = setTimeout(() => setIsChartMounted(true), 0);
+		return () => clearTimeout(t);
+	}, []);
+
 	// Odcinamy ostatni punkt jeśli duplikuje przedostatni
 	const cleanData =
 		data && data.length > 1
@@ -27,8 +35,15 @@ export function AlphaChart({ data }: { data: AlphaPoint[] }) {
 
 	if (!cleanData || cleanData.length === 0) return null;
 
+	// Jeśli Flexbox jeszcze nie ułożył elementów, pokazujemy płynny szkielet
+	if (!isChartMounted) {
+		return (
+			<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-xl" />
+		);
+	}
+
 	return (
-		<ResponsiveContainer width="100%" height="100%">
+		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
 			<AreaChart
 				data={cleanData}
 				margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -77,10 +92,10 @@ export function AlphaChart({ data }: { data: AlphaPoint[] }) {
 				/>
 				{/* Linia wkładu */}
 				<Area
-					type="monotone" //
+					type="monotone"
 					dataKey="wkład"
 					stroke="#94a3b8"
-					fill="transparent" //
+					fill="transparent"
 					strokeWidth={2}
 					strokeDasharray="5 5"
 					isAnimationActive={false}
@@ -88,7 +103,7 @@ export function AlphaChart({ data }: { data: AlphaPoint[] }) {
 				/>
 				{/* Linia wyceny */}
 				<Area
-					type="monotone" //
+					type="monotone"
 					dataKey="wycena"
 					stroke="#10b981"
 					fill="url(#colorWycena)"

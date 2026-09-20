@@ -291,7 +291,13 @@ export default function GlobalAnalyticsCharts({
 						Udział typów walorów
 					</h4>
 					<div className="w-full h-[280px]">
-						<ResponsiveContainer width="100%" height="100%">
+						<ResponsiveContainer
+							width="100%"
+							height="100%"
+							minWidth={1}
+							minHeight={1}
+						>
+							{" "}
 							<PieChart>
 								<Pie
 									data={pieData}
@@ -366,7 +372,13 @@ export default function GlobalAnalyticsCharts({
 					</div>
 
 					<div className="w-full flex-1 min-h-[300px]">
-						<ResponsiveContainer width="100%" height="100%">
+						<ResponsiveContainer
+							width="100%"
+							height="100%"
+							minWidth={1}
+							minHeight={1}
+						>
+							{" "}
 							<BarChart
 								layout="vertical"
 								data={barDataTop10}
@@ -441,7 +453,13 @@ export default function GlobalAnalyticsCharts({
 								style={{ height: Math.max(allBarData.length * 40, 400) }}
 								className="w-full"
 							>
-								<ResponsiveContainer width="100%" height="100%">
+								<ResponsiveContainer
+									width="100%"
+									height="100%"
+									minWidth={1}
+									minHeight={1}
+								>
+									{" "}
 									<BarChart
 										layout="vertical"
 										data={allBarData}

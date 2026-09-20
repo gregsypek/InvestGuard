@@ -10,6 +10,7 @@ import React, { ChangeEvent, useState } from "react";
 import { BOND_DURATIONS } from "@/lib/constants";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
@@ -378,9 +379,7 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 											</td>
 											<td className="p-4 text-right">
 												<div className="font-mono text-sm text-t-text-secondary whitespace-nowrap">
-													{b.investedValue.toLocaleString("pl-PL", {
-														minimumFractionDigits: 2,
-													})}
+													{formatCurrency(b.investedValue)}
 													<span className="text-[10px] text-t-text-tertiary ml-1">
 														PLN
 													</span>
@@ -388,9 +387,7 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 											</td>
 											<td className="p-4 text-right">
 												<div className="font-mono font-bold text-sm text-blue-600 dark:text-blue-400 whitespace-nowrap">
-													{b.currentValue.toLocaleString("pl-PL", {
-														minimumFractionDigits: 2,
-													})}
+													{formatCurrency(b.currentValue)}
 													<span className="text-[10px] text-blue-600/50 dark:text-blue-400/50 ml-1">
 														PLN
 													</span>
@@ -423,9 +420,7 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 									</td>
 									<td className="p-4 text-right border-t border-t-border-subtle">
 										<div className="font-mono font-black text-sm text-blue-600 dark:text-blue-400 whitespace-nowrap">
-											{previewTotal.toLocaleString("pl-PL", {
-												minimumFractionDigits: 2,
-											})}
+											{formatCurrency(previewTotal)}
 											<span className="text-[10px] text-blue-600/50 dark:text-blue-400/50 ml-1">
 												PLN
 											</span>

@@ -1,5 +1,6 @@
 import { Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 type Props = {
 	progress: number;
@@ -38,9 +39,7 @@ const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 						Cel Finansowy
 					</span>
 					<p className="text-lg font-semibold text-t-text-primary">
-						{goal.toLocaleString("pl-PL", {
-							minimumFractionDigits: 2,
-						})}{" "}
+						{formatCurrency(goal)}{" "}
 						<span className="text-sm font-bold text-t-text-tertiary">PLN</span>
 					</p>
 				</div>
@@ -70,9 +69,7 @@ const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 					)}
 				>
 					{remaining > 0
-						? `Brakuje: ${remaining.toLocaleString("pl-PL", {
-								minimumFractionDigits: 2,
-							})} PLN`
+						? `Brakuje: ${formatCurrency(remaining)} PLN`
 						: "Cel zrealizowany! 🚀"}
 				</p>
 			</div>

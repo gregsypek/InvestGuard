@@ -15,6 +15,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AssetHistoryChart } from "@/components/history/AssetHistoryChart";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 export interface ActivityTransaction {
 	id: string;
@@ -254,10 +255,7 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 			!!t.ticker && t.category !== "BONDS" && t.category !== "CASH";
 		const isExpanded = expandedTxId === t.id;
 		const sign = isNegative ? "-" : "+";
-		const valueFormatted = Math.abs(t.executedValue).toLocaleString("pl-PL", {
-			style: "currency",
-			currency: "PLN",
-		});
+		const valueFormatted = formatCurrency(Math.abs(t.executedValue));
 
 		return {
 			isCashWithdrawal,
@@ -849,10 +847,7 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 													</TableCell>
 													<TableCell className="text-right py-4 border-none">
 														<span className="text-sm font-black tracking-tight text-blue-500">
-															{group.totalInvested.toLocaleString("pl-PL", {
-																style: "currency",
-																currency: "PLN",
-															})}
+															{formatCurrency(group.totalInvested)} PLN
 														</span>
 													</TableCell>
 													<TableCell className="text-right pr-6 py-4 border-none">
@@ -865,10 +860,7 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 															)}
 														>
 															{group.totalDividends > 0
-																? group.totalDividends.toLocaleString("pl-PL", {
-																		style: "currency",
-																		currency: "PLN",
-																	})
+																? `${formatCurrency(group.totalDividends)} PLN`
 																: "Brak"}
 														</span>
 													</TableCell>
@@ -986,19 +978,11 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 											</div>
 											<div className="flex flex-col items-end gap-0.5">
 												<span className="text-sm font-black text-blue-500">
-													{group.totalInvested.toLocaleString("pl-PL", {
-														style: "currency",
-														currency: "PLN",
-													})}
+													{formatCurrency(group.totalInvested)}
 												</span>
 												{group.totalDividends > 0 && (
 													<span className="text-[10px] font-bold text-purple-500 uppercase tracking-widest">
-														+{" "}
-														{group.totalDividends.toLocaleString("pl-PL", {
-															style: "currency",
-															currency: "PLN",
-														})}{" "}
-														dywidend
+														+ {formatCurrency(group.totalDividends)} dywidend
 													</span>
 												)}
 											</div>

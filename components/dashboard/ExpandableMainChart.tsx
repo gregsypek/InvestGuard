@@ -15,6 +15,7 @@ import React, { useMemo, useState } from "react";
 
 import { ChartLegend } from "./ChartLegend";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 
 interface ExpandableMainChartProps {
@@ -258,10 +259,7 @@ function CustomChartTooltip({ active, payload, label, chartMode }: any) {
 											{isBuy ? "KUPNO" : "SPRZEDAŻ"} {tx.ticker || tx.assetName}
 										</span>
 										<span className="text-slate-300 font-mono">
-											{Math.abs(tx.executedValue || 0).toLocaleString("pl-PL", {
-												minimumFractionDigits: 2,
-											})}{" "}
-											PLN
+											{formatCurrency(Math.abs(tx.executedValue || 0))} PLN
 										</span>
 									</div>
 									{/* Nowość: Data ukrytej transakcji w Tooltipie */}

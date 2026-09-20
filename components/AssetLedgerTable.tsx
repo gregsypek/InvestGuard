@@ -53,6 +53,7 @@ import { SellAssetModal } from "./SellAssetModal";
 import { calculateAssetPL } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
 import { deleteAsset } from "@/lib/actions/portfolio.actions";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -454,13 +455,7 @@ const AssetLedgerTable = ({
 															</span>
 															<span className=" hidden sm:block text-[10px] text-blue-600 dark:text-blue-400 font-bold tracking-wide">
 																{isAggregatedBond ||
-																	`${(asset.quantity ?? 0).toLocaleString(
-																		undefined,
-																		{
-																			minimumFractionDigits: 2,
-																			maximumFractionDigits: 2,
-																		},
-																	)} szt`}
+																	`${formatCurrency(asset.quantity ?? 0, 2)} szt`}
 															</span>
 														</div>
 													</div>
@@ -537,10 +532,7 @@ const AssetLedgerTable = ({
 													>
 														<div>
 															{asset.profitAmount > 0 ? "+" : ""}
-															{asset.profitAmount.toLocaleString(undefined, {
-																minimumFractionDigits: 2,
-																maximumFractionDigits: 2,
-															})}
+															{formatCurrency(asset.profitAmount)}
 														</div>
 														<div className="text-[9px] md:text-[10px] opacity-80 mt-0.5">
 															{asset.profitPercent > 0 ? "+" : ""}
@@ -554,10 +546,7 @@ const AssetLedgerTable = ({
 												<div className="flex flex-col items-end justify-center">
 													<span className="text-xs md:text-sm font-bold text-t-text-primary">
 														{asset.currentValue
-															? asset.currentValue.toLocaleString("pl-PL", {
-																	minimumFractionDigits: 2,
-																	maximumFractionDigits: 2,
-																})
+															? formatCurrency(asset.currentValue)
 															: 0}
 													</span>
 													<span className="text-[9px] font-bold text-t-text-tertiary uppercase tracking-widest mt-0.5">
@@ -872,58 +861,38 @@ const AssetLedgerTable = ({
 																												? "+"
 																												: "-"
 																											: "-"}
-																								{Math.abs(
-																									t.executedValue,
-																								).toLocaleString(undefined, {
-																									minimumFractionDigits: 2,
-																									maximumFractionDigits: 2,
-																								})}{" "}
+																								{formatCurrency(
+																									Math.abs(t.executedValue),
+																								)}{" "}
 																								PLN
 																							</span>
 																							{!isCorrection && !isInterest && (
 																								<span className="text-[9px] text-t-text-tertiary font-medium tracking-tighter">
-																									{/* @ {txUnitPrice.toFixed(2)} /
-																									szt. */}
-																									{!isCorrection &&
-																										!isInterest && (
-																											<span className="text-[9px] text-t-text-tertiary font-medium tracking-tighter block mt-0.5">
-																												@{" "}
-																												{(
-																													t.originalPrice ?? 0
-																												).toLocaleString(
-																													undefined,
-																													{
-																														minimumFractionDigits: 2,
-																														maximumFractionDigits: 4,
-																													},
-																												)}{" "}
-																												{t.originalCurrency ||
-																													"PLN"}{" "}
-																												/ szt.
-																												{/* Jeśli transakcja była w walucie obcej, doklejamy historyczny kurs */}
-																												{t.originalCurrency &&
-																													t.originalCurrency !==
-																														"PLN" &&
-																													t.exchangeRate &&
-																													t.exchangeRate !==
-																														1 && (
-																														<span className="ml-1 text-blue-500/90 dark:text-blue-400/70 font-semibold">
-																															(Kurs:{" "}
-																															{(
-																																t.exchangeRate ??
-																																1
-																															).toLocaleString(
-																																undefined,
-																																{
-																																	minimumFractionDigits: 4,
-																																	maximumFractionDigits: 4,
-																																},
-																															)}{" "}
-																															PLN)
-																														</span>
-																													)}
-																											</span>
-																										)}
+																									<span className="text-[9px] text-t-text-tertiary font-medium tracking-tighter block mt-0.5">
+																										@{" "}
+																										{formatCurrency(
+																											t.originalPrice ?? 0,
+																											4,
+																										)}{" "}
+																										{t.originalCurrency ||
+																											"PLN"}{" "}
+																										/ szt.
+																										{/* Jeśli transakcja była w walucie obcej, doklejamy historyczny kurs */}
+																										{t.originalCurrency &&
+																											t.originalCurrency !==
+																												"PLN" &&
+																											t.exchangeRate &&
+																											t.exchangeRate !== 1 && (
+																												<span className="ml-1 text-blue-500/90 dark:text-blue-400/70 font-semibold">
+																													(Kurs:{" "}
+																													{formatCurrency(
+																														t.exchangeRate ?? 1,
+																														4,
+																													)}{" "}
+																													PLN)
+																												</span>
+																											)}
+																									</span>
 																								</span>
 																							)}
 																						</div>

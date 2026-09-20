@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 
 import { LayoutGrid } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 // 🚀 ZMIANA: Nowy, bogatszy interfejs danych
 export interface CategoryStat {
@@ -157,9 +158,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 									</TableCell>
 
 									<TableCell className="text-right font-mono text-sm font-semibold text-t-text-primary border-none py-4 sm:py-5">
-										{stat.value.toLocaleString("pl-PL", {
-											maximumFractionDigits: 0,
-										})}
+										{formatCurrency(stat.value, 0)}
 									</TableCell>
 
 									{/* 🚀 ZMIANA: Komórka wyświetlająca Zysk PLN i % */}
@@ -172,9 +171,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 											<div className="flex flex-col items-end">
 												<span>
 													{sign}
-													{stat.profitPLN.toLocaleString("pl-PL", {
-														maximumFractionDigits: 0,
-													})}
+													{formatCurrency(stat.profitPLN, 0)}
 												</span>
 												<span className="text-[10px] opacity-80">
 													({sign}
@@ -209,9 +206,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 							</TableCell>
 
 							<TableCell className="text-right font-mono text-sm font-black text-t-text-primary border-none py-4 sm:py-5">
-								{totalValue.toLocaleString("pl-PL", {
-									maximumFractionDigits: 0,
-								})}
+								{formatCurrency(totalValue, 0)}
 							</TableCell>
 
 							<TableCell
@@ -220,9 +215,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 								<div className="flex flex-col items-end">
 									<span>
 										{totalSign}
-										{totalProfitPLN.toLocaleString("pl-PL", {
-											maximumFractionDigits: 0,
-										})}
+										{formatCurrency(totalProfitPLN, 0)}
 									</span>
 									<span className="text-[10px] opacity-80">
 										({totalSign}

@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import { FilterBadge } from "./shared/FilterBadge";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 interface AlphaHeaderProps {
 	assets: any[];
@@ -148,10 +149,7 @@ export function AlphaHeader({
 					</div>
 					<div className="flex items-baseline gap-2">
 						<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
-							{alphaTotalValue.toLocaleString("pl-PL", {
-								minimumFractionDigits: 2,
-								maximumFractionDigits: 2,
-							})}
+							{formatCurrency(alphaTotalValue)}
 						</h2>
 						<span className="text-xl md:text-2xl text-slate-500 font-bold uppercase">
 							PLN
@@ -163,9 +161,7 @@ export function AlphaHeader({
 					<ValueCard label="Cały Portfel" icon={Briefcase}>
 						<div className="flex items-baseline gap-1.5 font-mono">
 							<span className="text-xl font-bold tracking-tight text-slate-200">
-								{globalTotalValue.toLocaleString("pl-PL", {
-									maximumFractionDigits: 0,
-								})}
+								{formatCurrency(globalTotalValue, 0)}
 							</span>
 							<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
 								PLN

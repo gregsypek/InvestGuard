@@ -7,6 +7,7 @@ import UserButton from "@/components/shared/header/UserButton";
 import { auth } from "@/auth";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { getStockLogo } from "@/lib/utils";
 
 export default async function RootLayout({
@@ -94,11 +95,7 @@ export default async function RootLayout({
 
 			return {
 				label: (asset.name || asset.ticker || "").slice(0, 25),
-				value:
-					currentPrice.toLocaleString("pl-PL", {
-						minimumFractionDigits: 2,
-						maximumFractionDigits: 2,
-					}) + " PLN",
+				value: formatCurrency(currentPrice) + " PLN",
 				change:
 					(displayChange >= 0 ? "+" : "") + displayChange.toFixed(2) + "%",
 				logo: getStockLogo(asset.ticker),
@@ -108,7 +105,7 @@ export default async function RootLayout({
 			const isPositive = idx.dailyChange >= 0;
 			return {
 				label: idx.symbol === "GOLD" ? "ZŁOTO" : idx.symbol,
-				value: idx.price.toLocaleString("pl-PL", { maximumFractionDigits: 2 }),
+				value: formatCurrency(idx.price),
 				change: (isPositive ? "+" : "") + idx.dailyChange.toFixed(2) + "%",
 				logo: `https://www.google.com/s2/favicons?domain=${
 					idx.symbol === "SP500"

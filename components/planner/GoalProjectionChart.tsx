@@ -12,6 +12,7 @@ import {
 	YAxis,
 } from "recharts";
 
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { useMemo } from "react";
 
 const CHART_COLORS = [
@@ -125,7 +126,7 @@ const CustomTooltip = ({ active, payload, label, isMulti }: any) => {
 									{entry.name}
 								</div>
 								<span className="font-mono text-t-text-primary">
-									{entry.value?.toLocaleString("pl-PL")} PLN
+									{formatCurrency(entry.value)} PLN
 								</span>
 							</div>
 						);
@@ -134,7 +135,7 @@ const CustomTooltip = ({ active, payload, label, isMulti }: any) => {
 						<div className="pt-2 mt-2 border-t border-t-border-subtle flex justify-between items-center gap-4 text-xs font-black">
 							<span className="text-t-text-primary">Suma Wartości</span>
 							<span className="font-mono text-blue-500">
-								{payload[0].payload.totalValue.toLocaleString("pl-PL")} PLN
+								{formatCurrency(payload[0].payload.totalValue)} PLN
 							</span>
 						</div>
 					)}

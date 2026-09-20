@@ -1,5 +1,6 @@
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 interface ValueCardProps {
 	label: string;
@@ -35,12 +36,7 @@ export function ValueCard({
 				) : (
 					<span className="font-mono text-lg font-semibold tracking-tight">
 						{/* FIX: Bezpieczna obsługa undefined dla value */}
-						{formatString && typeof value === "number"
-							? value.toLocaleString("pl-PL", {
-									minimumFractionDigits: 2,
-									maximumFractionDigits: 2,
-								})
-							: value}
+						{formatString ? formatCurrency(value) : value}
 						{suffix && (
 							<span className="ml-1.5 text-[11px] font-bold text-slate-500">
 								{suffix}

@@ -23,6 +23,7 @@ import { GoalProjectionChart } from "./GoalProjectionChart";
 import { PlannerClientList } from "./PlannerClientList";
 import { SectionLayout } from "../shared/SectionLayout";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 type PlanWithPortfolio = InvestmentPlan & {
 	portfolio?: Portfolio | null;
@@ -305,13 +306,13 @@ export function PlannerDashboardClient({
 						</div>
 						<div className="text-right">
 							<span className="text-sm font-black text-t-text-primary">
-								{displayMonthlyInvested.toLocaleString("pl-PL")} PLN
+								{formatCurrency(displayMonthlyInvested)} PLN
 							</span>
 							<span
 								className="text-[10px] font-bold text-t-text-tertiary ml-1 cursor-help underline decoration-dotted decoration-t-text-tertiary"
 								title="Całkowity cel na ten miesiąc: Suma zaksięgowanych inwestycji + oczekujące plany (bez filtrów)."
 							>
-								/ {totalMonthlyGoal.toLocaleString("pl-PL")} PLN
+								/ {formatCurrency(totalMonthlyGoal)} PLN
 							</span>
 						</div>
 					</div>
@@ -344,9 +345,12 @@ export function PlannerDashboardClient({
 										{/* 🚀 ZMIANA: Dynamiczna suma widoczna nawet po zwinięciu */}
 										<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500">
 											Suma:{" "}
-											{filteredMonthTransactions
-												.reduce((sum, tx) => sum + tx.executedValue, 0)
-												.toLocaleString("pl-PL")}{" "}
+											{formatCurrency(
+												filteredMonthTransactions.reduce(
+													(sum, tx) => sum + tx.executedValue,
+													0,
+												),
+											)}{" "}
 											PLN
 										</span>
 										<button
@@ -371,8 +375,7 @@ export function PlannerDashboardClient({
 													Struktura kapitału
 												</span>
 												<span className="text-[9px] font-bold text-t-text-tertiary">
-													100% ={" "}
-													{displayMonthlyInvested.toLocaleString("pl-PL")} PLN
+													100% = {formatCurrency(displayMonthlyInvested)} PLN
 												</span>
 											</div>
 
@@ -467,7 +470,7 @@ export function PlannerDashboardClient({
 																	: "text-emerald-600 dark:text-emerald-400",
 															)}
 														>
-															+{tx.executedValue.toLocaleString("pl-PL")} PLN
+															+{formatCurrency(tx.executedValue)} PLN
 														</span>
 														{tx.originalPrice !== null &&
 															tx.originalPrice > 0 &&
@@ -488,7 +491,7 @@ export function PlannerDashboardClient({
 												<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-4 py-2.5 rounded-xl shadow-sm">
 													<Calculator className="w-4 h-4 text-blue-600 dark:text-blue-400" />
 													<span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-														Suma: {selectedSum.toLocaleString("pl-PL")} PLN
+														Suma: {formatCurrency(selectedSum)} PLN
 													</span>
 												</div>
 											</div>
@@ -509,7 +512,7 @@ export function PlannerDashboardClient({
 
 								<div className="flex items-center gap-4">
 									<span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
-										Suma: {nextMonthTotal.toLocaleString("pl-PL")} PLN
+										Suma: {formatCurrency(nextMonthTotal)} PLN
 									</span>
 									<button
 										onClick={() => setIsNextMonthOpen(!isNextMonthOpen)}
@@ -552,7 +555,7 @@ export function PlannerDashboardClient({
 											</div>
 											<div className="text-right shrink-0">
 												<span className="text-xs font-black text-t-text-secondary">
-													{plan.value.toLocaleString("pl-PL")} PLN
+													{formatCurrency(plan.value)} PLN
 												</span>
 											</div>
 										</div>
@@ -573,7 +576,7 @@ export function PlannerDashboardClient({
 					<div className="flex flex-row justify-end items-center gap-3">
 						<div className="flex items-center gap-2  border border-blue-500/20 px-3 py-1.5 rounded-lg">
 							<span className="text-[10px] font-black uppercase tracking-widest text-theme-primary">
-								Zostało: {listTotalValue.toLocaleString("pl-PL")} PLN
+								Zostało: {formatCurrency(listTotalValue)} PLN
 							</span>
 						</div>
 						{renderInlinePortfolioSelector(listPortfolioId, setListPortfolioId)}

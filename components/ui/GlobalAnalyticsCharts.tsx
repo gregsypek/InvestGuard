@@ -16,6 +16,7 @@ import { Maximize2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Asset } from "@prisma/client";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 // --- 1. DEFINICJE TYPÓW (Eliminacja błędów "any") ---
 interface GlobalAnalyticsChartsProps {
@@ -192,16 +193,13 @@ export default function GlobalAnalyticsCharts({
 
 		if (sortBy === "PROFIT" && item.name !== "Pozostałe") {
 			const sign = item.profitPLN > 0 ? "+" : "";
-			extra = ` (Zysk: ${sign}${item.profitPLN.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} PLN)`;
+			extra = ` (Zysk: ${sign}${formatCurrency(item.profitPLN, 0)} PLN)`;
 		} else if (sortBy === "PROFIT_PCT" && item.name !== "Pozostałe") {
 			const sign = item.profitPct > 0 ? "+" : "";
 			extra = ` (Zysk: ${sign}${item.profitPct.toFixed(2)}%)`;
 		}
 
-		return [
-			`${numValue.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} PLN${extra}`,
-			"Wartość",
-		];
+		return [`${formatCurrency(numValue, 0)} PLN${extra}`, "Wartość"];
 	};
 
 	const renderPieLabel = ({
@@ -252,7 +250,7 @@ export default function GlobalAnalyticsCharts({
 
 		if (sortBy === "PROFIT" && item.name !== "Pozostałe") {
 			const sign = item.profitPLN > 0 ? "+" : "";
-			extraText = `(${sign}${item.profitPLN.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} PLN)`;
+			extraText = `(${sign}${formatCurrency(item.profitPLN, 0)} PLN)`;
 			extraFill = item.profitPLN >= 0 ? "#10b981" : "#ef4444";
 		} else if (sortBy === "PROFIT_PCT" && item.name !== "Pozostałe") {
 			const sign = item.profitPct > 0 ? "+" : "";
@@ -271,7 +269,7 @@ export default function GlobalAnalyticsCharts({
 				dominantBaseline="central"
 				className="text-[10px] font-bold font-mono tracking-tighter"
 			>
-				{item.value.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} PLN{" "}
+				{formatCurrency(item.value, 0)} PLN{" "}
 				<tspan fill={extraFill}>{extraText}</tspan>
 			</text>
 		);
@@ -315,7 +313,7 @@ export default function GlobalAnalyticsCharts({
 								</Pie>
 								<Tooltip
 									formatter={(value: unknown) => [
-										`${Number(value || 0).toLocaleString("pl-PL", { maximumFractionDigits: 0 })} PLN`,
+										`${formatCurrency(value as number | string, 0)} PLN`,
 										"Wartość",
 									]}
 									contentStyle={tooltipStyle}
@@ -339,10 +337,7 @@ export default function GlobalAnalyticsCharts({
 								<span className="text-[10px] font-bold text-t-text-secondary uppercase tracking-widest">
 									{entry.labelName}
 									<span className="text-t-text-tertiary ml-1">
-										{entry.value.toLocaleString("pl-PL", {
-											maximumFractionDigits: 0,
-										})}{" "}
-										PLN
+										{formatCurrency(entry.value, 0)} PLN
 									</span>
 									<span className="text-t-text-tertiary ml-1">
 										({entry.percentage.toFixed(1)}%)

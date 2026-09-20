@@ -2,6 +2,7 @@ import { Briefcase, LayoutGrid, Wallet2 } from "lucide-react";
 
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 interface PortfoliosHeaderProps {
 	title: string;
@@ -55,10 +56,7 @@ export const PortfoliosHeader = ({
 					</div>
 					<div className="flex items-baseline gap-2">
 						<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
-							{totalValue.toLocaleString("pl-PL", {
-								minimumFractionDigits: 2,
-								maximumFractionDigits: 2,
-							})}
+							{formatCurrency(totalValue)}
 						</h2>
 						<span className="text-xl md:text-2xl text-slate-500 font-bold">
 							PLN

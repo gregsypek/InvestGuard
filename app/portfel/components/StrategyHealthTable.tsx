@@ -10,6 +10,7 @@ import {
 
 import { CategoryStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 interface Props {
 	data: CategoryStatus[];
@@ -94,11 +95,7 @@ export default function StrategyHealthTable({ data }: Props) {
 									) : item.differencePLN > 0 ? (
 										<div className="flex items-center justify-end gap-1.5 text-emerald-600 dark:text-emerald-400">
 											<span className="text-xs font-semibold whitespace-nowrap">
-												Dokup{" "}
-												{item.differencePLN.toLocaleString("pl-PL", {
-													maximumFractionDigits: 0,
-												})}{" "}
-												PLN
+												Dokup {formatCurrency(item.differencePLN, 0)} PLN
 											</span>
 											<ArrowUpRight className="h-4 w-4" />
 										</div>
@@ -106,10 +103,7 @@ export default function StrategyHealthTable({ data }: Props) {
 										<div className="flex items-center justify-end gap-1.5 text-rose-600 dark:text-rose-500">
 											<span className="text-xs font-semibold whitespace-nowrap">
 												Zredukuj{" "}
-												{Math.abs(item.differencePLN).toLocaleString("pl-PL", {
-													maximumFractionDigits: 0,
-												})}{" "}
-												PLN
+												{formatCurrency(Math.abs(item.differencePLN), 0)} PLN
 											</span>
 											<ArrowDownRight className="h-4 w-4" />
 										</div>

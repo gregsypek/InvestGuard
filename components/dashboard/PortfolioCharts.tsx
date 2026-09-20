@@ -23,6 +23,7 @@ import React, { useMemo, useState } from "react";
 
 import Image from "next/image";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 
 export interface ChartDataPoint {
@@ -479,10 +480,7 @@ function CustomTooltip({ active, payload, label, mode }: any) {
 											{tx.ticker || tx.assetName || ""}
 										</span>
 										<span className="text-slate-300 font-mono text-right">
-											{Math.abs(tx.executedValue || 0).toLocaleString("pl-PL", {
-												minimumFractionDigits: 2,
-											})}{" "}
-											PLN
+											{formatCurrency(Math.abs(tx.executedValue || 0))} PLN
 										</span>
 									</div>
 								</div>

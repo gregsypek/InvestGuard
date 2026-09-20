@@ -10,6 +10,7 @@ import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SubmitButton } from "../SubmitButton";
 import { addBond } from "@/lib/actions/bond-actions";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -322,7 +323,7 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 									Łączny koszt zakupu:
 								</span>
 								<span className="font-mono text-3xl font-black text-blue-600 dark:text-blue-400">
-									{investedCapital.toLocaleString("pl-PL")}
+									{formatCurrency(investedCapital)}
 									<span className="text-sm font-bold ml-2">PLN</span>
 								</span>
 							</div>

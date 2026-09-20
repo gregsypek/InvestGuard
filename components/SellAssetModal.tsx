@@ -4,6 +4,7 @@ import { Loader2, X } from "lucide-react";
 
 import { Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { useState } from "react";
 
 interface SellAssetModalProps {
@@ -102,12 +103,7 @@ export function SellAssetModal({
 							onClick={() => setQuantity(Number(asset.quantity.toFixed(2)))}
 							className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest text-left w-full transition-colors mt-1"
 						>
-							Wstaw MAX:{" "}
-							{asset.quantity.toLocaleString("pl-PL", {
-								minimumFractionDigits: 2,
-								maximumFractionDigits: 2,
-							})}{" "}
-							PLN
+							Wstaw MAX: {formatCurrency(asset.quantity)} PLN
 						</button>
 					</div>
 				) : (
@@ -134,10 +130,7 @@ export function SellAssetModal({
 								onClick={() => setQuantity(Number(asset.quantity.toFixed(4)))}
 								className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest text-left w-full transition-colors mt-1"
 							>
-								Wstaw MAX:{" "}
-								{asset.quantity.toLocaleString("pl-PL", {
-									maximumFractionDigits: 4,
-								})}
+								Wstaw MAX: {formatCurrency(asset.quantity, 4)}
 							</button>
 						</div>
 
@@ -229,10 +222,7 @@ export function SellAssetModal({
 								Otrzymasz łącznie:
 							</span>
 							<span className="font-mono text-sm font-black text-t-text-primary">
-								{totalValue.toLocaleString("pl-PL", {
-									minimumFractionDigits: 2,
-								})}{" "}
-								PLN
+								{formatCurrency(totalValue)} PLN
 							</span>
 						</div>
 						<div className="flex justify-between items-center">

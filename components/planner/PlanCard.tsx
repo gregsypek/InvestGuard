@@ -56,6 +56,7 @@ import PremiumDeleteModal from "../shared/PremiumDeleteModal";
 import { SimpleSwitch } from "../ui/SimpleSwitchProps";
 import { Slider } from "../ui/slider";
 import { fetchMagicFillData } from "@/lib/actions/magic-actions";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -487,7 +488,7 @@ export function PlanCard({
 							Planowana kwota:
 						</p>
 						<p className="text-sm font-black tracking-tight text-t-text-primary">
-							{plan.value.toLocaleString("pl-PL")}
+							{formatCurrency(plan.value)}
 							<span className="text-[10px] font-bold text-t-text-tertiary tracking-normal ml-1">
 								PLN
 							</span>
@@ -504,7 +505,7 @@ export function PlanCard({
 				<div className="mt-auto flex flex-col gap-2 pt-2">
 					{/* 🚀 SMART UI: Komunikat widoczny bezpośrednio na karcie */}
 					{isGoalMet ? (
-						<div className="mt-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
+						<div className="mt-2 px-3 py-2 rounded-lg flex items-center justify-between animate-in fade-in">
 							<div className="flex items-center gap-2">
 								<span className="text-emerald-500 text-xs">✅</span>
 								<span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
@@ -512,7 +513,7 @@ export function PlanCard({
 								</span>
 							</div>
 							<span className="text-xs  text-t-text-primary">
-								{alreadyInvested.toLocaleString("pl-PL")} PLN
+								{formatCurrency(alreadyInvested)} PLN
 							</span>
 						</div>
 					) : alreadyInvested > 0 ? (
@@ -524,7 +525,7 @@ export function PlanCard({
 								</span>
 							</div>
 							<span className="text-xs text-t-text-primary">
-								{alreadyInvested.toLocaleString("pl-PL")} PLN
+								{formatCurrency(alreadyInvested)} PLN
 							</span>
 						</div>
 					) : null}
@@ -817,7 +818,7 @@ export function PlanCard({
 											<span className="text-xs text-t-text-secondary mt-0.5 font-medium">
 												Wykryto historyczne wpłaty na kwotę{" "}
 												<b className="text-t-text-primary">
-													{alreadyInvested.toLocaleString("pl-PL")} PLN
+													{formatCurrency(alreadyInvested)} PLN
 												</b>
 												. Możesz zamknąć ten plan bez ponownego księgowania.
 											</span>
@@ -833,7 +834,7 @@ export function PlanCard({
 											<span className="text-xs text-t-text-secondary mt-0.5 font-medium">
 												Ten walor był już kupowany na kwotę{" "}
 												<b className="text-t-text-primary">
-													{alreadyInvested.toLocaleString("pl-PL")} PLN
+													{formatCurrency(alreadyInvested)} PLN
 												</b>
 												. Upewnij się, jakiej kwoty dokładnie brakuje.
 											</span>

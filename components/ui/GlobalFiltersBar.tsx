@@ -7,6 +7,7 @@ import { DatePickerWithRange } from "../shared/DatePickerWithRange";
 import { FilterBadge } from "../shared/FilterBadge";
 import { PortfolioWithAssets } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { useChartContext } from "../providers/ChartProvider"; // Dopasuj ścieżkę
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
@@ -78,10 +79,7 @@ export function GlobalFiltersBar({
 								</span>
 								<div className="flex items-baseline gap-1">
 									<span className="text-sm md:text-base font-black text-white tracking-tight">
-										{totalCurrent.toLocaleString("pl-PL", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
+										{formatCurrency(totalCurrent)}
 									</span>
 									<span className="text-[9px] text-slate-400 font-bold">
 										PLN

@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { Category } from "@prisma/client";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { inferTickersCategories } from "@/lib/actions/portfolio.actions";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
@@ -436,9 +437,7 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 											</td>
 											<td className="p-4 text-right">
 												<div className="font-mono font-bold text-sm text-t-text-primary whitespace-nowrap">
-													{tx.amountPLN.toLocaleString("pl-PL", {
-														minimumFractionDigits: 2,
-													})}
+													{formatCurrency(tx.amountPLN)}
 													<span className="text-[10px] text-t-text-tertiary ml-1">
 														PLN
 													</span>

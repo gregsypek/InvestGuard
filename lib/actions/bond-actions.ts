@@ -10,6 +10,7 @@ import { syncPortfolioAssets, updateAssetValues } from "./asset-actions";
 import { BOND_TEMPLATES } from "../constants";
 import { auth } from "@/auth";
 import { db } from "@/lib/db"; // EN: Your prisma instance
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { saveXtbTransaction } from "./transactions";
@@ -145,9 +146,9 @@ export async function getBondsData(portfolioId: string) {
 		portfolioName: portfolio.name,
 		bonds,
 		stats: {
-			totalInvested: totals.totalInvested.toLocaleString(),
-			currentValue: totals.currentValue.toLocaleString(),
-			profit: (totals.currentValue - totals.totalInvested).toLocaleString(),
+			totalInvested: formatCurrency(totals.totalInvested),
+			currentValue: formatCurrency(totals.currentValue),
+			profit: formatCurrency(totals.currentValue - totals.totalInvested),
 			avgYield:
 				totals.totalInvested > 0
 					? (totals.weightedSum / totals.totalInvested).toFixed(2)

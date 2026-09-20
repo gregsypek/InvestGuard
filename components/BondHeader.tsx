@@ -8,6 +8,7 @@ import {
 
 import Link from "next/link";
 import { ValueCard } from "./shared/ValueCard";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 export interface BondHeaderStats {
 	totalInvested: string;
@@ -88,7 +89,7 @@ export function BondHeader({
 					</div>
 					<div className="flex items-baseline gap-2">
 						<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
-							{stats.currentValue}
+							{formatCurrency(stats.currentValue)}
 						</h2>
 						<span className="text-xl md:text-2xl text-slate-500 font-bold uppercase">
 							PLN
@@ -101,7 +102,7 @@ export function BondHeader({
 					<ValueCard label="Wkład własny" icon={ShieldCheck}>
 						<div className="flex items-baseline gap-1.5 font-mono">
 							<span className="text-xl font-bold tracking-tight text-slate-200">
-								{stats.totalInvested}
+								{formatCurrency(stats.totalInvested)}
 							</span>
 							<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
 								PLN
@@ -111,9 +112,8 @@ export function BondHeader({
 
 					<ValueCard label="Zysk (Odsetki)" icon={TrendingUp}>
 						<div className="flex items-baseline gap-1.5 font-mono">
-							{/* Zysk pozostawiamy w kolorze szmaragdowym, ponieważ symbolizuje wzrost */}
 							<span className="text-xl font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
-								+{stats.profit}
+								+{formatCurrency(stats.profit)}
 							</span>
 							<span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
 								PLN

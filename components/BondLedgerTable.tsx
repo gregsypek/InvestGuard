@@ -34,6 +34,7 @@ import { Progress } from "@/components/ui/progress";
 import QuickAdjustCell from "@/components/QuickAdjustCell";
 import { SellAssetModal } from "./SellAssetModal";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
 
 interface ExtendedBond extends Bond {
@@ -286,10 +287,7 @@ export default function BondLedgerTable({
 											</TableCell>
 
 											<TableCell className="py-4 border-none font-mono font-bold text-t-text-primary whitespace-nowrap">
-												{totalVal.toLocaleString("pl-PL", {
-													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
-												})}
+												{formatCurrency(totalVal)}
 												<span className="text-[10px] text-t-text-tertiary ml-1">
 													PLN
 												</span>
@@ -406,14 +404,7 @@ export default function BondLedgerTable({
 														<TableCell className="py-4 border-none">
 															<div className="flex flex-col items-start gap-1">
 																<span className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center gap-1 whitespace-nowrap">
-																	Wkład:{" "}
-																	{bond.investedCapital?.toLocaleString(
-																		"pl-PL",
-																		{
-																			minimumFractionDigits: 2,
-																			maximumFractionDigits: 2,
-																		},
-																	)}{" "}
+																	Wkład: {formatCurrency(bond.investedCapital)}{" "}
 																	PLN
 																</span>
 
@@ -421,7 +412,7 @@ export default function BondLedgerTable({
 																	currentValue={bond.currentValue || 0}
 																	assetId={bond.id}
 																	onUpdate={updateBondValue}
-																	label={`${bond.currentValue?.toLocaleString()} PLN`}
+																	label={`${formatCurrency(bond.currentValue)} PLN`}
 																/>
 
 																{bond.currentValue &&
@@ -429,12 +420,9 @@ export default function BondLedgerTable({
 																bond.currentValue > bond.investedCapital ? (
 																	<span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded mt-0.5 whitespace-nowrap">
 																		+
-																		{(
-																			bond.currentValue - bond.investedCapital
-																		).toLocaleString("pl-PL", {
-																			minimumFractionDigits: 2,
-																			maximumFractionDigits: 2,
-																		})}{" "}
+																		{formatCurrency(
+																			bond.currentValue - bond.investedCapital,
+																		)}{" "}
 																		PLN
 																	</span>
 																) : null}
@@ -512,9 +500,10 @@ export default function BondLedgerTable({
 								</span>
 							</div>
 							<div className="text-right font-mono font-bold text-t-text-primary">
-								{transzes
-									.reduce((s, t) => s + (t.currentValue || 0), 0)
-									.toLocaleString("pl-PL", { maximumFractionDigits: 0 })}{" "}
+								{formatCurrency(
+									transzes.reduce((s, t) => s + (t.currentValue || 0), 0),
+									0,
+								)}{" "}
 								PLN
 							</div>
 						</div>
@@ -569,9 +558,7 @@ export default function BondLedgerTable({
 													Wycena PLN
 												</span>
 												<span className="text-sm font-black font-mono text-emerald-500">
-													{bond.currentValue?.toLocaleString("pl-PL", {
-														maximumFractionDigits: 0,
-													})}
+													{formatCurrency(bond.currentValue, 0)}
 												</span>
 											</div>
 										</div>

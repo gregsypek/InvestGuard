@@ -4,6 +4,7 @@ import { Activity, TrendingDown, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 export function AlphaStressTest({ assets }: { assets: any[] }) {
 	const [cryptoShock, setCryptoShock] = useState(0);
@@ -153,10 +154,7 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 								Nowa Wycena
 							</span>
 							<span className="text-2xl font-black text-t-text-primary">
-								{metrics.totalSimulated.toLocaleString("pl-PL", {
-									maximumFractionDigits: 0,
-								})}{" "}
-								PLN
+								{formatCurrency(metrics.totalSimulated, 0)} PLN
 							</span>
 						</div>
 
@@ -197,9 +195,7 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 									<TrendingDown className="w-5 h-5" />
 								) : null}
 								{metrics.impactPLN > 0 ? "+" : ""}
-								{metrics.impactPLN.toLocaleString("pl-PL", {
-									maximumFractionDigits: 0,
-								})}
+								{formatCurrency(metrics.impactPLN, 0)}
 							</div>
 						</div>
 					</div>

@@ -3,6 +3,7 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 import { Asset } from "@/lib/types";
 import { COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 interface Props {
 	asset: Asset;
@@ -90,10 +91,7 @@ export default function AssetCard({
 				<div className="flex flex-col items-end gap-1">
 					<div className="flex items-baseline gap-1">
 						<p className="font-mono text-sm font-bold text-t-text-primary">
-							{current.toLocaleString("pl-PL", {
-								minimumFractionDigits: 2,
-								maximumFractionDigits: 2,
-							})}
+							{formatCurrency(current)}
 						</p>
 						<p className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary">
 							PLN
@@ -115,10 +113,7 @@ export default function AssetCard({
 							)}
 							<span>
 								{isPositive ? "+" : ""}
-								{profitAmount.toLocaleString("pl-PL", {
-									minimumFractionDigits: 2,
-									maximumFractionDigits: 2,
-								})}
+								{formatCurrency(profitAmount)}
 							</span>
 							<span className="opacity-80">
 								({isPositive ? "+" : ""}

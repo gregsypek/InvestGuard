@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import { useEffect, useState } from "react";
 
+import { formatCurrency } from "@/lib/utils/format-currency";
+
 interface MonthlyDepositProps {
 	month: string;
 	amount: number;
@@ -74,32 +76,6 @@ export function MonthlyDepositsChart({
 							v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()
 						}
 					/>
-					{/* <Tooltip
-						cursor={{ fill: "rgba(255,255,255,0.05)" }}
-						contentStyle={{
-							backgroundColor: "#ffffff",
-							borderRadius: "12px",
-							border: "none",
-							boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-							padding: "8px 12px",
-						}}
-						itemStyle={{
-							color: "#0f172a",
-							fontSize: "11px",
-							fontWeight: "bold",
-							textTransform: "uppercase",
-						}}
-						labelStyle={{
-							color: "#64748b",
-							fontSize: "10px",
-							marginBottom: "4px",
-						}}
-						formatter={(value) => {
-							const num =
-								typeof value === "number" ? value : Number(value ?? 0);
-							return [`${num.toLocaleString("pl-PL")} PLN`, "Wpłata"];
-						}}
-					/> */}
 					<Tooltip
 						cursor={{ fill: "rgba(255,255,255,0.05)" }}
 						contentStyle={{
@@ -123,7 +99,7 @@ export function MonthlyDepositsChart({
 						formatter={(value) => {
 							const num =
 								typeof value === "number" ? value : Number(value ?? 0);
-							return [`${num.toLocaleString("pl-PL")} PLN`, "Wpłata"];
+							return [`${formatCurrency(num)} PLN`, "Wpłata"];
 						}}
 					/>
 
@@ -144,7 +120,7 @@ export function MonthlyDepositsChart({
 						strokeOpacity={0.8}
 						label={{
 							position: "insideTopLeft",
-							value: `ŚREDNIA: ${averageAmount.toLocaleString("pl-PL", { maximumFractionDigits: 0 })} PLN`,
+							value: `ŚREDNIA: ${formatCurrency(averageAmount, 0)} PLN`,
 							fill: "#64748b", // Ciemniejszy szary dla tekstu
 							fontSize: 10,
 							fontWeight: "bold",

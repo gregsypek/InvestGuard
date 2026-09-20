@@ -24,7 +24,7 @@ export function FilterBadge({
 			className={cn(
 				"flex items-center gap-1.5 px-1 xl:px-3 py-1 xl:py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer",
 				isSelected
-					? "bg-theme-soft text-theme-primary border-theme-border shadow-sm hover:opacity-80"
+					? "bg-theme-soft text-theme-primary border-theme-border shadow-sm hover:opacity-80 brightness-75"
 					: "text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400",
 				className,
 			)}

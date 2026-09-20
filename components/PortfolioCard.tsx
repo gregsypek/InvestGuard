@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import React from "react";
 import { cn } from "@/lib/utils";
 import { deletePortfolio } from "@/lib/actions/portfolio.actions";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 interface PortfolioCardProps {
 	portfolio: PortfolioWithAssets & { colorTheme?: string };
@@ -118,9 +119,9 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 						</p>
 						<p
 							className="text-2xl font-black text-t-text-primary tracking-tighter truncate"
-							title={`${totalValue.toLocaleString("pl-PL", { minimumFractionDigits: 2 })} PLN`}
+							title={`${formatCurrency(totalValue)} PLN`}
 						>
-							{totalValue.toLocaleString("pl-PL", { minimumFractionDigits: 2 })}
+							{formatCurrency(totalValue)}
 							<span className="text-[10px] font-bold text-t-text-tertiary tracking-normal ml-1">
 								PLN
 							</span>
@@ -135,8 +136,7 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 					<div className="space-y-2 mt-auto">
 						<div className="flex justify-between text-[10px] uppercase tracking-wide font-bold">
 							<span className="text-t-text-tertiary">
-								Cel:{" "}
-								{goal.toLocaleString("pl-PL", { minimumFractionDigits: 2 })} PLN
+								Cel: {formatCurrency(goal)} PLN
 							</span>
 							<span className="text-theme-primary">{progress.toFixed(1)}%</span>
 						</div>

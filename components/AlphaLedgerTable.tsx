@@ -14,6 +14,7 @@ import {
 import { BoosterActionsClient } from "./alpha/BoosterActionsClient";
 import { Progress } from "./ui/progress";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 interface AlphaLedgerTableProps {
 	activeBoosterAssets: any[];
@@ -237,19 +238,13 @@ export default function AlphaLedgerTable({
 										</TableCell>
 										<TableCell className="text-right py-4 border-none">
 											<div className="text-sm font-bold font-mono text-t-text-primary whitespace-nowrap">
-												{asset.currentValue.toLocaleString("pl-PL", {
-													minimumFractionDigits: 2,
-													maximumFractionDigits: 2,
-												})}
+												{formatCurrency(asset.currentValue)}
 												<span className="text-[10px] text-t-text-tertiary ml-1">
 													PLN
 												</span>
 											</div>
 											<div className="text-[9px] text-t-text-tertiary font-bold uppercase tracking-widest mt-0.5 whitespace-nowrap">
-												Wkład:{" "}
-												{asset.investedCapital.toLocaleString("pl-PL", {
-													maximumFractionDigits: 0,
-												})}
+												Wkład: {formatCurrency(asset.investedCapital, 0)}
 											</div>
 										</TableCell>
 										<TableCell
@@ -320,10 +315,7 @@ export default function AlphaLedgerTable({
 										Wycena / Wkład
 									</span>
 									<span className="text-sm font-black text-t-text-primary">
-										{asset.currentValue.toLocaleString("pl-PL", {
-											maximumFractionDigits: 0,
-										})}{" "}
-										PLN
+										{formatCurrency(asset.currentValue, 0)} PLN
 									</span>
 								</div>
 								<div className="flex flex-col items-end">

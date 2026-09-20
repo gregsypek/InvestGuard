@@ -34,6 +34,7 @@ import { PremiumMarketCard } from "./home/PremiumMarketCard";
 import { SectionLayout } from "./shared/SectionLayout";
 import { ValueCard } from "./shared/ValueCard";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
@@ -145,10 +146,7 @@ export function UserDashboard(props: UserDashboardProps) {
 						</div>
 						<div className="flex items-baseline gap-2">
 							<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white">
-								{totalCurrent.toLocaleString("pl-PL", {
-									minimumFractionDigits: 2,
-									maximumFractionDigits: 2,
-								})}
+								{formatCurrency(totalCurrent)}
 							</h2>
 							<span className="text-xl md:text-2xl text-slate-500 font-bold">
 								PLN
@@ -177,9 +175,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									)}
 								>
 									{totalPnL > 0 ? "+" : ""}
-									{totalPnL.toLocaleString("pl-PL", {
-										minimumFractionDigits: 2,
-									})}
+									{formatCurrency(totalPnL)}
 								</span>
 								<span
 									className={cn(
@@ -315,10 +311,7 @@ export function UserDashboard(props: UserDashboardProps) {
 								</span>
 								<div className="flex items-baseline gap-1">
 									<span className="text-sm md:text-base font-black text-white tracking-tight">
-										{totalCurrent.toLocaleString("pl-PL", {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
+										{formatCurrency(totalCurrent)}
 									</span>
 									<span className="text-[9px] text-slate-400 font-bold">
 										PLN

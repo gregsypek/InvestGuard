@@ -2,6 +2,7 @@
 import { CalendarClock, TrendingUp } from "lucide-react";
 
 import { ValueCard } from "./shared/ValueCard";
+import { formatCurrency } from "@/lib/utils/format-currency";
 
 interface PlannerHeaderProps {
 	totalPlannedValue: number;
@@ -50,10 +51,7 @@ export function PlannerHeader({
 					</div>
 					<div className="flex items-baseline gap-2">
 						<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
-							{totalPlannedValue.toLocaleString("pl-PL", {
-								minimumFractionDigits: 2,
-								maximumFractionDigits: 2,
-							})}
+							{formatCurrency(totalPlannedValue)}
 						</h2>
 						<span className="text-xl md:text-2xl text-slate-500 font-bold">
 							PLN

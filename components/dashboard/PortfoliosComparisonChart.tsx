@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 
 interface PortfolioDataPoint {
@@ -65,6 +66,7 @@ export function PortfoliosComparisonChart({
 			const isActive = activeIds.includes("ALL") || activeIds.includes(p.id);
 			initialHiddenState[p.id] = !isActive; // Ukryj, jeśli nie jest zaznaczony
 		});
+		// TODO: fix cascading errors warning
 		setHiddenLines(initialHiddenState);
 	}, [activeIds, portfolios]);
 
@@ -283,7 +285,7 @@ function ComparisonTooltip({
 								>
 									{chartMode === "PERCENTAGE"
 										? `${isPositive ? "+" : ""}${Number(entry.value).toFixed(2)}%`
-										: `${Number(entry.value).toLocaleString("pl-PL", { maximumFractionDigits: 0 })} PLN`}
+										: `${formatCurrency(entry.value, 0)} PLN`}
 								</span>
 							</div>
 						);

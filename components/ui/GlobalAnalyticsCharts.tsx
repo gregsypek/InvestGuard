@@ -276,12 +276,7 @@ export default function GlobalAnalyticsCharts({
 					</h4>
 					<div className="w-full h-70 flex flex-col">
 						<ChartContainer className="flex-1 min-h-0  w-full">
-							<ResponsiveContainer
-								width="100%"
-								height="100%"
-								minWidth={1}
-								minHeight={1}
-							>
+							<ResponsiveContainer width="100%" height="100%">
 								<PieChart>
 									<Pie
 										data={pieData}

@@ -99,12 +99,7 @@ export function AssetHistoryChart({
 
 	const chartElement = (
 		<ChartContainer className="h-full min-h-0 w-full">
-			<ResponsiveContainer
-				width="100%"
-				height="100%"
-				minWidth={1}
-				minHeight={1}
-			>
+			<ResponsiveContainer width="100%" height="100%">
 				<ComposedChart
 					data={chartData}
 					margin={{ top: 10, right: 0, left: 0, bottom: 0 }}

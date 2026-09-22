@@ -18,12 +18,12 @@ import {
 	Minimize2,
 	WalletCards,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
+import { useState } from "react";
 
 interface PortfolioDataPoint {
 	date: string | Date;
@@ -179,12 +179,7 @@ export function PortfoliosComparisonChart({
 
 	const chartContent = (
 		<ChartContainer className="h-full min-h-0 w-full">
-			<ResponsiveContainer
-				width="100%"
-				height="100%"
-				minWidth={1}
-				minHeight={1}
-			>
+			<ResponsiveContainer width="100%" height="100%">
 				<LineChart
 					data={data}
 					margin={{ top: 10, right: 10, left: -10, bottom: 0 }}

@@ -199,12 +199,7 @@ export function GoalProjectionChart({
 
 			<div className="flex-1 w-full min-h-[250px]">
 				<ChartContainer className="h-full min-h-0 w-full">
-					<ResponsiveContainer
-						width="100%"
-						height="100%"
-						minWidth={1}
-						minHeight={1}
-					>
+					<ResponsiveContainer width="100%" height="100%">
 						<ComposedChart
 							data={data}
 							margin={{ top: 20, right: 10, left: -20, bottom: 0 }}

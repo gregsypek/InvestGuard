@@ -15,11 +15,11 @@ import {
 	YAxis,
 } from "recharts";
 import { Maximize2, Minimize2, TrendingDown, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
+import { useState } from "react";
 
 interface AbsolutePnLDataPoint {
 	date: string;

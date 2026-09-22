@@ -19,7 +19,7 @@ import {
 	TrendingDown,
 	TrendingUp,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
@@ -175,13 +175,7 @@ export function PortfolioBenchmarkChart({
 
 	const chartContent = (
 		<ChartContainer className="h-full min-h-0 w-full">
-			{" "}
-			<ResponsiveContainer
-				width="100%"
-				height="100%"
-				minWidth={1}
-				minHeight={1}
-			>
+			<ResponsiveContainer width="100%" height="100%">
 				<LineChart
 					data={data}
 					margin={{ top: 10, right: 10, left: -10, bottom: 20 }}

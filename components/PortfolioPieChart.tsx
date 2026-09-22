@@ -3,11 +3,12 @@
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { CheckCircle2, Circle, PieChart as PieChartIcon } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { CategoryStatus } from "@/lib/types";
+import { ChartContainer } from "./shared/ChartContainer";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format-currency";
+import { useState } from "react";
 
 interface PortfolioPieChartProps {
 	title: string;
@@ -26,17 +27,6 @@ export default function PortfolioPieChart({
 	);
 	// 🚀 STATE: Aktualnie podświetlony kawałek (do środka donuta)
 	const [activeIndex, setActiveIndex] = useState<number | null>(null);
-	const [hasMounted, setHasMounted] = useState(false);
-	const [isChartMounted, setIsChartMounted] = useState(false);
-
-	useEffect(() => {
-		const t = setTimeout(() => setIsChartMounted(true), 0);
-		return () => clearTimeout(t);
-	}, []);
-	useEffect(() => {
-		const t = setTimeout(() => setHasMounted(true), 0);
-		return () => clearTimeout(t);
-	}, []);
 
 	// Filtrujemy dane wykluczając ukryte kategorie
 	const visibleData = data.filter((d) => !hiddenCategories.has(d.category));
@@ -45,11 +35,6 @@ export default function PortfolioPieChart({
 		visibleData.length === 0 ||
 		visibleData.every(
 			(item) => (item[dataKey as keyof CategoryStatus] as number) === 0,
-		);
-
-	if (!hasMounted)
-		return (
-			<div className="w-full h-[400px] bg-white/5 animate-pulse rounded-2xl" />
 		);
 
 	// Funkcja do obsługi kliknięć w legendę
@@ -167,11 +152,8 @@ export default function PortfolioPieChart({
 			</h4>
 
 			{/* 🚀 ZMIANA: Zmniejszyliśmy wysokość (np. h-[260px]) - to jest kontener WYŁĄCZNIE na donuta */}
-			<div className="w-full h-[260px] min-h-[260px] relative mt-4">
-				{!isChartMounted ? (
-					// Szkielet ładowania o dokładnych wymiarach wykresu kołowego
-					<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-full scale-90" />
-				) : isEmpty ? (
+			<div className="w-full h-[260px] min-h-[260px] relative mt-4 flex flex-col">
+				{isEmpty ? (
 					<div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 pb-8">
 						<div className="rounded-full border border-t-border bg-t-bg-base p-6 shadow-inner">
 							<PieChartIcon className="h-10 w-10 text-t-text-tertiary" />
@@ -188,7 +170,7 @@ export default function PortfolioPieChart({
 				) : (
 					<>
 						{/* RAZEM będzie teraz IDEALNIE w środku geometrycznym donuta */}
-						<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none animate-in fade-in duration-300">
+						<div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none animate-in fade-in duration-300 ">
 							{activeItem ? (
 								<div className="text-center flex flex-col items-center bg-t-bg-panel/80 backdrop-blur-md p-4 rounded-full shadow-lg border border-t-border-subtle transition-all scale-110">
 									<span
@@ -227,40 +209,37 @@ export default function PortfolioPieChart({
 							)}
 						</div>
 
-						<ResponsiveContainer
-							width="100%"
-							height="100%"
-							minWidth={1}
-							minHeight={1}
-						>
-							<PieChart>
-								<Pie
-									data={visibleData}
-									dataKey={dataKey}
-									nameKey="category"
-									cx="50%"
-									cy="50%"
-									innerRadius={90}
-									outerRadius={125}
-									paddingAngle={2}
-									minAngle={8}
-									stroke="var(--t-bg-panel)"
-									strokeWidth={2}
-									labelLine={false}
-									label={renderCustomizedLabel}
-									onMouseEnter={(_, index) => setActiveIndex(index)}
-									onMouseLeave={() => setActiveIndex(null)}
-								>
-									{visibleData.map((entry) => (
-										<Cell
-											key={entry.category}
-											fill={COLORS[entry.category as keyof typeof COLORS]}
-											className="outline-none hover:opacity-80 transition-all duration-300 cursor-pointer"
-										/>
-									))}
-								</Pie>
-							</PieChart>
-						</ResponsiveContainer>
+						<ChartContainer className="flex-1 w-full">
+							<ResponsiveContainer width="100%" height="100%">
+								<PieChart>
+									<Pie
+										data={visibleData}
+										dataKey={dataKey}
+										nameKey="category"
+										cx="50%"
+										cy="50%"
+										innerRadius={90}
+										outerRadius={125}
+										paddingAngle={2}
+										minAngle={8}
+										stroke="var(--t-bg-panel)"
+										strokeWidth={2}
+										labelLine={false}
+										label={renderCustomizedLabel}
+										onMouseEnter={(_, index) => setActiveIndex(index)}
+										onMouseLeave={() => setActiveIndex(null)}
+									>
+										{visibleData.map((entry) => (
+											<Cell
+												key={entry.category}
+												fill={COLORS[entry.category as keyof typeof COLORS]}
+												className="outline-none hover:opacity-80 transition-all duration-300 cursor-pointer"
+											/>
+										))}
+									</Pie>
+								</PieChart>
+							</ResponsiveContainer>
+						</ChartContainer>
 					</>
 				)}
 			</div>

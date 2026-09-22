@@ -11,8 +11,9 @@ import {
 	YAxis,
 } from "recharts";
 import { Maximize2, Minimize2 } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
+import { ChartContainer } from "../shared/ChartContainer";
 import { ChartLegend } from "./ChartLegend";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
@@ -30,18 +31,12 @@ const getEndOfDayTime = (dateStr: string) => {
 	return new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
 };
 
-export function ExpandableMainChart({
+export function ExpandableMainChart2({
 	data,
 	transactions = [],
 	chartMode,
 }: ExpandableMainChartProps) {
 	const [isFullscreen, setIsFullscreen] = useState(false);
-	const [isMounted, setIsMounted] = useState(false);
-
-	useEffect(() => {
-		const timer = setTimeout(() => setIsMounted(true), 0);
-		return () => clearTimeout(timer);
-	}, []);
 
 	const mergedData = useMemo(() => {
 		if (!data || data.length === 0) return [];
@@ -94,79 +89,79 @@ export function ExpandableMainChart({
 		});
 	}, [data, transactions]);
 
-	const chartContentElement = !isMounted ? (
-		<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-xl min-h-[200px]" />
-	) : (
-		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-			<ComposedChart
-				data={mergedData}
-				margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
-			>
-				<defs>
-					<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-						<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-					</linearGradient>
-				</defs>
-				<CartesianGrid
-					strokeDasharray="3 3"
-					vertical={false}
-					stroke="rgba(255,255,255,0.05)"
-				/>
-				<XAxis
-					dataKey="date"
-					tickFormatter={(val) =>
-						format(new Date(val), "dd MMM", { locale: pl })
-					}
-					tick={{ fontSize: 10, fill: "#64748b" }}
-					tickLine={false}
-					axisLine={false}
-					minTickGap={30}
-				/>
-				<YAxis
-					domain={["auto", "auto"]}
-					tickFormatter={(val) =>
-						chartMode === "PERCENTAGE"
-							? `${val}%`
-							: val >= 1000
-								? `${(val / 1000).toFixed(0)}k`
-								: val
-					}
-					tick={{ fontSize: 10, fill: "#64748b" }}
-					tickLine={false}
-					axisLine={false}
-					width={45}
-					tickMargin={5}
-				/>
-				<Tooltip
-					content={<CustomChartTooltip chartMode={chartMode} />}
-					cursor={{ fill: "rgba(255,255,255,0.05)" }}
-				/>
+	const chartContentElement = (
+		<ChartContainer className="h-full min-h-0 w-full">
+			<ResponsiveContainer width="100%" height="100%">
+				<ComposedChart
+					data={mergedData}
+					margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+				>
+					<defs>
+						<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+							<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+						</linearGradient>
+					</defs>
+					<CartesianGrid
+						strokeDasharray="3 3"
+						vertical={false}
+						stroke="rgba(255,255,255,0.05)"
+					/>
+					<XAxis
+						dataKey="date"
+						tickFormatter={(val) =>
+							format(new Date(val), "dd MMM", { locale: pl })
+						}
+						tick={{ fontSize: 10, fill: "#64748b" }}
+						tickLine={false}
+						axisLine={false}
+						minTickGap={30}
+					/>
+					<YAxis
+						domain={["auto", "auto"]}
+						tickFormatter={(val) =>
+							chartMode === "PERCENTAGE"
+								? `${val}%`
+								: val >= 1000
+									? `${(val / 1000).toFixed(0)}k`
+									: val
+						}
+						tick={{ fontSize: 10, fill: "#64748b" }}
+						tickLine={false}
+						axisLine={false}
+						width={45}
+						tickMargin={5}
+					/>
+					<Tooltip
+						content={<CustomChartTooltip chartMode={chartMode} />}
+						cursor={{ fill: "rgba(255,255,255,0.05)" }}
+					/>
 
-				<Line
-					type="monotone"
-					dataKey="value"
-					stroke="#3b82f6"
-					strokeWidth={2}
-					dot={false}
-					activeDot={{ r: 4, fill: "#3b82f6" }}
-				/>
+					<Line
+						type="monotone"
+						dataKey="value"
+						stroke="#3b82f6"
+						strokeWidth={2}
+						dot={false}
+						activeDot={{ r: 4, fill: "#3b82f6" }}
+					/>
 
-				{transactions.length > 0 && (
-					<Scatter dataKey="buyEvent" fill="#10b981" />
-				)}
-				{transactions.length > 0 && (
-					<Scatter dataKey="sellEvent" fill="#ef4444" />
-				)}
-			</ComposedChart>
-		</ResponsiveContainer>
+					{transactions.length > 0 && (
+						<Scatter dataKey="buyEvent" fill="#10b981" />
+					)}
+					{transactions.length > 0 && (
+						<Scatter dataKey="sellEvent" fill="#ef4444" />
+					)}
+				</ComposedChart>
+			</ResponsiveContainer>
+		</ChartContainer>
 	);
 
 	if (!isFullscreen) {
 		return (
 			<div className="relative w-full h-full flex flex-col group">
 				<ChartLegend chartMode={chartMode} transactions={transactions} />
-				<div className="flex-1 relative">
+				<div className="flex-1  h-full min-h-[250px] relative">
 					<button
 						onClick={() => setIsFullscreen(true)}
 						className="absolute top-2 right-2 z-10 p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-slate-600 shadow-sm"

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
@@ -88,12 +89,7 @@ export function PortfoliosComparisonChart({
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
 	const [prevActiveIds, setPrevActiveIds] = useState<string>("");
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [hasMounted, setHasMounted] = useState(false);
 
-	useEffect(() => {
-		const t = setTimeout(() => setHasMounted(true), 0);
-		return () => clearTimeout(t);
-	}, []);
 	// ======================================================================
 	// FIX: REAGOWANIE NA ZMIANY PROPSÓW BEZ USEEFFECT (Unikamy re-renderów)
 	// ======================================================================
@@ -182,9 +178,13 @@ export function PortfoliosComparisonChart({
 	};
 
 	const chartContent = (
-		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-			{" "}
-			{hasMounted && (
+		<ChartContainer className="h-full min-h-0 w-full">
+			<ResponsiveContainer
+				width="100%"
+				height="100%"
+				minWidth={1}
+				minHeight={1}
+			>
 				<LineChart
 					data={data}
 					margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
@@ -251,8 +251,8 @@ export function PortfoliosComparisonChart({
 						/>
 					))}
 				</LineChart>
-			)}
-		</ResponsiveContainer>
+			</ResponsiveContainer>
+		</ChartContainer>
 	);
 
 	if (isExpanded) {

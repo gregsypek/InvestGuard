@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
+import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 
@@ -56,12 +57,6 @@ export function PortfolioBenchmarkChart({
 }: PortfolioBenchmarkChartProps) {
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [isMounted, setIsMounted] = useState(false);
-
-	useEffect(() => {
-		const timer = setTimeout(() => setIsMounted(true), 0);
-		return () => clearTimeout(timer);
-	}, []);
 
 	const toggleLine = (dataKey: string) => {
 		setHiddenLines((prev) => ({
@@ -178,104 +173,114 @@ export function PortfolioBenchmarkChart({
 		);
 	};
 
-	const chartContent = !isMounted ? (
-		<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-xl min-h-[200px]" />
-	) : (
-		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-			<LineChart
-				data={data}
-				margin={{ top: 10, right: 10, left: -10, bottom: 20 }}
+	const chartContent = (
+		<ChartContainer className="h-full min-h-0 w-full">
+			{" "}
+			<ResponsiveContainer
+				width="100%"
+				height="100%"
+				minWidth={1}
+				minHeight={1}
 			>
-				<defs>
-					<linearGradient id="portfolioGradient" x1="0" y1="0" x2="1" y2="0">
-						<stop offset="0%" stopColor="#34d399" />
-						<stop offset="50%" stopColor="#10b981" />
-						<stop offset="100%" stopColor="#059669" />
-					</linearGradient>
+				<LineChart
+					data={data}
+					margin={{ top: 10, right: 10, left: -10, bottom: 20 }}
+				>
+					<defs>
+						<linearGradient id="portfolioGradient" x1="0" y1="0" x2="1" y2="0">
+							<stop offset="0%" stopColor="#34d399" />
+							<stop offset="50%" stopColor="#10b981" />
+							<stop offset="100%" stopColor="#059669" />
+						</linearGradient>
 
-					<filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
-						<feGaussianBlur stdDeviation="3" result="blur" />
-						<feMerge>
-							<feMergeNode in="blur" />
-							<feMergeNode in="SourceGraphic" />
-						</feMerge>
-					</filter>
-				</defs>
+						<filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
+							<feGaussianBlur stdDeviation="3" result="blur" />
+							<feMerge>
+								<feMergeNode in="blur" />
+								<feMergeNode in="SourceGraphic" />
+							</feMerge>
+						</filter>
+					</defs>
 
-				<CartesianGrid
-					strokeDasharray="2 6"
-					vertical={false}
-					stroke="rgba(148,163,184,0.08)"
-				/>
-
-				<XAxis
-					dataKey="date"
-					axisLine={false}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
-					tickMargin={12}
-					tickFormatter={(val) =>
-						format(new Date(val), "dd MMM", { locale: pl })
-					}
-				/>
-
-				<YAxis
-					axisLine={false}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
-					tickFormatter={(val) => `${val > 0 ? "+" : ""}${val}%`}
-					domain={[-yDomain, yDomain]}
-				/>
-
-				<ReferenceLine y={0} stroke="rgba(148,163,184,0.25)" strokeWidth={1} />
-
-				<Tooltip
-					content={<BenchmarkTooltip hiddenLines={hiddenLines} />}
-					cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
-					wrapperStyle={{ zIndex: 100 }}
-				/>
-
-				<Legend
-					content={renderCustomLegend}
-					verticalAlign="bottom"
-					wrapperStyle={{
-						paddingTop: "24px",
-						position: "relative",
-					}}
-				/>
-
-				{userIndices.map((indexKey) => (
-					<Line
-						key={indexKey}
-						type="monotone"
-						dataKey={indexKey}
-						name={indexKey}
-						stroke={INDEX_COLORS[indexKey] || "#cbd5e1"}
-						strokeWidth={2}
-						dot={false}
-						activeDot={{ r: 4, strokeWidth: 0 }}
-						hide={hiddenLines[indexKey]}
-						opacity={0.8}
+					<CartesianGrid
+						strokeDasharray="2 6"
+						vertical={false}
+						stroke="rgba(148,163,184,0.08)"
 					/>
-				))}
 
-				<Line
-					type="monotone"
-					dataKey="portfolioPct"
-					name="Twój Portfel"
-					stroke="url(#portfolioGradient)"
-					strokeWidth={3.5}
-					dot={false}
-					activeDot={{
-						r: 6,
-						fill: "#10b981",
-						stroke: "#fff",
-						strokeWidth: 2,
-					}}
-					filter="url(#lineGlow)"
-				/>
-			</LineChart>
-		</ResponsiveContainer>
+					<XAxis
+						dataKey="date"
+						axisLine={false}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
+						tickMargin={12}
+						tickFormatter={(val) =>
+							format(new Date(val), "dd MMM", { locale: pl })
+						}
+					/>
+
+					<YAxis
+						axisLine={false}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
+						tickFormatter={(val) => `${val > 0 ? "+" : ""}${val}%`}
+						domain={[-yDomain, yDomain]}
+					/>
+
+					<ReferenceLine
+						y={0}
+						stroke="rgba(148,163,184,0.25)"
+						strokeWidth={1}
+					/>
+
+					<Tooltip
+						content={<BenchmarkTooltip hiddenLines={hiddenLines} />}
+						cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
+						wrapperStyle={{ zIndex: 100 }}
+					/>
+
+					<Legend
+						content={renderCustomLegend}
+						verticalAlign="bottom"
+						wrapperStyle={{
+							paddingTop: "24px",
+							position: "relative",
+						}}
+					/>
+
+					{userIndices.map((indexKey) => (
+						<Line
+							key={indexKey}
+							type="monotone"
+							dataKey={indexKey}
+							name={indexKey}
+							stroke={INDEX_COLORS[indexKey] || "#cbd5e1"}
+							strokeWidth={2}
+							dot={false}
+							activeDot={{ r: 4, strokeWidth: 0 }}
+							hide={hiddenLines[indexKey]}
+							opacity={0.8}
+						/>
+					))}
+
+					<Line
+						type="monotone"
+						dataKey="portfolioPct"
+						name="Twój Portfel"
+						stroke="url(#portfolioGradient)"
+						strokeWidth={3.5}
+						dot={false}
+						activeDot={{
+							r: 6,
+							fill: "#10b981",
+							stroke: "#fff",
+							strokeWidth: 2,
+						}}
+						filter="url(#lineGlow)"
+					/>
+				</LineChart>
+			</ResponsiveContainer>
+		</ChartContainer>
 	);
 
 	if (isExpanded) {
@@ -311,7 +316,7 @@ export function PortfolioBenchmarkChart({
 						<Minimize2 className="w-6 h-6" />
 					</button>
 				</div>
-				<div className="relative flex-1 min-h-0 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl">
+				<div className="relative flex flex-col flex-1 min-h-[250px] bg-slate-900/40 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl">
 					{chartContent}
 				</div>
 			</div>
@@ -330,7 +335,7 @@ export function PortfolioBenchmarkChart({
 					<Maximize2 className="w-4 h-4" />
 				</button>
 			</div>
-			<div className="flex-1 min-h-0">{chartContent}</div>
+			<div className="flex-1 h-full min-h-0">{chartContent}</div>
 		</div>
 	);
 }

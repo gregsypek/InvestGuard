@@ -11,9 +11,10 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import React, { useMemo } from "react";
 
+import { ChartContainer } from "../shared/ChartContainer";
 import { formatCurrency } from "@/lib/utils/format-currency";
-import { useMemo } from "react";
 
 const CHART_COLORS = [
 	"#3b82f6",
@@ -36,8 +37,26 @@ interface GoalProjectionChartProps {
 	portfolios: PortfolioSim[];
 }
 
+// ----------------------------------------------------------------------
+// TYPY DLA GENERATORA I TOOLTIPA
+// ----------------------------------------------------------------------
+interface ProjectionPoint {
+	name: string;
+	totalCapital: number;
+	totalValue: number;
+	profit?: number;
+	[key: string]: number | string | undefined;
+}
+
+interface CustomTooltipProps {
+	active?: boolean;
+	payload?: any[];
+	label?: string;
+	isMulti?: boolean;
+}
+
 function generateProjection(portfolios: PortfolioSim[]) {
-	const data = [];
+	const data: ProjectionPoint[] = [];
 	let months = 0;
 	const maxMonths = 360; // Max 30 lat
 	const annualRate = 0.07;
@@ -55,7 +74,7 @@ function generateProjection(portfolios: PortfolioSim[]) {
 
 	while (globalBalance < globalTarget && months < maxMonths) {
 		if (months % 12 === 0) {
-			const point: any = {
+			const point: ProjectionPoint = {
 				name: `Rok ${months / 12}`,
 				totalCapital: 0,
 				totalValue: 0,
@@ -79,7 +98,11 @@ function generateProjection(portfolios: PortfolioSim[]) {
 	}
 
 	// Dodanie ostatniego punktu 'CEL'
-	const finalPoint: any = { name: "CEL", totalCapital: 0, totalValue: 0 };
+	const finalPoint: ProjectionPoint = {
+		name: "CEL",
+		totalCapital: 0,
+		totalValue: 0,
+	};
 	state.forEach((p) => {
 		finalPoint[p.id] = Math.round(p.balance);
 		finalPoint.totalCapital += Math.round(p.capital);
@@ -96,7 +119,12 @@ function generateProjection(portfolios: PortfolioSim[]) {
 	};
 }
 
-const CustomTooltip = ({ active, payload, label, isMulti }: any) => {
+const CustomTooltip = ({
+	active,
+	payload,
+	label,
+	isMulti,
+}: CustomTooltipProps) => {
 	if (active && payload && payload.length) {
 		return (
 			<div className="bg-t-bg-panel border border-t-border rounded-xl p-3 shadow-xl min-w-[200px]">
@@ -170,118 +198,119 @@ export function GoalProjectionChart({
 			</div>
 
 			<div className="flex-1 w-full min-h-[250px]">
-				<ResponsiveContainer
-					width="100%"
-					height="100%"
-					minWidth={1}
-					minHeight={1}
-				>
-					{" "}
-					<ComposedChart
-						data={data}
-						margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
+				<ChartContainer className="h-full min-h-0 w-full">
+					<ResponsiveContainer
+						width="100%"
+						height="100%"
+						minWidth={1}
+						minHeight={1}
 					>
-						<defs>
-							<linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-								<stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-								<stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-							</linearGradient>
-							<linearGradient id="colorCapital" x1="0" y1="0" x2="0" y2="1">
-								<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-								<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-							</linearGradient>
-						</defs>
+						<ComposedChart
+							data={data}
+							margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
+						>
+							<defs>
+								<linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+									<stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+									<stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+								</linearGradient>
+								<linearGradient id="colorCapital" x1="0" y1="0" x2="0" y2="1">
+									<stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+									<stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+								</linearGradient>
+							</defs>
 
-						<CartesianGrid
-							strokeDasharray="3 3"
-							vertical={false}
-							stroke="#94a3b8"
-							strokeOpacity={0.15}
-						/>
-						<XAxis
-							dataKey="name"
-							fontSize={10}
-							tickLine={false}
-							axisLine={false}
-							tick={{ fill: "#64748b", fontWeight: 600 }}
-							dy={10}
-						/>
-						<YAxis hide domain={[0, "dataMax + 10000"]} />
+							<CartesianGrid
+								strokeDasharray="3 3"
+								vertical={false}
+								stroke="#94a3b8"
+								strokeOpacity={0.15}
+							/>
+							<XAxis
+								dataKey="name"
+								fontSize={10}
+								tickLine={false}
+								axisLine={false}
+								tick={{ fill: "#64748b", fontWeight: 600 }}
+								dy={10}
+							/>
+							<YAxis hide domain={[0, "dataMax + 10000"]} />
 
-						<Tooltip
-							content={<CustomTooltip isMulti={isMulti} />}
-							cursor={{
-								stroke: "#94a3b8",
-								strokeWidth: 1,
-								strokeDasharray: "3 3",
-								opacity: 0.5,
-							}}
-						/>
+							<Tooltip
+								content={<CustomTooltip isMulti={isMulti} />}
+								cursor={{
+									stroke: "#94a3b8",
+									strokeWidth: 1,
+									strokeDasharray: "3 3",
+									opacity: 0.5,
+								}}
+							/>
 
-						<ReferenceLine
-							y={globalTarget}
-							stroke="#3b82f6"
-							strokeDasharray="4 4"
-							strokeOpacity={0.8}
-							label={{
-								position: "top",
-								value: "CEL",
-								fill: "#3b82f6",
-								fontSize: 10,
-								fontWeight: "900",
-							}}
-						/>
+							<ReferenceLine
+								y={globalTarget}
+								stroke="#3b82f6"
+								strokeDasharray="4 4"
+								strokeOpacity={0.8}
+								label={{
+									position: "top",
+									value: "CEL",
+									fill: "#3b82f6",
+									fontSize: 10,
+									fontWeight: "900",
+								}}
+							/>
 
-						{isMulti ? (
-							<>
-								{/* Wiele portfeli: Stos aktywów jeden na drugim */}
-								{portfolios.map((p, index) => (
-									<Area
-										key={p.id}
+							{isMulti ? (
+								<>
+									{/* Wiele portfeli: Stos aktywów jeden na drugim */}
+									{portfolios.map((p, index) => (
+										<Area
+											key={p.id}
+											type="monotone"
+											dataKey={p.id}
+											name={p.name}
+											stackId="1"
+											stroke={CHART_COLORS[index % CHART_COLORS.length]}
+											fill={CHART_COLORS[index % CHART_COLORS.length]}
+											fillOpacity={0.6}
+											strokeWidth={2}
+										/>
+									))}
+									{/* Linia pokazująca sam goły kapitał (bez odsetek) w tle */}
+									<Line
 										type="monotone"
-										dataKey={p.id}
-										name={p.name}
-										stackId="1"
-										stroke={CHART_COLORS[index % CHART_COLORS.length]}
-										fill={CHART_COLORS[index % CHART_COLORS.length]}
-										fillOpacity={0.6}
+										dataKey="totalCapital"
+										name="Wpłacony kapitał (suma)"
+										stroke="#64748b"
+										strokeDasharray="5 5"
 										strokeWidth={2}
+										dot={false}
 									/>
-								))}
-								{/* Linia pokazująca sam goły kapitał (bez odsetek) w tle */}
-								<Line
-									type="monotone"
-									dataKey="totalCapital"
-									name="Wpłacony kapitał (suma)"
-									stroke="#64748b"
-									strokeDasharray="5 5"
-									strokeWidth={2}
-									dot={false}
-								/>
-							</>
-						) : (
-							<>
-								{/* Pojedynczy portfel: Podział na kapitał (niebieski) i nakładający się zysk (zielony) */}
-								<Area
-									type="monotone"
-									dataKey="totalValue"
-									name="Zysk (7%)"
-									stroke="#10b981"
-									fill="url(#colorProfit)"
-									strokeWidth={3}
-								/>
-								<Area
-									type="monotone"
-									dataKey="totalCapital"
-									name="Wpłacony kapitał"
-									stroke="#3b82f6"
-									fill="url(#colorCapital)"
-									strokeWidth={3}
-								/>
-							</>
-						)}
-					</ComposedChart>
-				</ResponsiveContainer>
+								</>
+							) : (
+								<>
+									{/* Pojedynczy portfel: Podział na kapitał (niebieski) i nakładający się zysk (zielony) */}
+									<Area
+										type="monotone"
+										dataKey="totalValue"
+										name="Zysk (7%)"
+										stroke="#10b981"
+										fill="url(#colorProfit)"
+										strokeWidth={3}
+									/>
+									<Area
+										type="monotone"
+										dataKey="totalCapital"
+										name="Wpłacony kapitał"
+										stroke="#3b82f6"
+										fill="url(#colorCapital)"
+										strokeWidth={3}
+									/>
+								</>
+							)}
+						</ComposedChart>
+					</ResponsiveContainer>
+				</ChartContainer>
 			</div>
 		</div>
 	);

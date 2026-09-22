@@ -12,14 +12,31 @@ import {
 import React, { useMemo } from "react";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+import { ChartContainer } from "../shared/ChartContainer";
+
+// ----------------------------------------------------------------------
+// TYPY DLA TOOLTIPA
+// ----------------------------------------------------------------------
+interface TooltipPayloadItem {
+	name: string;
+	value: number | string;
+	color: string;
+}
+
+interface CustomTooltipProps {
+	active?: boolean;
+	payload?: TooltipPayloadItem[];
+	label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 	if (active && payload && payload.length) {
 		return (
 			<div className="bg-slate-900 border border-slate-800 p-3 rounded-xl shadow-xl flex flex-col gap-2 min-w-[180px]">
 				<span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest border-b border-slate-800 pb-2 mb-1">
 					Miesiąc: {label}
 				</span>
-				{payload.map((entry: any, index: number) => (
+				{payload.map((entry, index) => (
 					<div
 						key={index}
 						className="flex items-center gap-2 text-xs font-bold"
@@ -39,6 +56,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 	}
 	return null;
 };
+
 interface InflationRecord {
 	yearMonth: string;
 	value: number;
@@ -156,64 +174,69 @@ export function InflationShieldClient({ inflationData, bonds }: Props) {
 
 			{/* Wykres */}
 			<div className="h-75 w-full">
-				<ResponsiveContainer
-					width="100%"
-					height="100%"
-					minWidth={1}
-					minHeight={1}
-				>
-					{" "}
-					<AreaChart
-						data={chartData}
-						margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-					>
-						<defs>
-							<linearGradient id="colorInflation" x1="0" y1="0" x2="0" y2="1">
-								<stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
-								<stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-							</linearGradient>
-						</defs>
-						<CartesianGrid
-							strokeDasharray="3 3"
-							stroke="#334155"
-							opacity={0.2}
-							vertical={false}
-						/>
-						<XAxis
-							dataKey="date"
-							tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
-							tickLine={false}
-							axisLine={false}
-							dy={10}
-						/>
-						<YAxis
-							tickFormatter={(val) => `${val}%`}
-							tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
-							tickLine={false}
-							axisLine={false}
-							dx={-10}
-						/>
-						<Tooltip content={<CustomTooltip />} />
-						<Area
-							type="monotone"
-							dataKey="inflation"
-							name="Inflacja GUS"
-							stroke="#f43f5e"
-							strokeWidth={2}
-							fillOpacity={1}
-							fill="url(#colorInflation)"
-						/>
-						<Area
-							type="step"
-							dataKey="portfolioYield"
-							name="Moje Oprocentowanie"
-							stroke="#10b981"
-							strokeWidth={2}
-							strokeDasharray="5 5"
-							fill="none"
-						/>
-					</AreaChart>
-				</ResponsiveContainer>
+				{/* NOTE: Każdy przodek na drodze do ResponsiveContainer musi mieć albo jawną wysokość (h-75, h-[350px]), albo h-full/flex-1 w kontenerze, który sam ma jawną wysokość. min-h-* samo w sobie nigdy nie wystarczy jako źródło wysokości dla flex-grow. */}
+				<div className=" flex flex-col h-full  min-h-[250px]">
+					<ChartContainer className="flex-1 min-h-0 w-full">
+						<ResponsiveContainer width="100%" height="100%">
+							<AreaChart
+								data={chartData}
+								margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+							>
+								<defs>
+									<linearGradient
+										id="colorInflation"
+										x1="0"
+										y1="0"
+										x2="0"
+										y2="1"
+									>
+										<stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
+										<stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+									</linearGradient>
+								</defs>
+								<CartesianGrid
+									strokeDasharray="3 3"
+									stroke="#334155"
+									opacity={0.2}
+									vertical={false}
+								/>
+								<XAxis
+									dataKey="date"
+									tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
+									tickLine={false}
+									axisLine={false}
+									dy={10}
+								/>
+								<YAxis
+									tickFormatter={(val) => `${val}%`}
+									tick={{ fontSize: 10, fill: "#64748b", fontWeight: 700 }}
+									tickLine={false}
+									axisLine={false}
+									dx={-10}
+								/>
+								<Tooltip content={<CustomTooltip />} />
+								<Area
+									type="monotone"
+									dataKey="inflation"
+									name="Inflacja GUS"
+									stroke="#f43f5e"
+									strokeWidth={2}
+									fillOpacity={1}
+									fill="url(#colorInflation)"
+								/>
+								<Area
+									type="step"
+									dataKey="portfolioYield"
+									name="Moje Oprocentowanie"
+									stroke="#10b981"
+									strokeWidth={2}
+									strokeDasharray="5 5"
+									fill="none"
+								/>
+							</AreaChart>
+						</ResponsiveContainer>
+					</ChartContainer>
+				</div>
 			</div>
 		</div>
 	);

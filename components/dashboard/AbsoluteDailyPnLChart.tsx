@@ -17,6 +17,7 @@ import {
 import { Maximize2, Minimize2, TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 
@@ -35,12 +36,7 @@ interface AbsoluteDailyPnLChartProps {
 export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	// EN: State to handle fullscreen expansion
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [isMounted, setIsMounted] = useState(false);
 
-	useEffect(() => {
-		const timer = setTimeout(() => setIsMounted(true), 0);
-		return () => clearTimeout(timer);
-	}, []);
 	if (!data || data.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-full opacity-60">
@@ -181,208 +177,226 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		);
 	};
 	// EN: Reusable chart content for normal and expanded views
-	const chartContent = !isMounted ? (
-		<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-xl min-h-[250px]" />
-	) : (
-		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-			<ComposedChart
-				data={data}
-				margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-			>
-				<defs>
-					{/* EN: Gradients for gain / loss bars — richer than a flat fill */}
-					<linearGradient id="positiveBarGradient" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0%" stopColor="#34d399" stopOpacity={0.95} />
-						<stop offset="100%" stopColor="#059669" stopOpacity={0.85} />
-					</linearGradient>
-					<linearGradient id="negativeBarGradient" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0%" stopColor="#fb7185" stopOpacity={0.95} />
-						<stop offset="100%" stopColor="#e11d48" stopOpacity={0.85} />
-					</linearGradient>
-
-					{/* EN: Blue gradient stroke for the cash flow line — the app's accent color */}
-					<linearGradient id="cashFlowGradient" x1="0" y1="0" x2="1" y2="0">
-						<stop offset="0%" stopColor="#60a5fa" />
-						<stop offset="50%" stopColor="#3b82f6" />
-						<stop offset="100%" stopColor="#2563eb" />
-					</linearGradient>
-
-					{/* EN: Vertical fade for the area under the cash flow line */}
-					<linearGradient id="cashFlowAreaGradient" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25} />
-						<stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-					</linearGradient>
-
-					{/* EN: Soft glow filter applied to cash flow dots for a premium feel */}
-					<filter id="dotGlow" x="-100%" y="-100%" width="300%" height="300%">
-						<feGaussianBlur stdDeviation="3" result="blur" />
-						<feMerge>
-							<feMergeNode in="blur" />
-							<feMergeNode in="SourceGraphic" />
-						</feMerge>
-					</filter>
-				</defs>
-
-				<CartesianGrid
-					strokeDasharray="2 6"
-					vertical={false}
-					stroke="rgba(148,163,184,0.08)"
-				/>
-
-				<XAxis
-					dataKey="date"
-					axisLine={{ stroke: "rgba(148,163,184,0.12)" }}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
-					tickMargin={12}
-					tickFormatter={(val) =>
-						format(new Date(val), "dd MMM", { locale: pl })
-					}
-				/>
-
-				{/* EN: LEFT Y-AXIS - Strictly for daily market PnL bars */}
-				<YAxis
-					yAxisId="left"
-					orientation="left"
-					axisLine={false}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
-					tickFormatter={(val) =>
-						`${new Intl.NumberFormat("pl-PL", {
-							notation: "compact",
-							maximumFractionDigits: 1,
-						}).format(val)} zł`
-					}
-					width={58}
-					// WYMUSZAMY SYMETRIĘ WZGLĘDEM ZERA
-					domain={[-pnlDomain, pnlDomain]}
-				/>
-
-				{/* EN: RIGHT Y-AXIS - Independent scale for cash deposits and withdrawals */}
-				<YAxis
-					yAxisId="right"
-					orientation="right"
-					width={85}
-					axisLine={false}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#3b82f6", fontWeight: 600 }}
-					// FIX: zero now returns an actual empty string instead of being
-					// passed through Intl.NumberFormat (which coerced "" -> 0 -> "0 zł")
-					tickFormatter={(val) =>
-						val === 0
-							? ""
-							: `${new Intl.NumberFormat("pl-PL", {
-									notation: "compact",
-									maximumFractionDigits: 1,
-								}).format(val)} zł`
-					}
-					// WYMUSZAMY SYMETRIĘ WZGLĘDEM ZERA
-					domain={[-cashDomain, cashDomain]}
-				/>
-
-				{/* EN: Zero reference line bound to the left axis (market PnL) */}
-				<ReferenceLine
-					y={0}
-					yAxisId="left"
-					stroke="rgba(148,163,184,0.25)"
-					strokeWidth={1}
-				/>
-
-				<Tooltip
-					content={<AbsolutePnLTooltip />}
-					cursor={{ fill: "rgba(59,130,246,0.04)" }}
-				/>
-
-				<Legend content={renderLegend} />
-
-				{/* EN: Bars are bound to the left Y-Axis */}
-				<Bar
-					yAxisId="left"
-					dataKey="exactChangePLN"
-					name="Dzienny Wynik Rynkowy2"
-					radius={[6, 6, 6, 6]}
-					maxBarSize={28}
+	const chartContent = (
+		<ChartContainer className="h-full min-h-0 w-full">
+			<ResponsiveContainer width="100%" height="100%">
+				<ComposedChart
+					data={data}
+					margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
 				>
-					{data.map((entry, index) => {
-						const isPositive = entry.exactChangePLN >= 0;
-						return (
-							<Cell
-								key={`cell-${index}`}
-								fill={
-									entry.isLive
-										? isPositive
-											? "rgba(52, 211, 153, 0.2)" // Przezroczysty zielony dla LIVE
-											: "rgba(251, 113, 133, 0.2)" // Przezroczysty czerwony dla LIVE
-										: isPositive
-											? "url(#positiveBarGradient)"
-											: "url(#negativeBarGradient)"
-								}
-								stroke={
-									entry.isLive
-										? isPositive
-											? "#34d399" // Zielona ramka dla LIVE
-											: "#fb7185" // Czerwona ramka dla LIVE
-										: "none"
-								}
-								strokeDasharray={entry.isLive ? "4 4" : "none"} // Przerywana linia dla LIVE
-								strokeWidth={entry.isLive ? 2 : 0}
-							/>
-						);
-					})}
-				</Bar>
+					<defs>
+						{/* EN: Gradients for gain / loss bars — richer than a flat fill */}
+						<linearGradient
+							id="positiveBarGradient"
+							x1="0"
+							y1="0"
+							x2="0"
+							y2="1"
+						>
+							<stop offset="0%" stopColor="#34d399" stopOpacity={0.95} />
+							<stop offset="100%" stopColor="#059669" stopOpacity={0.85} />
+						</linearGradient>
+						<linearGradient
+							id="negativeBarGradient"
+							x1="0"
+							y1="0"
+							x2="0"
+							y2="1"
+						>
+							<stop offset="0%" stopColor="#fb7185" stopOpacity={0.95} />
+							<stop offset="100%" stopColor="#e11d48" stopOpacity={0.85} />
+						</linearGradient>
 
-				{/* EN: Soft fill under the cash flow line, purely decorative */}
-				<Area
-					yAxisId="right"
-					type="monotone"
-					dataKey="netCashFlow"
-					stroke="none"
-					fill="url(#cashFlowAreaGradient)"
-					legendType="none"
-					tooltipType="none"
-				/>
+						{/* EN: Blue gradient stroke for the cash flow line — the app's accent color */}
+						<linearGradient id="cashFlowGradient" x1="0" y1="0" x2="1" y2="0">
+							<stop offset="0%" stopColor="#60a5fa" />
+							<stop offset="50%" stopColor="#3b82f6" />
+							<stop offset="100%" stopColor="#2563eb" />
+						</linearGradient>
 
-				{/* EN: Cash flow line is bound to the right Y-Axis to prevent compression */}
-				<Line
-					yAxisId="right"
-					type="monotone"
-					dataKey="netCashFlow"
-					name="Wpłaty / Wypłaty"
-					stroke="url(#cashFlowGradient)"
-					strokeDasharray="5 5"
-					strokeOpacity={0.7}
-					strokeWidth={2.5}
-					dot={(props: any) => {
-						const { cx, cy, payload } = props;
-						// EN: Only draw dots on days where actual cash flow occurred
-						// FIX: was returning an invalid <script> element as a no-op;
-						// returning null is the correct way to render "nothing" here.
-						if (payload.netCashFlow !== 0) {
+						{/* EN: Vertical fade for the area under the cash flow line */}
+						<linearGradient
+							id="cashFlowAreaGradient"
+							x1="0"
+							y1="0"
+							x2="0"
+							y2="1"
+						>
+							<stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25} />
+							<stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+						</linearGradient>
+
+						{/* EN: Soft glow filter applied to cash flow dots for a premium feel */}
+						<filter id="dotGlow" x="-100%" y="-100%" width="300%" height="300%">
+							<feGaussianBlur stdDeviation="3" result="blur" />
+							<feMerge>
+								<feMergeNode in="blur" />
+								<feMergeNode in="SourceGraphic" />
+							</feMerge>
+						</filter>
+					</defs>
+
+					<CartesianGrid
+						strokeDasharray="2 6"
+						vertical={false}
+						stroke="rgba(148,163,184,0.08)"
+					/>
+
+					<XAxis
+						dataKey="date"
+						axisLine={{ stroke: "rgba(148,163,184,0.12)" }}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
+						tickMargin={12}
+						tickFormatter={(val) =>
+							format(new Date(val), "dd MMM", { locale: pl })
+						}
+					/>
+
+					{/* EN: LEFT Y-AXIS - Strictly for daily market PnL bars */}
+					<YAxis
+						yAxisId="left"
+						orientation="left"
+						axisLine={false}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
+						tickFormatter={(val) =>
+							`${new Intl.NumberFormat("pl-PL", {
+								notation: "compact",
+								maximumFractionDigits: 1,
+							}).format(val)} zł`
+						}
+						width={58}
+						// WYMUSZAMY SYMETRIĘ WZGLĘDEM ZERA
+						domain={[-pnlDomain, pnlDomain]}
+					/>
+
+					{/* EN: RIGHT Y-AXIS - Independent scale for cash deposits and withdrawals */}
+					<YAxis
+						yAxisId="right"
+						orientation="right"
+						width={85}
+						axisLine={false}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#3b82f6", fontWeight: 600 }}
+						// FIX: zero now returns an actual empty string instead of being
+						// passed through Intl.NumberFormat (which coerced "" -> 0 -> "0 zł")
+						tickFormatter={(val) =>
+							val === 0
+								? ""
+								: `${new Intl.NumberFormat("pl-PL", {
+										notation: "compact",
+										maximumFractionDigits: 1,
+									}).format(val)} zł`
+						}
+						// WYMUSZAMY SYMETRIĘ WZGLĘDEM ZERA
+						domain={[-cashDomain, cashDomain]}
+					/>
+
+					{/* EN: Zero reference line bound to the left axis (market PnL) */}
+					<ReferenceLine
+						y={0}
+						yAxisId="left"
+						stroke="rgba(148,163,184,0.25)"
+						strokeWidth={1}
+					/>
+
+					<Tooltip
+						content={<AbsolutePnLTooltip />}
+						cursor={{ fill: "rgba(59,130,246,0.04)" }}
+					/>
+
+					<Legend content={renderLegend} />
+
+					{/* EN: Bars are bound to the left Y-Axis */}
+					<Bar
+						yAxisId="left"
+						dataKey="exactChangePLN"
+						name="Dzienny Wynik Rynkowy2"
+						radius={[6, 6, 6, 6]}
+						maxBarSize={28}
+					>
+						{data.map((entry, index) => {
+							const isPositive = entry.exactChangePLN >= 0;
 							return (
-								<circle
-									key={cx}
-									cx={cx}
-									cy={cy}
-									r={4}
-									fill="#3b82f6"
-									stroke="#0f172a"
-									strokeWidth={1.5}
-									filter="url(#dotGlow)"
+								<Cell
+									key={`cell-${index}`}
+									fill={
+										entry.isLive
+											? isPositive
+												? "rgba(52, 211, 153, 0.2)" // Przezroczysty zielony dla LIVE
+												: "rgba(251, 113, 133, 0.2)" // Przezroczysty czerwony dla LIVE
+											: isPositive
+												? "url(#positiveBarGradient)"
+												: "url(#negativeBarGradient)"
+									}
+									stroke={
+										entry.isLive
+											? isPositive
+												? "#34d399" // Zielona ramka dla LIVE
+												: "#fb7185" // Czerwona ramka dla LIVE
+											: "none"
+									}
+									strokeDasharray={entry.isLive ? "4 4" : "none"} // Przerywana linia dla LIVE
+									strokeWidth={entry.isLive ? 2 : 0}
 								/>
 							);
-						}
-						return null;
-					}}
-					activeDot={{
-						r: 6,
-						fill: "#3b82f6",
-						stroke: "#fff",
-						strokeWidth: 2,
-						filter: "url(#dotGlow)",
-					}}
-				/>
-			</ComposedChart>
-		</ResponsiveContainer>
+						})}
+					</Bar>
+
+					{/* EN: Soft fill under the cash flow line, purely decorative */}
+					<Area
+						yAxisId="right"
+						type="monotone"
+						dataKey="netCashFlow"
+						stroke="none"
+						fill="url(#cashFlowAreaGradient)"
+						legendType="none"
+						tooltipType="none"
+					/>
+
+					{/* EN: Cash flow line is bound to the right Y-Axis to prevent compression */}
+					<Line
+						yAxisId="right"
+						type="monotone"
+						dataKey="netCashFlow"
+						name="Wpłaty / Wypłaty"
+						stroke="url(#cashFlowGradient)"
+						strokeDasharray="5 5"
+						strokeOpacity={0.7}
+						strokeWidth={2.5}
+						dot={(props: any) => {
+							const { cx, cy, payload } = props;
+							// EN: Only draw dots on days where actual cash flow occurred
+							// FIX: was returning an invalid <script> element as a no-op;
+							// returning null is the correct way to render "nothing" here.
+							if (payload.netCashFlow !== 0) {
+								return (
+									<circle
+										key={cx}
+										cx={cx}
+										cy={cy}
+										r={4}
+										fill="#3b82f6"
+										stroke="#0f172a"
+										strokeWidth={1.5}
+										filter="url(#dotGlow)"
+									/>
+								);
+							}
+							return null;
+						}}
+						activeDot={{
+							r: 6,
+							fill: "#3b82f6",
+							stroke: "#fff",
+							strokeWidth: 2,
+							filter: "url(#dotGlow)",
+						}}
+					/>
+				</ComposedChart>
+			</ResponsiveContainer>
+		</ChartContainer>
 	);
 
 	// EN: Render fullscreen overlay
@@ -420,7 +434,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						<Minimize2 className="w-6 h-6" />
 					</button>
 				</div>
-				<div className="relative flex-1 min-h-0 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl">
+				<div className="relative flex flex-col flex-1 min-h-0 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl h-[350px]">
 					{chartContent}
 				</div>
 			</div>
@@ -444,7 +458,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 					<Maximize2 className="w-4 h-4" />
 				</button>
 			</div>
-			<div className="flex-1 min-h-0">{chartContent}</div>
+			<div className="flex-1 h-[350px] min-h-0">{chartContent}</div>
 		</div>
 	);
 }

@@ -13,12 +13,13 @@ import {
 } from "recharts";
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import { Maximize2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import { Asset } from "@prisma/client";
+import { ChartContainer } from "../shared/ChartContainer";
 import { formatCurrency } from "@/lib/utils/format-currency";
 
-// --- 1. DEFINICJE TYPÓW (Eliminacja błędów "any") ---
+// --- 1. DEFINICJE TYPÓW ---
 interface GlobalAnalyticsChartsProps {
 	assets: Asset[];
 	totalValue: number;
@@ -27,7 +28,6 @@ interface GlobalAnalyticsChartsProps {
 	sortBy: string;
 }
 
-// Opisujemy dokładnie nasz obiekt po sformatowaniu, aby Tooltip wiedział, co czyta
 interface BarChartItem {
 	name: string;
 	fullName: string;
@@ -39,7 +39,6 @@ interface BarChartItem {
 	categoryLabel: string;
 }
 
-// Typy narzucane przez bibliotekę Recharts dla etykiet
 interface RechartsLabelProps {
 	x?: number | string;
 	y?: number | string;
@@ -66,7 +65,6 @@ export default function GlobalAnalyticsCharts({
 	const [isFullscreen, setIsFullscreen] = useState(false);
 
 	const { pieData, barDataTop10, allBarData } = useMemo(() => {
-		// --- FILTROWANIE ---
 		let filtered = assets.filter(
 			(a) => !(a.category === "CASH" && (a.currentValue || 0) === 0),
 		);
@@ -80,7 +78,6 @@ export default function GlobalAnalyticsCharts({
 			filtered = filtered.filter((a) => a.category === filterCategory);
 		}
 
-		// --- WYKRES KOŁOWY ---
 		const categoryMap = new Map<string, number>();
 		filtered.forEach((a) => {
 			const cat = a.category || "UNKNOWN";
@@ -98,7 +95,6 @@ export default function GlobalAnalyticsCharts({
 			}))
 			.sort((a, b) => b.value - a.value);
 
-		// --- SORTOWANIE ZAAWANSOWANE ---
 		const sortedAssets = [...filtered].sort((a, b) => {
 			if (sortBy === "PROFIT") {
 				const profitA = (a.currentValue || 0) - (a.investedCapital || 0);
@@ -117,7 +113,6 @@ export default function GlobalAnalyticsCharts({
 			return (b.currentValue || 0) - (a.currentValue || 0);
 		});
 
-		// --- FORMATOWANIE ETYKIET ---
 		const formatAssetForBar = (a: Asset): BarChartItem => {
 			const fallbackName = a.name || "Nieznane";
 			const displayLabel = a.ticker
@@ -180,13 +175,11 @@ export default function GlobalAnalyticsCharts({
 		boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.5)",
 	};
 
-	// --- 2. BEZPIECZNY TOOLTIP (unknown naprawia błędy biblioteki) ---
 	const barTooltipFormatter = (
 		value: unknown,
 		name: unknown,
 		props: unknown,
 	) => {
-		// Bezpieczne rzutowanie z ominięciem wewnętrznych typów Recharts
 		const item = (props as { payload: BarChartItem }).payload;
 		const numValue = Number(value || 0);
 		let extra = "";
@@ -230,7 +223,6 @@ export default function GlobalAnalyticsCharts({
 		);
 	};
 
-	// --- 3. GŁÓWNA LOGIKA ETYKIET SŁUPKÓW ---
 	function renderBarLabelLogic(
 		props: RechartsLabelProps,
 		dataArray: BarChartItem[],
@@ -239,7 +231,6 @@ export default function GlobalAnalyticsCharts({
 		const item = dataArray[index];
 		if (!item) return null;
 
-		// 🚀 Rzutowanie na liczby, aby Typescript się nie burzył przy x + width
 		const numX = Number(x);
 		const numY = Number(y);
 		const numWidth = Number(width);
@@ -274,14 +265,7 @@ export default function GlobalAnalyticsCharts({
 			</text>
 		);
 	}
-	// --- 4. KOMPONENTY NAPRAWIAJĄCE "Missing display name" ---
-	// const BarLabelTop10 = (props: RechartsLabelProps) =>
-	// 	renderBarLabelLogic(props, barDataTop10);
-	// BarLabelTop10.displayName = "BarLabelTop10";
 
-	// const BarLabelAll = (props: RechartsLabelProps) =>
-	// 	renderBarLabelLogic(props, allBarData);
-	// BarLabelAll.displayName = "BarLabelAll";
 	return (
 		<>
 			<div className="grid lg:grid-cols-2 gap-6 items-stretch border border-t-border bg-t-bg-panel rounded-2xl p-6">
@@ -290,46 +274,47 @@ export default function GlobalAnalyticsCharts({
 					<h4 className="text-sm font-bold uppercase tracking-widest text-t-text-tertiary mb-6 w-full text-left">
 						Udział typów walorów
 					</h4>
-					<div className="w-full h-[280px]">
-						<ResponsiveContainer
-							width="100%"
-							height="100%"
-							minWidth={1}
-							minHeight={1}
-						>
-							{" "}
-							<PieChart>
-								<Pie
-									data={pieData}
-									dataKey="value"
-									nameKey="labelName"
-									cx="50%"
-									cy="50%"
-									innerRadius={70}
-									outerRadius={110}
-									paddingAngle={2}
-									stroke="var(--t-bg-panel)"
-									strokeWidth={2}
-									label={renderPieLabel}
-									labelLine={false}
-								>
-									{pieData.map((entry, index) => (
-										<Cell key={`cell-${index}`} fill={entry.fill} />
-									))}
-								</Pie>
-								<Tooltip
-									formatter={(value: unknown) => [
-										`${formatCurrency(value as number | string, 0)} PLN`,
-										"Wartość",
-									]}
-									contentStyle={tooltipStyle}
-									itemStyle={{
-										color: "var(--t-text-primary)",
-										fontWeight: "bold",
-									}}
-								/>
-							</PieChart>
-						</ResponsiveContainer>
+					<div className="w-full h-70 flex flex-col">
+						<ChartContainer className="flex-1 min-h-0  w-full">
+							<ResponsiveContainer
+								width="100%"
+								height="100%"
+								minWidth={1}
+								minHeight={1}
+							>
+								<PieChart>
+									<Pie
+										data={pieData}
+										dataKey="value"
+										nameKey="labelName"
+										cx="50%"
+										cy="50%"
+										innerRadius={70}
+										outerRadius={110}
+										paddingAngle={2}
+										stroke="var(--t-bg-panel)"
+										strokeWidth={2}
+										label={renderPieLabel}
+										labelLine={false}
+									>
+										{pieData.map((entry, index) => (
+											<Cell key={`cell-${index}`} fill={entry.fill} />
+										))}
+									</Pie>
+									<Tooltip
+										formatter={(value: unknown) => [
+											`${formatCurrency(value as number | string, 0)} PLN`,
+											"Wartość",
+										]}
+										contentStyle={tooltipStyle}
+										itemStyle={{
+											color: "var(--t-text-primary)",
+											fontWeight: "bold",
+										}}
+									/>
+								</PieChart>
+							</ResponsiveContainer>
+						</ChartContainer>
 					</div>
 
 					{/* Legenda pod Donutem */}
@@ -371,65 +356,61 @@ export default function GlobalAnalyticsCharts({
 						</button>
 					</div>
 
-					<div className="w-full flex-1 min-h-[300px]">
-						<ResponsiveContainer
-							width="100%"
-							height="100%"
-							minWidth={1}
-							minHeight={1}
-						>
-							{" "}
-							<BarChart
-								layout="vertical"
-								data={barDataTop10}
-								margin={{ top: 0, right: 100, left: 0, bottom: 0 }}
-							>
-								<XAxis type="number" hide />
-								<YAxis
-									dataKey="name"
-									type="category"
-									width={110}
-									axisLine={false}
-									tickLine={false}
-									tick={{
-										fontSize: 10,
-										fill: "var(--t-text-secondary)",
-										fontWeight: "bold",
-									}}
-								/>
-								<Tooltip
-									cursor={{ fill: "rgba(255,255,255,0.05)" }}
-									formatter={barTooltipFormatter}
-									labelFormatter={(label, payload) =>
-										payload?.[0]?.payload.fullName || String(label)
-									}
-									contentStyle={tooltipStyle}
-									itemStyle={{
-										color: "var(--t-text-primary)",
-										fontWeight: "bold",
-									}}
-								/>
-								<Bar
-									dataKey="value"
-									radius={[0, 4, 4, 0]}
-									barSize={20}
-									label={(props: any) =>
-										renderBarLabelLogic(props, barDataTop10)
-									}
+					<div className="w-full flex-1 min-h-75">
+						<ChartContainer className="h-full min-h-0 w-full">
+							<ResponsiveContainer width="100%" height="100%">
+								<BarChart
+									layout="vertical"
+									data={barDataTop10}
+									margin={{ top: 0, right: 100, left: 0, bottom: 0 }}
 								>
-									{barDataTop10.map((entry, index) => (
-										<Cell key={`cell-${index}`} fill={entry.fill} />
-									))}
-								</Bar>
-							</BarChart>
-						</ResponsiveContainer>
+									<XAxis type="number" hide />
+									<YAxis
+										dataKey="name"
+										type="category"
+										width={110}
+										axisLine={false}
+										tickLine={false}
+										tick={{
+											fontSize: 10,
+											fill: "var(--t-text-secondary)",
+											fontWeight: "bold",
+										}}
+									/>
+									<Tooltip
+										cursor={{ fill: "rgba(255,255,255,0.05)" }}
+										formatter={barTooltipFormatter}
+										labelFormatter={(label, payload) =>
+											payload?.[0]?.payload.fullName || String(label)
+										}
+										contentStyle={tooltipStyle}
+										itemStyle={{
+											color: "var(--t-text-primary)",
+											fontWeight: "bold",
+										}}
+									/>
+									<Bar
+										dataKey="value"
+										radius={[0, 4, 4, 0]}
+										barSize={20}
+										label={(props: any) =>
+											renderBarLabelLogic(props, barDataTop10)
+										}
+									>
+										{barDataTop10.map((entry, index) => (
+											<Cell key={`cell-${index}`} fill={entry.fill} />
+										))}
+									</Bar>
+								</BarChart>
+							</ResponsiveContainer>
+						</ChartContainer>
 					</div>
 				</div>
 			</div>
 
 			{/* Modal Pełnoekranowy */}
 			{isFullscreen && (
-				<div className="fixed inset-0 z-50 bg-t-bg-base/95 backdrop-blur-md flex flex-col p-4 sm:p-8 animate-in fade-in duration-200">
+				<div className="fixed inset-0 z-100 bg-t-bg-base/95 backdrop-blur-md flex flex-col p-4 sm:p-8 animate-in fade-in duration-200">
 					<div className="max-w-6xl w-full mx-auto flex-1 flex flex-col h-full bg-t-bg-panel border border-t-border rounded-2xl overflow-hidden shadow-2xl">
 						<div className="flex justify-between items-center p-6 border-b border-t-border-subtle bg-t-bg-sticky">
 							<div>
@@ -451,59 +432,60 @@ export default function GlobalAnalyticsCharts({
 						<div className="flex-1 w-full p-6 overflow-y-auto no-scrollbar">
 							<div
 								style={{ height: Math.max(allBarData.length * 40, 400) }}
-								className="w-full"
+								className="w-full h-full flex flex-col"
 							>
-								<ResponsiveContainer
-									width="100%"
-									height="100%"
-									minWidth={1}
-									minHeight={1}
-								>
-									{" "}
-									<BarChart
-										layout="vertical"
-										data={allBarData}
-										margin={{ top: 0, right: 120, left: 0, bottom: 0 }}
+								<ChartContainer className="flex-1 min-h-0 w-full">
+									<ResponsiveContainer
+										width="100%"
+										height="100%"
+										minWidth={1}
+										minHeight={1}
 									>
-										<XAxis type="number" hide />
-										<YAxis
-											dataKey="name"
-											type="category"
-											width={130}
-											axisLine={false}
-											tickLine={false}
-											tick={{
-												fontSize: 11,
-												fill: "var(--t-text-secondary)",
-												fontWeight: "bold",
-											}}
-										/>
-										<Tooltip
-											cursor={{ fill: "rgba(255,255,255,0.05)" }}
-											formatter={barTooltipFormatter}
-											labelFormatter={(label, payload) =>
-												payload?.[0]?.payload.fullName || String(label)
-											}
-											contentStyle={tooltipStyle}
-											itemStyle={{
-												color: "var(--t-text-primary)",
-												fontWeight: "bold",
-											}}
-										/>
-										<Bar
-											dataKey="value"
-											radius={[0, 4, 4, 0]}
-											barSize={24}
-											label={(props: any) =>
-												renderBarLabelLogic(props, allBarData)
-											}
+										<BarChart
+											layout="vertical"
+											data={allBarData}
+											margin={{ top: 0, right: 120, left: 0, bottom: 0 }}
 										>
-											{allBarData.map((entry, index) => (
-												<Cell key={`cell-${index}`} fill={entry.fill} />
-											))}
-										</Bar>
-									</BarChart>
-								</ResponsiveContainer>
+											<XAxis type="number" hide />
+											<YAxis
+												dataKey="name"
+												type="category"
+												width={130}
+												axisLine={false}
+												tickLine={false}
+												tick={{
+													fontSize: 11,
+													fill: "var(--t-text-secondary)",
+													fontWeight: "bold",
+												}}
+											/>
+											<Tooltip
+												cursor={{ fill: "rgba(255,255,255,0.05)" }}
+												formatter={barTooltipFormatter}
+												labelFormatter={(label, payload) =>
+													payload?.[0]?.payload.fullName || String(label)
+												}
+												contentStyle={tooltipStyle}
+												itemStyle={{
+													color: "var(--t-text-primary)",
+													fontWeight: "bold",
+												}}
+											/>
+											<Bar
+												dataKey="value"
+												radius={[0, 4, 4, 0]}
+												barSize={24}
+												label={(props: any) =>
+													renderBarLabelLogic(props, allBarData)
+												}
+											>
+												{allBarData.map((entry, index) => (
+													<Cell key={`cell-${index}`} fill={entry.fill} />
+												))}
+											</Bar>
+										</BarChart>
+									</ResponsiveContainer>
+								</ChartContainer>
 							</div>
 						</div>
 					</div>

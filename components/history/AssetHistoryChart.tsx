@@ -10,10 +10,12 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
-import { Loader2, Maximize2, Minimize2 } from "lucide-react"; // ZMIANA: Dodane ikony
+import { Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils/format-currency";
 import { getCachedHistoricalPrices } from "@/lib/actions/yahoo.actions";
 import { pl } from "date-fns/locale";
 
@@ -34,8 +36,6 @@ export function AssetHistoryChart({
 }: AssetHistoryChartProps) {
 	const [chartData, setChartData] = useState<any[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
-
-	// ZMIANA: Stan odpowiedzialny za tryb pełnoekranowy
 	const [isFullscreen, setIsFullscreen] = useState(false);
 
 	useEffect(() => {
@@ -65,10 +65,8 @@ export function AssetHistoryChart({
 				return {
 					date: day.date,
 					price: day.price,
-					// FIX: Kropka "przykleja" się fizycznie do linii ceny rynkowej z Yahoo!
 					buyPoint: txOnThisDay?.type === "BUY" ? day.price : null,
 					sellPoint: txOnThisDay?.type === "SELL" ? day.price : null,
-					// Zapisujemy Twoją cenę z bazy danych specjalnie dla Tooltipa
 					actualTxPricePln: txOnThisDay ? txOnThisDay.price : null,
 				};
 			});
@@ -99,61 +97,65 @@ export function AssetHistoryChart({
 		);
 	}
 
-	// ZMIANA: Zmienna przechowująca wykres (zapobiega błędom renderowania)
 	const chartElement = (
-		<ResponsiveContainer width="100%" height="100%" minHeight={240}>
-			<ComposedChart
-				data={chartData}
-				margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+		<ChartContainer className="h-full min-h-0 w-full">
+			<ResponsiveContainer
+				width="100%"
+				height="100%"
+				minWidth={1}
+				minHeight={1}
 			>
-				<CartesianGrid
-					strokeDasharray="3 3"
-					vertical={false}
-					stroke="rgba(255,255,255,0.05)"
-				/>
-				<XAxis
-					dataKey="date"
-					tickFormatter={(val) =>
-						format(new Date(val), "dd MMM", { locale: pl })
-					}
-					tick={{ fontSize: 10, fill: "#64748b" }}
-					tickLine={false}
-					axisLine={false}
-					minTickGap={30}
-				/>
+				<ComposedChart
+					data={chartData}
+					margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+				>
+					<CartesianGrid
+						strokeDasharray="3 3"
+						vertical={false}
+						stroke="rgba(255,255,255,0.05)"
+					/>
+					<XAxis
+						dataKey="date"
+						tickFormatter={(val) =>
+							format(new Date(val), "dd MMM", { locale: pl })
+						}
+						tick={{ fontSize: 10, fill: "#64748b" }}
+						tickLine={false}
+						axisLine={false}
+						minTickGap={30}
+					/>
 
-				{/* ZMIANA: Pokazujemy oś Y z wartościami i dodajemy formatowanie */}
-				<YAxis
-					domain={["auto", "auto"]}
-					tickFormatter={(val) =>
-						val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val
-					}
-					tick={{ fontSize: 10, fill: "#64748b" }}
-					tickLine={false}
-					axisLine={false}
-					width={45}
-					tickMargin={5}
-				/>
+					<YAxis
+						domain={["auto", "auto"]}
+						tickFormatter={(val) =>
+							val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val
+						}
+						tick={{ fontSize: 10, fill: "#64748b" }}
+						tickLine={false}
+						axisLine={false}
+						width={45}
+						tickMargin={5}
+					/>
 
-				<Tooltip
-					content={<CustomTxTooltip />}
-					cursor={{ fill: "rgba(255,255,255,0.05)" }}
-				/>
-				<Line
-					type="monotone"
-					dataKey="price"
-					stroke="#3b82f6"
-					strokeWidth={2}
-					dot={false}
-					activeDot={{ r: 4, fill: "#3b82f6" }}
-				/>
-				<Scatter dataKey="buyPoint" fill="#10b981" />
-				<Scatter dataKey="sellPoint" fill="#ef4444" />
-			</ComposedChart>
-		</ResponsiveContainer>
+					<Tooltip
+						content={<CustomTxTooltip />}
+						cursor={{ fill: "rgba(255,255,255,0.05)" }}
+					/>
+					<Line
+						type="monotone"
+						dataKey="price"
+						stroke="#3b82f6"
+						strokeWidth={2}
+						dot={false}
+						activeDot={{ r: 4, fill: "#3b82f6" }}
+					/>
+					<Scatter dataKey="buyPoint" fill="#10b981" />
+					<Scatter dataKey="sellPoint" fill="#ef4444" />
+				</ComposedChart>
+			</ResponsiveContainer>
+		</ChartContainer>
 	);
 
-	// ZMIANA: Tryb Pełnoekranowy (z aktywnym przyciskiem wyjścia)
 	if (isFullscreen) {
 		return (
 			<div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex flex-col p-4 md:p-8 animate-in fade-in zoom-in-95 duration-200">
@@ -173,14 +175,13 @@ export function AssetHistoryChart({
 						<Minimize2 className="w-5 h-5" />
 					</button>
 				</div>
-				<div className="flex-1 w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl">
+				<div className="flex-1 min-h-0 w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl">
 					{chartElement}
 				</div>
 			</div>
 		);
 	}
 
-	// ZMIANA: Tryb standardowy w wierszu tabeli z dodanym przyciskiem "Pełny ekran"
 	return (
 		<div className="h-64 w-full p-2 bg-t-bg-panel border border-t-border rounded-xl relative group">
 			<button
@@ -189,16 +190,25 @@ export function AssetHistoryChart({
 				title="Pełny ekran"
 			>
 				<Maximize2 className="w-4 h-4" />
+				dupa
 			</button>
-			{chartElement}
+			<div className="flex flex-col h-full">{chartElement}</div>
 		</div>
 	);
 }
 
-function CustomTxTooltip({ active, payload, label }: any) {
+interface CustomTooltipProps {
+	active?: boolean;
+	payload?: any[];
+	label?: string;
+}
+
+function CustomTxTooltip({ active, payload, label }: CustomTooltipProps) {
 	if (active && payload && payload.length) {
 		const data = payload[0].payload;
-		const dateStr = format(new Date(label), "dd MMMM yyyy", { locale: pl });
+		const dateStr = format(new Date(label as string), "dd MMMM yyyy", {
+			locale: pl,
+		});
 
 		return (
 			<div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-xl p-3 shadow-xl z-50">
@@ -214,7 +224,7 @@ function CustomTxTooltip({ active, payload, label }: any) {
 						<p className="text-xs font-bold text-slate-300">
 							Twój kurs (baza):{" "}
 							<span className="text-white">
-								{data.actualTxPricePln.toFixed(2)} PLN
+								{formatCurrency(data.actualTxPricePln)} PLN
 							</span>
 						</p>
 						{data.buyPoint && (

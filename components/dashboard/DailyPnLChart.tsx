@@ -10,8 +10,8 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
-import { useEffect, useState } from "react";
 
+import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
@@ -26,14 +26,8 @@ interface DailyPnLChartProps {
 	data: PnLDataPoint[];
 }
 
+// TODO; CHECK WHAT IS IT NO USAGE
 export function DailyPnLChart({ data }: DailyPnLChartProps) {
-	const [isMounted, setIsMounted] = useState(false);
-
-	useEffect(() => {
-		const timer = setTimeout(() => setIsMounted(true), 0);
-		return () => clearTimeout(timer);
-	}, []);
-
 	if (!data || data.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-full opacity-60">
@@ -44,52 +38,51 @@ export function DailyPnLChart({ data }: DailyPnLChartProps) {
 		);
 	}
 
-	if (!isMounted) {
-		return (
-			<div className="w-full h-full animate-pulse bg-slate-800/10 rounded-xl" />
-		);
-	}
-
 	return (
-		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-			<BarChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-				{/* Subtelna siatka z tyłu, tylko poziome linie dla odniesienia do zera */}
-				<CartesianGrid
-					strokeDasharray="3 3"
-					vertical={false}
-					stroke="rgba(255,255,255,0.05)"
-				/>
+		<ChartContainer className="flex-1 min-h-0 w-full">
+			<ResponsiveContainer width="100%" height="100%">
+				<BarChart
+					data={data}
+					margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+				>
+					{/* Subtelna siatka z tyłu, tylko poziome linie dla odniesienia do zera */}
+					<CartesianGrid
+						strokeDasharray="3 3"
+						vertical={false}
+						stroke="rgba(255,255,255,0.05)"
+					/>
 
-				<XAxis
-					dataKey="date"
-					axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#64748b" }}
-					tickMargin={10}
-					tickFormatter={(val) =>
-						format(new Date(val), "dd MMM", { locale: pl })
-					}
-				/>
+					<XAxis
+						dataKey="date"
+						axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#64748b" }}
+						tickMargin={10}
+						tickFormatter={(val) =>
+							format(new Date(val), "dd MMM", { locale: pl })
+						}
+					/>
 
-				<YAxis hide domain={["auto", "auto"]} />
+					<YAxis hide domain={["auto", "auto"]} />
 
-				<Tooltip
-					content={<CustomPnLTooltip />}
-					cursor={{ fill: "rgba(255,255,255,0.02)" }}
-				/>
+					<Tooltip
+						content={<CustomPnLTooltip />}
+						cursor={{ fill: "rgba(255,255,255,0.02)" }}
+					/>
 
-				<Bar dataKey="change" radius={[4, 4, 4, 4]}>
-					{data.map((entry, index) => (
-						<Cell
-							key={`cell-${index}`}
-							// Szmaragdowy dla zysku, Czerwony dla straty
-							fill={entry.isPositive ? "#10b981" : "#ef4444"}
-							fillOpacity={0.8}
-						/>
-					))}
-				</Bar>
-			</BarChart>
-		</ResponsiveContainer>
+					<Bar dataKey="change" radius={[4, 4, 4, 4]}>
+						{data.map((entry, index) => (
+							<Cell
+								key={`cell-${index}`}
+								// Szmaragdowy dla zysku, Czerwony dla straty
+								fill={entry.isPositive ? "#10b981" : "#ef4444"}
+								fillOpacity={0.8}
+							/>
+						))}
+					</Bar>
+				</BarChart>
+			</ResponsiveContainer>
+		</ChartContainer>
 	);
 }
 

@@ -42,6 +42,7 @@ import { AdjustAssetModal } from "./AdjustAssetModal";
 import { AssetFilterPanel } from "./shared/AssetFilterPanel";
 import { AssetHistoryChart } from "./history/AssetHistoryChart";
 import { AssetLogo } from "./shared/AssetLogo";
+import { ChartContainer } from "./shared/ChartContainer";
 import Link from "next/link";
 import PaginatedBar from "./shared/PaginatedBar";
 import PremiumDeleteModal from "./shared/PremiumDeleteModal";
@@ -90,13 +91,6 @@ const AssetLedgerTable = ({
 	const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
 	const [isPending, startTransition] = useTransition();
-
-	const [isChartMounted, setIsChartMounted] = useState(false);
-
-	useEffect(() => {
-		const t = setTimeout(() => setIsChartMounted(true), 0);
-		return () => clearTimeout(t);
-	}, []);
 
 	// --- LOGIKA AGREGACJI (HUB & SPOKE) ---
 	const assetsWithPL = useMemo(() => {
@@ -702,15 +696,11 @@ const AssetLedgerTable = ({
 																	<TrendingUp className="h-3.5 w-3.5" /> Wzrost
 																	kapitału
 																</p>
-																<div className="flex-1 w-full min-h-[150px]">
-																	{!isChartMounted ? (
-																		<div className="w-full h-full min-h-[150px] animate-pulse bg-slate-800/10 rounded-xl" />
-																	) : (
+																<div className="flex flex-col flex-1 w-full min-h-[150px]">
+																	<ChartContainer className="flex-1 w-full">
 																		<ResponsiveContainer
 																			width="100%"
 																			height="100%"
-																			minWidth={1}
-																			minHeight={1}
 																		>
 																			<AreaChart data={chartData}>
 																				<defs>
@@ -761,7 +751,7 @@ const AssetLedgerTable = ({
 																				/>
 																			</AreaChart>
 																		</ResponsiveContainer>
-																	)}
+																	</ChartContainer>
 																</div>
 															</div>
 

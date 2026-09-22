@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
-import Image from "next/image";
+import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
@@ -167,144 +167,120 @@ export function PortfolioChart({
 
 	// --- RENDEROWANIE WYKRESU ---
 	const chartContent = (
-		<ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-			{" "}
-			<ComposedChart
-				data={mergedData}
-				margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-			>
-				<defs>
-					<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-						<stop
-							offset="5%"
-							stopColor="var(--theme-primary)"
-							stopOpacity={0.3}
-						/>
-						<stop
-							offset="95%"
-							stopColor="var(--theme-primary)"
-							stopOpacity={0}
-						/>
-					</linearGradient>
-					<filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%">
-						<feGaussianBlur stdDeviation="4" result="blur" />
-						<feMerge>
-							<feMergeNode in="blur" />
-							<feMergeNode in="SourceGraphic" />
-						</feMerge>
-					</filter>
-				</defs>
-
-				{/* ❌ 1. ABY WYŁĄCZYĆ LOGO Z TŁA WYKRESU: Zakomentuj lub usuń poniższe znaczniki <pattern> i <rect> */}
-				{/* <pattern
-					id="watermark"
-					patternUnits="userSpaceOnUse"
-					width="100"
-					height="100"
+		<ChartContainer className="h-full min-h-0 w-full">
+			<ResponsiveContainer width="100%" height="100%">
+				<ComposedChart
+					data={mergedData}
+					margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
 				>
-					<image
-						href="/logo-light.svg"
-						x="0"
-						y="0"
-						width="100"
-						height="100"
-						opacity="0.02"
+					<defs>
+						<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+							<stop
+								offset="5%"
+								stopColor="var(--theme-primary)"
+								stopOpacity={0.3}
+							/>
+							<stop
+								offset="95%"
+								stopColor="var(--theme-primary)"
+								stopOpacity={0}
+							/>
+						</linearGradient>
+						<filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%">
+							<feGaussianBlur stdDeviation="4" result="blur" />
+							<feMerge>
+								<feMergeNode in="blur" />
+								<feMergeNode in="SourceGraphic" />
+							</feMerge>
+						</filter>
+					</defs>
+
+					<CartesianGrid
+						strokeDasharray="2 6"
+						vertical={false}
+						stroke="rgba(148,163,184,0.08)"
 					/>
-				</pattern>
-				<rect
-					width="100%"
-					height="100%"
-					fill="url(#watermark)"
-					pointerEvents="none"
-				/> */}
-				{/* ----------------------------------------------------------------------------------------- */}
 
-				<CartesianGrid
-					strokeDasharray="2 6"
-					vertical={false}
-					stroke="rgba(148,163,184,0.08)"
-				/>
-
-				<XAxis
-					dataKey="date"
-					axisLine={false}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
-					tickMargin={12}
-					tickFormatter={(val) =>
-						format(new Date(val), "dd MMM", { locale: pl })
-					}
-					minTickGap={20}
-				/>
-
-				<YAxis
-					axisLine={false}
-					tickLine={false}
-					tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
-					width={mode === "PERCENTAGE" ? 40 : 55}
-					domain={["auto", "auto"]}
-					tickFormatter={(val) => {
-						if (mode === "PERCENTAGE") return `${val > 0 ? "+" : ""}${val}%`;
-						return new Intl.NumberFormat("pl-PL", {
-							notation: "compact",
-							compactDisplay: "short",
-						}).format(val);
-					}}
-				/>
-
-				{mode === "PERCENTAGE" && (
-					<ReferenceLine
-						y={0}
-						stroke="rgba(148,163,184,0.25)"
-						strokeWidth={1}
+					<XAxis
+						dataKey="date"
+						axisLine={false}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
+						tickMargin={12}
+						tickFormatter={(val) =>
+							format(new Date(val), "dd MMM", { locale: pl })
+						}
+						minTickGap={20}
 					/>
-				)}
 
-				<Tooltip
-					content={<CustomTooltip mode={mode} />}
-					cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
-				/>
-
-				{/* ❌ 2. ABY WYŁĄCZYĆ NIEBIESKI GRADIENT: zmień fill="url(#colorValue)" na fill="transparent" poniżej */}
-				<Area
-					type="monotone"
-					dataKey="value"
-					stroke="var(--theme-primary)"
-					strokeWidth={2.5}
-					fillOpacity={1}
-					fill="transparent"
-					filter="url(#glowBlue)"
-					activeDot={{
-						r: 6,
-						fill: "var(--theme-primary)",
-						stroke: "#1e293b",
-						strokeWidth: 2,
-					}}
-				/>
-
-				{/* Linia wpłaconego kapitału - renderujemy TYLKO w trybie kwotowym (VALUE) */}
-				{mode === "VALUE" && (
-					<Line
-						type="stepAfter"
-						dataKey="invested"
-						stroke="#64748b"
-						strokeWidth={2}
-						strokeDasharray="5 5"
-						dot={false}
-						activeDot={false}
-						opacity={0.6}
+					<YAxis
+						axisLine={false}
+						tickLine={false}
+						tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
+						width={mode === "PERCENTAGE" ? 40 : 55}
+						domain={["auto", "auto"]}
+						tickFormatter={(val) => {
+							if (mode === "PERCENTAGE") return `${val > 0 ? "+" : ""}${val}%`;
+							return new Intl.NumberFormat("pl-PL", {
+								notation: "compact",
+								compactDisplay: "short",
+							}).format(val);
+						}}
 					/>
-				)}
 
-				{/* Kropki transakcji na wykresie */}
-				{transactions.length > 0 && (
-					<Scatter dataKey="buyEvent" fill="#10b981" />
-				)}
-				{transactions.length > 0 && (
-					<Scatter dataKey="sellEvent" fill="#ef4444" />
-				)}
-			</ComposedChart>
-		</ResponsiveContainer>
+					{mode === "PERCENTAGE" && (
+						<ReferenceLine
+							y={0}
+							stroke="rgba(148,163,184,0.25)"
+							strokeWidth={1}
+						/>
+					)}
+
+					<Tooltip
+						content={<CustomTooltip mode={mode} />}
+						cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
+					/>
+					{/* ❌ 2. ABY WYŁĄCZYĆ NIEBIESKI GRADIENT: zmień fill="url(#colorValue)" na fill="transparent" poniżej */}
+					<Area
+						type="monotone"
+						dataKey="value"
+						stroke="var(--theme-primary)"
+						strokeWidth={2.5}
+						fillOpacity={1}
+						fill="transparent"
+						filter="url(#glowBlue)"
+						activeDot={{
+							r: 6,
+							fill: "var(--theme-primary)",
+							stroke: "#1e293b",
+							strokeWidth: 2,
+						}}
+					/>
+
+					{/* Linia wpłaconego kapitału - renderujemy TYLKO w trybie kwotowym (VALUE) */}
+					{mode === "VALUE" && (
+						<Line
+							type="stepAfter"
+							dataKey="invested"
+							stroke="#64748b"
+							strokeWidth={2}
+							strokeDasharray="5 5"
+							dot={false}
+							activeDot={false}
+							opacity={0.6}
+						/>
+					)}
+
+					{/* Kropki transakcji na wykresie */}
+					{transactions.length > 0 && (
+						<Scatter dataKey="buyEvent" fill="#10b981" />
+					)}
+					{transactions.length > 0 && (
+						<Scatter dataKey="sellEvent" fill="#ef4444" />
+					)}
+				</ComposedChart>
+			</ResponsiveContainer>
+		</ChartContainer>
 	);
 
 	if (isExpanded) {
@@ -361,7 +337,6 @@ export function PortfolioChart({
 				</div>
 			</div> */}
 			{/* ------------------------------------------------------------------------- */}
-
 			<div className="relative z-10 flex items-center justify-between px-1 pb-2 shrink-0">
 				<div>{trendBadge(true)}</div>
 				<button
@@ -379,23 +354,25 @@ export function PortfolioChart({
 }
 
 // ----------------------------------------------------------------------
-// Zunifikowany Tooltip (Portfel + Detale Transakcji)
+// TYPY DLA TOOLTIPA
 // ----------------------------------------------------------------------
-function CustomTooltip({ active, payload, label, mode }: any) {
+interface CustomTooltipProps {
+	active?: boolean;
+	payload?: any[];
+	label?: string;
+	mode: "VALUE" | "PERCENTAGE";
+}
+
+function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 	if (active && payload && payload.length && label) {
-		// Rozpakowujemy pełny obiekt danych, by mieć dostęp do txDetails z useMemo
 		const dataObj = payload[0].payload;
-		const value = payload.find((p: any) => p.dataKey === "value")?.value || 0;
-		const invested =
-			payload.find((p: any) => p.dataKey === "invested")?.value || 0;
+		const value = payload.find((p) => p.dataKey === "value")?.value || 0;
+		const invested = payload.find((p) => p.dataKey === "invested")?.value || 0;
 
 		const formatVal = (val: number) => {
 			if (mode === "PERCENTAGE")
 				return `${val > 0 ? "+" : ""}${val.toFixed(2)}%`;
-			return new Intl.NumberFormat("pl-PL", {
-				style: "currency",
-				currency: "PLN",
-			}).format(val);
+			return `${formatCurrency(val)} PLN`;
 		};
 
 		const isProfit = mode === "PERCENTAGE" ? value >= 0 : value >= invested;
@@ -459,7 +436,7 @@ function CustomTooltip({ active, payload, label, mode }: any) {
 					)}
 				</div>
 
-				{/* 2. SEKCJA TRANSAKCJI (Pojawia się tylko gdy danego dnia coś kupiono/sprzedano) */}
+				{/* 2. SEKCJA TRANSAKCJI */}
 				{dataObj.txDetails && dataObj.txDetails.length > 0 && (
 					<div className="mt-3 pt-3 border-t border-slate-800/80 border-dashed space-y-2">
 						<p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">

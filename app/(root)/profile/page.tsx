@@ -1,6 +1,7 @@
 import { CATEGORY_DETAILS } from "@/lib/constants";
 import InvestorProfileClient from "@/components/profile/InvestorProfileClient";
 import { auth } from "@/auth";
+import { calculateXIRR } from "@/lib/utils";
 import { db } from "@/lib/db";
 // import { formatDistanceToNow } from "date-fns";
 import { format } from "date-fns";
@@ -117,12 +118,43 @@ export default async function InvestorProfilePage() {
 		.filter((a) => a.percent > 0)
 		.sort((a, b) => b.percent - a.percent);
 
-	// 7. Konstruowanie spójnego podsumowania dla klienta
+	const cashFlows = allTransactions
+		.filter((tx) => tx.type !== "UPDATE")
+		.map((tx) => {
+			const isOutflow = tx.type === "BUY" || tx.type === "DEPOSIT";
+			return {
+				amount: isOutflow ? -tx.executedValue : tx.executedValue,
+				date: new Date(tx.executedAt),
+			};
+		})
+		.flat(Infinity); // 🚀 TO ROZWIĄŻE PROBLEM NaN (spłaszcza tablicę tablic do jednego poziomu)
+
+	// 2. Dodajemy dzisiejszą wycenę na płaskiej tablicy
+	if (globalCurrentValue > 0) {
+		cashFlows.push({
+			amount: globalCurrentValue,
+			date: new Date(),
+		});
+	}
+	if (globalCurrentValue > 0) {
+		cashFlows.push({
+			amount: globalCurrentValue,
+			date: new Date(),
+		});
+	}
+
+	// 9. Odpalamy nasz silnik Newtona-Raphsona (mnożymy * 100 dla procentów)
+	// Jeśli masz tylko 1 transakcję z dzisiaj, XIRR może zwrócić 0
+	const globalMwr = calculateXIRR(cashFlows) * 100;
+	console.log("🚀 ~ InvestorProfilePage ~ globalMwr:", globalMwr);
+
+	// 10. Konstruowanie spójnego podsumowania dla klienta
 	const summary = {
 		totalInvested,
 		currentValue: globalCurrentValue,
 		totalGoal,
 		globalTenure,
+		globalMwr, // 🚀 DODANE: Przekazujemy gotowy wskaźnik do UI
 	};
 
 	return (

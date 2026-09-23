@@ -142,3 +142,41 @@ export const generateBondName = (ticker: string, dateStr: string) => {
 
 	return `${ticker}${month}${maturityYearShort}`;
 };
+
+export function calculateXIRR(
+	cashFlows: { amount: number; date: Date }[],
+	guess = 0.1,
+): number {
+	if (cashFlows.length < 2) return 0;
+
+	// Sortowanie przepływów chronologicznie
+	const flows = [...cashFlows].sort(
+		(a, b) => a.date.getTime() - b.date.getTime(),
+	);
+	const t0 = flows[0].date.getTime();
+
+	let r = guess;
+	const maxIterations = 100;
+	const tolerance = 1e-6;
+
+	for (let i = 0; i < maxIterations; i++) {
+		let fValue = 0;
+		let fDerivative = 0;
+
+		for (const cf of flows) {
+			// Czas w latach od pierwszej transakcji
+			const years = (cf.date.getTime() - t0) / (1000 * 3600 * 24 * 365.25);
+
+			fValue += cf.amount / Math.pow(1 + r, years);
+			fDerivative -= (years * cf.amount) / Math.pow(1 + r, years + 1);
+		}
+
+		const newR = r - fValue / fDerivative;
+		if (Math.abs(newR - r) < tolerance) {
+			return newR; // Sukces: algorytm zbiegł do wyniku
+		}
+		r = newR;
+	}
+
+	return r; // Zwraca najlepsze przybliżenie (w formacie dziesiętnym, np. 0.15 = 15%)
+}

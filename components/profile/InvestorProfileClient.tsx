@@ -79,6 +79,7 @@ export interface SummaryData {
 	currentValue: number;
 	totalGoal: number;
 	globalTenure: string; // Czas od absolutnie pierwszej transakcji na koncie
+	globalMwr: number;
 }
 
 interface InvestorProfileClientProps {
@@ -233,18 +234,15 @@ export default function InvestorProfileClient({
 								<div className="flex justify-between items-center text-sm font-medium">
 									<span className="text-t-text-secondary">Zainwestowano:</span>
 									<span className="text-t-text-primary">
-										{summary.totalInvested.toLocaleString("pl-PL", {
-											minimumFractionDigits: 2,
-										})}{" "}
-										PLN
+										{formatCurrency(summary.totalInvested)} PLN
 									</span>
 								</div>
 								<div className="flex justify-between items-center text-sm font-bold">
 									<span className="text-t-text-secondary">
 										Całkowity Zysk{" "}
-										<span className="text-[10px] font-medium uppercase tracking-widest text-t-text-tertiary ml-1">
+										{/* <span className="text-[10px] font-medium uppercase tracking-widest text-t-text-tertiary ml-1">
 											(Stopa prosta)
-										</span>
+										</span> */}
 										:
 									</span>
 									<span
@@ -253,9 +251,40 @@ export default function InvestorProfileClient({
 										)}
 									>
 										{profit > 0 ? "+" : ""}
-										{formatCurrency(profit)} PLN (
-										{formatCurrency(profitPercent)}%)
+										{formatCurrency(profit)} PLN
 									</span>
+								</div>
+								<div className="flex justify-between items-center text-sm font-bold">
+									<span className="text-t-text-secondary">Stopa prosta</span>
+									<div className="text-right">
+										<span
+											className={cn(
+												profit >= 0 ? "text-emerald-500" : "text-rose-500",
+												"block",
+											)}
+										>
+											<span className="ml-2">
+												{profit > 0 ? "+" : ""}
+												{profitPercent.toFixed(2)}%
+											</span>
+										</span>
+									</div>
+								</div>
+								<div className="flex justify-between items-center text-sm font-bold">
+									<span className="text-t-text-secondary">Stopa MWR</span>
+									<div className="text-right">
+										<span
+											className={cn(
+												profit >= 0 ? "text-emerald-500" : "text-rose-500",
+												"block",
+											)}
+										>
+											<span className="ml-2">
+												{summary.globalMwr > 0 ? "+" : ""}
+												{summary.globalMwr.toFixed(2)}%
+											</span>
+										</span>
+									</div>
 								</div>
 							</div>
 						</ProfileCard>

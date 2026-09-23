@@ -4,6 +4,7 @@ import {
 	Calendar,
 	Camera,
 	Edit3,
+	Info,
 	PieChart,
 	Target,
 	TrendingUp,
@@ -11,7 +12,7 @@ import {
 	UserCog,
 	Wallet,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FilterBadge } from "@/components/shared/FilterBadge";
@@ -20,6 +21,7 @@ import { SafeActionButton } from "@/components/ui/SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format-currency";
+import { updatePortfolioThemes } from "@/lib/actions/portfolio.actions";
 
 const PREDEFINED_COLORS = [
 	"blue",
@@ -99,7 +101,7 @@ export default function InvestorProfileClient({
 	const [isAnimated, setIsAnimated] = useState(false);
 	const [portfolios, setPortfolios] =
 		useState<PortfolioData[]>(initialPortfolios);
-
+	const [isPending, startTransition] = useTransition();
 	useEffect(() => {
 		let timer: NodeJS.Timeout;
 
@@ -115,7 +117,23 @@ export default function InvestorProfileClient({
 
 	const handleSaveSettings = (e: React.FormEvent) => {
 		e.preventDefault();
-		console.log("Gotowe do zapisu w DB:", portfolios);
+
+		startTransition(async () => {
+			// Wyciągamy tylko to, co potrzebne dla bazy
+			const dataToSave = portfolios.map((p) => ({
+				id: p.id,
+				colorTheme: p.colorTheme,
+			}));
+
+			const result = await updatePortfolioThemes(dataToSave);
+
+			if (result.success) {
+				// Jeśli używasz biblioteki do powiadomień (np. Sonner, react-hot-toast), wrzuć tu toast.success("Zapisano!")
+				alert("Motywy zostały pomyślnie zaktualizowane!");
+			} else {
+				alert("Wystąpił błąd podczas zapisu.");
+			}
+		});
 	};
 
 	const handleColorChange = (portfolioId: string, newTheme: string) => {
@@ -210,220 +228,261 @@ export default function InvestorProfileClient({
 					))}
 				</div>
 
+				{/*  */}
 				{/* 3. TAB CONTENTS */}
 				{activeTab === "overview" && (
-					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 fade-in duration-500">
-						{/* GLOBALNY WYNIK */}
-						<ProfileCard
-							icon={TrendingUp}
-							title="Globalny Wynik"
-							color="text-emerald-500"
-							bgColor="bg-emerald-500/10"
-						>
-							<div className="space-y-4 mt-2">
-								<div className="flex justify-between items-end">
-									<p className="text-xs text-t-text-tertiary font-bold uppercase tracking-widest">
-										Obecna Wycena
-									</p>
-									<p className="text-2xl font-black text-t-text-primary tracking-tighter">
-										{formatCurrency(summary.currentValue)}{" "}
-										<span className="text-sm text-t-text-tertiary">PLN</span>
-									</p>
-								</div>
-								<div className="h-px w-full bg-t-border-subtle" />
-								<div className="flex justify-between items-center text-sm font-medium">
-									<span className="text-t-text-secondary">Zainwestowano:</span>
-									<span className="text-t-text-primary">
-										{formatCurrency(summary.totalInvested)} PLN
-									</span>
-								</div>
-								<div className="flex justify-between items-center text-sm font-bold">
-									<span className="text-t-text-secondary">
-										Całkowity Zysk{" "}
-										{/* <span className="text-[10px] font-medium uppercase tracking-widest text-t-text-tertiary ml-1">
-											(Stopa prosta)
-										</span> */}
-										:
-									</span>
-									<span
-										className={cn(
-											profit >= 0 ? "text-emerald-500" : "text-rose-500",
-										)}
-									>
-										{profit > 0 ? "+" : ""}
-										{formatCurrency(profit)} PLN
-									</span>
-								</div>
-								<div className="flex justify-between items-center text-sm font-bold">
-									<span className="text-t-text-secondary">Stopa prosta</span>
-									<div className="text-right">
-										<span
-											className={cn(
-												profit >= 0 ? "text-emerald-500" : "text-rose-500",
-												"block",
-											)}
-										>
-											<span className="ml-2">
-												{profit > 0 ? "+" : ""}
-												{profitPercent.toFixed(2)}%
-											</span>
-										</span>
-									</div>
-								</div>
-								<div className="flex justify-between items-center text-sm font-bold">
-									<span className="text-t-text-secondary">Stopa MWR</span>
-									<div className="text-right">
-										<span
-											className={cn(
-												profit >= 0 ? "text-emerald-500" : "text-rose-500",
-												"block",
-											)}
-										>
-											<span className="ml-2">
-												{summary.globalMwr > 0 ? "+" : ""}
-												{summary.globalMwr.toFixed(2)}%
-											</span>
-										</span>
-									</div>
-								</div>
+					<div className="space-y-6 animate-in slide-in-from-bottom-4 fade-in duration-500">
+						{/* 🚀 BANER INFORMACYJNY O WIDOKU ZSUMOWANYM */}
+						<div className="bg-theme-soft/50 border border-theme-border rounded-2xl p-4 flex items-start gap-4">
+							<div className="bg-theme-primary/10 p-2 rounded-full shrink-0">
+								<Info className="w-5 h-5 text-theme-primary" />
 							</div>
-						</ProfileCard>
-
-						{/* POSIADANE PORTFELE I STAŻ */}
-						<ProfileCard
-							icon={Wallet}
-							title="Twoje Portfele (Wartość i Staż)"
-							color="text-purple-500"
-							bgColor="bg-purple-500/10"
-						>
-							<div className="space-y-4 mt-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
-								{portfolios.map((p) => (
-									<div
-										key={p.id}
-										className="flex justify-between items-center border-b border-t-border-subtle pb-3 last:border-0 last:pb-0"
-									>
-										<div>
-											<div className="flex items-center gap-2">
-												<div
-													className="w-2 h-2 rounded-full"
-													style={{
-														backgroundColor: `var(--color-${p.colorTheme}-500, var(--theme-primary))`,
-													}}
-												/>
-												<span className="font-bold text-sm text-t-text-primary">
-													{p.name}
-												</span>
-											</div>
-											<p className="text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest mt-1">
-												Czas na rynku: {p.tenure}
-											</p>
-										</div>
-										<span className="font-black text-sm text-t-text-primary">
-											{p.currentValue.toLocaleString("pl-PL")}{" "}
-											<span className="text-[10px] text-t-text-tertiary">
-												PLN
-											</span>
-										</span>
-									</div>
-								))}
+							<div>
+								<h4 className="text-sm font-bold text-t-text-primary">
+									Skonsolidowany Widok Majątku
+								</h4>
+								<p className="text-xs text-t-text-tertiary mt-1 leading-relaxed max-w-3xl">
+									Dane widoczne w tej sekcji (wynik, cele, staż, alokacja)
+									stanowią sumę ze wszystkich Twoich portfeli. Służą one ocenie
+									całkowitej sytuacji finansowej i zrealizowanych założeń z lotu
+									ptaka.
+								</p>
 							</div>
-						</ProfileCard>
+						</div>
 
-						{/* REALIZACJA CELÓW (Global + Indywidualne) */}
-						<ProfileCard
-							icon={Target}
-							title="Realizacja Celów"
-							color="text-blue-500"
-							bgColor="bg-blue-500/10"
-						>
-							<div className="space-y-6 mt-2">
-								{/* Globalny cel */}
-								{summary.totalGoal > 0 ? (
-									<div>
-										<div className="flex justify-between text-xs font-bold mb-2">
-											<span className="text-t-text-secondary uppercase tracking-widest">
-												Globalny Cel
-											</span>
-											<span className="text-blue-500">
-												{globalGoalProgress.toFixed(1)}%
-											</span>
-										</div>
-										<div className="h-2 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden flex shadow-inner">
-											<div
-												className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full transition-all duration-1000 ease-out"
-												style={{
-													width: isAnimated
-														? `${Math.min(globalGoalProgress, 100)}%`
-														: "0%",
-												}}
-											/>
-										</div>
-										<p className="text-[10px] text-t-text-tertiary text-right mt-1.5 font-bold uppercase tracking-widest">
-											{summary.totalGoal.toLocaleString("pl-PL")} PLN
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+							{/* GLOBALNY WYNIK (Z wbudowanym Tooltipem MWR) */}
+							<ProfileCard
+								icon={TrendingUp}
+								title="Całkowita wycena (Suma portfeli)"
+								color="text-emerald-500"
+								bgColor="bg-emerald-500/10"
+							>
+								<div className="space-y-4 mt-2">
+									<div className="flex justify-between items-end">
+										<p className="text-xs text-t-text-tertiary font-bold uppercase tracking-widest">
+											Obecna Wycena
+										</p>
+										<p className="text-2xl font-black text-t-text-primary tracking-tighter">
+											{formatCurrency(summary.currentValue)}{" "}
+											<span className="text-sm text-t-text-tertiary">PLN</span>
 										</p>
 									</div>
-								) : (
-									<p className="text-sm text-t-text-tertiary text-center italic">
-										Brak zdefiniowanych celów globalnych.
-									</p>
-								)}
+									<div className="h-px w-full bg-t-border-subtle" />
+									<div className="flex justify-between items-center text-sm font-medium">
+										<span className="text-t-text-secondary">
+											Zainwestowano:
+										</span>
+										<span className="text-t-text-primary">
+											{summary.totalInvested.toLocaleString("pl-PL", {
+												minimumFractionDigits: 2,
+											})}{" "}
+											PLN
+										</span>
+									</div>
+									<div className="flex justify-between items-center text-sm font-bold">
+										<span className="text-t-text-secondary">
+											Całkowity Zysk:
+										</span>
+										<span
+											className={cn(
+												profit >= 0 ? "text-emerald-500" : "text-rose-500",
+											)}
+										>
+											{profit > 0 ? "+" : ""}
+											{profit.toLocaleString("pl-PL", {
+												minimumFractionDigits: 2,
+											})}{" "}
+											PLN
+										</span>
+									</div>
+									<div className="flex justify-between items-center text-sm font-bold">
+										<span className="text-t-text-secondary">Stopa prosta</span>
+										<div className="text-right">
+											<span
+												className={cn(
+													profit >= 0 ? "text-emerald-500" : "text-rose-500",
+													"block",
+												)}
+											>
+												<span className="ml-2">
+													{profit > 0 ? "+" : ""}
+													{profitPercent.toFixed(2)}%
+												</span>
+											</span>
+										</div>
+									</div>
+									<div className="flex justify-between items-center text-sm font-bold group/mwr relative">
+										{/* 🚀 DODANA IKONA Z TOOLTIPEM DLA MWR */}
+										<span className="text-t-text-secondary flex items-center gap-1.5 cursor-help">
+											Stopa MWR
+											<Info className="w-3.5 h-3.5 text-t-text-tertiary hover:text-theme-primary transition-colors" />
+										</span>
 
-								{/* Cele per portfel */}
-								<div className="space-y-3 pt-4 border-t border-t-border-subtle">
-									{portfolios
-										.filter((p) => p.goal)
-										.map((p) => {
-											const portProgress = p.goal
-												? (p.currentValue / p.goal) * 100
-												: 0;
-											return (
-												<div key={p.id}>
-													<div className="flex justify-between text-[10px] font-bold mb-1.5">
-														<span className="text-t-text-tertiary">
-															{p.name}
-														</span>
-														<span className="text-t-text-primary">
-															{portProgress.toFixed(1)}%
-														</span>
-													</div>
-													<div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden flex">
-														<div
-															className="h-full rounded-full transition-all duration-1000 ease-out"
-															style={{
-																width: isAnimated
-																	? `${Math.min(portProgress, 100)}%`
-																	: "0%",
-																backgroundColor: `var(--color-${p.colorTheme}-500, #3b82f6)`,
-															}}
-														/>
-													</div>
-												</div>
-											);
-										})}
+										{/* Wyjeżdżający dymek HTML CSS */}
+										<div className="absolute left-0 bottom-6 w-64 p-2 bg-t-bg-panel border border-t-border rounded-lg shadow-xl opacity-0 invisible group-hover/mwr:opacity-100 group-hover/mwr:visible transition-all z-50 text-[10px] font-medium text-t-text-tertiary leading-tight pointer-events-none">
+											<span className="font-bold text-t-text-primary block mb-1">
+												Money-Weighted Return (XIRR)
+											</span>
+											Roczna stopa zwrotu precyzyjnie uwzględniająca wielkość i
+											daty wszystkich Twoich historycznych wpłat oraz wypłat.
+										</div>
+
+										<div className="text-right">
+											<span
+												className={cn(
+													summary.globalMwr >= 0
+														? "text-emerald-500"
+														: "text-rose-500",
+													"block",
+												)}
+											>
+												<span className="ml-2">
+													{summary.globalMwr > 0 ? "+" : ""}
+													{summary.globalMwr.toFixed(2)}%
+												</span>
+											</span>
+										</div>
+									</div>
 								</div>
-							</div>
-						</ProfileCard>
+							</ProfileCard>
 
-						{/* DOCELOWA ALOKACJA */}
-						<ProfileCard
-							icon={PieChart}
-							title="Rzeczywista Alokacja"
-							color="text-amber-500"
-							bgColor="bg-amber-500/10"
-						>
-							<div className="space-y-3 mt-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-								{allocations.map((alloc, index) => (
-									<AllocationBar
-										key={alloc.category}
-										label={alloc.label}
-										percent={alloc.percent}
-										color={alloc.colorClass}
-										isAnimated={isAnimated}
-										index={index}
-									/>
-								))}
-							</div>
-						</ProfileCard>
+							{/* POSIADANE PORTFELE I STAŻ */}
+							<ProfileCard
+								icon={Wallet}
+								title="Twoje Portfele (Wartość i Staż)"
+								color="text-purple-500"
+								bgColor="bg-purple-500/10"
+							>
+								<div className="space-y-4 mt-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+									{portfolios.map((p) => (
+										<div
+											key={p.id}
+											className="flex justify-between items-center border-b border-t-border-subtle pb-3 last:border-0 last:pb-0"
+										>
+											<div>
+												<div className="flex items-center gap-2">
+													<div
+														className="w-2 h-2 rounded-full"
+														style={{
+															backgroundColor: `var(--color-${p.colorTheme}-500, var(--theme-primary))`,
+														}}
+													/>
+													<span className="font-bold text-sm text-t-text-primary">
+														{p.name}
+													</span>
+												</div>
+												<p className="text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest mt-1">
+													Czas na rynku: {p.tenure}
+												</p>
+											</div>
+											<span className="font-black text-sm text-t-text-primary">
+												{p.currentValue.toLocaleString("pl-PL")}{" "}
+												<span className="text-[10px] text-t-text-tertiary">
+													PLN
+												</span>
+											</span>
+										</div>
+									))}
+								</div>
+							</ProfileCard>
+
+							{/* REALIZACJA CELÓW (Global + Indywidualne) */}
+							<ProfileCard
+								icon={Target}
+								title="Realizacja Celów"
+								color="text-blue-500"
+								bgColor="bg-blue-500/10"
+							>
+								<div className="space-y-6 mt-2">
+									{/* Globalny cel */}
+									{summary.totalGoal > 0 ? (
+										<div>
+											<div className="flex justify-between text-xs font-bold mb-2">
+												<span className="text-t-text-secondary uppercase tracking-widest">
+													Globalny Cel
+												</span>
+												<span className="text-blue-500">
+													{globalGoalProgress.toFixed(1)}%
+												</span>
+											</div>
+											<div className="h-2 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden flex shadow-inner">
+												<div
+													className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full transition-all duration-1000 ease-out"
+													style={{
+														width: isAnimated
+															? `${Math.min(globalGoalProgress, 100)}%`
+															: "0%",
+													}}
+												/>
+											</div>
+											<p className="text-[10px] text-t-text-tertiary text-right mt-1.5 font-bold uppercase tracking-widest">
+												{summary.totalGoal.toLocaleString("pl-PL")} PLN
+											</p>
+										</div>
+									) : (
+										<p className="text-sm text-t-text-tertiary text-center italic">
+											Brak zdefiniowanych celów globalnych.
+										</p>
+									)}
+
+									{/* Cele per portfel */}
+									<div className="space-y-3 pt-4 border-t border-t-border-subtle">
+										{portfolios
+											.filter((p) => p.goal)
+											.map((p) => {
+												const portProgress = p.goal
+													? (p.currentValue / p.goal) * 100
+													: 0;
+												return (
+													<div key={p.id}>
+														<div className="flex justify-between text-[10px] font-bold mb-1.5">
+															<span className="text-t-text-tertiary">
+																{p.name}
+															</span>
+															<span className="text-t-text-primary">
+																{portProgress.toFixed(1)}%
+															</span>
+														</div>
+														<div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden flex">
+															<div
+																className="h-full rounded-full transition-all duration-1000 ease-out"
+																style={{
+																	width: isAnimated
+																		? `${Math.min(portProgress, 100)}%`
+																		: "0%",
+																	backgroundColor: `var(--color-${p.colorTheme}-500, #3b82f6)`,
+																}}
+															/>
+														</div>
+													</div>
+												);
+											})}
+									</div>
+								</div>
+							</ProfileCard>
+
+							{/* DOCELOWA ALOKACJA */}
+							<ProfileCard
+								icon={PieChart}
+								title="Rzeczywista Alokacja"
+								color="text-amber-500"
+								bgColor="bg-amber-500/10"
+							>
+								<div className="space-y-3 mt-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+									{allocations.map((alloc, index) => (
+										<AllocationBar
+											key={alloc.category}
+											label={alloc.label}
+											percent={alloc.percent}
+											color={alloc.colorClass}
+											isAnimated={isAnimated}
+											index={index}
+										/>
+									))}
+								</div>
+							</ProfileCard>
+						</div>
 					</div>
 				)}
 
@@ -552,9 +611,10 @@ export default function InvestorProfileClient({
 
 							<Button
 								type="submit"
-								className="mt-4 rounded-xl bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 text-white font-bold px-6 py-5 transition-all shadow-sm cursor-pointer"
+								disabled={isPending}
+								className="mt-4 rounded-xl bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 text-white font-bold px-6 py-5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
 							>
-								Zapisz Ustawienia Motywów
+								{isPending ? "Zapisywanie..." : "Zapisz Ustawienia Motywów"}
 							</Button>
 						</form>
 					</div>

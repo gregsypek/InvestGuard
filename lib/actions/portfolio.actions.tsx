@@ -82,6 +82,31 @@ export async function updatePortfolio(id: string, values: PortfolioFormValues) {
 	}
 }
 
+export async function updatePortfolioThemes(
+	themes: { id: string; colorTheme: string }[],
+) {
+	try {
+		// Prisma nie obsługuje masowego update'u z różnymi wartościami w jednej prostej komendzie,
+		// więc opakowujemy wszystkie aktualizacje w jedną bezpieczną transakcję.
+		const updates = themes.map((theme) =>
+			db.portfolio.update({
+				where: { id: theme.id },
+				data: { colorTheme: theme.colorTheme },
+			}),
+		);
+
+		await db.$transaction(updates);
+
+		// Odświeżamy cache Next.js, aby Header i Profil od razu zaciągnęły nowe kolory
+		revalidatePath("/", "layout");
+
+		return { success: true };
+	} catch (error) {
+		console.error("Błąd zapisu motywów:", error);
+		return { success: false, error: "Nie udało się zapisać zmian." };
+	}
+}
+
 export async function deletePortfolio(id: string) {
 	try {
 		// 1. NOWE: Usuwamy wszystkie historyczne zrzuty z CRONa powiązane z tym portfelem

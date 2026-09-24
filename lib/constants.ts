@@ -169,23 +169,6 @@ export const COLORS: Record<string, string> = {
 	CUSTOM: "var(--portfolio-custom)",
 };
 
-export const CATEGORY_DETAILS: Record<
-	AssetCategory,
-	{ label: string; color: string; icon: string }
-> = {
-	BONDS: { label: "Obligacje", color: "bg-blue-500", icon: "🛡️" },
-	DEVELOPED: { label: "Rynki Rozwinięte", color: "bg-green-600", icon: "🏙️" },
-	EMERGING: { label: "Rynki Wschodzące", color: "bg-orange-500", icon: "🌍" },
-	GOLD: { label: "Złoto i Kruszce", color: "bg-yellow-500", icon: "💰" },
-	BOOSTER: { label: "Okazje / Inne", color: "bg-purple-500", icon: "🚀" },
-	CASH: { label: "Gotówka", color: "bg-slate-400", icon: "💵" },
-	CRYPTO: { label: "Kryptowaluty", color: "bg-blue-600", icon: "🪙" },
-	COMMODITIES: { label: "Surowce", color: "bg-brown-600", icon: "🛢️" },
-	UNKNOWN: { label: "Nieznana", color: "bg-gray-500", icon: "❓" },
-	REAL_ESTATE: { label: "Nieruchomości", color: "bg-teal-500", icon: "🏠" },
-	CUSTOM: { label: "Niestandardowe", color: "bg-indigo-500", icon: "⚙️" },
-};
-
 // EN: Shared focus styles to remove thick ring and use subtle border instead
 // UI: Wspólne style dla focusa, aby usunąć gruby ring i użyć subtelnego borderu
 export const inputStyles = cn(

@@ -1,4 +1,4 @@
-import { CATEGORY_DETAILS } from "@/lib/constants";
+import { CATEGORY_CONFIG } from "@/lib/constants";
 import InvestorProfileClient from "@/components/profile/InvestorProfileClient";
 import { auth } from "@/auth";
 import { calculateXIRR } from "@/lib/utils";
@@ -104,19 +104,20 @@ export default async function InvestorProfilePage() {
 	// 6. Mapowanie alokacji (korzysta z poprawnie wypełnionego categorySums)
 	const allocationsData = Object.entries(categorySums)
 		.map(([categoryKey, value]) => {
-			const config =
-				CATEGORY_DETAILS[categoryKey as keyof typeof CATEGORY_DETAILS] ||
-				CATEGORY_DETAILS.UNKNOWN;
+			// Szukamy konfiguracji w nowej tablicy
+			const config = CATEGORY_CONFIG.find((c) => c.id === categoryKey);
+
 			return {
 				category: categoryKey,
-				label: config.label,
+				label: config?.name || "Nieznana", // Zwróci "Akcje", "Obligacje" itp.
 				percent:
 					globalCurrentValue > 0 ? (value / globalCurrentValue) * 100 : 0,
-				colorClass: config.color,
+				colorClass: config?.color || "bg-gray-500", // Zwróci "bg-portfolio-booster"
 			};
 		})
 		.filter((a) => a.percent > 0)
 		.sort((a, b) => b.percent - a.percent);
+	console.log("🚀 ~ InvestorProfilePage ~ allocationsData:", allocationsData);
 
 	const cashFlows = allTransactions
 		.filter((tx) => tx.type !== "UPDATE")

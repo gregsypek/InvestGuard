@@ -17,25 +17,32 @@ export async function getGuardedPortfolio({
 	userId,
 	emptyAssetVariant,
 }: GuardOptions) {
-	// 1. Próbujemy pobrać ID portfela z URL lub ciasteczek
-	const portfolioId = await getActivePortfolioId(searchParams);
+	// 1. ZMIANA: Zmieniamy na 'let', aby móc nadpisać portfolioId automatycznie
+	let portfolioId = await getActivePortfolioId(searchParams);
 
 	// =================================================================
-	// ZMIANA: Inteligentne wykrywanie pustego konta
+	// Inteligentne wykrywanie pustego konta i auto-wybór
 	// =================================================================
 	if (!portfolioId) {
-		// Sprawdzamy, czy użytkownik w ogóle ma jakiekolwiek portfele
-		const userPortfoliosCount = await db.portfolio.count({
+		// Pobieramy ID portfeli przypisanych do użytkownika
+		const userPortfolios = await db.portfolio.findMany({
 			where: { userId: userId },
+			select: { id: true },
 		});
 
 		// Jeśli ma 0 portfeli -> Wyświetlamy ekran zachęcający do stworzenia pierwszego
-		if (userPortfoliosCount === 0) {
+		if (userPortfolios.length === 0) {
 			return { errorComponent: <PortfolioEmptyState variant="PORTFOLIOS" /> };
 		}
 
-		// Jeśli ma jakieś portfele, ale nie wybrał żadnego -> Każe mu wybrać
-		return { errorComponent: <PortfolioEmptyState variant="NOT_SELECTED" /> };
+		// 🚀 NOWY WARUNEK: Jeśli ma dokładnie JEDEN portfel, wymuszamy jego wybór automatycznie!
+		if (userPortfolios.length === 1) {
+			portfolioId = userPortfolios[0].id;
+		}
+		// Jeśli ma więcej portfeli, ale żadnego nie wybrał -> Ekran wyboru
+		else {
+			return { errorComponent: <PortfolioEmptyState variant="NOT_SELECTED" /> };
+		}
 	}
 
 	// 2. Pobieramy portfel wraz z aktywami i historią

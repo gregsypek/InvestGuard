@@ -2,6 +2,7 @@
 
 import { BriefcaseBusiness, Lock, Pencil, Wallet2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useEffect, useState } from "react";
 
 import { Asset } from "@prisma/client";
 import { Button } from "./ui/button";
@@ -10,7 +11,6 @@ import { DeleteButton } from "./DeleteButton";
 import Link from "next/link";
 import { PortfolioWithAssets } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
-import React from "react";
 import { cn } from "@/lib/utils";
 import { deletePortfolio } from "@/lib/actions/portfolio.actions";
 import { formatCurrency } from "@/lib/utils/format-currency";
@@ -24,8 +24,9 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 	const { id, name, goal, assets, colorTheme } = p;
 	console.log("🚀 ~ PortfolioCard ~ colorTheme:", colorTheme);
 	// 🚀 Pobieramy ID z ciasteczka i sprawdzamy, czy to ten portfel
-	const isActive = Cookies.get("selectedPortfolioId") === id;
-	console.log("🚀 ~ PortfolioCard ~ isActive:", isActive);
+	// const isActive = Cookies.get("selectedPortfolioId") === id;
+	// const isActive = p.id === Cookies.get("selectedPortfolioId");
+	// console.log("🚀 ~ PortfolioCard ~ isActive:", isActive);
 
 	// Tryb Demo zawsze wymusza "emerald", w przeciwnym razie bierzemy kolor z bazy
 	const theme = isDemo ? "emerald" : colorTheme || "blue";
@@ -44,6 +45,22 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 
 	const mainHref = isDemo ? getDemoHref(id) : `/dashboard?portfolioId=${id}`;
 
+	// 1. Stan przechowuje TYLKO informację o tym, czy komponent jest już w przeglądarce
+	const [isMounted, setIsMounted] = useState(false);
+
+	// 2. Prosty efekt, bez żadnych zależności i obliczeń
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setIsMounted(true);
+		}, 0);
+
+		return () => clearTimeout(timer);
+	}, []);
+
+	// 3. Zmienna obliczana w locie podczas renderowania
+	const isActive = isMounted
+		? p.id === Cookies.get("selectedPortfolioId")
+		: false;
 	return (
 		<Card
 			key={id}

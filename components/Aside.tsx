@@ -2,8 +2,10 @@
 
 import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
 import { Settings, Wrench } from "lucide-react";
+import { useEffect, useState } from "react"; // 🚀 DODANY IMPORT
 import { usePathname, useSearchParams } from "next/navigation";
 
+import Cookies from "js-cookie";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -16,6 +18,17 @@ export default function Aside() {
 	const strategy = searchParams.get("s");
 	const idFromParams = searchParams.get("portfolioId");
 	const segments = pathname.split("/");
+	// 🚀 STAN DO HYDRACJI CIASTECZKA
+	const [cookieId, setCookieId] = useState<string | null>(null);
+
+	useEffect(() => {
+		// Wykonuje się asynchronicznie - omija rygorystyczny błąd Lintera i błąd Hydracji!
+		const timer = setTimeout(() => {
+			setCookieId(Cookies.get("selectedPortfolioId") || null);
+		}, 0);
+
+		return () => clearTimeout(timer);
+	}, [pathname]); // <-- Aktualizuj przy każdej zmianie strony
 
 	const getPathId = () => {
 		const targetKeys = [
@@ -27,19 +40,17 @@ export default function Aside() {
 			"alpha-selection",
 			"settings",
 		];
-
 		for (let i = segments.length - 1; i >= 0; i--) {
 			if (targetKeys.includes(segments[i])) {
 				const possibleId = segments[i + 1];
-				if (possibleId && possibleId !== "new") {
-					return possibleId;
-				}
+				if (possibleId && possibleId !== "new") return possibleId;
 			}
 		}
 		return "";
 	};
 
-	const activePortfolioId = idFromParams || getPathId();
+	// 🚀 ZMIANA: Zamiast bezpośrednio z Cookies, bierzemy ze stanu!
+	const activePortfolioId = idFromParams || getPathId() || cookieId;
 
 	return (
 		<aside className="hidden md:flex flex-col md:w-20 lg:w-64 bg-white/40 dark:bg-t-bg-sticky backdrop-blur-xl border-r border-t-border-subtle dark:border-white/10 transition-all duration-300 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] dark:shadow-none z-40">
@@ -86,13 +97,18 @@ export default function Aside() {
 							: pathname.startsWith(item.href);
 
 					let finalHref = item.href;
+
 					if (isDemoMode) {
 						if (item.href === "/dashboard") finalHref = "/demo";
 						if (item.href === "/portfolios") finalHref = "/demo/portfolios";
 						if (item.href === "/planner") finalHref = "/demo/planner";
 						if (strategy) finalHref += `?s=${strategy}`;
 					} else if (activePortfolioId && !isDemoMode) {
-						finalHref += `?portfolioId=${activePortfolioId}`;
+						if (item.href === "/dashboard") {
+							finalHref = `/dashboard/${activePortfolioId}`;
+						} else {
+							finalHref += `?portfolioId=${activePortfolioId}`;
+						}
 					}
 
 					return (
@@ -135,7 +151,6 @@ export default function Aside() {
 					(() => {
 						const toolsHref = `/dashboard/${activePortfolioId}/settings`;
 						const isToolsActive = pathname.startsWith(toolsHref);
-
 						return (
 							<Link
 								href={toolsHref}
@@ -164,11 +179,9 @@ export default function Aside() {
 
 				{(() => {
 					let settingsHref = "/settings";
-					if (activePortfolioId && !isDemoMode) {
+					if (activePortfolioId && !isDemoMode)
 						settingsHref += `?portfolioId=${activePortfolioId}`;
-					}
 					const isSettingsActive = pathname.startsWith("/settings");
-
 					return (
 						<Link
 							href={settingsHref}

@@ -5,6 +5,7 @@ import {
 	Camera,
 	Edit3,
 	Info,
+	Lock,
 	PieChart,
 	Target,
 	TrendingUp,
@@ -15,12 +16,14 @@ import {
 import React, { useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ChangePasswordModal } from "@/app/(root)/settings/ChangePasswordModal";
 import { FilterBadge } from "@/components/shared/FilterBadge";
 import Image from "next/image";
 import { SafeActionButton } from "@/components/ui/SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format-currency";
+import { toast } from "sonner";
 import { updatePortfolioThemes } from "@/lib/actions/portfolio.actions";
 
 const PREDEFINED_COLORS = [
@@ -58,6 +61,7 @@ export interface UserProfileData {
 	plan: string;
 	avatarUrl?: string; // Miejsce na zdjęcie profilowe
 	planExpiresAt?: string;
+	hasPassword?: boolean;
 }
 
 export interface PortfolioData {
@@ -91,6 +95,9 @@ interface InvestorProfileClientProps {
 	summary: SummaryData;
 }
 
+const inputStyles =
+	"h-12 w-full bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-theme-primary rounded-xl px-4 text-sm font-medium text-t-text-primary transition-colors outline-none focus:ring-0";
+
 export default function InvestorProfileClient({
 	user,
 	initialPortfolios,
@@ -102,6 +109,26 @@ export default function InvestorProfileClient({
 	const [portfolios, setPortfolios] =
 		useState<PortfolioData[]>(initialPortfolios);
 	const [isPending, startTransition] = useTransition();
+
+	const [userName, setUserName] = useState(user.name || "");
+	const [avatarFile, setAvatarFile] = useState<File | null>(null);
+	const [avatarPreview, setAvatarPreview] = useState<string | null>(
+		user.avatarUrl || null,
+	);
+
+	// 🚀 LOGIKA ZMIANY ZDJĘCIA (Podgląd w przeglądarce)
+	const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			setAvatarFile(file);
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				setAvatarPreview(reader.result as string);
+			};
+			reader.readAsDataURL(file);
+		}
+	};
+
 	useEffect(() => {
 		let timer: NodeJS.Timeout;
 
@@ -119,19 +146,24 @@ export default function InvestorProfileClient({
 		e.preventDefault();
 
 		startTransition(async () => {
-			// Wyciągamy tylko to, co potrzebne dla bazy
+			// 1. Zapis motywów portfeli
 			const dataToSave = portfolios.map((p) => ({
 				id: p.id,
 				colorTheme: p.colorTheme,
 			}));
+			const themeResult = await updatePortfolioThemes(dataToSave);
 
-			const result = await updatePortfolioThemes(dataToSave);
+			// 2. Zapis danych użytkownika (Imię i Avatar)
+			// TODO: Tutaj wywołasz swoją akcję serwerową, np.:
+			// const formData = new FormData();
+			// formData.append("name", userName);
+			// if (avatarFile) formData.append("avatar", avatarFile);
+			// await updateUserData(formData);
 
-			if (result.success) {
-				// Jeśli używasz biblioteki do powiadomień (np. Sonner, react-hot-toast), wrzuć tu toast.success("Zapisano!")
-				alert("Motywy zostały pomyślnie zaktualizowane!");
+			if (themeResult.success) {
+				toast.success("Profil został pomyślnie zaktualizowany! 💾");
 			} else {
-				alert("Wystąpił błąd podczas zapisu.");
+				toast.error("Wystąpił błąd podczas zapisu. ❌");
 			}
 		});
 	};
@@ -159,13 +191,13 @@ export default function InvestorProfileClient({
 			subtitle="Tożsamość i ustawienia"
 			description="Zarządzaj swoim kontem, weryfikuj globalne wyniki portfeli oraz dostosuj wizualny motyw aplikacji."
 			action={
-				// 🚀 Przywrócony przycisk aktualizacji profilu
 				<SafeActionButton
 					label="Aktualizuj Profil"
 					icon={Edit3}
-					isDemo={false}
-					variant="default"
-					className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:opacity-90 transition-all rounded-xl shadow-sm"
+					isDemo={false} // Ustawiamy na false, bo to przycisk funkcyjny
+					variant="outline"
+					className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary cursor-pointer transition-colors shadow-sm"
+					onClick={() => setActiveTab("appearance")}
 				/>
 			}
 		>
@@ -488,119 +520,194 @@ export default function InvestorProfileClient({
 
 				{/* APPEARANCE TAB */}
 				{activeTab === "appearance" && (
-					<div className="bg-t-bg-panel border border-t-border rounded-3xl p-6 md:p-8 shadow-sm animate-in fade-in duration-300">
+					<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-6 sm:p-8 shadow-sm animate-in fade-in duration-300">
 						<form onSubmit={handleSaveSettings} className="space-y-8">
-							{/* SEKCJA ZDJĘCIA PROFILOWEGO (UI przygotowane pod backend) */}
-							<div className="flex items-center gap-6 pb-6 border-b border-t-border-subtle">
-								<div className="relative group cursor-pointer">
-									<div className="w-20 h-20 rounded-full border-2 border-t-border-subtle bg-t-bg-base flex items-center justify-center overflow-hidden">
-										{user.avatarUrl ? (
-											// <img
-											// 	src={user.avatarUrl}
-											// 	alt="Avatar"
-											// 	className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
-											// />
-											<Image
-												src={user.avatarUrl}
-												alt="Avatar"
-												width={96}
-												height={96}
-												className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
-											/>
-										) : (
-											<User className="w-8 h-8 text-t-text-tertiary group-hover:opacity-50 transition-opacity" />
-										)}
+							{/* 1. DANE KONTA I SUBSKRYPCJA */}
+							<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle">
+								<div className="space-y-1">
+									<p className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary mb-2">
+										Status Konta
+									</p>
+									<div className="flex items-center gap-2 mt-1">
+										<p className="text-sm font-medium text-t-text-primary">
+											Aktywny plan:
+										</p>
+										<span className="inline-block px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-md font-bold uppercase text-[10px]">
+											{user.plan}
+										</span>
 									</div>
-									<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-										<Camera className="w-6 h-6 text-t-text-primary" />
-									</div>
-									<input type="file" className="hidden" accept="image/*" />
-								</div>
-								<div>
-									<h3 className="text-sm font-bold text-t-text-primary mb-1">
-										Zdjęcie Profilowe
-									</h3>
-									<p className="text-xs text-t-text-tertiary">
-										Kliknij ikonę, aby wgrać nowy avatar (JPG, PNG).
+									<p className="text-xs font-medium text-t-text-tertiary mt-1">
+										Wygasa:{" "}
+										<span className="font-bold text-t-text-secondary">
+											{user.planExpiresAt || "31 grudnia 2026"}
+										</span>
 									</p>
 								</div>
+
+								<Button
+									type="button"
+									variant="outline"
+									className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400 font-bold rounded-xl shadow-sm transition-colors cursor-not-allowed opacity-50"
+									disabled
+								>
+									Zarządzaj Subskrypcją
+								</Button>
 							</div>
 
-							<div className="space-y-4 pt-2 border-b border-t-border-subtle pb-6">
-								<h3 className="text-lg font-bold text-t-text-primary">
-									Dane Konta i Subskrypcja
-								</h3>
+							{/* 2. DANE OSOBOWE I LOGOWANIE */}
+							<div className="pt-6 border-t border-t-border-subtle space-y-6">
+								<div>
+									<h3 className="text-lg font-bold text-t-text-primary">
+										Dane Osobowe
+									</h3>
+									<p className="text-xs font-medium text-t-text-tertiary mt-1">
+										Zaktualizuj swoje zdjęcie oraz imię i nazwisko.
+									</p>
+								</div>
 
-								<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-black/5 dark:bg-white/5 border border-t-border">
-									<div className="space-y-1">
-										<p className="text-sm text-t-text-tertiary">
-											Email:{" "}
-											<span className="font-medium text-t-text-primary">
-												{user.email}
-											</span>
-										</p>
-										<div className="flex items-center gap-2 mt-2">
-											<p className="text-sm text-t-text-tertiary">
-												Aktywny plan:
-											</p>
-											<span className="inline-block px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-md font-bold uppercase text-[10px]">
-												{user.plan}
-											</span>
+								<div className="flex flex-col md:flex-row gap-8">
+									{/* Moduł zdjęcia profilowego (Z obsługą wgrywania) */}
+									<div className="flex flex-col items-center gap-3 shrink-0">
+										{/* Kliknięcie w ten div wyzwoli input file ukryty niżej */}
+										<div
+											className="relative group cursor-pointer"
+											onClick={() =>
+												document.getElementById("avatar-upload")?.click()
+											}
+										>
+											<div className="w-28 h-28 rounded-2xl border-2 border-t-border-subtle bg-t-bg-base/50 flex items-center justify-center overflow-hidden shadow-sm">
+												{avatarPreview ? (
+													<Image
+														src={avatarPreview}
+														alt="Avatar"
+														width={112}
+														height={112}
+														className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
+													/>
+												) : (
+													<User className="w-12 h-12 text-t-text-tertiary group-hover:opacity-50 transition-opacity" />
+												)}
+											</div>
+											<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 dark:bg-black/40 rounded-2xl">
+												<Camera className="w-8 h-8 text-white" />
+											</div>
+											<input
+												id="avatar-upload"
+												type="file"
+												className="hidden"
+												accept="image/*"
+												onChange={handleAvatarChange}
+											/>
 										</div>
-										<p className="text-xs text-t-text-tertiary mt-1">
-											Wygasa:{" "}
-											<span className="font-bold text-t-text-secondary">
-												{user.planExpiresAt || "31 grudnia 2026"}
-											</span>
-										</p>
+										<span className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+											Zmień Avatar
+										</span>
 									</div>
 
-									<Button
-										type="button"
-										className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-sm cursor-pointer transition-colors"
-									>
-										Przedłuż Abonament
-									</Button>
+									{/* Pola tekstowe i Bezpieczeństwo */}
+									<div className="flex-1 space-y-6">
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+											<div className="space-y-2">
+												<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+													Imię i Nazwisko
+												</label>
+												{/* 🚀 Odblokowane pole Imienia */}
+												<input
+													type="text"
+													value={userName}
+													onChange={(e) => setUserName(e.target.value)}
+													className={inputStyles}
+													placeholder="Wpisz swoje dane"
+												/>
+											</div>
+											<div className="space-y-2">
+												<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+													Adres Email
+												</label>
+												<input
+													type="email"
+													defaultValue={user.email}
+													disabled
+													className={cn(
+														inputStyles,
+														"opacity-70 cursor-not-allowed bg-black/5 dark:bg-white/5",
+													)}
+												/>
+											</div>
+										</div>
+
+										<div className="flex items-center justify-between p-4 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle mt-4">
+											<div className="flex items-center gap-4">
+												<div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 flex items-center justify-center">
+													<Lock className="w-5 h-5" />
+												</div>
+												<div>
+													<p className="text-sm font-bold text-t-text-primary">
+														Ustawienia logowania
+													</p>
+													<p className="text-xs text-t-text-tertiary mt-0.5">
+														{/* 🚀 Dynamiczny tekst w zależności od tego, czy user ma hasło */}
+														{user.hasPassword
+															? "Konto zabezpieczone hasłem"
+															: "Zalogowano za pomocą Google OAuth"}
+													</p>
+												</div>
+											</div>
+											{/* 🚀 Przekazujemy prawdziwy status z bazy */}
+											<ChangePasswordModal hasPassword={!!user.hasPassword} />
+										</div>
+									</div>
 								</div>
 							</div>
 
-							<div className="space-y-4 pt-2">
-								<h3 className="text-lg font-bold text-t-text-primary">
-									Kolorystyka Portfeli
-								</h3>
-								<p className="text-xs text-t-text-tertiary mb-4">
-									Wybierz motyw przewodni dla każdego portfela.
-								</p>
+							{/* 3. MOTYWY PORTFELI */}
+							<div className="pt-8 border-t border-t-border-subtle space-y-6">
+								<div>
+									<h3 className="text-lg font-bold text-t-text-primary">
+										Kolorystyka Portfeli
+									</h3>
+									<p className="text-xs font-medium text-t-text-tertiary mt-1">
+										Wybierz motyw przewodni dla każdego ze swoich portfeli.
+										Zmiany zostaną zastosowane po kliknięciu "Zapisz Zmiany
+										Profilu".
+									</p>
+								</div>
 
-								<div className="space-y-6 max-w-2xl">
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									{portfolios.map((portfolio) => (
 										<div
 											key={portfolio.id}
-											className="p-5 border border-t-border rounded-xl bg-t-bg-base space-y-4"
+											className="p-5 border border-t-border-subtle rounded-xl bg-t-bg-base/30 dark:bg-black/20 space-y-4"
 											data-theme={portfolio.colorTheme}
 										>
-											<span className="font-bold text-sm text-theme-primary uppercase tracking-widest flex items-center gap-2">
-												<div className="w-3 h-3 rounded-full bg-theme-primary" />
+											<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
+												<div className="w-2.5 h-2.5 rounded-full bg-theme-primary" />
 												{portfolio.name}
-											</span>
-											<div className="flex flex-wrap gap-3">
+											</label>
+											<div className="flex flex-wrap gap-2.5">
 												{PREDEFINED_COLORS.map((themeName) => (
 													<button
 														key={themeName}
 														type="button"
-														onClick={() =>
-															handleColorChange(portfolio.id, themeName)
-														}
+														onClick={() => {
+															setPortfolios((prev) =>
+																prev.map((p) =>
+																	p.id === portfolio.id
+																		? { ...p, colorTheme: themeName }
+																		: p,
+																),
+															);
+														}}
 														className={cn(
-															"w-8 h-8 rounded-full transition-all duration-200 border-2",
+															"w-7 h-7 rounded-full transition-all duration-200 border-2",
 															portfolio.colorTheme === themeName
-																? "scale-110 shadow-md ring-2 ring-offset-2 ring-offset-t-bg-base border-white dark:border-black"
-																: "border-transparent opacity-50 hover:opacity-100 hover:scale-105",
+																? "scale-110 shadow-md ring-2 ring-offset-2 ring-offset-t-bg-panel ring-t-text-primary/20 border-t-text-primary"
+																: "border-transparent opacity-70 hover:opacity-100 hover:scale-105",
 														)}
 														style={{
 															backgroundColor: `var(--color-${themeName}-500, var(--theme-primary))`,
 														}}
-														data-theme={themeName}
+														title={themeName}
 													/>
 												))}
 											</div>
@@ -609,13 +716,16 @@ export default function InvestorProfileClient({
 								</div>
 							</div>
 
-							<Button
-								type="submit"
-								disabled={isPending}
-								className="mt-4 rounded-xl bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 text-white font-bold px-6 py-5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
-							>
-								{isPending ? "Zapisywanie..." : "Zapisz Ustawienia Motywów"}
-							</Button>
+							{/* 4. SEKCJA ZAPISU */}
+							<div className="flex justify-end pt-8 border-t border-t-border-subtle">
+								<Button
+									type="submit"
+									disabled={isPending}
+									className="h-12 px-8 rounded-xl bg-theme-primary hover:opacity-90 text-white font-bold transition-all shadow-sm disabled:opacity-50"
+								>
+									{isPending ? "Zapisywanie..." : "Zapisz Zmiany Profilu"}
+								</Button>
+							</div>
 						</form>
 					</div>
 				)}

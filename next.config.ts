@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
 				port: "",
 				pathname: "/**", // EN: Allow all paths under this domain
 			},
+			{
+				protocol: "https",
+				hostname: "lh3.googleusercontent.com",
+				port: "",
+				pathname: "/**",
+			},
 		],
 	},
 };

@@ -28,13 +28,17 @@ export default async function InvestorProfilePage() {
 	}
 
 	// 2. Mapowanie podstawowych danych użytkownika
-	const mappedUser = {
+	const userProfileData = {
 		name: userDb.name || "Inwestor",
 		email: userDb.email || "Brak email",
-		plan: userDb.role === "ADMIN" ? "Administrator" : "Konto Standardowe",
+		// plan: userDb.role === "ADMIN" ? "Administrator" : "Konto Standardowe",
+		plan: userDb.role === "SUBSCRIBER" ? "Premium" : "Podstawowy",
 		joinedDate: format(new Date(userDb.createdAt), "d MMMM yyyy", {
 			locale: pl,
 		}),
+		avatarUrl: userDb.image || undefined,
+		// 🚀 KRYTYCZNE: Zwracamy true, jeśli pole password istnieje i nie jest puste
+		hasPassword: !!userDb.password,
 	};
 
 	// 3. Agregacja danych (najpierw zliczamy wszystkie kwoty z bazy)
@@ -147,7 +151,6 @@ export default async function InvestorProfilePage() {
 	// 9. Odpalamy nasz silnik Newtona-Raphsona (mnożymy * 100 dla procentów)
 	// Jeśli masz tylko 1 transakcję z dzisiaj, XIRR może zwrócić 0
 	const globalMwr = calculateXIRR(cashFlows) * 100;
-	console.log("🚀 ~ InvestorProfilePage ~ globalMwr:", globalMwr);
 
 	// 10. Konstruowanie spójnego podsumowania dla klienta
 	const summary = {
@@ -160,7 +163,7 @@ export default async function InvestorProfilePage() {
 
 	return (
 		<InvestorProfileClient
-			user={mappedUser}
+			user={userProfileData}
 			initialPortfolios={mappedPortfolios}
 			allocations={allocationsData}
 			summary={summary}

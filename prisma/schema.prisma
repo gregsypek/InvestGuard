@@ -190,6 +190,11 @@ model User {
   // Array of global indices (tickers/IDs) selected by the user
   observedIndices String[]        @default([])
   deviceSessions  DeviceSession[]
+
+  // 🚀 DODANE: Preferencje systemów powiadomień
+  alertBonds       Boolean @default(true)
+  alertRebalancing Boolean @default(true)
+  alertPlans       Boolean @default(true)
 }
 
 model Account {

@@ -1,12 +1,15 @@
 "use client";
 
 import {
+	Activity,
 	Calendar,
+	CalendarClock,
 	Camera,
 	Edit3,
 	Info,
 	Lock,
 	PieChart,
+	ShieldAlert,
 	Target,
 	TrendingUp,
 	User,
@@ -23,6 +26,7 @@ import { SafeActionButton } from "@/components/ui/SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format-currency";
+import { runSmartAlerts } from "@/lib/actions/alerts.actions";
 import { toast } from "sonner";
 import { updatePortfolioThemes } from "@/lib/actions/portfolio.actions";
 import { updateUserData } from "@/lib/actions/user.actions";
@@ -49,7 +53,6 @@ const PREDEFINED_COLORS = [
 	"zinc",
 	"stone",
 ];
-
 const TABS = [
 	{ id: "overview", label: "Przegląd Strategii" },
 	{ id: "appearance", label: "Wygląd i Konto" },
@@ -117,6 +120,17 @@ export default function InvestorProfileClient({
 		user.avatarUrl || null,
 	);
 
+	// Stan dla powiadomień
+	const [alerts, setAlerts] = useState({
+		bonds: true,
+		rebalancing: true,
+		plans: true,
+	});
+
+	const toggleAlert = (key: keyof typeof alerts) => {
+		setAlerts((prev) => ({ ...prev, [key]: !prev[key] }));
+	};
+
 	// 🚀 LOGIKA ZMIANY ZDJĘCIA (Podgląd w przeglądarce)
 	const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -181,7 +195,17 @@ export default function InvestorProfileClient({
 			}
 		});
 	};
-
+	const handleTestEmail = async () => {
+		const toastId = toast.loading("Wysyłanie maila...");
+		const result = await runSmartAlerts();
+		if (result.success) {
+			toast.success("E-mail wysłany! Sprawdź skrzynkę (również SPAM).", {
+				id: toastId,
+			});
+		} else {
+			toast.error(result.error || "Wystąpił błąd wysyłki.", { id: toastId });
+		}
+	};
 	const handleColorChange = (portfolioId: string, newTheme: string) => {
 		setPortfolios((prev) =>
 			prev.map((p) =>
@@ -744,20 +768,143 @@ export default function InvestorProfileClient({
 						</form>
 					</div>
 				)}
-
 				{/* ALERTS TAB */}
 				{activeTab === "alerts" && (
-					<div className="bg-t-bg-panel border border-t-border rounded-3xl p-6 md:p-8 shadow-sm animate-in fade-in duration-300">
-						<div className="flex flex-col items-center justify-center py-12 text-center">
-							<div className="w-16 h-16 bg-theme-soft rounded-full flex items-center justify-center mb-4">
-								<Edit3 className="w-8 h-8 text-theme-primary opacity-50" />
-							</div>
-							<h3 className="text-xl font-bold text-t-text-primary mb-2">
-								Moduł Powiadomień
+					<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-6 sm:p-8 shadow-sm animate-in fade-in duration-300 space-y-8">
+						<div>
+							<h3 className="text-lg font-bold text-t-text-primary">
+								Strażnicy Portfela
 							</h3>
-							<p className="text-sm text-t-text-tertiary max-w-md">
-								Sekcja alertów cenowych i rebalancingu w przygotowaniu.
+							<p className="text-xs font-medium text-t-text-tertiary mt-1">
+								Zarządzaj inteligentnymi alertami, które będą wysyłane na adres{" "}
+								<span className="text-t-text-secondary font-bold">
+									{user.email}
+								</span>
 							</p>
+						</div>
+
+						<div className="space-y-4">
+							{/* 1. STRAŻNIK OBLIGACJI */}
+							<div className="flex items-center justify-between p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle transition-colors hover:border-t-border">
+								<div className="flex items-center gap-4">
+									<div className="w-10 h-10 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 flex items-center justify-center shrink-0">
+										<ShieldAlert className="w-5 h-5" />
+									</div>
+									<div>
+										<p className="text-sm font-bold text-t-text-primary">
+											Zapadalność Obligacji
+										</p>
+										<p className="text-xs text-t-text-tertiary mt-0.5 max-w-md">
+											Otrzymaj powiadomienie e-mail, gdy do wykupu Twoich
+											obligacji skarbowych (np. EDO, DOS) pozostanie mniej niż
+											30 dni.
+										</p>
+									</div>
+								</div>
+								<button
+									type="button"
+									onClick={() => toggleAlert("bonds")}
+									className={cn(
+										"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-t-bg-panel",
+										alerts.bonds ? "bg-emerald-500" : "bg-t-border",
+									)}
+								>
+									<span
+										className={cn(
+											"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+											alerts.bonds ? "translate-x-5" : "translate-x-0",
+										)}
+									/>
+								</button>
+							</div>
+
+							{/* 2. STRAŻNIK ALOKACJI */}
+							<div className="flex items-center justify-between p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle transition-colors hover:border-t-border">
+								<div className="flex items-center gap-4">
+									<div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 flex items-center justify-center shrink-0">
+										<PieChart className="w-5 h-5" />
+									</div>
+									<div>
+										<p className="text-sm font-bold text-t-text-primary">
+											Rebalancing i Alokacja
+										</p>
+										<p className="text-xs text-t-text-tertiary mt-0.5 max-w-md">
+											Powiadomienia, gdy wybrane aktywa (np. Booster)
+											niebezpiecznie przekroczą założony docelowy procent w
+											portfelu.
+										</p>
+									</div>
+								</div>
+								<button
+									type="button"
+									onClick={() => toggleAlert("rebalancing")}
+									className={cn(
+										"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
+										alerts.rebalancing ? "bg-emerald-500" : "bg-t-border",
+									)}
+								>
+									<span
+										className={cn(
+											"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+											alerts.rebalancing ? "translate-x-5" : "translate-x-0",
+										)}
+									/>
+								</button>
+							</div>
+
+							{/* 3. STRAŻNIK DYSCYPLINY */}
+							<div className="flex items-center justify-between p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle transition-colors hover:border-t-border">
+								<div className="flex items-center gap-4">
+									<div className="w-10 h-10 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-500 flex items-center justify-center shrink-0">
+										<CalendarClock className="w-5 h-5" />
+									</div>
+									<div>
+										<p className="text-sm font-bold text-t-text-primary">
+											Dyscyplina Planu
+										</p>
+										<p className="text-xs text-t-text-tertiary mt-0.5 max-w-md">
+											Przypomnienie pod koniec miesiąca, jeśli Twój założony
+											Plan Inwestycyjny wciąż ma status niezrealizowanego.
+										</p>
+									</div>
+								</div>
+								<button
+									type="button"
+									onClick={() => toggleAlert("plans")}
+									className={cn(
+										"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
+										alerts.plans ? "bg-emerald-500" : "bg-t-border",
+									)}
+								>
+									<span
+										className={cn(
+											"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+											alerts.plans ? "translate-x-5" : "translate-x-0",
+										)}
+									/>
+								</button>
+							</div>
+						</div>
+
+						{/* SEKCJA ZAPISU I RĘCZNEGO SKANOWANIA */}
+						<div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-t-border-subtle gap-4">
+							<Button
+								type="button"
+								variant="outline"
+								onClick={handleTestEmail}
+								className="w-full sm:w-auto h-12 px-6 rounded-xl border-t-border-subtle text-t-text-secondary hover:text-t-text-primary font-bold shadow-sm"
+							>
+								<Activity className="w-4 h-4 mr-2" />
+								Wymuś Skanowanie
+							</Button>
+
+							<Button
+								type="button"
+								onClick={() => toast.success("Zapisano preferencje alertów!")}
+								className="w-full sm:w-auto h-12 px-8 rounded-xl bg-theme-primary hover:opacity-90 text-white font-bold transition-all shadow-sm"
+							>
+								Zapisz Ustawienia
+							</Button>
 						</div>
 					</div>
 				)}

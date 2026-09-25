@@ -62,10 +62,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 			if (!existingUser) return null;
 
 			token.role = existingUser.role;
-			if (user) token.id = user.id;
 
-			// EN: Handle new session creation on initial login (when 'user' object is available)
 			if (user) {
+				// 1. Przypisanie ID
+				token.id = user.id;
+
+				// 🚀 ZABEZPIECZENIE: Zapobiega tworzeniu "Cookie Bomb" z Base64
+				if (user.image && user.image.startsWith("data:image")) {
+					token.picture = "";
+				}
+				// EN: Handle new session creation on initial login (when 'user' object is available)
 				try {
 					// EN: Await is strictly required for headers() in newer Next.js versions
 					const headersList = await headers();

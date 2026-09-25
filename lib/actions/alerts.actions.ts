@@ -39,17 +39,43 @@ export async function runSmartAlerts() {
 		const today = new Date();
 
 		// ==========================================
-		// 1. STRAŻNIK OBLIGACJI (Bonds Maturity)
+		// 1. STRAŻNIK OBLIGACJI (Tylko 30 dni i 7 dni)
 		// ==========================================
 		if (dbUser.alertBonds) {
-			const nextMonth = new Date();
-			nextMonth.setDate(today.getDate() + 30);
+			const today = new Date();
+
+			// Definiujemy dokładnie 30 dzień od dzisiaj
+			const target30Start = new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate() + 30,
+			);
+			const target30End = new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate() + 31,
+			);
+
+			// Definiujemy dokładnie 7 dzień od dzisiaj
+			const target7Start = new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate() + 7,
+			);
+			const target7End = new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate() + 8,
+			);
 
 			const maturingBonds = await db.asset.findMany({
 				where: {
 					portfolio: { userId },
 					category: "BONDS",
-					maturityDate: { gte: today, lte: nextMonth },
+					OR: [
+						{ maturityDate: { gte: target30Start, lt: target30End } },
+						{ maturityDate: { gte: target7Start, lt: target7End } },
+					],
 				},
 				include: { portfolio: { select: { name: true } } },
 			});
@@ -87,45 +113,102 @@ export async function runSmartAlerts() {
 		}
 
 		// ==========================================
-		// 2. STRAŻNIK ALOKACJI (Rebalancing)
+		// 2. STRAŻNIK ALOKACJI (Uniwersalny Rebalancing)
 		// ==========================================
 		if (dbUser.alertRebalancing) {
-			const allAssets = await db.asset.findMany({
-				where: { portfolio: { userId } },
+			const portfolios = await db.portfolio.findMany({
+				where: { userId },
+				include: { assets: true },
 			});
 
-			const totalPortfolioValue = allAssets.reduce(
-				(sum, asset) => sum + (asset.currentValue || 0),
-				0,
-			);
-			const boosterAssets = allAssets.filter(
-				(a) => a.category === "CRYPTO" || a.category === "COMMODITIES",
-			);
-			const boosterValue = boosterAssets.reduce(
-				(sum, a) => sum + (a.currentValue || 0),
-				0,
-			);
+			for (const portfolio of portfolios) {
+				const totalValue = portfolio.assets.reduce(
+					(sum, a) => sum + (a.currentValue || 0),
+					0,
+				);
+				if (totalValue === 0) continue;
 
-			if (totalPortfolioValue > 0) {
-				const boosterPercentage = (boosterValue / totalPortfolioValue) * 100;
-				const TARGET_PERCENTAGE = 5;
-				const ALERT_THRESHOLD = 7.5;
+				// Mapujemy kategorie z aktywów na pola docelowe w modelu Portfolio
+				const targetMap: Record<string, number> = {
+					BONDS: portfolio.targetBonds,
+					DEVELOPED: portfolio.targetDeveloped,
+					EMERGING: portfolio.targetEmerging,
+					GOLD: portfolio.targetGold,
+					BOOSTER: portfolio.targetBooster,
+					CASH: portfolio.targetCash,
+					CRYPTO: portfolio.targetCrypto,
+					COMMODITIES: portfolio.targetCommodities,
+					REAL_ESTATE: portfolio.targetRealEstate,
+					CUSTOM: portfolio.targetCustom,
+				};
 
-				if (boosterPercentage >= ALERT_THRESHOLD) {
+				const deviations: {
+					category: string;
+					current: number;
+					target: number;
+				}[] = [];
+				const DEVIATION_THRESHOLD = 3.0; // Próg błędu (np. alert gdy odjedzie o +/- 3 punkty procentowe)
+
+				Object.entries(targetMap).forEach(([category, target]) => {
+					// Sprawdzamy tylko te kategorie, dla których ustawiłeś cel > 0 w portfelu
+					if (target > 0) {
+						const categoryAssets = portfolio.assets.filter(
+							(a) => a.category === category,
+						);
+						const categoryValue = categoryAssets.reduce(
+							(sum, a) => sum + (a.currentValue || 0),
+							0,
+						);
+						const currentPercentage = (categoryValue / totalValue) * 100;
+
+						// Jeśli różnica absolutna jest większa niż nasz próg
+						if (Math.abs(currentPercentage - target) >= DEVIATION_THRESHOLD) {
+							deviations.push({
+								category,
+								current: currentPercentage,
+								target,
+							});
+						}
+					}
+				});
+
+				// Jeśli wystąpiły jakiekolwiek odchylenia, generujemy zbiorczy raport dla tego portfela
+				if (deviations.length > 0) {
+					const deviationsHtml = deviations
+						.map((dev) => {
+							const isOver = dev.current > dev.target;
+							const color = isOver ? "#d97706" : "#2563eb"; // Pomarańczowy dla przeważenia, Niebieski dla niedoważenia
+							return `
+							<div style="background: #f8fafc; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid ${color};">
+								<p style="margin: 0; font-weight: bold;">Kategoria: ${dev.category}</p>
+								<p style="margin: 4px 0 0 0; font-size: 14px;">
+									Udział: <strong style="color: ${color};">${dev.current.toFixed(2)}%</strong> 
+									(Cel: ${dev.target}%)
+								</p>
+							</div>
+						`;
+						})
+						.join("");
+
+					// By nie spamować codziennie w przypadku długotrwałego odchylenia,
+					// ten raport możemy warunkować do wysyłki np. tylko raz w tygodniu (w piątki) w zautomatyzowanym Cronie:
+					// if (today.getDay() === 5) { ... wysyłka ... }
+
 					await resend.emails.send({
 						from: "InvestGuard <onboarding@resend.dev>",
 						to: [dbUser.email],
-						subject: "⚖️ InvestGuard: Wymagany Rebalancing (Booster)",
+						subject: `⚖️ InvestGuard: Wymagany Rebalancing (${portfolio.name})`,
 						html: `
 							<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px;">
-								<h2 style="color: #f59e0b; margin-top: 0;">Odchylenie Alokacji</h2>
+								<h2 style="color: #334155; margin-top: 0;">Raport Alokacji Portfela</h2>
 								<p>Witaj <strong>${userName}</strong>,</p>
-								<p>Twoja kategoria <strong>Booster</strong> przekroczyła bezpieczny próg alarmowy (${ALERT_THRESHOLD}%).</p>
-								<div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-									<p style="margin: 0;">Obecny udział: <strong style="color: #d97706; font-size: 18px;">${boosterPercentage.toFixed(2)}%</strong></p>
-									<p style="margin: 5px 0 0 0; font-size: 13px; color: #b45309;">Cel docelowy: <strong>${TARGET_PERCENTAGE}%</strong></p>
+								<p>W portfelu <strong>${portfolio.name}</strong> wykryto kategorie, które odchyliły się od docelowej wagi o ponad ${DEVIATION_THRESHOLD}%:</p>
+								
+								<div style="margin: 20px 0;">
+									${deviationsHtml}
 								</div>
-								<p>Rozważ realizację zysków i transfer kapitału do bezpiecznej części portfela.</p>
+								
+								<p style="font-size: 14px; color: #475569;">Rozważ sprzedaż części aktywów przeważonych i dokupienie niedoważonych, aby przywrócić zaplanowany profil ryzyka.</p>
 							</div>
 						`,
 					});
@@ -133,12 +216,11 @@ export async function runSmartAlerts() {
 				}
 			}
 		}
-
 		// ==========================================
 		// 3. STRAŻNIK DYSCYPLINY (Plany Inwestycyjne)
 		// ==========================================
 		// Uruchamia się tylko, jeśli mamy końcówkę miesiąca (np. po 20. dniu)
-		if (dbUser.alertPlans && today.getDate() >= 20) {
+		if (dbUser.alertPlans && today.getDate() === 25) {
 			// Tworzymy string w formacie "YYYY-MM", np. "2026-09", żeby pasował do Twojej bazy
 			const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 

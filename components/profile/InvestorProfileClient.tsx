@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
 import { updatePortfolioThemes } from "@/lib/actions/portfolio.actions";
+import { updateUserData } from "@/lib/actions/user.actions";
 
 const PREDEFINED_COLORS = [
 	"blue",
@@ -151,19 +152,32 @@ export default function InvestorProfileClient({
 				id: p.id,
 				colorTheme: p.colorTheme,
 			}));
-			const themeResult = await updatePortfolioThemes(dataToSave);
+			const themePromise = updatePortfolioThemes(dataToSave);
 
 			// 2. Zapis danych użytkownika (Imię i Avatar)
-			// TODO: Tutaj wywołasz swoją akcję serwerową, np.:
-			// const formData = new FormData();
-			// formData.append("name", userName);
-			// if (avatarFile) formData.append("avatar", avatarFile);
-			// await updateUserData(formData);
+			const formData = new FormData();
+			if (userName) formData.append("name", userName);
+			if (avatarFile) formData.append("avatar", avatarFile);
 
-			if (themeResult.success) {
+			const userPromise = updateUserData(formData);
+
+			// Wykonujemy obie akcje serwerowe równocześnie dla lepszej wydajności
+			const [themeResult, userResult] = await Promise.all([
+				themePromise,
+				userPromise,
+			]);
+
+			if (!userResult.success) {
+				toast.error(
+					userResult.error || "Nie udało się zaktualizować danych konta.",
+				);
+				return;
+			}
+
+			if (themeResult.success && userResult.success) {
 				toast.success("Profil został pomyślnie zaktualizowany! 💾");
 			} else {
-				toast.error("Wystąpił błąd podczas zapisu. ❌");
+				toast.error("Wystąpił błąd podczas zapisu motywów. ❌");
 			}
 		});
 	};
@@ -386,7 +400,8 @@ export default function InvestorProfileClient({
 								color="text-purple-500"
 								bgColor="bg-purple-500/10"
 							>
-								<div className="space-y-4 mt-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+								<div className="space-y-4 mt-2   pr-2 ">
+									{/* <div className="space-y-4 mt-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar"> */}
 									{portfolios.map((p) => (
 										<div
 											key={p.id}
@@ -405,7 +420,7 @@ export default function InvestorProfileClient({
 													</span>
 												</div>
 												<p className="text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest mt-1">
-													Czas na rynku: {p.tenure}
+													Na rynku od: {p.tenure}
 												</p>
 											</div>
 											<span className="font-black text-sm text-t-text-primary">

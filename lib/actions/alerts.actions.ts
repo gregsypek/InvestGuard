@@ -147,7 +147,7 @@ export async function runSmartAlerts() {
 					current: number;
 					target: number;
 				}[] = [];
-				const DEVIATION_THRESHOLD = 3.0; // Próg błędu (np. alert gdy odjedzie o +/- 3 punkty procentowe)
+				const DEVIATION_THRESHOLD = 7.0; // Próg błędu (np. alert gdy odjedzie o 7 punkty procentowe)
 
 				Object.entries(targetMap).forEach(([category, target]) => {
 					// Sprawdzamy tylko te kategorie, dla których ustawiłeś cel > 0 w portfelu

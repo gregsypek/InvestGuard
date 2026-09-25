@@ -17,6 +17,7 @@ import {
 	Wallet,
 } from "lucide-react";
 import React, { useEffect, useState, useTransition } from "react";
+import { updateUserAlerts, updateUserData } from "@/lib/actions/user.actions";
 
 import { Button } from "@/components/ui/button";
 import { ChangePasswordModal } from "@/app/(root)/settings/ChangePasswordModal";
@@ -29,7 +30,6 @@ import { formatCurrency } from "@/lib/utils/format-currency";
 import { runSmartAlerts } from "@/lib/actions/alerts.actions";
 import { toast } from "sonner";
 import { updatePortfolioThemes } from "@/lib/actions/portfolio.actions";
-import { updateUserData } from "@/lib/actions/user.actions";
 
 const PREDEFINED_COLORS = [
 	"blue",
@@ -63,9 +63,13 @@ export interface UserProfileData {
 	name: string;
 	email: string;
 	plan: string;
-	avatarUrl?: string; // Miejsce na zdjęcie profilowe
+	avatarUrl?: string;
 	planExpiresAt?: string;
 	hasPassword?: boolean;
+	// 🚀 DODANE: Pola powiadomień z bazy
+	alertBonds?: boolean;
+	alertRebalancing?: boolean;
+	alertPlans?: boolean;
 }
 
 export interface PortfolioData {
@@ -120,11 +124,10 @@ export default function InvestorProfileClient({
 		user.avatarUrl || null,
 	);
 
-	// Stan dla powiadomień
 	const [alerts, setAlerts] = useState({
-		bonds: true,
-		rebalancing: true,
-		plans: true,
+		bonds: user.alertBonds ?? true,
+		rebalancing: user.alertRebalancing ?? true,
+		plans: user.alertPlans ?? true,
 	});
 
 	const toggleAlert = (key: keyof typeof alerts) => {
@@ -141,6 +144,23 @@ export default function InvestorProfileClient({
 				setAvatarPreview(reader.result as string);
 			};
 			reader.readAsDataURL(file);
+		}
+	};
+
+	const handleSaveAlerts = async () => {
+		const toastId = toast.loading("Zapisywanie preferencji...");
+		const result = await updateUserAlerts({
+			alertBonds: alerts.bonds,
+			alertRebalancing: alerts.rebalancing,
+			alertPlans: alerts.plans,
+		});
+
+		if (result.success) {
+			toast.success("Ustawienia powiadomień zostały zapisane! 💾", {
+				id: toastId,
+			});
+		} else {
+			toast.error(result.error || "Wystąpił błąd.", { id: toastId });
 		}
 	};
 
@@ -900,7 +920,7 @@ export default function InvestorProfileClient({
 
 							<Button
 								type="button"
-								onClick={() => toast.success("Zapisano preferencje alertów!")}
+								onClick={handleSaveAlerts}
 								className="w-full sm:w-auto h-12 px-8 rounded-xl bg-theme-primary hover:opacity-90 text-white font-bold transition-all shadow-sm"
 							>
 								Zapisz Ustawienia

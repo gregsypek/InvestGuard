@@ -47,3 +47,30 @@ export async function updateUserData(formData: FormData) {
 		return { success: false, error: "Wystąpił błąd podczas zapisu danych." };
 	}
 }
+
+export async function updateUserAlerts(alerts: {
+	alertBonds: boolean;
+	alertRebalancing: boolean;
+	alertPlans: boolean;
+}) {
+	try {
+		const session = await auth();
+		if (!session?.user?.id) {
+			return { success: false, error: "Brak autoryzacji." };
+		}
+
+		await db.user.update({
+			where: { id: session.user.id },
+			data: {
+				alertBonds: alerts.alertBonds,
+				alertRebalancing: alerts.alertRebalancing,
+				alertPlans: alerts.alertPlans,
+			},
+		});
+
+		return { success: true };
+	} catch (error) {
+		console.error("Błąd zapisu ustawień powiadomień:", error);
+		return { success: false, error: "Nie udało się zapisać ustawień." };
+	}
+}

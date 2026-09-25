@@ -39,6 +39,10 @@ export default async function InvestorProfilePage() {
 		avatarUrl: userDb.image || undefined,
 		// 🚀 KRYTYCZNE: Zwracamy true, jeśli pole password istnieje i nie jest puste
 		hasPassword: !!userDb.password,
+		// 🚀 PRZEKAZUJEMY STAN DO KLIENTA
+		alertBonds: userDb.alertBonds,
+		alertRebalancing: userDb.alertRebalancing,
+		alertPlans: userDb.alertPlans,
 	};
 
 	// 3. Agregacja danych (najpierw zliczamy wszystkie kwoty z bazy)

@@ -826,7 +826,7 @@ export default function InvestorProfileClient({
 									onClick={() => toggleAlert("bonds")}
 									className={cn(
 										"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-t-bg-panel",
-										alerts.bonds ? "bg-emerald-500" : "bg-t-border",
+										alerts.bonds ? "bg-blue-800" : "bg-t-border",
 									)}
 								>
 									<span
@@ -860,7 +860,7 @@ export default function InvestorProfileClient({
 									onClick={() => toggleAlert("rebalancing")}
 									className={cn(
 										"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
-										alerts.rebalancing ? "bg-emerald-500" : "bg-t-border",
+										alerts.rebalancing ? "bg-blue-800" : "bg-t-border",
 									)}
 								>
 									<span
@@ -893,7 +893,7 @@ export default function InvestorProfileClient({
 									onClick={() => toggleAlert("plans")}
 									className={cn(
 										"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
-										alerts.plans ? "bg-emerald-500" : "bg-t-border",
+										alerts.plans ? "bg-blue-800" : "bg-t-border",
 									)}
 								>
 									<span

@@ -203,7 +203,7 @@ export function UserDashboard(props: UserDashboardProps) {
 				subtitle="Śledź kluczowe wskaźniki"
 				description="Zestawienie indeksów i walorów z Twojego portfela."
 			>
-				<div className="flex flex-col lg:flex-row gap-6">
+				<div className="flex flex-col  gap-6">
 					{/* PORTFOLIO ASSETS COLUMN */}
 					<div className="flex-1 p-5">
 						<div className="flex justify-between items-center mb-5">
@@ -216,7 +216,7 @@ export function UserDashboard(props: UserDashboardProps) {
 							</Link>
 						</div>
 
-						<div className="grid grid-cols-1 gap-2.5">
+						<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 flex-1">
 							{observedAssets.length > 0 ? (
 								observedAssets.map((asset) => (
 									<PremiumMarketCard
@@ -244,48 +244,49 @@ export function UserDashboard(props: UserDashboardProps) {
 							)}
 						</div>
 					</div>
+					<div>
+						{/* MACRO INDICATORS COLUMN */}
+						{props.userIndices && props.userIndices.length > 0 && (
+							<div className="flex-1 p-5">
+								<div className="flex justify-between items-center mb-5">
+									<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+										<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
+									</h4>
 
-					{/* MACRO INDICATORS COLUMN */}
-					{props.userIndices && props.userIndices.length > 0 && (
-						<div className="flex-1 p-5">
-							<div className="flex justify-between items-center mb-5">
-								<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-									<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
-								</h4>
+									<Link
+										href="/settings"
+										className="text-blue-500 hover:underline"
+									>
+										<Settings className="w-4 h-4" />
+									</Link>
+								</div>
 
-								<Link
-									href="/settings"
-									className="text-blue-500 hover:underline"
-								>
-									<Settings className="w-4 h-4" />
-								</Link>
+								<div className="flex justify-between flex-wrap gap-2.5">
+									{props.userIndices.map((indexId) => {
+										const changeValue = props.indexQuotes?.[indexId] || 0;
+
+										// 🚀 Pobieramy tablicę samych wycen z historii dla konkretnego indexId
+										const historyObject =
+											props.indexQuotesHistory?.[indexId] || {};
+										// Sortujemy po datach (kluczach) i wyciągamy same wartości
+										const historyArray = Object.keys(historyObject)
+											.sort()
+											.map((dateKey) => historyObject[dateKey]);
+
+										return (
+											<PremiumMarketCard
+												key={indexId}
+												name={GLOBAL_INDICES_MAP[indexId] || indexId}
+												change={changeValue}
+												historyData={historyArray}
+												logo={getStockLogo(indexId)}
+											/>
+										);
+									})}
+								</div>
 							</div>
-
-							<div className="grid grid-cols-1 gap-2.5">
-								{props.userIndices.map((indexId) => {
-									const changeValue = props.indexQuotes?.[indexId] || 0;
-
-									// 🚀 Pobieramy tablicę samych wycen z historii dla konkretnego indexId
-									const historyObject =
-										props.indexQuotesHistory?.[indexId] || {};
-									// Sortujemy po datach (kluczach) i wyciągamy same wartości
-									const historyArray = Object.keys(historyObject)
-										.sort()
-										.map((dateKey) => historyObject[dateKey]);
-
-									return (
-										<PremiumMarketCard
-											key={indexId}
-											name={GLOBAL_INDICES_MAP[indexId] || indexId}
-											change={changeValue}
-											historyData={historyArray}
-											logo={getStockLogo(indexId)}
-										/>
-									);
-								})}
-							</div>
-						</div>
-					)}
+						)}
+					</div>
 				</div>
 			</SectionLayout>
 			{/* STICKY HEADER - PASEK NARZĘDZI */}

@@ -48,6 +48,56 @@ function Sparkline({
 	);
 }
 
+// 🚀 NOWE: Funkcja "czyszcząca" i kategoryzująca nazwy aktywów
+function formatAssetName(rawName: string) {
+	let cleanName = rawName;
+	let isETF = false;
+	let provider = null;
+
+	// 1. Sprawdzamy czy to ETF
+	if (cleanName.includes("ETF") || cleanName.includes("UCITS")) {
+		isETF = true;
+	}
+
+	// 2. Szukamy dostawców (Providers)
+	const providers = [
+		"iShares",
+		"Vanguard",
+		"Amundi",
+		"Xtrackers",
+		"Invesco",
+		"Lyxor",
+	];
+	for (const p of providers) {
+		if (cleanName.startsWith(p)) {
+			provider = p;
+			// Usuwamy nazwę dostawcy z głównego tekstu
+			cleanName = cleanName.replace(p, "").trim();
+			break;
+		}
+	}
+
+	// 3. Usuwamy śmieci typowe dla ETF-ów (UCITS, klasy walutowe, Acc/Dist)
+	cleanName = cleanName
+		.replace(/UCITS/g, "")
+		.replace(/ETF/g, "")
+		.replace(/USD/g, "")
+		.replace(/EUR/g, "")
+		.replace(/GBP/g, "")
+		.replace(/\(Acc\)/gi, "")
+		.replace(/\(Dist\)/gi, "")
+		.replace(/\(PLN Hedged\)/gi, "")
+		.replace(/\s+/g, " ") // Usuwa podwójne spacje po wycinaniu
+		.trim();
+
+	// Jeśli po wycięciu wszystkiego nazwa jest pusta (rzadki przypadek), zwracamy oryginał
+	if (cleanName.length === 0) {
+		cleanName = rawName;
+	}
+
+	return { cleanName, isETF, provider };
+}
+
 export function PremiumMarketCard({
 	name,
 	ticker,
@@ -64,40 +114,78 @@ export function PremiumMarketCard({
 	const isPositive = change >= 0;
 	const changeColor = isPositive ? "text-emerald-500" : "text-rose-500";
 
+	// 🚀 Aplikujemy funkcję formatującą
+	const { cleanName, isETF, provider } = formatAssetName(name);
+
 	return (
 		<div className="relative flex justify-between items-center p-2 rounded-xl bg-t-bg-base/20 cursor-default gap-2 overflow-hidden">
 			{/* LEWA STRONA: Logo i tekst - elastyczna szerokość */}
 			<div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-				<div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden bg-t-bg-sticky border border-t-border flex items-center justify-center shrink-0 shadow-sm p-1.5 sm:p-2">
-					{logo ? (
-						<Image
-							src={logo}
-							alt={name}
-							width={20}
-							height={20}
-							className="w-full h-full object-cover dark:invert"
-						/>
-					) : (
-						<span className="text-[10px] sm:text-xs font-bold text-slate-400">
-							{name.charAt(0)}
-						</span>
-					)}
+				{/* Kontener na Logo z potencjalną plakietką dostawcy */}
+				<div className="relative shrink-0">
+					<div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden bg-t-bg-sticky border border-t-border flex items-center justify-center shadow-sm p-1.5 sm:p-2">
+						{logo ? (
+							<Image
+								src={logo}
+								alt={name}
+								width={20}
+								height={20}
+								className="w-full h-full object-cover dark:invert"
+							/>
+						) : (
+							<span className="text-[10px] sm:text-xs font-bold text-slate-400">
+								{name.charAt(0)}
+							</span>
+						)}
+					</div>
+
+					{/* 🚀 Mała ikonka/inicjał dostawcy, jeśli został wykryty */}
+					{provider &&
+						!logo && ( // Pokaż tylko jeśli nie ma domyślnego logo
+							<div
+								className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center"
+								title={provider}
+							>
+								<span className="text-[7px] font-black text-white">
+									{provider.charAt(0)}
+								</span>
+							</div>
+						)}
 				</div>
 
-				{/* 🚀 flex-1 i min-w-0 gwarantują poprawne działanie truncate */}
-				<div className="flex flex-col flex-1 min-w-0">
-					<p className="font-bold text-xs sm:text-sm text-t-text-primary tracking-tight truncate">
-						{name}
-					</p>
-					{ticker && (
-						<p className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary truncate">
-							{ticker}
+				<div className="flex flex-col flex-1 min-w-0 justify-center">
+					{/* 🚀 Górny rządek z nowym badge'em ETF i wyczyszczoną nazwą */}
+					<div className="flex items-center gap-1.5">
+						<p className="font-bold text-xs sm:text-sm text-t-text-primary tracking-tight truncate">
+							{cleanName}
 						</p>
-					)}
+						{isETF && (
+							<span className="shrink-0 px-1 py-0.5 rounded bg-theme-soft border border-blue-500/20 text-[6px] sm:text-[8px] font-black uppercase text-theme-primary tracking-widest mt-0.5">
+								ETF
+							</span>
+						)}
+					</div>
+
+					{/* 🚀 Dolny rządek z tickerem i ew. dostawcą */}
+					<div className="flex items-center gap-1.5 mt-0.5">
+						{ticker && (
+							<p className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary truncate">
+								{ticker}
+							</p>
+						)}
+						{provider && (
+							<>
+								<span className="text-[8px] text-t-text-tertiary/50">•</span>
+								<p className="text-[9px] font-medium text-t-text-tertiary truncate">
+									{provider}
+								</p>
+							</>
+						)}
+					</div>
 				</div>
 			</div>
 
-			{/* PRAWA STRONA: Wykres i liczby - stała szerokość (nie ściskają się) */}
+			{/* PRAWA STRONA: Wykres i liczby */}
 			<div className="flex items-center gap-2 sm:gap-4 shrink-0">
 				{historyData && historyData.length > 0 && (
 					<div className="opacity-80 shrink-0">

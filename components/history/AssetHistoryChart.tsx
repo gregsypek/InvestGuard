@@ -185,7 +185,6 @@ export function AssetHistoryChart({
 				title="Pełny ekran"
 			>
 				<Maximize2 className="w-4 h-4" />
-				dupa
 			</button>
 			<div className="flex flex-col h-full">{chartElement}</div>
 		</div>

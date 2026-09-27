@@ -57,7 +57,7 @@ export function DatePickerWithRange({
 							!date && "text-slate-500 ",
 						)}
 					>
-						<CalendarIcon className="mr-2 h-3.5 w-3.5" />
+						<CalendarIcon className="md:mr-2  h-3.5 w-3.5" />
 						{date?.from ? (
 							date.to ? (
 								<>
@@ -68,7 +68,9 @@ export function DatePickerWithRange({
 								format(date.from, "dd MMM y", { locale: pl })
 							)
 						) : (
-							<span>Wybierz zakres dat OD - DO</span>
+							<span className="hidden md:block">
+								Wybierz zakres dat OD - DO
+							</span>
 						)}
 					</Button>
 				</PopoverTrigger>

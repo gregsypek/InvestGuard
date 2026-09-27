@@ -4,6 +4,8 @@ import {
 	Activity,
 	Banknote,
 	Briefcase,
+	ChevronLeft,
+	ChevronRight,
 	Container,
 	Globe,
 	LineChart,
@@ -17,7 +19,7 @@ import {
 } from "lucide-react";
 import { SimulatedSnapshot, useDashboardData } from "./ui/useDashboardData";
 import { cn, getStockLogo } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
 import { DatePickerWithRange } from "./shared/DatePickerWithRange";
@@ -87,22 +89,45 @@ export function UserDashboard(props: UserDashboardProps) {
 		portfoliosComparisonData,
 	} = useDashboardData(props);
 
-	// 2. STAN DLA STICKY HEADERA
-	const [isStuck, setIsStuck] = useState(false);
 	const [showAdvancedToolbar, setShowAdvancedToolbar] = useState(true);
-	// Referencja dla naszego "strażnika"
-	const sentinelRef = useRef<HTMLDivElement>(null);
 
+	// 🚀 NOWE: Paginacja portfeli (Responsywna: 3 na mobile, 6 na PC)
+	const [portfolioPage, setPortfolioPage] = useState(0);
+	const [itemsPerPage, setItemsPerPage] = useState(3); // Domyślnie 3 dla SSR/Mobile
+
+	// Śledzimy rozmiar okna, by dostosować liczbę pigułek
 	useEffect(() => {
-		const observer = new IntersectionObserver(
-			([entry]) => {
-				setIsStuck(!entry.isIntersecting);
-			},
-			{ threshold: 0 },
-		);
-		if (sentinelRef.current) observer.observe(sentinelRef.current);
-		return () => observer.disconnect();
+		const handleResize = () => {
+			// Jeśli ekran ma min. 1028px (Tailwind 'md'), pokazujemy 6 portfeli. Inaczej 3.
+			setItemsPerPage(window.innerWidth >= 1028 ? 6 : 3);
+		};
+
+		// Wywołaj od razu po załadowaniu
+		handleResize();
+
+		// Nasłuchuj zmian rozmiaru okna (np. obrót telefonu)
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
 	}, []);
+
+	// Łączymy "Wszystkie" z resztą portfeli w jedną listę
+	const allPortfolioOptions = useMemo(() => {
+		return [
+			{ id: "ALL", name: "Wszystkie" },
+			...props.portfolios.map((p) => ({ id: p.id, name: p.name })),
+		];
+	}, [props.portfolios]);
+
+	const totalPages = Math.ceil(allPortfolioOptions.length / itemsPerPage);
+	// Jeśli portfolioPage wykracza poza zakres, React po prostu użyje poprawnej wartości.
+	const safePortfolioPage =
+		totalPages > 0 ? Math.min(portfolioPage, totalPages - 1) : 0;
+
+	// Wycinamy odpowiednią ilość sztuk dla aktualnej (bezpiecznej) strony
+	const visiblePortfolios = allPortfolioOptions.slice(
+		safePortfolioPage * itemsPerPage,
+		(safePortfolioPage + 1) * itemsPerPage,
+	);
 
 	// 3. RENDEROWANIE WIDOKU
 	return (
@@ -289,170 +314,193 @@ export function UserDashboard(props: UserDashboardProps) {
 					</div>
 				</div>
 			</SectionLayout>
-			{/* STICKY HEADER - PASEK NARZĘDZI */}
-			<div
-				ref={sentinelRef}
-				className="h-px w-full invisible pointer-events-none"
-			/>
-			{/* STICKY HEADER - PASEK NARZĘDZI */}
-			<div
-				ref={sentinelRef}
-				className="h-px w-full invisible pointer-events-none"
-			/>
-			{/* === STICKY HEADER (Zawsze Ciemny Premium Motyw) === */}
-			<div className="sticky top-0 z-50 w-full flex flex-col gap-2 p-2 sm:p-3 sm:px-3 md:px-6 py-2.5 transition-all duration-300 bg-slate-900 border border-white/10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-xl">
-				{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Podsumowanie + Wybór portfeli) */}
-				{isStuck && showAdvancedToolbar && (
-					<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full border-b border-white/10 pb-2.5 animate-in fade-in slide-in-from-top-1">
-						{/* Kwota i PnL */}
-						<div className="flex items-center gap-3 shrink-0">
-							<div className="flex flex-col">
-								<span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">
-									Zaznaczone
+			{/* === STICKY HEADER (Zawsze na górze, stała szerokość) === */}
+			<div className="sticky top-0 z-50 bg-t-bg-base/90 backdrop-blur-md md:border-b md:border-t-border-subtle md:shadow-sm py-2 px-4 sm:px-6 md:px-8 transition-all duration-300 w-full rounded-b-md">
+				<div className="flex flex-col gap-2 max-w-7xl mx-auto w-full">
+					{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Otwarty domyślnie, reaguje tylko na przycisk) */}
+					{showAdvancedToolbar && (
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full animate-in fade-in slide-in-from-top-1 pb-1">
+							{/* Kwota i PnL */}
+							<div className="flex items-center gap-2 shrink-0">
+								<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest hidden sm:block">
+									Zaznaczone:
 								</span>
 								<div className="flex items-baseline gap-1">
-									<span className="text-sm md:text-base font-black text-white tracking-tight">
+									<span className="text-sm font-black text-t-text-primary tracking-tight">
 										{formatCurrency(totalCurrent)}
 									</span>
-									<span className="text-[9px] text-slate-400 font-bold">
+									<span className="text-[9px] text-t-text-secondary font-bold">
 										PLN
 									</span>
 								</div>
+								<div
+									className={cn(
+										"px-1.5 py-0.5 rounded text-[10px] font-black transition-colors",
+										totalPnLPct > 0
+											? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+											: totalPnLPct < 0
+												? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+												: "bg-black/5 dark:bg-white/5 text-t-text-secondary",
+									)}
+								>
+									{totalPnLPct > 0 ? "+" : ""}
+									{totalPnLPct.toFixed(2)}%
+								</div>
 							</div>
-							<div
-								className={cn(
-									"px-2 py-0.5 rounded text-[10px] font-black shadow-sm transition-colors border border-transparent",
-									totalPnLPct > 0
-										? "bg-emerald-500/10 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]"
-										: totalPnLPct < 0
-											? "bg-rose-500/10 text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]"
-											: "bg-white/10 text-slate-300",
+
+							{/* Wybór portfeli (Twarda Paginacja: 4 na stronę) */}
+							{/*  */}
+							{/* Wybór portfeli (Twarda Paginacja: 4 na stronę) */}
+							<div className="flex items-center gap-1 sm:justify-end w-full min-w-0">
+								{/* Lewa strzałka */}
+								{totalPages > 1 && (
+									<button
+										// 🚀 ZMIANA: Używamy safePortfolioPage do obliczeń
+										onClick={() => setPortfolioPage(safePortfolioPage - 1)}
+										disabled={safePortfolioPage === 0}
+										className={cn(
+											"shrink-0 p-1 rounded-full bg-black/5 dark:bg-white/5 border transition-all",
+											safePortfolioPage === 0
+												? "opacity-30 cursor-not-allowed border-transparent text-t-text-tertiary"
+												: "border-t-border text-t-text-tertiary hover:text-t-text-primary",
+										)}
+									>
+										<ChevronLeft className="w-3.5 h-3.5" />
+									</button>
 								)}
-							>
-								{totalPnLPct > 0 ? "+" : ""}
-								{totalPnLPct.toFixed(2)}%
+
+								{/* Sztywny kontener bez scrolla */}
+								<div className="flex flex-wrap items-center gap-1.5 overflow-hidden px-1">
+									{visiblePortfolios.map((opt) => (
+										<FilterBadge
+											key={opt.id}
+											id={opt.id}
+											label={opt.name}
+											isSelected={selectedIds.includes(opt.id)}
+											onToggle={togglePortfolio}
+											className={cn(
+												"py-0.5 px-2 text-[9px] font-bold uppercase tracking-widest rounded-md transition-all border shrink-0",
+												selectedIds.includes(opt.id)
+													? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+													: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
+											)}
+										/>
+									))}
+								</div>
+
+								{/* Prawa strzałka */}
+								{totalPages > 1 && (
+									<button
+										// 🚀 ZMIANA: Używamy safePortfolioPage do obliczeń
+										onClick={() => setPortfolioPage(safePortfolioPage + 1)}
+										disabled={safePortfolioPage === totalPages - 1}
+										className={cn(
+											"shrink-0 p-1 rounded-full bg-black/5 dark:bg-white/5 border transition-all",
+											safePortfolioPage === totalPages - 1
+												? "opacity-30 cursor-not-allowed border-transparent text-t-text-tertiary"
+												: "border-t-border text-t-text-tertiary hover:text-t-text-primary",
+										)}
+									>
+										<ChevronRight className="w-3.5 h-3.5" />
+									</button>
+								)}
 							</div>
 						</div>
+					)}
 
-						{/* Wybór portfeli (Scroll poziomy) */}
-						<div className="flex gap-1.5 overflow-x-auto w-full scrollbar-hide md:justify-end items-center">
-							<FilterBadge
-								id="ALL"
-								label="Wszystkie"
-								isSelected={selectedIds.includes("ALL")}
-								onToggle={togglePortfolio}
-								// className={cn(
-								// 	"py-1 px-2 text-[9px] whitespace-nowrap border-none",
-								// 	selectedIds.includes("ALL")
-								// 		? "bg-white text-slate-900"
-								// 		: "bg-slate-800 text-slate-300 hover:bg-slate-700",
-								// )}
-								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
-							/>
-							{props.portfolios.map((p) => (
-								<FilterBadge
-									key={p.id}
-									id={p.id}
-									label={p.name}
-									isSelected={selectedIds.includes(p.id)}
-									onToggle={togglePortfolio}
-									// className={cn(
-									// 	"py-1 px-2 text-[9px] whitespace-nowrap border-none",
-									// 	selectedIds.includes(p.id)
-									// 		? "bg-blue-500 text-white"
-									// 		: "bg-slate-800 text-slate-300 hover:bg-slate-700",
-									// )}
-									className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
-								/>
-							))}
-						</div>
-					</div>
-				)}
-
-				{/* 2. GŁÓWNY PASEK NARZĘDZI (Zawsze widoczny) */}
-				<div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 w-full">
-					{/* Lewa Strona: Tryby wyświetlania */}
-					<div className="flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0 pb-0.5 xl:pb-0">
-						{/* Pigułka 1: PLN / % */}
-						<div className="flex items-center p-0.5 bg-slate-800/80 border border-white/5 rounded-lg shrink-0">
+					{/* 2. GŁÓWNY PASEK NARZĘDZI (Zawsze widoczny) */}
+					<div className="flex flex-wrap xl:flex-nowrap items-center justify-between gap-2 w-full">
+						{/* Lewa Strona: Tryby wyświetlania */}
+						<div className="flex items-center gap-1 p-1 shrink-0">
 							<FilterBadge
 								id="VALUE"
 								label="PLN"
 								isSelected={chartMode === "VALUE"}
 								onToggle={() => setChartMode("VALUE")}
-								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
+								className={cn(
+									"py-1 px-2.5 text-[9px] font-bold rounded-md transition-all",
+									chartMode === "VALUE"
+										? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
+										: "text-t-text-tertiary",
+								)}
 							/>
 							<FilterBadge
 								id="PERCENTAGE"
 								label="%"
 								isSelected={chartMode === "PERCENTAGE"}
 								onToggle={() => setChartMode("PERCENTAGE")}
-								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
+								className={cn(
+									"py-1 px-2.5 text-[9px] font-bold rounded-md transition-all",
+									chartMode === "PERCENTAGE"
+										? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
+										: "text-t-text-tertiary",
+								)}
 							/>
 						</div>
 
-						{/* Pigułka 2: REAL / SIM */}
-						<div className="flex items-center p-0.5 bg-slate-800/80 border border-white/5 rounded-lg shrink-0">
+						<div className="flex items-center gap-1 shrink-0">
 							<FilterBadge
 								id="REAL"
 								label="Realne"
 								isSelected={dataMode === "REAL"}
 								onToggle={() => setDataMode("REAL")}
-								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
+								className={cn(
+									"py-1 px-2.5 text-[9px] font-bold rounded-md transition-all",
+									dataMode === "REAL"
+										? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+										: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
+								)}
 							/>
 							<FilterBadge
 								id="SIMULATED"
 								label="Symulacja"
 								isSelected={dataMode === "SIMULATED"}
 								onToggle={() => setDataMode("SIMULATED")}
-								className="py-1 px-2 text-[9px] whitespace-nowrap border-none"
-							/>
-						</div>
-					</div>
-
-					{/* Prawa Strona: Zakresy czasu i Kontrolki */}
-					<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide justify-start xl:justify-end pb-0.5 xl:pb-0 w-full xl:w-auto">
-						{TIME_RANGES.map((range) => (
-							<button
-								key={range}
-								onClick={() =>
-									!isRangeDisabled(range) && handleRangeChange(range)
-								}
-								disabled={isRangeDisabled(range)}
 								className={cn(
-									"px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold tracking-wide transition-all shrink-0 border",
-									isRangeDisabled(range)
-										? "opacity-30 cursor-not-allowed border-transparent text-slate-500"
-										: activeRange === range
-											? "bg-blue-500/20 text-blue-400 border-blue-500/30 shadow-sm"
-											: "bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800",
+									"py-1 px-2.5 text-[9px] font-bold rounded-md transition-all",
+									dataMode === "SIMULATED"
+										? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+										: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
 								)}
-							>
-								{range}
-							</button>
-						))}
-
-						<div className="w-px h-4 bg-slate-700/80 mx-0.5 hidden sm:block shrink-0" />
-
-						{/* Opcjonalne: DatePicker może sam dostosowywać się do motywu systemowego, co jest OK dla popupów */}
-						<div className="shrink-0">
-							<DatePickerWithRange
-								from={fromDate}
-								to={toDate}
-								onSelect={handleDateRangeSelect}
 							/>
 						</div>
 
-						{/* Zwijanie panelu */}
-						{isStuck && (
+						{/* Prawa Strona: Zakresy czasu i Kontrolki */}
+						<div className="flex items-center justify-between sm:justify-end gap-1 w-full md:w-auto overflow-x-auto scrollbar-hide">
+							<div className="flex items-center gap-0.5 bg-black/5 dark:bg-white/5 p-0.5 rounded-lg border border-t-border">
+								{TIME_RANGES.map((range) => (
+									<button
+										key={range}
+										onClick={() =>
+											!isRangeDisabled(range) && handleRangeChange(range)
+										}
+										disabled={isRangeDisabled(range)}
+										className={cn(
+											"px-2 py-1 rounded-md text-[9px] font-bold tracking-wide transition-all shrink-0",
+											isRangeDisabled(range)
+												? "opacity-30 cursor-not-allowed text-t-text-tertiary"
+												: activeRange === range
+													? "bg-t-bg-base text-t-text-primary shadow-sm"
+													: "text-t-text-secondary hover:text-t-text-primary",
+										)}
+									>
+										{range}
+									</button>
+								))}
+							</div>
+
+							<div className="shrink-0 ml-1">
+								<DatePickerWithRange
+									from={fromDate}
+									to={toDate}
+									onSelect={handleDateRangeSelect}
+								/>
+							</div>
+
+							{/* Zwijanie panelu - Zunifikowany przycisk */}
 							<button
 								onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
-								className={cn(
-									"p-1 rounded-md transition-all duration-300 border shrink-0 absolute sm:static right-3 top-3 hover:cursor-pointer ml-auto",
-									showAdvancedToolbar
-										? "bg-slate-800 text-blue-400 border-slate-700/60 shadow-sm"
-										: "bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800",
-								)}
+								className="p-1.5 ml-1 rounded-lg bg-black/5 dark:bg-white/5 border border-t-border text-t-text-secondary hover:text-t-text-primary transition-all shrink-0"
 								title={
 									showAdvancedToolbar
 										? "Zwiń podsumowanie"
@@ -465,11 +513,10 @@ export function UserDashboard(props: UserDashboardProps) {
 									<Maximize2 className="w-3.5 h-3.5" />
 								)}
 							</button>
-						)}
+						</div>
 					</div>
 				</div>
 			</div>
-
 			{/* WYKRESY */}
 			<div className="relative space-y-8">
 				{isPending && (

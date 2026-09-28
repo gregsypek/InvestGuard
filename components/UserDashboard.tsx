@@ -13,6 +13,7 @@ import {
 	Maximize2,
 	Minimize2,
 	Plus,
+	RefreshCw,
 	Settings,
 	Wallet2,
 	WalletCards,
@@ -33,11 +34,14 @@ import { PortfolioChart } from "./dashboard/PortfolioCharts";
 import { PortfolioWithAssets } from "@/lib/types";
 import { PortfoliosComparisonChart } from "./dashboard/PortfoliosComparisonChart";
 import { PremiumMarketCard } from "./home/PremiumMarketCard";
+import { SafeActionButton } from "./ui/SafeActionButton";
 import { SectionLayout } from "./shared/SectionLayout";
 import { ValueCard } from "./shared/ValueCard";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
+import { refreshPortfolioPrices } from "@/lib/actions/refresh-prices";
+import { toast } from "sonner";
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
 const GLOBAL_INDICES_MAP: Record<string, string> = {
@@ -49,6 +53,7 @@ const GLOBAL_INDICES_MAP: Record<string, string> = {
 	BTC: "Bitcoin",
 };
 
+// 🚀 ZAKTUALIZUJ INTERFEJS (Dodano 'role')
 interface UserDashboardProps {
 	portfolios: PortfolioWithAssets[];
 	snapshots: SimulatedSnapshot[];
@@ -58,6 +63,7 @@ interface UserDashboardProps {
 	lastUpdated?: string | null;
 	currentRange?: string;
 	indexQuotesHistory?: Record<string, Record<string, number>>;
+	role?: string; // <-- DODANE
 }
 
 export function UserDashboard(props: UserDashboardProps) {
@@ -94,7 +100,37 @@ export function UserDashboard(props: UserDashboardProps) {
 	// 🚀 NOWE: Paginacja portfeli (Responsywna: 3 na mobile, 6 na PC)
 	const [portfolioPage, setPortfolioPage] = useState(0);
 	const [itemsPerPage, setItemsPerPage] = useState(3); // Domyślnie 3 dla SSR/Mobile
+	// 🚀 NOWE: Logika globalnego odświeżania kursów
+	const [isRefreshing, setIsRefreshing] = useState(false);
+	const isPremium = props.role === "ADMIN" || props.role === "SUBSCRIBER";
 
+	const handleGlobalRefresh = async () => {
+		setIsRefreshing(true);
+		let successCount = 0;
+
+		try {
+			// Aktualizujemy wszystkie portfele po kolei
+			for (const portfolio of props.portfolios) {
+				const result = await refreshPortfolioPrices(portfolio.id);
+				if (result.success) successCount++;
+			}
+
+			if (successCount > 0) {
+				toast.success("Zaktualizowano kursy dla wszystkich portfeli.");
+				if (!isPremium) {
+					toast.info(
+						"Pamiętaj: Aktualizacja na koncie darmowym działa raz na 24h.",
+					);
+				}
+			} else {
+				toast.error("Wykorzystano dzienny limit lub wystąpił błąd.");
+			}
+		} catch (error) {
+			toast.error("Wystąpił problem z połączeniem.");
+		} finally {
+			setIsRefreshing(false);
+		}
+	};
 	// Śledzimy rozmiar okna, by dostosować liczbę pigułek
 	useEffect(() => {
 		const handleResize = () => {
@@ -220,28 +256,93 @@ export function UserDashboard(props: UserDashboardProps) {
 					</div>
 				</div>
 			</header>
-
 			{/* RADAR RYNKOWY */}
 			<SectionLayout
 				title="Radar Rynkowy"
 				titleIcon={Activity}
 				subtitle="Śledź kluczowe wskaźniki"
 				description="Zestawienie indeksów i walorów z Twojego portfela."
+				action={
+					<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+						<div className="flex items-center gap-2">
+							<button
+								onClick={handleGlobalRefresh}
+								disabled={isRefreshing}
+								title={
+									isPremium
+										? "Odśwież wyceny (Brak limitu)"
+										: "Odśwież wyceny (Limit: 1x na dobę)"
+								}
+								className={cn(
+									"flex items-center gap-1.5 px-3 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest transition-colors",
+									isRefreshing && "opacity-50 cursor-not-allowed",
+								)}
+							>
+								<RefreshCw
+									className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")}
+								/>
+								<span className="hidden sm:inline">Odśwież Kursy</span>
+							</button>
+							<SafeActionButton
+								label="Konfiguruj"
+								icon={Settings}
+								variant="outline"
+								className="h-9 border-t-border bg-t-bg-base text-t-text-secondary hover:text-t-text-primary"
+								href="/settings"
+							/>
+						</div>
+						{/* Wskaźnik ostatniej aktualizacji */}
+						{props.lastUpdated && (
+							<span className="text-[9px] text-t-text-tertiary font-bold tracking-widest uppercase mr-1">
+								Stan z: {format(new Date(props.lastUpdated), "HH:mm")}
+							</span>
+						)}
+					</div>
+				}
 			>
-				<div className="flex flex-col  gap-6">
+				<div className="flex flex-col gap-4 lg:gap-6">
+					{/* MACRO INDICATORS COLUMN */}
+					{props.userIndices && props.userIndices.length > 0 && (
+						<div className="flex-1 p-3 sm:p-5 bg-t-bg-panel  rounded-2xl border border-t-border">
+							<div className="flex justify-between items-center mb-4">
+								<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
+									<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
+								</h4>
+							</div>
+
+							<div className="flex justify-between md:justify-around flex-wrap gap-1.5 sm:gap-2.5 flex-1">
+								{props.userIndices.map((indexId) => {
+									const changeValue = props.indexQuotes?.[indexId] || 0;
+									const historyObject =
+										props.indexQuotesHistory?.[indexId] || {};
+									const historyArray = Object.keys(historyObject)
+										.sort()
+										.map((dateKey) => historyObject[dateKey]);
+
+									return (
+										<PremiumMarketCard
+											key={indexId}
+											name={GLOBAL_INDICES_MAP[indexId] || indexId}
+											change={changeValue}
+											historyData={historyArray}
+											logo={getStockLogo(indexId)}
+										/>
+									);
+								})}
+							</div>
+						</div>
+					)}
+
 					{/* PORTFOLIO ASSETS COLUMN */}
-					<div className="flex-1 p-5">
-						<div className="flex justify-between items-center mb-5">
-							<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+					<div className="flex-1 p-3 sm:p-5 bg-t-bg-panel  rounded-2xl border border-t-border">
+						<div className="flex items-center mb-4">
+							<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
 								<Briefcase className="w-4 h-4 text-blue-500" /> Z Portfela
 							</h4>
-
-							<Link href="/settings" className="text-blue-500 hover:underline">
-								<Settings className="w-4 h-4" />
-							</Link>
 						</div>
 
-						<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 flex-1">
+						{/* 🚀 ZMIANA 3: grid-cols-2 wymusza mniejsze i ciaśniejsze karty na telefonie */}
+						<div className="flex flex-wrap  sm:gap-2.5 flex-1">
 							{observedAssets.length > 0 ? (
 								observedAssets.map((asset) => (
 									<PremiumMarketCard
@@ -253,69 +354,29 @@ export function UserDashboard(props: UserDashboardProps) {
 									/>
 								))
 							) : (
-								/* Premium Empty State */
-								<div className="flex flex-col items-center justify-center py-10 text-center border border-dashed rounded-xl border-slate-700/50 bg-slate-800/20 group hover:border-blue-500/50 transition-colors cursor-pointer">
-									<div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-										<Plus className="w-4 h-4 text-blue-500" />
-									</div>
-									<p className="text-xs font-bold opacity-60 mb-1">
+								/* 🚀 ZMIANA 1: Profesjonalny Empty State powiązany z ustawieniami */
+								<div className="col-span-full flex flex-col items-center justify-center py-8 px-4 text-center border border-dashed rounded-xl border-t-border bg-t-bg-base/50">
+									<p className="text-xs font-bold text-t-text-secondary mb-1">
 										Brak aktywów na radarze
 									</p>
-									<p className="text-[10px] text-slate-500 max-w-[200px]">
-										Kliknij ikonę zębatki powyżej, aby wybrać walory do
-										obserwacji.
+									<p className="text-[10px] text-t-text-tertiary mb-3">
+										Wybierz walory, które chcesz na bieżąco śledzić.
 									</p>
+									<SafeActionButton
+										label="Wybierz Aktywa"
+										icon={Settings}
+										variant="outline"
+										className="h-9 text-[10px] border-t-border bg-t-bg-base text-t-text-secondary hover:text-t-text-primary"
+										href="/settings"
+									/>
 								</div>
 							)}
 						</div>
 					</div>
-					<div>
-						{/* MACRO INDICATORS COLUMN */}
-						{props.userIndices && props.userIndices.length > 0 && (
-							<div className="flex-1 p-5">
-								<div className="flex justify-between items-center mb-5">
-									<h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-										<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
-									</h4>
-
-									<Link
-										href="/settings"
-										className="text-blue-500 hover:underline"
-									>
-										<Settings className="w-4 h-4" />
-									</Link>
-								</div>
-
-								<div className="flex justify-between flex-wrap gap-2.5">
-									{props.userIndices.map((indexId) => {
-										const changeValue = props.indexQuotes?.[indexId] || 0;
-
-										// 🚀 Pobieramy tablicę samych wycen z historii dla konkretnego indexId
-										const historyObject =
-											props.indexQuotesHistory?.[indexId] || {};
-										// Sortujemy po datach (kluczach) i wyciągamy same wartości
-										const historyArray = Object.keys(historyObject)
-											.sort()
-											.map((dateKey) => historyObject[dateKey]);
-
-										return (
-											<PremiumMarketCard
-												key={indexId}
-												name={GLOBAL_INDICES_MAP[indexId] || indexId}
-												change={changeValue}
-												historyData={historyArray}
-												logo={getStockLogo(indexId)}
-											/>
-										);
-									})}
-								</div>
-							</div>
-						)}
-					</div>
 				</div>
 			</SectionLayout>
 			{/* === STICKY HEADER (Zawsze na górze, stała szerokość) === */}
-			<div className="sticky top-0 z-50 bg-t-bg-base/90 backdrop-blur-md md:border-b md:border-t-border-subtle md:shadow-sm py-2 px-4 sm:px-6 md:px-8 transition-all duration-300 w-full rounded-b-md">
+			<div className="sticky top-0 z-50 bg-t-bg-base  py-2 px-4 sm:px-6 md:px-8 transition-all duration-300 w-full ">
 				<div className="flex flex-col gap-2 max-w-7xl mx-auto w-full">
 					{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Otwarty domyślnie, reaguje tylko na przycisk) */}
 					{showAdvancedToolbar && (

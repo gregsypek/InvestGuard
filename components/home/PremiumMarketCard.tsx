@@ -118,19 +118,19 @@ export function PremiumMarketCard({
 	const { cleanName, isETF, provider } = formatAssetName(name);
 
 	return (
-		<div className="relative flex justify-between items-center p-2 rounded-xl bg-t-bg-base/20 cursor-default gap-2 overflow-hidden">
+		<div className="relative flex flex-1  flex-col min-w-[180px] md:min-w-[300px] sm:flex-row sm:justify-between sm:items-center p-2 rounded-xl bg-t-bg-base/20 cursor-default gap-2 overflow-hidden">
 			{/* LEWA STRONA: Logo i tekst - elastyczna szerokość */}
 			<div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
 				{/* Kontener na Logo z potencjalną plakietką dostawcy */}
 				<div className="relative shrink-0">
-					<div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden bg-t-bg-sticky border border-t-border flex items-center justify-center shadow-sm p-1.5 sm:p-2">
+					<div className="md:w-8 md:h-8 h-6 w-6 rounded-full overflow-hidden bg-t-bg-sticky border border-t-border flex items-center justify-center shadow-sm p-1 md:p-1.5 ">
 						{logo ? (
 							<Image
 								src={logo}
 								alt={name}
-								width={20}
-								height={20}
-								className="w-full h-full object-cover dark:invert"
+								width={8}
+								height={8}
+								className="w-full h-full object-contain dark:invert"
 							/>
 						) : (
 							<span className="text-[10px] sm:text-xs font-bold text-slate-400">
@@ -138,25 +138,15 @@ export function PremiumMarketCard({
 							</span>
 						)}
 					</div>
-
-					{/* 🚀 Mała ikonka/inicjał dostawcy, jeśli został wykryty */}
-					{provider &&
-						!logo && ( // Pokaż tylko jeśli nie ma domyślnego logo
-							<div
-								className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center"
-								title={provider}
-							>
-								<span className="text-[7px] font-black text-white">
-									{provider.charAt(0)}
-								</span>
-							</div>
-						)}
 				</div>
 
-				<div className="flex flex-col flex-1 min-w-0 justify-center">
+				<div className="flex flex-col flex-1  justify-center">
 					{/* 🚀 Górny rządek z nowym badge'em ETF i wyczyszczoną nazwą */}
 					<div className="flex items-center gap-1.5">
-						<p className="font-bold text-xs sm:text-sm text-t-text-primary tracking-tight truncate">
+						<p
+							className="font-bold text-xs sm:text-sm text-t-text-primary tracking-tight truncate max-w-[140px] sm:max-w-[180px]"
+							title={cleanName}
+						>
 							{cleanName}
 						</p>
 						{isETF && (
@@ -175,8 +165,10 @@ export function PremiumMarketCard({
 						)}
 						{provider && (
 							<>
-								<span className="text-[8px] text-t-text-tertiary/50">•</span>
-								<p className="text-[9px] font-medium text-t-text-tertiary truncate">
+								<span className="text-[8px] hidden xl:block text-t-text-tertiary/50">
+									•
+								</span>
+								<p className="text-[9px] font-medium text-t-text-tertiary hidden xl:block truncate">
 									{provider}
 								</p>
 							</>
@@ -186,26 +178,32 @@ export function PremiumMarketCard({
 			</div>
 
 			{/* PRAWA STRONA: Wykres i liczby */}
-			<div className="flex items-center gap-2 sm:gap-4 shrink-0">
+			<div className="absolute bottom-0  right-2  items-center shrink-0">
 				{historyData && historyData.length > 0 && (
-					<div className="opacity-80 shrink-0">
+					<div className="opacity-70 shrink-0 hidden md:block">
 						<Sparkline data={historyData} isPositive={isPositive} />
 					</div>
 				)}
 
-				<div className="flex items-center gap-1 min-w-[55px] sm:min-w-[70px] justify-end">
+				<div className="flex items-center gap-1 min-w-[70px] sm:min-w-[100px] justify-end ">
 					{isPositive ? (
 						<TrendingUp
-							className={cn("w-3 sm:w-3.5 h-3 sm:h-3.5", changeColor)}
+							className={cn(
+								"w-3 sm:w-3.5 h-3 sm:h-3.5 md:hidden opacity-70 ",
+								changeColor,
+							)}
 						/>
 					) : (
 						<TrendingDown
-							className={cn("w-3 sm:w-3.5 h-3 sm:h-3.5", changeColor)}
+							className={cn(
+								"w-3 sm:w-3.5 h-3 sm:h-3.5 md:hidden opacity-70",
+								changeColor,
+							)}
 						/>
 					)}
 					<p
 						className={cn(
-							"font-mono text-[11px] sm:text-xs font-bold",
+							"font-mono text-[11px] sm:text-xs font-bold opacity-70",
 							changeColor,
 						)}
 					>

@@ -86,7 +86,6 @@ export function ObservedMarketsManager({
 
 	return (
 		<div className="bg-t-bg-panel border border-t-border-subtle rounded-3xl p-6">
-			{/* ... Nagłówek i przycisk Zapisz tak samo jak wcześniej ... */}
 			<div className="flex items-center justify-between mb-6">
 				<div className="flex items-center gap-3">
 					<div className="p-2 bg-blue-500/10 rounded-lg">

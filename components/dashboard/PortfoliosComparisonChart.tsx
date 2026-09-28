@@ -30,26 +30,43 @@ interface PortfolioDataPoint {
 	[portfolioId: string]: string | number | Date;
 }
 
+// Map color strings from Prisma to actual CSS Hex values from globals.css
+const THEME_COLORS: Record<string, string> = {
+	blue: "#3b82f6",
+	indigo: "#6366f1",
+	violet: "#8b5cf6",
+	purple: "#a855f7",
+	fuchsia: "#d946ef",
+	pink: "#ec4899",
+	emerald: "#10b981",
+	teal: "#14b8a6",
+	cyan: "#06b6d4",
+	sky: "#0ea5e9",
+	amber: "#f59e0b",
+	orange: "#f97316",
+	lime: "#84cc16",
+	slate: "#64748b",
+	red: "#ef4444",
+	rose: "#f43f5e",
+	green: "#22c55e",
+	yellow: "#eab308",
+	zinc: "#71717a",
+	stone: "#78716c",
+};
+
 interface PortfolioInfo {
 	id: string;
 	name: string;
+	colorTheme?: string; // Added field from Prisma schema
 }
 
 interface PortfoliosComparisonChartProps {
 	data: PortfolioDataPoint[];
 	portfolios: PortfolioInfo[];
-	activeIds: string[]; // ID portfeli zaznaczonych na pasku głównym
+	activeIds: string[];
 	chartMode: "VALUE" | "PERCENTAGE";
 }
 
-// ----------------------------------------------------------------------
-// INTERFEJSY TYPÓW DLA RECHARTS )
-// ----------------------------------------------------------------------
-// interface LegendPayloadItem {
-// 	dataKey: string | number;
-// 	color: string;
-// 	value: string;
-// }
 interface LegendPayloadItem {
 	dataKey?: string | number | ((obj: unknown) => unknown);
 	color?: string;
@@ -90,9 +107,6 @@ export function PortfoliosComparisonChart({
 	const [prevActiveIds, setPrevActiveIds] = useState<string>("");
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	// ======================================================================
-	// FIX: REAGOWANIE NA ZMIANY PROPSÓW BEZ USEEFFECT (Unikamy re-renderów)
-	// ======================================================================
 	const currentActiveIdsStr = activeIds.join(",");
 	if (currentActiveIdsStr !== prevActiveIds) {
 		setPrevActiveIds(currentActiveIdsStr);
@@ -115,7 +129,7 @@ export function PortfoliosComparisonChart({
 	if (!data || data.length === 0 || portfolios.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-full opacity-60">
-				<p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+				<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
 					Brak danych do porównania
 				</p>
 			</div>
@@ -136,7 +150,7 @@ export function PortfoliosComparisonChart({
 		if (!payload) return null;
 
 		return (
-			<div className="mt-4">
+			<div className="my-4">
 				<ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
 					{payload.map((entry) => {
 						const dataKey = String(entry.dataKey);
@@ -163,14 +177,14 @@ export function PortfoliosComparisonChart({
 								) : (
 									<Circle className="w-4 h-4" style={{ color: entry.color }} />
 								)}
-								<span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+								<span className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
 									{entry.value}
 								</span>
 							</li>
 						);
 					})}
 				</ul>
-				<p className="text-[9px] text-center text-slate-500 uppercase tracking-widest font-bold mt-4 opacity-70">
+				<p className="text-[9px] text-center text-t-text-tertiary uppercase tracking-widest font-bold my-4 opacity-70">
 					💡 Kliknij w nazwę portfela, aby włączyć lub wyłączyć go z wykresu
 				</p>
 			</div>
@@ -187,13 +201,17 @@ export function PortfoliosComparisonChart({
 					<CartesianGrid
 						strokeDasharray="2 6"
 						vertical={false}
-						stroke="rgba(148,163,184,0.08)"
+						stroke="var(--t-border-subtle)"
 					/>
 					<XAxis
 						dataKey="date"
 						axisLine={false}
 						tickLine={false}
-						tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
+						tick={{
+							fontSize: 10,
+							fill: "var(--t-text-tertiary)",
+							fontWeight: 500,
+						}}
 						tickMargin={12}
 						tickFormatter={(val) =>
 							format(new Date(val), "dd MMM", { locale: pl })
@@ -202,7 +220,11 @@ export function PortfoliosComparisonChart({
 					<YAxis
 						axisLine={false}
 						tickLine={false}
-						tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
+						tick={{
+							fontSize: 10,
+							fill: "var(--t-text-tertiary)",
+							fontWeight: 500,
+						}}
 						tickFormatter={(val) =>
 							chartMode === "PERCENTAGE"
 								? `${val > 0 ? "+" : ""}${val}%`
@@ -214,11 +236,7 @@ export function PortfoliosComparisonChart({
 								: ["auto", "auto"]
 						}
 					/>
-					<ReferenceLine
-						y={0}
-						stroke="rgba(148,163,184,0.25)"
-						strokeWidth={1}
-					/>
+					<ReferenceLine y={0} stroke="var(--t-border)" strokeWidth={1} />
 					<Tooltip
 						content={
 							<ComparisonTooltip
@@ -226,25 +244,39 @@ export function PortfoliosComparisonChart({
 								chartMode={chartMode}
 							/>
 						}
-						cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
+						cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
 					/>
-					<Legend content={renderCustomLegend} />
+					<Legend
+						content={renderCustomLegend}
+						verticalAlign="bottom"
+						wrapperStyle={{
+							// paddingTop: "24px",
+							position: "relative",
+							zIndex: 10,
+						}}
+					/>
 
-					{portfolios.map((p, idx) => (
-						<Line
-							key={p.id}
-							type="monotone"
-							dataKey={p.id}
-							name={p.name}
-							stroke={COLORS[idx % COLORS.length]}
-							strokeWidth={3}
-							dot={false}
-							activeDot={{ r: 5, strokeWidth: 0 }}
-							hide={hiddenLines[p.id]}
-							isAnimationActive={true}
-							animationDuration={800}
-						/>
-					))}
+					{portfolios.map((p) => {
+						// Fallback to blue if colorTheme is missing or invalid
+						const themeColor =
+							THEME_COLORS[p.colorTheme || "blue"] || THEME_COLORS.blue;
+
+						return (
+							<Line
+								key={p.id}
+								type="monotone"
+								dataKey={p.id}
+								name={p.name}
+								stroke={themeColor}
+								strokeWidth={3}
+								dot={false}
+								activeDot={{ r: 5, strokeWidth: 0 }}
+								hide={hiddenLines[p.id]}
+								isAnimationActive={true}
+								animationDuration={800}
+							/>
+						);
+					})}
 				</LineChart>
 			</ResponsiveContainer>
 		</ChartContainer>
@@ -252,29 +284,29 @@ export function PortfoliosComparisonChart({
 
 	if (isExpanded) {
 		return (
-			<div className="fixed inset-0 z-100 bg-slate-950/97 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
+			<div className="fixed inset-0 z-[100] bg-t-bg-base/95 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
 				<div className="relative flex justify-between items-center mb-6">
-					<div className="flex items-start gap-3 flex-col  sm:flex-row">
+					<div className="flex items-start gap-3 flex-col sm:flex-row">
 						<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
-							<WalletCards className="w-5 h-5 text-blue-400" />
+							<WalletCards className="w-5 h-5 text-blue-500" />
 						</div>
 						<div>
-							<h3 className="text-2xl font-bold text-white tracking-tight">
+							<h3 className="text-2xl font-bold text-t-text-primary tracking-tight">
 								Wyścig Portfeli
 							</h3>
-							<p className="text-sm text-slate-400">
+							<p className="text-sm text-t-text-secondary">
 								Szczegółowe porównanie strategii inwestycyjnych
 							</p>
 						</div>
 					</div>
 					<button
 						onClick={() => setIsExpanded(false)}
-						className="p-2.5 bg-slate-800/80 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 rounded-xl transition-colors shadow-lg border border-slate-700/50 hover:border-rose-500/30"
+						className="p-2.5 bg-t-bg-panel hover:bg-rose-500/10 text-t-text-secondary hover:text-rose-500 rounded-xl transition-colors shadow-lg border border-t-border hover:border-rose-500/30"
 					>
 						<Minimize2 className="w-6 h-6" />
 					</button>
 				</div>
-				<div className="relative flex-1 min-h-0 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl">
+				<div className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-8 shadow-2xl">
 					{chartContent}
 				</div>
 			</div>
@@ -282,17 +314,17 @@ export function PortfoliosComparisonChart({
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group">
-			<div className="flex justify-end px-1 pb-2 shrink-0 z-10">
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
+			<div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
 				<button
 					onClick={() => setIsExpanded(true)}
-					className="p-1.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-emerald-400 rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm z-10"
+					className="p-1.5 bg-t-bg-base border border-t-border text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm"
 					title="Powiększ wykres"
 				>
 					<Maximize2 className="w-4 h-4" />
 				</button>
 			</div>
-			<div className="flex-1 min-h-0 absolute inset-0 pt-8">{chartContent}</div>
+			<div className="flex-1 w-full h-full min-h-0 py-3 ">{chartContent}</div>
 		</div>
 	);
 }
@@ -310,8 +342,8 @@ function ComparisonTooltip({
 			.sort((a, b) => b.value - a.value);
 
 		return (
-			<div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/40 rounded-2xl p-4 shadow-2xl min-w-55">
-				<p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-800 pb-2">
+			<div className="bg-t-bg-panel/95 backdrop-blur-xl border border-t-border rounded-2xl p-4 shadow-xl min-w-55">
+				<p className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest mb-3 border-b border-t-border pb-2">
 					{format(new Date(label as string | Date), "dd MMMM yyyy", {
 						locale: pl,
 					})}
@@ -329,12 +361,12 @@ function ComparisonTooltip({
 										className="w-2.5 h-2.5 rounded-full"
 										style={{ backgroundColor: entry.color }}
 									/>
-									<span className="text-xs font-medium text-slate-300 line-clamp-1">
+									<span className="text-xs font-medium text-t-text-secondary line-clamp-1">
 										{entry.name}
 									</span>
 								</div>
 								<span
-									className={`text-sm font-bold tabular-nums whitespace-nowrap ${isPositive ? "text-emerald-400" : "text-rose-400"}`}
+									className={`text-sm font-bold tabular-nums whitespace-nowrap ${isPositive ? "text-emerald-500" : "text-rose-500"}`}
 								>
 									{chartMode === "PERCENTAGE"
 										? `${isPositive ? "+" : ""}${Number(entry.value).toFixed(2)}%`

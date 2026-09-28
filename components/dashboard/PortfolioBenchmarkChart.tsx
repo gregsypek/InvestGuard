@@ -124,7 +124,7 @@ export function PortfolioBenchmarkChart({
 		if (!payload) return null;
 
 		return (
-			<div className="mt-4">
+			<div className="my-4 ">
 				<ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
 					{payload.map((entry) => {
 						const dataKey = String(entry.dataKey);
@@ -166,7 +166,7 @@ export function PortfolioBenchmarkChart({
 						);
 					})}
 				</ul>
-				<p className="text-[9px] text-center text-slate-500 uppercase tracking-widest font-bold mt-4 opacity-70">
+				<p className="text-[9px] text-center text-slate-500 uppercase tracking-widest font-bold my-4 opacity-70">
 					💡 Kliknij w nazwę indeksu, aby włączyć lub wyłączyć go z wykresu
 				</p>
 			</div>
@@ -318,7 +318,7 @@ export function PortfolioBenchmarkChart({
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group">
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
 			<div className="flex items-center justify-between px-1 pb-2 shrink-0">
 				<div>{trendBadge(true)}</div>
 				<button

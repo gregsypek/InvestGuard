@@ -150,7 +150,7 @@ export function PortfoliosComparisonChart({
 		if (!payload) return null;
 
 		return (
-			<div className="my-4">
+			<div>
 				<ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
 					{payload.map((entry) => {
 						const dataKey = String(entry.dataKey);
@@ -196,7 +196,8 @@ export function PortfoliosComparisonChart({
 			<ResponsiveContainer width="100%" height="100%">
 				<LineChart
 					data={data}
-					margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+					// 1. Wyrównujemy marginesy wewnętrzne Recharts, aby wykres ładnie wypełniał Canvas
+					margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
 				>
 					<CartesianGrid
 						strokeDasharray="2 6"
@@ -245,13 +246,15 @@ export function PortfoliosComparisonChart({
 							/>
 						}
 						cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
+						// 2. Podnosimy zIndex drastycznie wyżej niż legenda i resetujemy outline
+						wrapperStyle={{ zIndex: 1000, outline: "none" }}
 					/>
 					<Legend
 						content={renderCustomLegend}
 						verticalAlign="bottom"
 						wrapperStyle={{
-							// paddingTop: "24px",
 							position: "relative",
+							// 3. Obniżamy zIndex legendy, aby tekst "Kliknij w nazwę..." nie przebijał
 							zIndex: 10,
 						}}
 					/>
@@ -324,7 +327,8 @@ export function PortfoliosComparisonChart({
 					<Maximize2 className="w-4 h-4" />
 				</button>
 			</div>
-			<div className="flex-1 w-full h-full min-h-0 py-3 ">{chartContent}</div>
+			{/* Zmieniono 'py-3' na 'pt-6', aby wykres naturalnie odsunął się od górnego przycisku i zachował symetrię względem bocznych paddingów */}
+			<div className="flex-1 w-full h-full min-h-0 pt-6">{chartContent}</div>
 		</div>
 	);
 }
@@ -342,7 +346,7 @@ function ComparisonTooltip({
 			.sort((a, b) => b.value - a.value);
 
 		return (
-			<div className="bg-t-bg-panel/95 backdrop-blur-xl border border-t-border rounded-2xl p-4 shadow-xl min-w-55">
+			<div className=" bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-xl min-w-55">
 				<p className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest mb-3 border-b border-t-border pb-2">
 					{format(new Date(label as string | Date), "dd MMMM yyyy", {
 						locale: pl,

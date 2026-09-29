@@ -26,7 +26,7 @@ import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 
-// --- TYPY DLA DANYCH WEJŚCIOWYCH ---
+// --- INPUT DATA TYPES ---
 export interface ChartDataPoint {
 	date: string;
 	value: number;
@@ -56,7 +56,7 @@ interface PortfolioChartProps {
 	mode?: "VALUE" | "PERCENTAGE";
 }
 
-// Pomocnicza funkcja do ustalania końca dnia z formatu YYYY-MM-DD
+// Helper function to set the end of the day time from YYYY-MM-DD format
 const getEndOfDayTime = (dateStr: string) => {
 	const [year, month, day] = dateStr.split("-").map(Number);
 	return new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
@@ -69,7 +69,7 @@ export function PortfolioChart({
 }: PortfolioChartProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 
-	// --- LOGIKA MERGOWANIA TRANSAKCJI Z DANYMI WYKRESU ---
+	// --- LOGIC FOR MERGING TRANSACTIONS WITH CHART DATA ---
 	const mergedData: MergedDataPoint[] = useMemo(() => {
 		if (!data || data.length === 0) return [];
 
@@ -126,7 +126,7 @@ export function PortfolioChart({
 		);
 	}
 
-	// --- OBLICZENIA DLA ODZNAKI TRENDU ---
+	// --- TREND BADGE CALCULATIONS ---
 	const lastPoint = mergedData[mergedData.length - 1];
 	let isPositive = true;
 	let trendValue = "";
@@ -184,7 +184,7 @@ export function PortfolioChart({
 		</div>
 	);
 
-	// --- RENDEROWANIE WYKRESU ---
+	// --- CHART RENDERING ---
 	const chartContent = (
 		<ChartContainer className="h-full min-h-[300px] w-full flex-1">
 			<ResponsiveContainer width="100%" height="100%">
@@ -352,7 +352,7 @@ export function PortfolioChart({
 }
 
 // ----------------------------------------------------------------------
-// TYPY DLA TOOLTIPA
+// TOOLTIP TYPES
 // ----------------------------------------------------------------------
 interface TooltipPayloadItem {
 	dataKey: string;
@@ -378,6 +378,7 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 		const formatVal = (val: number) => {
 			if (mode === "PERCENTAGE")
 				return `${val > 0 ? "+" : ""}${val.toFixed(2)}%`;
+			// Using the resilient formatCurrency utility
 			return `${formatCurrency(val)} PLN`;
 		};
 
@@ -394,7 +395,7 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 					{format(new Date(label), "dd MMMM yyyy", { locale: pl })}
 				</p>
 
-				{/* 1. SEKCJA PORTFELA */}
+				{/* 1. PORTFOLIO SECTION */}
 				<div className="space-y-2.5">
 					<div className="flex justify-between items-center text-xs gap-4">
 						<div className="flex items-center gap-2">
@@ -442,7 +443,7 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 					)}
 				</div>
 
-				{/* 2. SEKCJA TRANSAKCJI */}
+				{/* 2. TRANSACTIONS SECTION */}
 				{dataObj.txDetails && dataObj.txDetails.length > 0 && (
 					<div className="mt-3 pt-3 border-t border-t-border border-dashed space-y-2">
 						<p className="text-[9px] font-black text-t-text-tertiary uppercase tracking-widest">

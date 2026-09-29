@@ -1,11 +1,14 @@
 "use client";
 
+import { Activity, useEffect, useState } from "react";
 import {
 	AlertTriangle,
+	ChevronLeft,
 	Globe,
 	Landmark,
 	LayoutDashboard,
 	Lock,
+	ShieldCheck,
 	User,
 } from "lucide-react";
 
@@ -15,13 +18,14 @@ import { ChangePasswordModal } from "./ChangePasswordModal";
 import Cookies from "js-cookie";
 import { DeleteAccountTool } from "./DeleteAccountTool";
 import { ExportDataButton } from "@/components/settings/ExportDataButton";
+import { FilterBadge } from "@/components/shared/FilterBadge";
+import Link from "next/link"; // 🚀 DODANY IMPORT
 import { ObservedMarketsManager } from "@/components/settings/ObservedMartektsManager";
+import { SectionLayout } from "@/components/shared/SectionLayout";
 import { TwoFactorManager } from "@/components/settings/TwoFactorManager";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
-// 1. Zmieniamy interfejs, aby przyjmował brakujące dane i stan ciastka z serwera
 interface SettingsClientProps {
 	assets: { name: string; isObserved: boolean; category: string }[];
 	maxLimit: number;
@@ -30,6 +34,9 @@ interface SettingsClientProps {
 	initialShowMarketTicker: boolean;
 	hasPassword: boolean;
 	isTwoFactorEnabled: boolean;
+	userRole: string;
+	fromDashboard?: boolean;
+	email?: string | null;
 }
 
 export default function SettingsClient({
@@ -40,124 +47,241 @@ export default function SettingsClient({
 	initialShowMarketTicker,
 	hasPassword,
 	isTwoFactorEnabled,
+	userRole,
+	fromDashboard,
+	email,
 }: SettingsClientProps) {
 	const router = useRouter();
 	const [activeTab, setActiveTab] = useState("dashboard");
 
-	// 2. Inicjujemy stan korzystając z wartości początkowej z serwera
 	const [settings, setSettings] = useState({
-		showBulbTip: initialShowBulbTip, // <-- Teraz Switch wie, czy ciastko istnieje!
-		showMarketTicker: initialShowMarketTicker, // <-- Teraz Switch wie, czy ciastko istnieje!
+		showBulbTip: initialShowBulbTip,
+		showMarketTicker: initialShowMarketTicker,
 		showPortfolioAssetsInRadar: true,
 	});
+
 	const toggleSetting = (key: keyof typeof settings) => {
-		// EN: 1. Calculate the new value based on the current state
 		const newValue = !settings[key];
 
-		// EN: 2. Perform side effects (Cookies & Router) OUTSIDE of setSettings
 		if (key === "showBulbTip") {
-			if (newValue) {
-				Cookies.remove("hide_bulbtip");
-			} else {
-				Cookies.set("hide_bulbtip", "true", { expires: 365 });
-			}
+			if (newValue) Cookies.remove("hide_bulbtip");
+			else Cookies.set("hide_bulbtip", "true", { expires: 365 });
 			router.refresh();
 		}
 
 		if (key === "showMarketTicker") {
-			if (newValue) {
-				Cookies.remove("hide_market_ticker");
-			} else {
-				Cookies.set("hide_market_ticker", "true", { expires: 365 });
-			}
+			if (newValue) Cookies.remove("hide_market_ticker");
+			else Cookies.set("hide_market_ticker", "true", { expires: 365 });
 			router.refresh();
 		}
 
-		// EN: 3. Update the React state purely at the end
 		setSettings((prev) => ({ ...prev, [key]: newValue }));
 	};
 
+	const isAdmin = userRole === "ADMIN";
+	const TABS = [
+		{ id: "dashboard", label: "Pulpit i Wygląd" },
+		{ id: "preferences", label: "Preferencje" },
+		{ id: "account", label: "Konto Użytkownika" },
+		{ id: "security", label: "Bezpieczeństwo" },
+		...(isAdmin ? [{ id: "bonds-admin", label: "Parametry Obligacji" }] : []),
+	];
+
+	useEffect(() => {
+		if (activeTab === "bonds-admin" && !isAdmin) {
+			setActiveTab("dashboard");
+		}
+	}, [isAdmin, activeTab]);
+
 	return (
-		<div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
-			{/* 🚀 Usunięto stary nagłówek. Odstęp górny jest teraz w PortfoliosHeader. */}
+		<div className="w-full animate-in fade-in duration-500">
+			{/* 🚀 ZINTEGROWANY, SPÓJNY NAGŁÓWEK (W stylu UserDashboard) */}
+			<header className="relative overflow-hidden flex flex-col w-full border-b border-white/10 bg-slate-900 rounded-b-2xl text-slate-100 p-6 md:p-8 shadow-lg mb-8">
+				{/* 1. Tło SVG (Świetlny Gradient) */}
+				<div className="absolute inset-0 pointer-events-none select-none opacity-40 mix-blend-screen">
+					<svg
+						viewBox="0 0 1024 1024"
+						className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-y-1/2 [mask-image:radial-gradient(closest-side,white,transparent)] sm:left-full sm:-ml-80 lg:left-1/2 lg:ml-0 lg:-translate-x-1/2 lg:translate-y-0"
+						aria-hidden="true"
+					>
+						<circle
+							cx={512}
+							cy={512}
+							r={512}
+							fill="url(#settings-gradient)"
+							fillOpacity="0.7"
+						/>
+						<defs>
+							<radialGradient id="settings-gradient">
+								<stop stopColor="#3b82f6" />
+								<stop offset={1} stopColor="#1e3a8a" />
+							</radialGradient>
+						</defs>
+					</svg>
+				</div>
 
-			<div className="flex flex-col md:flex-row gap-8">
-				<aside className="w-full md:w-64 shrink-0 space-y-1">
-					<TabButton
-						active={activeTab === "dashboard"}
-						onClick={() => setActiveTab("dashboard")}
-						icon={LayoutDashboard}
-						label="Pulpit i Wygląd"
-					/>
-					{/* 🚀 NOWA ZAKŁADKA */}
-					<TabButton
-						active={activeTab === "bonds-admin"}
-						onClick={() => setActiveTab("bonds-admin")}
-						icon={Landmark}
-						label="Parametry Obligacji"
-					/>
-					<TabButton
-						active={activeTab === "preferences"}
-						onClick={() => setActiveTab("preferences")}
-						icon={Globe}
-						label="Preferencje"
-					/>
-					<TabButton
-						active={activeTab === "account"}
-						onClick={() => setActiveTab("account")}
-						icon={User}
-						label="Twoje Konto"
-					/>
-					<TabButton
-						active={activeTab === "security"}
-						onClick={() => setActiveTab("security")}
-						icon={Lock}
-						label="Bezpieczeństwo"
-					/>
-				</aside>
-				{/* PRAWA KOLUMNA: Zawartość */}
-
-				<main className="flex-1 space-y-8">
-					{activeTab === "dashboard" && (
-						<div className="space-y-6 animate-in slide-in-from-right-4 duration-500 fade-in">
-							<SettingsSection
-								title="Personalizacja Pulpitu"
-								desc="Wybierz, które moduły mają być widoczne na stronie głównej."
+				<div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col gap-4">
+					{/* Ścieżka powrotu */}
+					{fromDashboard && (
+						<nav className="flex items-center gap-2 mb-2 text-sm text-slate-400">
+							<Link
+								href="/"
+								className={cn(
+									"inline-flex items-center transition-all h-5 text-amber-500 hover:text-amber-400 underline decoration-amber-500/40 underline-offset-4 cursor-pointer font-medium",
+								)}
 							>
-								<ToggleRow
-									title="Pasek Rynkowy (Market Ticker)"
-									desc="Pływający pasek z notowaniami na samej górze aplikacji."
-									isActive={settings.showMarketTicker}
-									onClick={() => toggleSetting("showMarketTicker")}
+								<ChevronLeft
+									className="w-4 h-4 mr-0.5 no-underline"
+									strokeWidth={2.5}
 								/>
-								<ToggleRow
-									title="Lekcja Inwestora (BulbTip)"
-									desc="Codzienne wskazówki i definicje finansowe na pulpicie."
-									isActive={settings.showBulbTip}
-									onClick={() => toggleSetting("showBulbTip")}
-								/>
-								{/* <ToggleRow
-									title="Aktywa z portfela w Radarze"
-									desc="Pozwala na wyświetlanie w Radarze Okazji spółek, które już posiadasz."
-									isActive={settings.showPortfolioAssetsInRadar}
-									onClick={() => toggleSetting("showPortfolioAssetsInRadar")}
-								/> */}
-							</SettingsSection>
-							{/* === NOWY MODUŁ OBSERWOWANYCH RYNKÓW === */}
-							<ObservedMarketsManager
-								assets={assets}
-								maxLimit={maxLimit}
-								userIndices={userIndices} // <-- To naprawia czerwony błąd!
-							/>
-						</div>
+								<span>Przegląd inwestycji</span>
+							</Link>
+							<span className="text-slate-600">/</span>
+							<span className="text-slate-200 font-medium lowercase">
+								Ustawienia
+							</span>
+						</nav>
 					)}
-					{/* ZAKŁADKA 2: PREFERENCJE */}
-					{activeTab === "preferences" && (
-						<div className="space-y-6 animate-in slide-in-from-right-4 duration-500 fade-in">
-							<SettingsSection
-								title="Ustawienia Regionalne"
-								desc="Formatowanie walut i języka w całej aplikacji."
-							>
+
+					{/* Tytuł i zakładki */}
+					<div className="flex flex-col gap-2 mb-2">
+						<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-sm mb-3">
+							Ustawienia Konta
+						</h1>
+
+						<div className="flex flex-wrap items-center gap-2 mt-2">
+							<span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">
+								Wybierz zakładkę:
+							</span>
+							<div className="flex gap-2 flex-wrap">
+								{TABS.map((t) => (
+									<FilterBadge
+										key={t.id}
+										id={t.id}
+										label={t.label}
+										isSelected={activeTab === t.id}
+										onToggle={(id) => setActiveTab(id)}
+										className={activeTab === t.id ? "text-blue-300" : ""}
+									/>
+								))}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{/* 2. Dolna sekcja (Bliźniacze karty profilowe) */}
+				{/* <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-6 mt-6 border-t border-white/10">
+					<div className="flex flex-row justify-center items-center gap-3 px-5 py-3.5 w-full sm:w-auto ">
+						<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+							<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+							<span>Poziom uprawnień:</span>
+						</div>
+
+						<div className="flex items-center justify-center gap-3 text-sm sm:text-base font-black text-white tracking-wide uppercase">
+							{userRole}
+							{userRole === "ADMIN" && (
+								<span
+									className="flex h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(243,24,96,0.8)] shrink-0"
+									title="Pełen dostęp"
+								/>
+							)}
+						</div>
+					</div>
+
+					<div className="flex flex-row justify-center items-center gap-3 px-5 py-3.5 w-full sm:w-auto">
+						<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+							<User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+							<span>Adres E-mail:</span>
+						</div>
+
+						<div className="text-sm sm:text-base font-black text-white tracking-wide">
+							{email || "Brak przypisanego adresu"}
+						</div>
+					</div>
+				</div> */}
+				{/* 2. Dolna sekcja (Responsywne karty profilowe) */}
+				<div className="relative z-10 max-w-7xl mx-auto sm:w-full flex flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4 pt-6 mt-6 border-t border-white/10">
+					{/* Karta: Poziom Uprawnień */}
+					<div className="flex  sm:flex-row justify-center sm:justify-start items-center gap-1.5 sm:gap-3  w-full sm:w-auto">
+						{/* Etykieta z ikoną */}
+						<div className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">
+							<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+							<span>Poziom uprawnień:</span>
+						</div>
+
+						{/* Wartość (Rola) i kropka */}
+						<div className="flex items-center gap-2 text-xs sm:text-base font-black text-white tracking-wide uppercase">
+							{userRole}
+							{userRole === "ADMIN" && (
+								<span
+									className="flex h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(243,24,96,0.8)] shrink-0"
+									title="Pełen dostęp"
+								/>
+							)}
+						</div>
+					</div>
+
+					{/* Karta: Adres e-mail */}
+					<div className="flex flex-col sm:flex-row justify-center  md sm:justify-start items-center gap-1.5 sm:gap-3  w-full sm:w-auto">
+						{/* Etykieta z ikoną */}
+						<div className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">
+							<User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+							<span>Adres E-mail:</span>
+						</div>
+
+						{/* Wartość (Email) */}
+						<div className="text-xs sm:text-base font-black text-white tracking-wide break-all sm:break-normal text-center sm:text-left">
+							{email || "Brak przypisanego adresu"}
+						</div>
+					</div>
+				</div>
+			</header>
+
+			{/* TREŚĆ ZAKŁADEK */}
+			<div className="max-w-7xl mx-auto w-full">
+				{activeTab === "dashboard" && (
+					<div className="animate-in slide-in-from-right-4 duration-300 fade-in">
+						<SectionLayout
+							title="Pulpit i Wygląd"
+							titleIcon={LayoutDashboard}
+							subtitle="Personalizacja aplikacji"
+							description="Zarządzaj układem strony głównej, włączaj moduły pomocnicze oraz wybierz, które aktywa i indeksy chcesz śledzić na swoim Radarze Rynkowym."
+						>
+							<div className="space-y-6">
+								<SettingsSubSection title="Moduły pulpitu">
+									<ToggleRow
+										title="Pasek Rynkowy (Market Ticker)"
+										desc="Pływający pasek z notowaniami na samej górze aplikacji."
+										isActive={settings.showMarketTicker}
+										onClick={() => toggleSetting("showMarketTicker")}
+									/>
+									<ToggleRow
+										title="Lekcja Inwestora (BulbTip)"
+										desc="Codzienne wskazówki i definicje finansowe na pulpicie."
+										isActive={settings.showBulbTip}
+										onClick={() => toggleSetting("showBulbTip")}
+									/>
+								</SettingsSubSection>
+
+								<ObservedMarketsManager
+									assets={assets}
+									maxLimit={maxLimit}
+									userIndices={userIndices}
+								/>
+							</div>
+						</SectionLayout>
+					</div>
+				)}
+
+				{activeTab === "preferences" && (
+					<div className="animate-in slide-in-from-right-4 duration-300 fade-in">
+						<SectionLayout
+							title="Preferencje"
+							titleIcon={Globe}
+							subtitle="Ustawienia regionalne"
+							description="Dostosuj podstawowe formatowanie walut, strefę czasową oraz domyślny język aplikacji (Opcje w przygotowaniu)."
+						>
+							<div className="space-y-4">
 								<div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle opacity-60 grayscale cursor-not-allowed">
 									<div className="space-y-1 mb-4 sm:mb-0">
 										<div className="flex items-center gap-2">
@@ -191,131 +315,116 @@ export default function SettingsClient({
 										<span>Polski</span>
 									</div>
 								</div>
-							</SettingsSection>
-						</div>
-					)}
+							</div>
+						</SectionLayout>
+					</div>
+				)}
 
-					{activeTab === "account" && (
-						<div className="space-y-8 animate-in fade-in duration-300">
-							{/* SEKCJA 1: INFORMACJE O KONCIE */}
-							<section className="space-y-4">
-								<div>
-									<h2 className="text-lg font-black tracking-tighter text-t-text-primary">
-										Profil Użytkownika
-									</h2>
-									<p className="text-xs font-medium text-t-text-tertiary mt-1">
-										Twoje podstawowe dane (opcja edycji wkrótce).
-									</p>
-								</div>
-
-								<div className="flex items-center justify-between p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle">
-									<div className="flex items-center gap-4">
-										<div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 flex items-center justify-center">
-											<User className="w-6 h-6" />
+				{activeTab === "account" && (
+					<div className="animate-in slide-in-from-right-4 duration-300 fade-in">
+						<SectionLayout
+							title="Konto Użytkownika"
+							titleIcon={User}
+							subtitle="Zarządzanie profilem"
+							description="Edytuj swoje dane logowania, pobierz kompletną historię inwestycji w formacie otwartym lub bezpowrotnie usuń swoje konto."
+						>
+							<div className="space-y-8">
+								<SettingsSubSection
+									title="Dane autoryzacyjne"
+									desc="Zarządzaj sposobem logowania do aplikacji."
+								>
+									<div className="flex items-center justify-between p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle">
+										<div className="flex items-center gap-4">
+											<div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 flex items-center justify-center shrink-0">
+												<User className="w-5 h-5" />
+											</div>
+											<div>
+												<p className="text-sm font-bold text-t-text-primary">
+													Autoryzacja
+												</p>
+												<p className="text-xs text-t-text-tertiary mt-0.5">
+													Zalogowano bezpiecznym kanałem
+												</p>
+											</div>
 										</div>
+										<ChangePasswordModal hasPassword={hasPassword} />
+									</div>
+								</SettingsSubSection>
+
+								<SettingsSubSection
+									title="Kopia zapasowa"
+									desc="Pobierz swoje dane zgodnie z dyrektywą RODO."
+								>
+									<div className="p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 										<div>
 											<p className="text-sm font-bold text-t-text-primary">
-												Dane logowania
+												Eksportuj portfele
 											</p>
 											<p className="text-xs text-t-text-tertiary mt-0.5">
-												Zalogowano za pomocą ustawień systemu
+												Pobierz kopię swoich danych w formacie JSON.
 											</p>
 										</div>
+										<ExportDataButton />
 									</div>
-									<ChangePasswordModal hasPassword={hasPassword} />
-								</div>
-							</section>
+								</SettingsSubSection>
 
-							{/* SEKCJA 2: EKSPORT DANYCH (MOCKUP) */}
-							<section className="space-y-4">
-								<div>
-									<h2 className="text-lg font-black tracking-tighter text-t-text-primary">
-										Twoje Dane
-									</h2>
-									<p className="text-xs font-medium text-t-text-tertiary mt-1">
-										Zarządzaj swoimi danymi zgodnie z RODO.
-									</p>
-								</div>
-								<div className="p-4 rounded-2xl bg-t-bg-panel border border-t-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-									<div>
-										<p className="text-sm font-bold text-t-text-primary">
-											Eksportuj portfele
-										</p>
-										<p className="text-xs text-t-text-tertiary mt-0.5">
-											Pobierz kopię swoich danych w formacie JSON.
-										</p>
+								<SettingsSubSection
+									title={
+										<span className="flex items-center gap-2 text-rose-500">
+											<AlertTriangle className="w-4 h-4" /> Strefa Niebezpieczna
+										</span>
+									}
+									desc="Działania wykonane w tej sekcji są natychmiastowe i nieodwracalne."
+								>
+									<div className="p-5 border border-rose-500/30 bg-rose-500/5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+										<div className="space-y-1 pr-4">
+											<p className="text-sm font-bold text-rose-500">
+												Trwałe usunięcie konta
+											</p>
+											<p className="text-xs font-medium text-rose-500/70 leading-relaxed">
+												Skasuje Twoje konto, portfele, historię transakcji oraz
+												aktywa.
+											</p>
+										</div>
+										<DeleteAccountTool
+											hasPassword={hasPassword}
+											isTwoFactorEnabled={isTwoFactorEnabled}
+										/>
 									</div>
-									<ExportDataButton />
-								</div>
-							</section>
+								</SettingsSubSection>
+							</div>
+						</SectionLayout>
+					</div>
+				)}
 
-							{/* SEKCJA 3: STREFA NIEBEZPIECZNA (DANGER ZONE) WZOROWANA NA HARD ERASE TOOL */}
-							<section className="space-y-4 pt-6 border-t border-rose-500/10">
-								<div>
-									<h2 className="text-lg font-black tracking-tighter text-rose-500 flex items-center gap-2">
-										<AlertTriangle className="w-5 h-5" />
-										Strefa Niebezpieczna
-									</h2>
-									<p className="text-xs font-medium text-t-text-tertiary mt-1">
-										Działania wykonane w tej sekcji są nieodwracalne.
-									</p>
-								</div>
+				{activeTab === "security" && (
+					<div className="animate-in slide-in-from-right-4 duration-300 fade-in">
+						<SectionLayout
+							title="Bezpieczeństwo"
+							titleIcon={Lock}
+							subtitle="Ochrona dostępu"
+							description="Zarządzaj dodatkowymi warstwami ochrony Twoich danych, takimi jak uwierzytelnianie dwuetapowe (2FA), oraz monitoruj logowania."
+						>
+							<div className="space-y-6">
+								<TwoFactorManager initialEnabled={isTwoFactorEnabled} />
+								<ActiveSessions />
+							</div>
+						</SectionLayout>
+					</div>
+				)}
 
-								<div className="p-5 border border-rose-500/30 bg-rose-500/5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-									<div className="space-y-1 pr-4">
-										<p className="text-sm font-bold text-rose-500">
-											Trwałe usunięcie konta
-										</p>
-										<p className="text-xs font-medium text-rose-500/70 leading-relaxed">
-											Ta operacja natychmiastowo i nieodwracalnie skasuje Twoje
-											konto, wszystkie utworzone portfele, historię transakcji
-											oraz aktywa.
-										</p>
-									</div>
-
-									<DeleteAccountTool
-										hasPassword={hasPassword}
-										isTwoFactorEnabled={isTwoFactorEnabled}
-									/>
-								</div>
-							</section>
-						</div>
-					)}
-
-					{activeTab === "security" && (
-						<div className="space-y-8 animate-in fade-in duration-300">
-							<section className="space-y-4">
-								<div>
-									<h2 className="text-lg font-black tracking-tighter text-t-text-primary">
-										Zabezpieczenia Konta
-									</h2>
-									<p className="text-xs font-medium text-t-text-tertiary mt-1">
-										Zarządzaj dodatkowymi warstwami ochrony Twoich danych.
-									</p>
-								</div>
-
-								<div className="space-y-3">
-									{/* Tutaj przenosimy 2FA */}
-									<TwoFactorManager initialEnabled={isTwoFactorEnabled} />
-
-									{/* Tabela aktywnych urządzeń */}
-									<ActiveSessions />
-								</div>
-							</section>
-						</div>
-					)}
-					{activeTab === "bonds-admin" && (
-						<div className="space-y-6 animate-in slide-in-from-right-4 duration-500 fade-in">
-							<SettingsSection
-								title="Baza Danych Ministerstwa Finansów"
-								desc="Globalne parametry silnika obligacji (Odczyty inflacji GUS oraz konfiguracje serii)."
-							>
-								{/* 🚀 Wpinamy nasz nowy potężny komponent */}
-								<BondsAdminPanel />
-							</SettingsSection>
-						</div>
-					)}
-				</main>
+				{activeTab === "bonds-admin" && isAdmin && (
+					<div className="animate-in slide-in-from-right-4 duration-300 fade-in">
+						<SectionLayout
+							title="Parametry Obligacji"
+							titleIcon={Landmark}
+							subtitle="Baza MF & GUS"
+							description="Panel administracyjny do zarządzania globalnymi parametrami silnika obligacji skarbowych (odczyty inflacji oraz konfiguracje poszczególnych serii)."
+						>
+							<BondsAdminPanel />
+						</SectionLayout>
+					</div>
+				)}
 			</div>
 		</div>
 	);
@@ -325,35 +434,13 @@ export default function SettingsClient({
 // KOMPONENTY POMOCNICZE
 // =========================================================
 
-function TabButton({ active, onClick, icon: Icon, label }: any) {
+function SettingsSubSection({ title, desc, children }: any) {
 	return (
-		<button
-			onClick={onClick}
-			className={cn(
-				"w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300",
-				active
-					? "bg-blue-600/10 text-blue-500 dark:text-blue-400 border border-blue-500/20 shadow-sm"
-					: "text-t-text-secondary hover:text-t-text-primary hover:bg-black/5 dark:hover:bg-white/5 border border-transparent",
-			)}
-		>
-			<Icon
-				className={cn(
-					"w-4 h-4",
-					active ? "text-blue-500" : "text-t-text-tertiary",
-				)}
-			/>
-			{label}
-		</button>
-	);
-}
-
-function SettingsSection({ title, desc, children }: any) {
-	return (
-		<section className="space-y-4">
-			<div className="mb-6 border-b border-t-border-subtle pb-4">
-				<h2 className="text-lg font-black tracking-tighter text-t-text-primary">
+		<section className="space-y-3">
+			<div className="mb-3 border-b border-t-border-subtle pb-2">
+				<h3 className="text-sm font-black tracking-tight text-t-text-primary">
 					{title}
-				</h2>
+				</h3>
 				{desc && (
 					<p className="text-xs font-medium text-t-text-tertiary mt-1">
 						{desc}
@@ -379,7 +466,6 @@ function ToggleRow({ title, desc, isActive, onClick }: any) {
 					{desc}
 				</p>
 			</div>
-
 			<div
 				className={cn(
 					"relative w-10 h-5 rounded-full transition-colors duration-300 shrink-0 border",

@@ -89,7 +89,7 @@ export function ActiveSessions() {
 				)}
 
 				<div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-t-border-subtle/50 bg-black/5 dark:bg-white/5">
-					<div className="rounded-2xl bg-t-bg-panel border border-t-border-subtle overflow-hidden">
+					<div className=" flex-1 rounded-2xl bg-t-bg-panel border border-t-border-subtle overflow-hidden">
 						{/* NAGŁÓWEK SEKCJI */}
 						<div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-t-border-subtle/50 bg-black/5 dark:bg-white/5">
 							<div>

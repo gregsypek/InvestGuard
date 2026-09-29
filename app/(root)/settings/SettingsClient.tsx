@@ -79,15 +79,7 @@ export default function SettingsClient({
 
 	return (
 		<div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
-			<div className="mb-8">
-				<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-t-text-primary mb-2">
-					Ustawienia
-				</h1>
-
-				<p className="text-sm font-medium text-t-text-tertiary">
-					Zarządzaj swoimi preferencjami, wyglądem aplikacji i bezpieczeństwem.
-				</p>
-			</div>
+			{/* 🚀 Usunięto stary nagłówek. Odstęp górny jest teraz w PortfoliosHeader. */}
 
 			<div className="flex flex-col md:flex-row gap-8">
 				<aside className="w-full md:w-64 shrink-0 space-y-1">

@@ -288,7 +288,7 @@ export function UserDashboard(props: UserDashboardProps) {
 								icon={Settings}
 								variant="outline"
 								className="h-9 border-t-border bg-t-bg-base text-t-text-secondary hover:text-t-text-primary"
-								href="/settings"
+								href="/settings?from=dashboard"
 							/>
 						</div>
 						{/* Wskaźnik ostatniej aktualizacji */}
@@ -614,7 +614,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					subtitle="Faktyczna kwota wypracowana na rynku"
 					description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
 				>
-					<div className="h-64 mt-6">
+					<div className="h-96 mt-6">
 						<AbsoluteDailyPnLChart key={chartMode} data={absoluteChartData} />
 					</div>
 				</SectionLayout>
@@ -625,7 +625,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					subtitle="Porównanie Strategii"
 					description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w PLN.`}
 				>
-					<div className="h-72 mt-6">
+					<div className="h-96 mt-6">
 						<PortfoliosComparisonChart
 							key={`compare-${chartMode}`}
 							data={portfoliosComparisonData}
@@ -642,7 +642,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					subtitle="Portfel vs Indeksy"
 					description="Wykres przedstawia skumulowaną stopę zwrotu Twojego portfela w wybranym czasie, porównaną z wybranymi przez Ciebie indeksami światowymi. Wszystkie wartości startują od zera, co pozwala na obiektywną ocenę siły Twoich inwestycji względem szerokiego rynku."
 				>
-					<div className="h-72 mt-6">
+					<div className="h-96 mt-6">
 						<PortfolioBenchmarkChart
 							key={chartMode}
 							data={benchmarkChartData}

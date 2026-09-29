@@ -1,5 +1,4 @@
-// Inteligentny parser, który naprawia błędy amerykańskiego formatowania z serwera
-
+// Helper function to handle robust currency formatting
 export const formatCurrency = (
 	val: string | number | null | undefined,
 	decimals: number = 2,
@@ -7,10 +6,11 @@ export const formatCurrency = (
 	if (val === null || val === undefined) return "0,00";
 
 	let normalized = val.toString().replace(/\s/g, "");
-	// Jeśli serwer przysłał "16,322.50" (format US)
+
+	// If the server sent "16,322.50" (US format)
 	if (normalized.includes(",") && normalized.includes(".")) {
 		normalized = normalized.replace(/,/g, "");
-		// Jeśli serwer przysłał "16,322" (bez groszy) lub "16,32" (polski ułamek)
+		// If the server sent "16,322" (no decimals) or "16,32" (Polish decimal)
 	} else if (normalized.includes(",") && !normalized.includes(".")) {
 		if (normalized.split(",")[1].length === 3) {
 			normalized = normalized.replace(/,/g, "");

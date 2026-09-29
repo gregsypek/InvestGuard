@@ -88,15 +88,6 @@ interface ComparisonTooltipProps {
 	chartMode: "VALUE" | "PERCENTAGE";
 }
 
-const COLORS = [
-	"#3b82f6",
-	"#ec4899",
-	"#f59e0b",
-	"#10b981",
-	"#8b5cf6",
-	"#06b6d4",
-];
-
 export function PortfoliosComparisonChart({
 	data,
 	portfolios,

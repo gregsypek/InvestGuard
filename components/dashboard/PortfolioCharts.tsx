@@ -26,15 +26,33 @@ import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 
+// --- TYPY DLA DANYCH WEJŚCIOWYCH ---
 export interface ChartDataPoint {
 	date: string;
 	value: number;
 	invested: number;
 }
 
+export interface TransactionData {
+	id?: string;
+	type: "BUY" | "SELL" | "DEPOSIT" | "WITHDRAWAL" | string;
+	date?: string;
+	executedAt?: string | Date;
+	ticker?: string;
+	assetName?: string;
+	executedValue?: number;
+	[key: string]: unknown;
+}
+
+export interface MergedDataPoint extends ChartDataPoint {
+	buyEvent: number | null;
+	sellEvent: number | null;
+	txDetails: TransactionData[] | null;
+}
+
 interface PortfolioChartProps {
 	data: ChartDataPoint[];
-	transactions?: any[]; // Dodano transakcje do połączenia funkcjonalności
+	transactions?: TransactionData[];
 	mode?: "VALUE" | "PERCENTAGE";
 }
 
@@ -52,7 +70,7 @@ export function PortfolioChart({
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	// --- LOGIKA MERGOWANIA TRANSAKCJI Z DANYMI WYKRESU ---
-	const mergedData = useMemo(() => {
+	const mergedData: MergedDataPoint[] = useMemo(() => {
 		if (!data || data.length === 0) return [];
 
 		const txsWithTime = transactions.map((t) => {
@@ -100,8 +118,8 @@ export function PortfolioChart({
 
 	if (!mergedData || mergedData.length === 0) {
 		return (
-			<div className="flex flex-col items-center justify-center h-full text-center space-y-2 opacity-60">
-				<p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+			<div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center space-y-2 opacity-60">
+				<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
 					Brak danych historycznych
 				</p>
 			</div>
@@ -134,25 +152,26 @@ export function PortfolioChart({
 				}`}
 			>
 				{isPositive ? (
-					<TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+					<TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
 				) : (
-					<TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+					<TrendingDown className="w-3.5 h-3.5 text-rose-500" />
 				)}
 				<span
-					className={`text-[11px] font-bold tabular-nums ${isPositive ? "text-emerald-400" : "text-rose-400"}`}
+					className={`text-[11px] font-bold tabular-nums ${isPositive ? "text-emerald-500" : "text-rose-500"}`}
 				>
-					{!compact && (
-						<span className="text-slate-400 mr-1 font-medium">
-							Wynik całkowity:
+					{!compact ? (
+						<span className="text-t-text-tertiary mr-1 font-medium">
+							Prosta Stopa Zwrotu (Simple ROI):
 						</span>
+					) : (
+						<span className="text-t-text-tertiary mr-1 font-medium">ROI:</span>
 					)}
 					{trendValue}
 				</span>
 			</div>
 
-			{/* Mini-legenda transakcji (wyświetlana tylko gdy są transakcje) */}
 			{!compact && transactions.length > 0 && (
-				<div className="hidden sm:flex items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+				<div className="hidden sm:flex items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 					<div className="flex items-center gap-1.5">
 						<div className="w-2 h-2 rounded-full bg-emerald-500" /> Wpłaty/Kupno
 					</div>
@@ -167,25 +186,13 @@ export function PortfolioChart({
 
 	// --- RENDEROWANIE WYKRESU ---
 	const chartContent = (
-		<ChartContainer className="h-full min-h-0 w-full">
+		<ChartContainer className="h-full min-h-[300px] w-full flex-1">
 			<ResponsiveContainer width="100%" height="100%">
 				<ComposedChart
 					data={mergedData}
-					margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+					margin={{ top: 10, right: 10, left: -15, bottom: 5 }}
 				>
 					<defs>
-						<linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-							<stop
-								offset="5%"
-								stopColor="var(--theme-primary)"
-								stopOpacity={0.3}
-							/>
-							<stop
-								offset="95%"
-								stopColor="var(--theme-primary)"
-								stopOpacity={0}
-							/>
-						</linearGradient>
 						<filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%">
 							<feGaussianBlur stdDeviation="4" result="blur" />
 							<feMerge>
@@ -198,14 +205,18 @@ export function PortfolioChart({
 					<CartesianGrid
 						strokeDasharray="2 6"
 						vertical={false}
-						stroke="rgba(148,163,184,0.08)"
+						stroke="var(--t-border-subtle)"
 					/>
 
 					<XAxis
 						dataKey="date"
 						axisLine={false}
 						tickLine={false}
-						tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
+						tick={{
+							fontSize: 10,
+							fill: "var(--t-text-tertiary)",
+							fontWeight: 500,
+						}}
 						tickMargin={12}
 						tickFormatter={(val) =>
 							format(new Date(val), "dd MMM", { locale: pl })
@@ -216,7 +227,11 @@ export function PortfolioChart({
 					<YAxis
 						axisLine={false}
 						tickLine={false}
-						tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
+						tick={{
+							fontSize: 10,
+							fill: "var(--t-text-tertiary)",
+							fontWeight: 500,
+						}}
 						width={mode === "PERCENTAGE" ? 40 : 55}
 						domain={["auto", "auto"]}
 						tickFormatter={(val) => {
@@ -229,18 +244,15 @@ export function PortfolioChart({
 					/>
 
 					{mode === "PERCENTAGE" && (
-						<ReferenceLine
-							y={0}
-							stroke="rgba(148,163,184,0.25)"
-							strokeWidth={1}
-						/>
+						<ReferenceLine y={0} stroke="var(--t-border)" strokeWidth={1} />
 					)}
 
 					<Tooltip
 						content={<CustomTooltip mode={mode} />}
-						cursor={{ stroke: "rgba(148,163,184,0.15)", strokeWidth: 2 }}
+						cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
+						wrapperStyle={{ zIndex: 1000, outline: "none" }}
 					/>
-					{/* ❌ 2. ABY WYŁĄCZYĆ NIEBIESKI GRADIENT: zmień fill="url(#colorValue)" na fill="transparent" poniżej */}
+
 					<Area
 						type="monotone"
 						dataKey="value"
@@ -252,17 +264,16 @@ export function PortfolioChart({
 						activeDot={{
 							r: 6,
 							fill: "var(--theme-primary)",
-							stroke: "#1e293b",
+							stroke: "var(--t-bg-panel)",
 							strokeWidth: 2,
 						}}
 					/>
 
-					{/* Linia wpłaconego kapitału - renderujemy TYLKO w trybie kwotowym (VALUE) */}
 					{mode === "VALUE" && (
 						<Line
 							type="stepAfter"
 							dataKey="invested"
-							stroke="#64748b"
+							stroke="var(--t-text-tertiary)"
 							strokeWidth={2}
 							strokeDasharray="5 5"
 							dot={false}
@@ -271,7 +282,6 @@ export function PortfolioChart({
 						/>
 					)}
 
-					{/* Kropki transakcji na wykresie */}
 					{transactions.length > 0 && (
 						<Scatter dataKey="buyEvent" fill="#10b981" />
 					)}
@@ -285,38 +295,38 @@ export function PortfolioChart({
 
 	if (isExpanded) {
 		return (
-			<div className="fixed inset-0 z-[100] bg-slate-950/97 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
+			<div className="fixed inset-0 z-[999] bg-t-bg-base/95 backdrop-blur-xl p-4 sm:p-8 md:p-12 flex flex-col animate-in fade-in duration-200">
 				<div
 					className="pointer-events-none absolute inset-0 opacity-40"
 					style={{
 						background:
-							"radial-gradient(circle at 15% 10%, rgba(59,130,246,0.08), transparent 45%)",
+							"radial-gradient(circle at 15% 10%, var(--theme-soft), transparent 45%)",
 					}}
 				/>
 				<div className="relative flex justify-between items-center mb-6">
-					<div className="flex items-start gap-3 flex-col  sm:flex-row">
-						<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
-							<Wallet2 className="w-5 h-5 text-blue-400" />
+					<div className="flex items-start gap-3 flex-col sm:flex-row">
+						<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 hidden sm:block">
+							<Wallet2 className="w-5 h-5 text-blue-500" />
 						</div>
 						<div>
-							<h3 className="text-2xl font-bold text-white tracking-tight">
+							<h3 className="text-xl sm:text-2xl font-bold text-t-text-primary tracking-tight">
 								Szczegóły Inwestycji
 							</h3>
-							<p className="text-sm text-slate-400">
+							<p className="text-xs sm:text-sm text-t-text-secondary">
 								Dokładna analiza wartości kapitału w czasie i historia
 								transakcji
 							</p>
 						</div>
-						<div className="ml-2">{trendBadge(false)}</div>
+						<div className="mt-2 sm:mt-0 sm:ml-4">{trendBadge(false)}</div>
 					</div>
 					<button
 						onClick={() => setIsExpanded(false)}
-						className="p-2.5 bg-slate-800/80 hover:bg-blue-500/20 text-slate-300 hover:text-blue-400 rounded-xl transition-colors shadow-lg border border-slate-700/50 hover:border-blue-500/30"
+						className="p-2 sm:p-2.5 bg-t-bg-panel hover:bg-rose-500/10 text-t-text-secondary hover:text-rose-500 rounded-xl transition-colors shadow-sm border border-t-border hover:border-rose-500/30"
 					>
-						<Minimize2 className="w-6 h-6" />
+						<Minimize2 className="w-5 h-5 sm:w-6 sm:h-6" />
 					</button>
 				</div>
-				<div className="relative flex-1 min-h-0 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl">
+				<div className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-xl">
 					{chartContent}
 				</div>
 			</div>
@@ -324,31 +334,19 @@ export function PortfolioChart({
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group">
-			{/* ❌ 3. ABY WYŁĄCZYĆ LOGO Z TŁA POZA FULLSCREENEM: Zakomentuj poniższy div */}
-			{/* <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-				<div className="relative w-32 h-32 md:w-48 md:h-48 opacity-[0.03] dark:opacity-5 grayscale">
-					<Image
-						src="/logo-light.svg"
-						alt="Watermark"
-						fill
-						className="object-contain"
-					/>
-				</div>
-			</div> */}
-			{/* ------------------------------------------------------------------------- */}
-			<div className="relative z-10 flex items-center justify-between px-1 pb-2 shrink-0">
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-5 shadow-sm">
+			<div className="flex justify-between items-start z-20 mb-2">
 				<div>{trendBadge(true)}</div>
 				<button
 					onClick={() => setIsExpanded(true)}
-					className="p-1.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-emerald-400 rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm z-10"
+					className="p-1.5 bg-t-bg-base border border-t-border text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
 					title="Powiększ wykres"
 				>
 					<Maximize2 className="w-4 h-4" />
 				</button>
 			</div>
 
-			<div className="relative z-10 flex-1 min-h-0">{chartContent}</div>
+			<div className="flex-1 w-full min-h-0 relative z-10">{chartContent}</div>
 		</div>
 	);
 }
@@ -356,9 +354,17 @@ export function PortfolioChart({
 // ----------------------------------------------------------------------
 // TYPY DLA TOOLTIPA
 // ----------------------------------------------------------------------
+interface TooltipPayloadItem {
+	dataKey: string;
+	value: number;
+	color?: string;
+	name?: string;
+	payload: MergedDataPoint;
+}
+
 interface CustomTooltipProps {
 	active?: boolean;
-	payload?: any[];
+	payload?: TooltipPayloadItem[];
 	label?: string;
 	mode: "VALUE" | "PERCENTAGE";
 }
@@ -379,12 +385,12 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 		const difference = value - invested;
 
 		return (
-			<div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/40 rounded-2xl p-4 shadow-2xl shadow-black/40 min-w-[220px] overflow-hidden z-50">
+			<div className="bg-t-bg-panel/95 backdrop-blur-md border border-t-border rounded-xl p-4 shadow-xl max-w-[280px]">
 				<div
 					className={`absolute top-0 left-0 right-0 h-[2px] ${isProfit ? "bg-gradient-to-r from-emerald-400 to-emerald-600" : "bg-gradient-to-r from-rose-400 to-rose-600"}`}
 				/>
 
-				<p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-800 pb-2">
+				<p className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest mb-3 border-b border-t-border pb-1.5">
 					{format(new Date(label), "dd MMMM yyyy", { locale: pl })}
 				</p>
 
@@ -393,17 +399,17 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 					<div className="flex justify-between items-center text-xs gap-4">
 						<div className="flex items-center gap-2">
 							<span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-							<span className="text-slate-400">
+							<span className="text-t-text-secondary">
 								{mode === "PERCENTAGE" ? "Zwrot:" : "Wycena:"}
 							</span>
 						</div>
 						<span
 							className={
 								mode === "PERCENTAGE" && isProfit
-									? "font-bold text-emerald-400"
+									? "font-bold text-emerald-500"
 									: mode === "PERCENTAGE" && !isProfit
-										? "font-bold text-rose-400"
-										: "font-bold text-white"
+										? "font-bold text-rose-500"
+										: "font-bold text-t-text-primary"
 							}
 						>
 							{formatVal(value)}
@@ -412,21 +418,21 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 
 					{mode === "VALUE" && (
 						<>
-							<div className="flex justify-between items-center text-xs">
+							<div className="flex justify-between items-center text-xs gap-4">
 								<div className="flex items-center gap-2">
-									<span className="w-2 h-2 rounded-full bg-slate-500" />
-									<span className="text-slate-400">Zainwestowano:</span>
+									<span className="w-2 h-2 rounded-full bg-t-text-tertiary" />
+									<span className="text-t-text-secondary">Zainwestowano:</span>
 								</div>
-								<span className="font-bold text-slate-300">
+								<span className="font-bold text-t-text-primary">
 									{formatVal(invested)}
 								</span>
 							</div>
-							<div className="pt-2 mt-2 border-t border-slate-800/80 flex justify-between items-center">
-								<span className="text-[11px] font-bold text-slate-500 uppercase">
+							<div className="pt-2 mt-2 border-t border-t-border-subtle flex justify-between items-center">
+								<span className="text-[11px] font-bold text-t-text-tertiary uppercase">
 									Zysk / Strata:
 								</span>
 								<span
-									className={`text-sm font-black tabular-nums ${isProfit ? "text-emerald-400" : "text-rose-400"}`}
+									className={`text-sm font-black tabular-nums ${isProfit ? "text-emerald-500" : "text-rose-500"}`}
 								>
 									{isProfit ? "+" : ""}
 									{formatVal(difference)}
@@ -438,11 +444,11 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 
 				{/* 2. SEKCJA TRANSAKCJI */}
 				{dataObj.txDetails && dataObj.txDetails.length > 0 && (
-					<div className="mt-3 pt-3 border-t border-slate-800/80 border-dashed space-y-2">
-						<p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+					<div className="mt-3 pt-3 border-t border-t-border border-dashed space-y-2">
+						<p className="text-[9px] font-black text-t-text-tertiary uppercase tracking-widest">
 							Zdarzenia w tym okresie:
 						</p>
-						{dataObj.txDetails.map((tx: any, idx: number) => {
+						{dataObj.txDetails.map((tx, idx: number) => {
 							const isBuy = tx.type === "BUY" || tx.type === "DEPOSIT";
 							return (
 								<div key={idx} className="flex flex-col mb-2 last:mb-0">
@@ -450,14 +456,14 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 										<span
 											className={
 												isBuy
-													? "text-emerald-400 font-bold"
-													: "text-rose-400 font-bold"
+													? "text-emerald-500 font-bold"
+													: "text-rose-500 font-bold"
 											}
 										>
 											{isBuy ? "KUPNO" : "SPRZEDAŻ"}{" "}
 											{tx.ticker || tx.assetName || ""}
 										</span>
-										<span className="text-slate-300 font-mono text-right">
+										<span className="text-t-text-secondary font-mono text-right">
 											{formatCurrency(Math.abs(tx.executedValue || 0))} PLN
 										</span>
 									</div>

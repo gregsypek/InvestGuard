@@ -37,10 +37,10 @@ export interface TransactionData {
 	id?: string;
 	type: "BUY" | "SELL" | "DEPOSIT" | "WITHDRAWAL" | string;
 	date?: string;
-	executedAt?: string | Date;
-	ticker?: string;
-	assetName?: string;
-	executedValue?: number;
+	executedAt?: string | Date | null;
+	ticker?: string | null;
+	assetName?: string | null;
+	executedValue?: number | null;
 	[key: string]: unknown;
 }
 

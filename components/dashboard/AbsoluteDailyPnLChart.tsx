@@ -21,12 +21,12 @@ import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 import { useState } from "react";
 
-interface AbsolutePnLDataPoint {
+export interface AbsolutePnLDataPoint {
 	date: string;
 	exactChangePLN: number;
 	totalPortfolioValue: number;
 	netCashFlow: number;
-	isLive?: boolean; // 👈 DODANE
+	isLive?: boolean;
 }
 
 interface AbsoluteDailyPnLChartProps {
@@ -39,13 +39,14 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 
 	if (!data || data.length === 0) {
 		return (
-			<div className="flex items-center justify-center h-full opacity-60">
+			<div className="flex items-center justify-center h-full min-h-[300px] opacity-60">
 				<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
 					Brak danych do wyliczenia dziennego wyniku
 				</p>
 			</div>
 		);
 	}
+
 	// 1. Wyliczamy maksymalne odchylenia dla ZYSKU (lewa oś) i dodajemy 10% marginesu
 	const maxPnL = Math.max(...data.map((d) => Math.abs(d.exactChangePLN)), 50);
 	const pnlDomain = maxPnL * 1.1;
@@ -56,6 +57,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		1000,
 	);
 	const cashDomain = maxCashFlow * 1.1;
+
 	// --- POPRAWIONE OBLICZENIA (TWR) ---
 	let twrMultiplier = 1;
 	let totalPnL = 0;
@@ -84,54 +86,57 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 				}`}
 			>
 				{isPeriodPositive ? (
-					<TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+					<TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
 				) : (
-					<TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+					<TrendingDown className="w-3.5 h-3.5 text-rose-500" />
 				)}
 				<span
 					className={`text-[11px] font-bold tabular-nums ${
-						isPeriodPositive ? "text-emerald-400" : "text-rose-400"
+						isPeriodPositive ? "text-emerald-500" : "text-rose-500"
 					}`}
 				>
+					{!compact ? (
+						<span className="text-t-text-tertiary mr-1 font-medium">
+							Stopa TWR:
+						</span>
+					) : (
+						<span className="text-t-text-tertiary mr-1 font-medium">TWR:</span>
+					)}
 					{isPeriodPositive ? "+" : ""}
 					{pnlPercent.toFixed(2)}%
 				</span>
-				{!compact && (
-					<span
-						className={`text-[10px] font-semibold tabular-nums opacity-80 ${
-							isPeriodPositive ? "text-emerald-400" : "text-rose-400"
-						}`}
-					>
-						(
-						{new Intl.NumberFormat("pl-PL", {
-							style: "currency",
-							currency: "PLN",
-							maximumFractionDigits: 0,
-						}).format(totalPnL)}
-						)
-					</span>
-				)}
+
+				<span
+					className={`text-[10px] font-semibold tabular-nums opacity-80 ${
+						isPeriodPositive ? "text-emerald-500" : "text-rose-500"
+					}`}
+				>
+					(
+					{new Intl.NumberFormat("pl-PL", {
+						style: "currency",
+						currency: "PLN",
+						maximumFractionDigits: 0,
+					}).format(totalPnL)}
+					)
+				</span>
 			</div>
 
-			{/* TOOLTIP INFORMACYJNY TWR */}
-			{
-				<div className="group relative flex items-center justify-center cursor-help">
-					<div className="w-5 h-5 rounded-full border border-slate-400 flex items-center justify-center">
-						<span className="text-[9px] font-bold text-slate-400 inverted-colors  transition-colors">
-							i
-						</span>
-					</div>
-					<div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-56 p-2.5 bg-slate-800 border border-slate-700/60 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
-						<p className="text-[10px] text-slate-300 leading-relaxed normal-case">
-							<strong className="text-white block mb-1">
-								Stopa TWR (Time-Weighted Return)
-							</strong>
-							Pokazuje czystą skuteczność portfela. Ignoruje wpływ Twoich wpłat
-							i wypłat w tym okresie, traktując je neutralnie.
-						</p>
-					</div>
+			<div className="group relative flex items-center justify-center cursor-help z-50">
+				<div className="w-5 h-5 rounded-full border border-t-text-tertiary flex items-center justify-center">
+					<span className="text-[10px] font-bold text-t-text-tertiary transition-colors">
+						i
+					</span>
 				</div>
-			}
+				<div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-56 p-3 bg-t-bg-panel border border-t-border rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+					<p className="text-[10px] text-t-text-secondary leading-relaxed normal-case">
+						<strong className="text-t-text-primary block mb-1">
+							Stopa TWR (Time-Weighted Return)
+						</strong>
+						Pokazuje czystą skuteczność portfela. Ignoruje wpływ Twoich wpłat i
+						wypłat w tym okresie, traktując je neutralnie.
+					</p>
+				</div>
+			</div>
 		</div>
 	);
 
@@ -139,14 +144,13 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	const renderLegend = () => {
 		// Wyciągamy dzisiejszy punkt Live (jeśli istnieje)
 		const liveEntry = data.find((d) => d.isLive);
-		console.log("🚀 ~ renderLegend ~ liveEntry:", liveEntry);
 		const isTodayPositive = (liveEntry?.exactChangePLN ?? 0) >= 0;
 
 		return (
-			<div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-3">
+			<div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4">
 				<div className="flex items-center gap-2">
 					<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" />
-					<span className="text-[11px] font-semibold text-slate-400 tracking-wide">
+					<span className="text-[11px] font-semibold text-t-text-secondary tracking-wide">
 						Dzienny Wynik Rynkowy
 					</span>
 				</div>
@@ -157,11 +161,11 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						<span
 							className={`inline-block w-3 h-3 rounded-sm border border-dashed shrink-0 ${
 								isTodayPositive
-									? "bg-emerald-400/20 border-emerald-400"
-									: "bg-rose-400/20 border-rose-400"
+									? "bg-emerald-500/20 border-emerald-500"
+									: "bg-rose-500/20 border-rose-500"
 							}`}
 						/>
-						<span className="text-[11px] font-semibold text-slate-400 tracking-wide">
+						<span className="text-[11px] font-semibold text-t-text-secondary tracking-wide">
 							Wynik z dzisiaj
 						</span>
 					</div>
@@ -169,20 +173,21 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 
 				<div className="flex items-center gap-2">
 					<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />
-					<span className="text-[11px] font-semibold text-slate-400 tracking-wide">
+					<span className="text-[11px] font-semibold text-t-text-secondary tracking-wide">
 						Wpłaty / Wypłaty
 					</span>
 				</div>
 			</div>
 		);
 	};
+
 	// EN: Reusable chart content for normal and expanded views
 	const chartContent = (
-		<ChartContainer className="h-full min-h-0 w-full">
+		<ChartContainer className="h-full min-h-[300px] w-full flex-1">
 			<ResponsiveContainer width="100%" height="100%">
 				<ComposedChart
 					data={data}
-					margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+					margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
 				>
 					<defs>
 						{/* EN: Gradients for gain / loss bars — richer than a flat fill */}
@@ -206,15 +211,11 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 							<stop offset="0%" stopColor="#fb7185" stopOpacity={0.95} />
 							<stop offset="100%" stopColor="#e11d48" stopOpacity={0.85} />
 						</linearGradient>
-
-						{/* EN: Blue gradient stroke for the cash flow line — the app's accent color */}
 						<linearGradient id="cashFlowGradient" x1="0" y1="0" x2="1" y2="0">
-							<stop offset="0%" stopColor="#60a5fa" />
-							<stop offset="50%" stopColor="#3b82f6" />
-							<stop offset="100%" stopColor="#2563eb" />
+							<stop offset="0%" stopColor="var(--theme-primary)" />
+							<stop offset="50%" stopColor="var(--theme-primary)" />
+							<stop offset="100%" stopColor="var(--theme-primary)" />
 						</linearGradient>
-
-						{/* EN: Vertical fade for the area under the cash flow line */}
 						<linearGradient
 							id="cashFlowAreaGradient"
 							x1="0"
@@ -222,10 +223,17 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 							x2="0"
 							y2="1"
 						>
-							<stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25} />
-							<stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+							<stop
+								offset="0%"
+								stopColor="var(--theme-primary)"
+								stopOpacity={0.25}
+							/>
+							<stop
+								offset="100%"
+								stopColor="var(--theme-primary)"
+								stopOpacity={0}
+							/>
 						</linearGradient>
-
 						{/* EN: Soft glow filter applied to cash flow dots for a premium feel */}
 						<filter id="dotGlow" x="-100%" y="-100%" width="300%" height="300%">
 							<feGaussianBlur stdDeviation="3" result="blur" />
@@ -239,14 +247,18 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 					<CartesianGrid
 						strokeDasharray="2 6"
 						vertical={false}
-						stroke="rgba(148,163,184,0.08)"
+						stroke="var(--t-border-subtle)"
 					/>
 
 					<XAxis
 						dataKey="date"
-						axisLine={{ stroke: "rgba(148,163,184,0.12)" }}
+						axisLine={false}
 						tickLine={false}
-						tick={{ fontSize: 10, fill: "#64748b", fontWeight: 500 }}
+						tick={{
+							fontSize: 10,
+							fill: "var(--t-text-tertiary)",
+							fontWeight: 500,
+						}}
 						tickMargin={12}
 						tickFormatter={(val) =>
 							format(new Date(val), "dd MMM", { locale: pl })
@@ -259,7 +271,11 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						orientation="left"
 						axisLine={false}
 						tickLine={false}
-						tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 500 }}
+						tick={{
+							fontSize: 10,
+							fill: "var(--t-text-tertiary)",
+							fontWeight: 500,
+						}}
 						tickFormatter={(val) =>
 							`${new Intl.NumberFormat("pl-PL", {
 								notation: "compact",
@@ -267,7 +283,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 							}).format(val)} zł`
 						}
 						width={58}
-						// WYMUSZAMY SYMETRIĘ WZGLĘDEM ZERA
 						domain={[-pnlDomain, pnlDomain]}
 					/>
 
@@ -275,10 +290,14 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 					<YAxis
 						yAxisId="right"
 						orientation="right"
-						width={85}
+						width={65}
 						axisLine={false}
 						tickLine={false}
-						tick={{ fontSize: 10, fill: "#3b82f6", fontWeight: 600 }}
+						tick={{
+							fontSize: 10,
+							fill: "var(--theme-primary)",
+							fontWeight: 600,
+						}}
 						// FIX: zero now returns an actual empty string instead of being
 						// passed through Intl.NumberFormat (which coerced "" -> 0 -> "0 zł")
 						tickFormatter={(val) =>
@@ -293,26 +312,26 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						domain={[-cashDomain, cashDomain]}
 					/>
 
-					{/* EN: Zero reference line bound to the left axis (market PnL) */}
 					<ReferenceLine
 						y={0}
 						yAxisId="left"
-						stroke="rgba(148,163,184,0.25)"
+						stroke="var(--t-border)"
 						strokeWidth={1}
 					/>
 
 					<Tooltip
 						content={<AbsolutePnLTooltip />}
-						cursor={{ fill: "rgba(59,130,246,0.04)" }}
+						cursor={{ fill: "var(--t-hover)" }}
+						wrapperStyle={{ zIndex: 1000, outline: "none" }}
 					/>
 
-					<Legend content={renderLegend} />
+					<Legend content={renderLegend} wrapperStyle={{ zIndex: 10 }} />
 
 					{/* EN: Bars are bound to the left Y-Axis */}
 					<Bar
 						yAxisId="left"
 						dataKey="exactChangePLN"
-						name="Dzienny Wynik Rynkowy2"
+						name="Dzienny Wynik Rynkowy"
 						radius={[6, 6, 6, 6]}
 						maxBarSize={28}
 					>
@@ -324,20 +343,16 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 									fill={
 										entry.isLive
 											? isPositive
-												? "rgba(52, 211, 153, 0.2)" // Przezroczysty zielony dla LIVE
-												: "rgba(251, 113, 133, 0.2)" // Przezroczysty czerwony dla LIVE
+												? "rgba(16, 185, 129, 0.2)"
+												: "rgba(244, 63, 94, 0.2)"
 											: isPositive
 												? "url(#positiveBarGradient)"
 												: "url(#negativeBarGradient)"
 									}
 									stroke={
-										entry.isLive
-											? isPositive
-												? "#34d399" // Zielona ramka dla LIVE
-												: "#fb7185" // Czerwona ramka dla LIVE
-											: "none"
+										entry.isLive ? (isPositive ? "#10b981" : "#f43f5e") : "none"
 									}
-									strokeDasharray={entry.isLive ? "4 4" : "none"} // Przerywana linia dla LIVE
+									strokeDasharray={entry.isLive ? "4 4" : "none"}
 									strokeWidth={entry.isLive ? 2 : 0}
 								/>
 							);
@@ -377,8 +392,8 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 										cx={cx}
 										cy={cy}
 										r={4}
-										fill="#3b82f6"
-										stroke="#0f172a"
+										fill="var(--theme-primary)"
+										stroke="var(--t-bg-panel)"
 										strokeWidth={1.5}
 										filter="url(#dotGlow)"
 									/>
@@ -388,8 +403,8 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						}}
 						activeDot={{
 							r: 6,
-							fill: "#3b82f6",
-							stroke: "#fff",
+							fill: "var(--theme-primary)",
+							stroke: "var(--t-bg-panel)",
 							strokeWidth: 2,
 							filter: "url(#dotGlow)",
 						}}
@@ -402,39 +417,39 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	// EN: Render fullscreen overlay
 	if (isExpanded) {
 		return (
-			<div className="fixed inset-0 z-[100] bg-slate-950/97 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
+			<div className="fixed inset-0 z-[999] bg-t-bg-base/95 backdrop-blur-xl p-4 sm:p-8 md:p-12 flex flex-col animate-in fade-in duration-200">
 				{/* EN: Subtle radial blue glow in the background for a premium fintech feel */}
 				<div
 					className="pointer-events-none absolute inset-0 opacity-40"
 					style={{
 						background:
-							"radial-gradient(circle at 15% 10%, rgba(59,130,246,0.12), transparent 45%)",
+							"radial-gradient(circle at 15% 10%, var(--theme-soft), transparent 45%)",
 					}}
 				/>
 				<div className="relative flex justify-between items-center mb-6">
-					<div className="flex items-start gap-3 flex-col  sm:flex-row">
-						<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
-							<TrendingUp className="w-5 h-5 text-blue-400" />
+					<div className="flex items-start gap-3 flex-col sm:flex-row">
+						<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 hidden sm:block">
+							<TrendingUp className="w-5 h-5 text-blue-500" />
 						</div>
 						<div>
-							<h3 className="text-2xl font-bold text-white tracking-tight">
+							<h3 className="text-xl sm:text-2xl font-bold text-t-text-primary tracking-tight">
 								Nominalny Wynik Dzienny
 							</h3>
-							<p className="text-sm text-slate-400">
+							<p className="text-xs sm:text-sm text-t-text-secondary">
 								Widok szczegółowy · Lewa oś: wynik rynkowy · Prawa oś: wpłaty i
 								wypłaty
 							</p>
 						</div>
-						<div className="ml-2">{trendBadge(false)}</div>
+						<div className="mt-2 sm:mt-0 sm:ml-4">{trendBadge(false)}</div>
 					</div>
 					<button
 						onClick={() => setIsExpanded(false)}
-						className="p-2.5 bg-slate-800/80 hover:bg-blue-500/20 text-slate-300 hover:text-blue-400 rounded-xl transition-colors shadow-lg border border-slate-700/50 hover:border-blue-500/30"
+						className="p-2 sm:p-2.5 bg-t-bg-panel hover:bg-rose-500/10 text-t-text-secondary hover:text-rose-500 rounded-xl transition-colors shadow-sm border border-t-border hover:border-rose-500/30"
 					>
-						<Minimize2 className="w-6 h-6" />
+						<Minimize2 className="w-5 h-5 sm:w-6 sm:h-6" />
 					</button>
 				</div>
-				<div className="relative flex flex-col flex-1 min-h-0 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 md:p-8 shadow-2xl h-[350px]">
+				<div className="relative flex flex-col flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-xl">
 					{chartContent}
 				</div>
 			</div>
@@ -447,32 +462,45 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	// that takes up its own space, so the chart is pushed down instead of
 	// being covered.
 	return (
-		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
-			<div className="flex items-center justify-between px-1 pb-2 shrink-0">
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-5 shadow-sm">
+			<div className="flex justify-between items-start z-20 mb-2">
 				<div>{trendBadge(true)}</div>
 				<button
 					onClick={() => setIsExpanded(true)}
-					className="p-1.5 bg-slate-800 border border-slate-700 text-slate-400 hover:text-emerald-400 rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm z-10"
+					className="p-1.5 bg-t-bg-base border border-t-border text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
 					title="Powiększ wykres"
 				>
 					<Maximize2 className="w-4 h-4" />
 				</button>
 			</div>
-			<div className="flex-1 h-[350px] min-h-0">{chartContent}</div>
+			<div className="flex-1 w-full min-h-0 relative z-10">{chartContent}</div>
 		</div>
 	);
 }
 
-// EN: Custom Tooltip logic for dual axis data layout
-function AbsolutePnLTooltip({ active, payload, label }: any) {
-	if (active && payload && payload.length) {
-		const changeValue =
-			payload.find((p: any) => p.dataKey === "exactChangePLN")?.value || 0;
-		const netCashFlow =
-			payload.find((p: any) => p.dataKey === "netCashFlow")?.value || 0;
+// ----------------------------------------------------------------------
+// TOOLTIP TYPES
+// ----------------------------------------------------------------------
+interface TooltipPayloadItem {
+	dataKey: string;
+	value: number;
+	payload: AbsolutePnLDataPoint;
+}
 
-		// Wyciągamy payload bezpiecznie z dowolnego elementu zestawu Recharts
-		const rawPayload = payload[0]?.payload || {};
+interface CustomTooltipProps {
+	active?: boolean;
+	payload?: TooltipPayloadItem[];
+	label?: string;
+}
+
+function AbsolutePnLTooltip({ active, payload, label }: CustomTooltipProps) {
+	if (active && payload && payload.length && label) {
+		const changeValue =
+			payload.find((p) => p.dataKey === "exactChangePLN")?.value || 0;
+		const netCashFlow =
+			payload.find((p) => p.dataKey === "netCashFlow")?.value || 0;
+
+		const rawPayload = payload[0].payload;
 		const totalValue = rawPayload.totalPortfolioValue || 0;
 		const isLive = Boolean(rawPayload.isLive);
 
@@ -480,7 +508,7 @@ function AbsolutePnLTooltip({ active, payload, label }: any) {
 		const date = new Date(label);
 
 		return (
-			<div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/40 rounded-2xl p-4 shadow-2xl shadow-black/40 min-w-[230px] overflow-hidden">
+			<div className="bg-t-bg-panel/95 backdrop-blur-md border border-t-border rounded-xl p-4 shadow-xl max-w-[280px]">
 				<div
 					className={`absolute top-0 left-0 right-0 h-[2px] ${
 						isPositive
@@ -489,24 +517,24 @@ function AbsolutePnLTooltip({ active, payload, label }: any) {
 					}`}
 				/>
 
-				<div className="flex items-center justify-between gap-2 mb-3 border-b border-slate-800 pb-2">
-					<p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+				<div className="flex items-center justify-between gap-4 mb-3 border-b border-t-border pb-2">
+					<p className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
 						{format(date, "dd MMMM yyyy", { locale: pl })}
 					</p>
 					{isLive && (
-						<span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider animate-pulse">
+						<span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider animate-pulse">
 							Na żywo
 						</span>
 					)}
 				</div>
 
 				<div className="space-y-1 mb-3">
-					<p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+					<p className="text-[10px] text-t-text-secondary uppercase tracking-wider font-semibold">
 						Czysty Wynik Rynkowy
 					</p>
 					<p
 						className={`text-xl font-black tracking-tight ${
-							isPositive ? "text-emerald-400" : "text-rose-400"
+							isPositive ? "text-emerald-500" : "text-rose-500"
 						}`}
 					>
 						{isPositive ? "+" : ""}
@@ -518,11 +546,11 @@ function AbsolutePnLTooltip({ active, payload, label }: any) {
 				</div>
 
 				{netCashFlow !== 0 && (
-					<div className="mb-3 pt-2 border-t border-slate-800/50 flex justify-between items-center bg-blue-500/5 -mx-1 px-1 py-1.5 rounded-lg">
-						<span className="text-[9px] text-blue-400 uppercase tracking-widest font-bold">
+					<div className="mb-3 pt-2 border-t border-t-border-subtle flex justify-between items-center bg-[var(--theme-soft)] -mx-1 px-2 py-1.5 rounded-lg">
+						<span className="text-[9px] text-[var(--theme-primary)] uppercase tracking-widest font-bold">
 							{netCashFlow > 0 ? "Wpłata" : "Wypłata"}
 						</span>
-						<span className="text-[11px] text-blue-400 font-bold">
+						<span className="text-[11px] text-[var(--theme-primary)] font-bold">
 							{netCashFlow > 0 ? "+" : ""}
 							{new Intl.NumberFormat("pl-PL", {
 								style: "currency",
@@ -533,11 +561,11 @@ function AbsolutePnLTooltip({ active, payload, label }: any) {
 					</div>
 				)}
 
-				<div className="mt-2 pt-2 border-t border-slate-800/50 flex justify-between items-center">
-					<span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">
+				<div className="mt-2 pt-2 border-t border-t-border-subtle flex justify-between items-center gap-4">
+					<span className="text-[9px] text-t-text-tertiary uppercase tracking-widest font-bold">
 						Suma aktywów
 					</span>
-					<span className="text-[10px] text-slate-200 font-bold">
+					<span className="text-[10px] text-t-text-primary font-bold">
 						{new Intl.NumberFormat("pl-PL", {
 							style: "currency",
 							currency: "PLN",

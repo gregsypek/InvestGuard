@@ -22,13 +22,15 @@ type Props = {
 	portfolio: PortfolioWithAssets;
 	name: string;
 	totalValue: number;
-	customBreadcrumbs?: React.ReactNode; // Tu wstrzykniemy Twój kod
-	userName?: string | null; // EN: New prop for the user's name
+	customBreadcrumbs?: React.ReactNode;
+	userName?: string | null;
+	hideStats?: boolean; // 🚀 DODANA FLAGA
 };
 export const DashboardHeader = ({
 	portfolio,
 	name,
 	customBreadcrumbs,
+	hideStats = false, // 🚀 Wartość domyślna
 }: Props) => {
 	const pathname = usePathname(); // EN: Get current URL path
 	// EN: Check if we are currently on the add-asset subpage
@@ -120,18 +122,20 @@ export const DashboardHeader = ({
 						<p className="text-slate-400 font-medium mt-1 text-sm md:text-base">
 							{isAddAssetPage
 								? "Zarządzaj składem swojego portfela"
-								: "Zarządzaj portfelem i kontroluj strategie"}
+								: isSettingsPage
+									? "Zarządzaj technicznymi aspektami portfela" // 🚀 Lepszy opis
+									: "Zarządzaj portfelem i kontroluj strategie"}
 						</p>
 					</div>
 
 					{/* === PORTFOLIO MANAGEMENT BUTTON === */}
 					{!isAddAssetPage && portfolio.id && (
 						<Link
-							// EN: If on settings page, clicking goes back to dashboard. Otherwise, go to settings.
 							href={
 								isSettingsPage
 									? `/dashboard/${portfolio.id}`
-									: `/dashboard/${portfolio.id}/settings`
+									: // 🚀 DODANE ?from=dashboard
+										`/dashboard/${portfolio.id}/settings?from=dashboard`
 							}
 							className={cn(
 								"group flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 shadow-sm border",
@@ -141,10 +145,8 @@ export const DashboardHeader = ({
 							)}
 						>
 							{isSettingsPage ? (
-								// EN: Arrow left when acting as a return button
 								<ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
 							) : (
-								// EN: Wrench when acting as the entry to management
 								<Wrench className="w-4 h-4 group-hover:-rotate-12 transition-transform duration-300" />
 							)}
 
@@ -155,69 +157,70 @@ export const DashboardHeader = ({
 					)}
 				</div>
 			</div>
-			{/* DÓŁ: Statystyki */}
-			<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pb-2 md:pb-0">
-				{/* OGROMNA Całkowita Wartość - WYRÓŻNIONA */}
-				<div className="space-y-1">
-					<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[10px] uppercase mb-1">
-						<Wallet2 className="w-3.5 h-3.5" />
-						<span>Całkowita Wartość</span>
-					</div>
-					<div className="flex items-baseline gap-2">
-						<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
-							{formatCurrency(totalPortfolioValue)}
-						</h2>
-						<span className="text-xl md:text-2xl text-slate-500 font-bold">
-							PLN
-						</span>
-					</div>
-				</div>
-
-				{/* PRAWA STRONA: Mniejsze statystyki z neonowymi akcentami */}
-				<div className="flex self-start sm:justify-end flex-wrap gap-8 md:gap-12 overflow-x-auto no-scrollbar">
-					{/* Kapitał */}
-					<ValueCard
-						label="Zainwestowany kapitał"
-						icon={Container}
-						value={totalInvestedCapital}
-						formatString
-						suffix="PLN"
-					/>
-
-					{/* P&L */}
-					<ValueCard label="Całkowity Wynik (P&L)">
-						<div className="flex items-center gap-2 font-mono">
-							<span
-								className={cn(
-									"text-xl font-bold tracking-tight transition-colors",
-									totalProfitAmount > 0
-										? // Nawet w trybie "jasnym" tło headera jest bardzo ciemne, więc możemy zachować tu neonowe akcenty!
-											"text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]"
-										: totalProfitAmount < 0
-											? "text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]"
-											: "text-slate-400",
-								)}
-							>
-								{totalProfitAmount > 0 ? "+" : ""}
-								{formatCurrency(totalProfitAmount)}
-							</span>
-							<span
-								className={cn(
-									"flex items-center text-xs font-bold px-2 py-0.5 rounded-sm transition-colors",
-									totalProfitPercent > 0
-										? "bg-emerald-500/10 text-emerald-400"
-										: totalProfitPercent < 0
-											? "bg-rose-500/10 text-rose-500"
-											: "bg-white/10 text-slate-300",
-								)}
-							>
-								{totalProfitPercent > 0 ? "+" : ""}
-								{totalProfitPercent.toFixed(2)}%
+			{/* 🚀 DÓŁ: Ukrywamy statystyki (Wartość, P&L), gdy włączona jest flaga hideStats */}
+			{!hideStats && (
+				<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pb-2 md:pb-0">
+					{/* OGROMNA Całkowita Wartość - WYRÓŻNIONA */}
+					<div className="space-y-1">
+						<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[10px] uppercase mb-1">
+							<Wallet2 className="w-3.5 h-3.5" />
+							<span>Całkowita Wartość</span>
+						</div>
+						<div className="flex items-baseline gap-2">
+							<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
+								{formatCurrency(totalPortfolioValue)}
+							</h2>
+							<span className="text-xl md:text-2xl text-slate-500 font-bold">
+								PLN
 							</span>
 						</div>
-					</ValueCard>
+					</div>
+
+					{/* PRAWA STRONA: Mniejsze statystyki z neonowymi akcentami */}
+					<div className="flex self-start sm:justify-end flex-wrap gap-8 md:gap-12 overflow-x-auto no-scrollbar">
+						{/* Kapitał */}
+						<ValueCard
+							label="Zainwestowany kapitał"
+							icon={Container}
+							value={totalInvestedCapital}
+							formatString
+							suffix="PLN"
+						/>
+
+						{/* P&L */}
+						<ValueCard label="Całkowity Wynik (P&L)">
+							<div className="flex items-center gap-2 font-mono">
+								<span
+									className={cn(
+										"text-xl font-bold tracking-tight transition-colors",
+										totalProfitAmount > 0
+											? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]"
+											: totalProfitAmount < 0
+												? "text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]"
+												: "text-slate-400",
+									)}
+								>
+									{totalProfitAmount > 0 ? "+" : ""}
+									{formatCurrency(totalProfitAmount)}
+								</span>
+								<span
+									className={cn(
+										"flex items-center text-xs font-bold px-2 py-0.5 rounded-sm transition-colors",
+										totalProfitPercent > 0
+											? "bg-emerald-500/10 text-emerald-400"
+											: totalProfitPercent < 0
+												? "bg-rose-500/10 text-rose-500"
+												: "bg-white/10 text-slate-300",
+									)}
+								>
+									{totalProfitPercent > 0 ? "+" : ""}
+									{totalProfitPercent.toFixed(2)}%
+								</span>
+							</div>
+						</ValueCard>
+					</div>
 				</div>
-			</div>
+			)}
 		</header>
 	);
 };

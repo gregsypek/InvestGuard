@@ -297,7 +297,7 @@ export function PlannerDashboardClient({
 					</div>
 				}
 			>
-				<div className="w-full  border border-t-border rounded-2xl p-5 mb-8 shadow-sm">
+				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-5 mb-8 shadow-sm">
 					<div className="flex items-center justify-between mb-3">
 						<div className="flex items-center gap-2">
 							<h3 className="text-sm font-black tracking-tight text-t-text-primary">

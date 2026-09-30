@@ -392,7 +392,7 @@ export function PlanCard({
 			className={cn(
 				"group relative rounded-2xl p-4 transition-all duration-300  flex min-w-[350px] flex-col h-full",
 				// ZMIANA: Przejście na zmienne systemowe
-				"bg-t-bg-base border border-t-border hover:border-t-border-subtle",
+				"bg-t-bg-panel border border-t-border hover:border-t-border-subtle",
 				isLocked && "backdrop-blur-[1px] opacity-90",
 			)}
 		>

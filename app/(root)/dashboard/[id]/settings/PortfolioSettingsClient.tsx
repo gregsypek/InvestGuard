@@ -46,7 +46,7 @@ export default function PortfolioSettingsClient({
 	return (
 		<div className="max-w-7xl mx-auto w-full space-y-6 animate-in fade-in duration-500 pb-24">
 			{/* ZINTEGROWANY NAGŁÓWEK NARZĘDZI */}
-			<header className="relative overflow-hidden flex flex-col w-full border-b border-white/10 bg-slate-900 rounded-b-2xl text-slate-100 p-6 md:p-8 shadow-lg mb-8 mt-2 md:mt-0">
+			<header className="relative sticky overflow-hidden flex flex-col w-full border-b border-white/10 bg-slate-900 rounded-b-2xl text-slate-100 p-3 md:p-8 shadow-lg mb-8 mt-2 md:mt-0">
 				{/* Świetlny Gradient SVG */}
 				<div className="absolute inset-0 pointer-events-none select-none opacity-40 mix-blend-screen">
 					<svg
@@ -125,7 +125,7 @@ export default function PortfolioSettingsClient({
 				</div>
 
 				{/* 🚀 IDEALNIE SPÓJNE KARTY (Przekopiowane z Twojego SettingsClient) */}
-				<div className="relative z-10 max-w-7xl sm:w-full flex flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4 pt-6 mt-6 border-t border-white/10">
+				<div className="relative z-10 max-w-7xl sm:w-full flex flex-row items-stretch sm:items-center justify-between gap-2 pt-2 mt-2  sm:gap-4 xl:pt-6 xl:mt-6 border-t border-white/10">
 					{/* Karta: Poziom Uprawnień */}
 					<div className="flex flex-col sm:flex-row justify-start items-center gap-1.5 sm:gap-3 w-full sm:w-auto">
 						{/* Etykieta z ikoną */}
@@ -161,6 +161,31 @@ export default function PortfolioSettingsClient({
 					</div>
 				</div>
 			</header>
+
+			{/* 🚀 STICKY PASEK NARZĘDZI (Przykleja się do góry przy scrollu) */}
+			{/* <div className="sticky top-0 z-50 w-full bg-slate-900 backdrop-blur-md border-b border-t-border-subtle py-3 px-1 transition-all duration-300">
+				<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 max-w-7xl mx-auto">
+					<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
+						Wybierz narzędzia:
+					</span>
+					<div className="flex gap-2 flex-wrap">
+						{TABS.map((t) => (
+							<FilterBadge
+								key={t.id}
+								id={t.id}
+								label={t.label}
+								isSelected={activeTab === t.id}
+								onToggle={(id) => setActiveTab(id)}
+								className={
+									activeTab === t.id
+										? "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+										: ""
+								}
+							/>
+						))}
+					</div>
+				</div>
+			</div> */}
 
 			{/* ZAWARTOŚĆ ZAKŁADEK (bez zmian) */}
 			<div className="w-full">

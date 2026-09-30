@@ -143,7 +143,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 				subtitle="Zdefiniuj aktywo, które zamierzasz dodać do portfela w najbliższym czasie."
 				description="Zaplanowane zakupy pozwalają Ci kontrolować przepływ gotówki i lepiej zarządzać budżetem inwestycyjnym."
 			>
-				<div className="bg-white/2 dark:bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 lg:p-8 shadow-sm">
+				<div className="bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 lg:p-8 shadow-sm">
 					<PlannerForm
 						portfolios={allUserPortfolios}
 						defaultPortfolioId={portfolio.id}

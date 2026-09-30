@@ -85,11 +85,11 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						: "bg-rose-500/10 border-rose-500/20"
 				}`}
 			>
-				{isPeriodPositive ? (
+				{/* {isPeriodPositive ? (
 					<TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
 				) : (
 					<TrendingDown className="w-3.5 h-3.5 text-rose-500" />
-				)}
+				)} */}
 				<span
 					className={`text-[11px] font-bold tabular-nums ${
 						isPeriodPositive ? "text-emerald-500" : "text-rose-500"

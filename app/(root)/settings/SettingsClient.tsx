@@ -127,7 +127,7 @@ export default function SettingsClient({
 							<Link
 								href="/"
 								className={cn(
-									"inline-flex items-center transition-all h-5 text-amber-500 hover:text-amber-400 underline decoration-amber-500/40 underline-offset-4 cursor-pointer font-medium",
+									"inline-flex items-center transition-all h-5 text-amber-500 hover:text-amber-400  decoration-amber-500/40 underline-offset-4 cursor-pointer font-medium",
 								)}
 							>
 								<ChevronLeft
@@ -200,9 +200,9 @@ export default function SettingsClient({
 					</div>
 				</div> */}
 				{/* 2. Dolna sekcja (Responsywne karty profilowe) */}
-				<div className="relative z-10 max-w-7xl mx-auto sm:w-full flex flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4 pt-6 mt-6 border-t border-white/10">
+				<div className="relative z-10 max-w-7xl  sm:w-full flex flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4 pt-6 mt-6 border-t border-white/10">
 					{/* Karta: Poziom Uprawnień */}
-					<div className="flex  sm:flex-row justify-center sm:justify-start items-center gap-1.5 sm:gap-3  w-full sm:w-auto">
+					<div className="flex flex-col  sm:flex-row justify-start items-center gap-1.5 sm:gap-3  w-full sm:w-auto">
 						{/* Etykieta z ikoną */}
 						<div className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">
 							<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -210,7 +210,7 @@ export default function SettingsClient({
 						</div>
 
 						{/* Wartość (Rola) i kropka */}
-						<div className="flex items-center gap-2 text-xs sm:text-base font-black text-white tracking-wide uppercase">
+						<div className="flex justify-start gap-2 text-[10px] sm:text-sm font-black text-white tracking-wide uppercase">
 							{userRole}
 							{userRole === "ADMIN" && (
 								<span
@@ -230,7 +230,7 @@ export default function SettingsClient({
 						</div>
 
 						{/* Wartość (Email) */}
-						<div className="text-xs sm:text-base font-black text-white tracking-wide break-all sm:break-normal text-center sm:text-left">
+						<div className="text-xs sm:text-sm font-black text-white tracking-wide break-all sm:break-normal text-center sm:text-left">
 							{email || "Brak przypisanego adresu"}
 						</div>
 					</div>

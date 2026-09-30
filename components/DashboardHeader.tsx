@@ -24,13 +24,13 @@ type Props = {
 	totalValue: number;
 	customBreadcrumbs?: React.ReactNode;
 	userName?: string | null;
-	hideStats?: boolean; // 🚀 DODANA FLAGA
+	hideStats?: boolean;
 };
 export const DashboardHeader = ({
 	portfolio,
 	name,
 	customBreadcrumbs,
-	hideStats = false, // 🚀 Wartość domyślna
+	hideStats = false,
 }: Props) => {
 	const pathname = usePathname(); // EN: Get current URL path
 	// EN: Check if we are currently on the add-asset subpage
@@ -123,7 +123,7 @@ export const DashboardHeader = ({
 							{isAddAssetPage
 								? "Zarządzaj składem swojego portfela"
 								: isSettingsPage
-									? "Zarządzaj technicznymi aspektami portfela" // 🚀 Lepszy opis
+									? "Zarządzaj technicznymi aspektami portfela"
 									: "Zarządzaj portfelem i kontroluj strategie"}
 						</p>
 					</div>
@@ -134,8 +134,7 @@ export const DashboardHeader = ({
 							href={
 								isSettingsPage
 									? `/dashboard/${portfolio.id}`
-									: // 🚀 DODANE ?from=dashboard
-										`/dashboard/${portfolio.id}/settings?from=dashboard`
+									: `/dashboard/${portfolio.id}/settings?from=dashboard`
 							}
 							className={cn(
 								"group flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 shadow-sm border",
@@ -157,7 +156,7 @@ export const DashboardHeader = ({
 					)}
 				</div>
 			</div>
-			{/* 🚀 DÓŁ: Ukrywamy statystyki (Wartość, P&L), gdy włączona jest flaga hideStats */}
+			{/* DÓŁ: Ukrywamy statystyki (Wartość, P&L), gdy włączona jest flaga hideStats */}
 			{!hideStats && (
 				<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pb-2 md:pb-0">
 					{/* OGROMNA Całkowita Wartość - WYRÓŻNIONA */}

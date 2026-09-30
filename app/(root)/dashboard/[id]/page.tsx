@@ -1,11 +1,14 @@
+import { calculateGapAnalysis, getPortfolioStats } from "@/lib/calculations"; // 🚀 DODANO getPortfolioStats
 import {
 	calculateLiveBondValue,
 	getBondDictionaries,
 } from "@/lib/bond-calculations";
 
+import { DashboardBreadcrumbs } from "@/components/DashboardBreadcrumbs"; // 🚀 DODANY IMPORT
 import DashboardClientView from "@/components/ui/DashboardClientView";
+import DashboardGoal from "@/components/DashboardGoal"; // 🚀 DODANY IMPORT
+import { DashboardHeader } from "@/components/DashboardHeader"; // 🚀 DODANY IMPORT
 import { auth } from "@/auth";
-import { calculateGapAnalysis } from "@/lib/calculations";
 import { db } from "@/lib/db";
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 import { getPortfolioSnapshotsHistory } from "@/lib/services/history-engine";
@@ -14,17 +17,14 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 interface Props {
-	params: Promise<{ id: string }>; // ZMIANA: Z searchParams na params (jesteśmy w [id] czyli dynamicznym segmencie)
-	searchParams: Promise<{ range?: string; from?: string; to?: string }>; //ponieważ nasz nowy serwis historyczny potrzebuje wiedzieć, jaki zakres dat użytkownik wybrał w URL (np. ?range=1M)
+	params: Promise<{ id: string }>;
+	searchParams: Promise<{ range?: string; from?: string; to?: string }>;
 }
 
 export default async function DashboardPage({ params, searchParams }: Props) {
 	const session = await auth();
+	if (!session?.user?.id) redirect("/sign-in");
 
-	if (!session?.user?.id) {
-		redirect("/sign-in");
-	}
-	// 1. Oczekujemy na parametry (wymóg w Next.js 15)
 	const resolvedSearchParams = await searchParams;
 	const { id } = await params;
 
@@ -33,21 +33,15 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 		userId: session.user.id,
 	});
 
-	// Wczesny zwrot błędu
 	if (guardedResult.errorComponent || !guardedResult.portfolio) {
 		return guardedResult.errorComponent;
 	}
 
-	// 2. Wyciągamy portfolio do zmiennej modyfikowalnej (let)
 	let portfolio = guardedResult.portfolio;
-
-	// Przeliczamy obligacje z użyciem GUS przed wysłaniem do tabeli
-
 	const hasBonds = portfolio.assets.some((a) => a.category === "BONDS");
 
 	if (hasBonds) {
 		const { inflationMap, configMap } = await getBondDictionaries();
-		// Aktualizujemy wycenę w locie
 		portfolio = {
 			...portfolio,
 			assets: portfolio.assets.map((asset) => {
@@ -63,49 +57,54 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 						inflationMap,
 						configMap,
 					);
-
-					return {
-						...asset,
-						currentValue: calculated.value, // 🚀 Nadpisujemy statyczną bazę dynamicznym wynikiem z inflacji!
-					};
+					return { ...asset, currentValue: calculated.value };
 				}
 				return asset;
 			}),
 		};
 	}
-	// =====================================================================
 
-	// 3. Pobieramy portfele z celem gotówkowym (do przelewów wewnętrznych)
 	const allPortfoliosWithCash = await db.portfolio.findMany({
-		where: {
-			userId: session.user.id,
-			targetCash: { gt: 0 },
-		},
-		select: {
-			id: true,
-			name: true,
-		},
+		where: { userId: session.user.id, targetCash: { gt: 0 } },
+		select: { id: true, name: true },
 	});
 
-	// 4. Obliczenia i render
 	const portfolioStatus = calculateGapAnalysis(portfolio);
 
-	// 2. 🚀 WYWOŁANIE NASZEGO SERWISU HISTORYCZNEGO DLA 1 PORTFELA
 	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
 		await getPortfolioSnapshotsHistory(
-			[portfolio], // Przekazujemy ten jeden portfel
+			[portfolio],
 			resolvedSearchParams,
 			session.user.id,
 		);
+
+	// 🚀 OBLICZAMY STATYSTYKI DLA NAGŁÓWKA
+	const { name, totalValue, progress, remaining, goal } =
+		getPortfolioStats(portfolio);
+
 	return (
-		<DashboardClientView
-			portfolio={portfolio}
-			portfolioStatus={portfolioStatus}
-			allPortfoliosWithCash={allPortfoliosWithCash}
-			transactions={portfolio.transactionHistories}
-			snapshots={simulatedSnapshots} // 👈 PRZEKAZUJEMY DO KLIENTA
-			realSnapshots={realSnapshots}
-			oldestRealSnapshotDate={oldestRealSnapshotDate}
-		/>
+		<div className="space-y-10">
+			{/* Nagłówek jest teraz częścią głównej strony! */}
+			<DashboardHeader
+				portfolio={portfolio as any}
+				name={name}
+				totalValue={totalValue}
+				customBreadcrumbs={<DashboardBreadcrumbs name={name} id={id} />}
+			/>
+
+			{goal > 0 && (
+				<DashboardGoal progress={progress} remaining={remaining} goal={goal} />
+			)}
+
+			<DashboardClientView
+				portfolio={portfolio as any}
+				portfolioStatus={portfolioStatus}
+				allPortfoliosWithCash={allPortfoliosWithCash}
+				transactions={portfolio.transactionHistories}
+				snapshots={simulatedSnapshots}
+				realSnapshots={realSnapshots}
+				oldestRealSnapshotDate={oldestRealSnapshotDate}
+			/>
+		</div>
 	);
 }

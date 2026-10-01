@@ -66,7 +66,6 @@ export interface UserProfileData {
 	avatarUrl?: string;
 	planExpiresAt?: string;
 	hasPassword?: boolean;
-	// 🚀 DODANE: Pola powiadomień z bazy
 	alertBonds?: boolean;
 	alertRebalancing?: boolean;
 	alertPlans?: boolean;
@@ -78,21 +77,21 @@ export interface PortfolioData {
 	colorTheme: string;
 	currentValue: number;
 	goal: number | null;
-	tenure: string; // Wyliczane z pierwszej transakcji
+	tenure: string;
 }
 
 export interface AllocationData {
 	category: string;
 	label: string;
 	percent: number;
-	colorClass: string; // Pobierane prosto z constants.ts
+	colorClass: string;
 }
 
 export interface SummaryData {
 	totalInvested: number;
 	currentValue: number;
 	totalGoal: number;
-	globalTenure: string; // Czas od absolutnie pierwszej transakcji na koncie
+	globalTenure: string;
 	globalMwr: number;
 }
 
@@ -166,11 +165,9 @@ export default function InvestorProfileClient({
 
 	useEffect(() => {
 		let timer: NodeJS.Timeout;
-
 		if (activeTab === "overview") {
 			timer = setTimeout(() => setIsAnimated(true), 100);
 		}
-
 		return () => {
 			clearTimeout(timer);
 			setIsAnimated(false);
@@ -179,7 +176,6 @@ export default function InvestorProfileClient({
 
 	const handleSaveSettings = (e: React.FormEvent) => {
 		e.preventDefault();
-
 		startTransition(async () => {
 			// 1. Zapis motywów portfeli
 			const dataToSave = portfolios.map((p) => ({
@@ -194,7 +190,6 @@ export default function InvestorProfileClient({
 			if (avatarFile) formData.append("avatar", avatarFile);
 
 			const userPromise = updateUserData(formData);
-
 			// Wykonujemy obie akcje serwerowe równocześnie dla lepszej wydajności
 			const [themeResult, userResult] = await Promise.all([
 				themePromise,
@@ -215,6 +210,7 @@ export default function InvestorProfileClient({
 			}
 		});
 	};
+
 	const handleTestEmail = async () => {
 		const toastId = toast.loading("Wysyłanie maila...");
 		const result = await runSmartAlerts();
@@ -226,13 +222,6 @@ export default function InvestorProfileClient({
 			toast.error(result.error || "Wystąpił błąd wysyłki.", { id: toastId });
 		}
 	};
-	const handleColorChange = (portfolioId: string, newTheme: string) => {
-		setPortfolios((prev) =>
-			prev.map((p) =>
-				p.id === portfolioId ? { ...p, colorTheme: newTheme } : p,
-			),
-		);
-	};
 
 	const profit = summary.currentValue - summary.totalInvested;
 	const profitPercent =
@@ -243,86 +232,111 @@ export default function InvestorProfileClient({
 			: 0;
 
 	return (
-		<SectionLayout
-			title="Profil Inwestora"
-			titleIcon={UserCog}
-			subtitle="Tożsamość i ustawienia"
-			description="Zarządzaj swoim kontem, weryfikuj globalne wyniki portfeli oraz dostosuj wizualny motyw aplikacji."
-			action={
-				<SafeActionButton
-					label="Aktualizuj Profil"
-					icon={Edit3}
-					isDemo={false} // Ustawiamy na false, bo to przycisk funkcyjny
-					variant="outline"
-					className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary cursor-pointer transition-colors shadow-sm"
-					onClick={() => setActiveTab("appearance")}
-				/>
-			}
-		>
-			<div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-				{/* 1. HERO CARD */}
-				<div className="relative overflow-hidden bg-t-bg-panel border border-t-border rounded-3xl p-8 shadow-sm group transition-all duration-500 hover:border-theme-border">
-					<div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-theme-soft via-transparent to-transparent rounded-full blur-3xl pointer-events-none opacity-50 transition-opacity duration-700" />
+		<div className="max-w-7xl mx-auto w-full space-y-6 animate-in fade-in duration-500 pb-24">
+			{/* 🚀 ZMODYFIKOWANY NAGŁÓWEK (Hero Card wyrwana z sekcji) */}
+			<header className="relative overflow-hidden w-full bg-slate-900 border-b border-white/10 rounded-b-2xl p-6 md:p-8 lg:p-10 shadow-lg mt-2 md:mt-0 group transition-all duration-500">
+				{/* Efekt Świetlny SVG dla ciemnego motywu (spójność) */}
+				<div className="absolute inset-0 pointer-events-none select-none opacity-40 mix-blend-screen">
+					<svg
+						viewBox="0 0 1024 1024"
+						className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-y-1/2 [mask-image:radial-gradient(closest-side,white,transparent)] sm:left-full sm:-ml-80 lg:left-1/2 lg:ml-0 lg:-translate-x-1/2 lg:translate-y-0"
+						aria-hidden="true"
+					>
+						<circle
+							cx={512}
+							cy={512}
+							r={512}
+							fill="url(#profile-gradient)"
+							fillOpacity="0.7"
+						/>
+						<defs>
+							<radialGradient id="profile-gradient">
+								<stop stopColor="#3b82f6" />
+								<stop offset={1} stopColor="#1e3a8a" />
+							</radialGradient>
+						</defs>
+					</svg>
+				</div>
 
-					<div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-						<div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-theme-primary to-theme-soft p-1 shrink-0 shadow-xl group-hover:scale-105 transition-transform duration-500">
-							<div className="w-full h-full bg-t-bg-panel rounded-full flex items-center justify-center border-4 border-t-bg-panel relative z-10 overflow-hidden">
-								{user.avatarUrl ? (
-									// <img
-									// 	src={user.avatarUrl}
-									// 	alt="Avatar"
-									// 	className="w-full h-full object-cover"
-									// />
-									<Image
-										src={user.avatarUrl}
-										alt="Avatar"
-										width={96}
-										height={96}
-										className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
-									/>
-								) : (
-									<User className="w-10 h-10 text-theme-primary opacity-90" />
-								)}
-							</div>
-						</div>
-
-						<div className="text-center md:text-left flex-1">
-							<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-theme-soft border border-theme-border text-theme-primary mb-3 shadow-inner">
-								<span className="text-[10px] font-black uppercase tracking-widest">
-									{user.plan}
-								</span>
-							</div>
-							<h2 className="text-2xl font-black tracking-tight text-t-text-primary mb-1">
-								{user.name}
-							</h2>
-							<p className="text-sm font-medium text-t-text-tertiary">
-								Kapitał pracuje od:{" "}
-								<span className="font-bold text-t-text-secondary">
-									{summary.globalTenure}
-								</span>
-							</p>
+				<div className="relative z-10 flex flex-col md:flex-row items-center gap-6 max-w-7xl mx-auto">
+					{/* Avatar */}
+					<div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 p-1 shrink-0 shadow-xl group-hover:scale-105 transition-transform duration-500">
+						<div className="w-full h-full bg-slate-900 rounded-full flex items-center justify-center border-2 border-slate-900 relative z-10 overflow-hidden">
+							{user.avatarUrl ? (
+								<Image
+									src={user.avatarUrl}
+									alt="Avatar"
+									width={96}
+									height={96}
+									className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
+								/>
+							) : (
+								<User className="w-10 h-10 text-slate-400 opacity-90" />
+							)}
 						</div>
 					</div>
-				</div>
 
-				{/* 2. TABS NAVIGATION */}
-				<div className="flex flex-wrap gap-2 border-b border-t-border-subtle pb-4">
-					{TABS.map((tab) => (
-						<FilterBadge
-							key={tab.id}
-							id={tab.id}
-							label={tab.label}
-							isSelected={activeTab === tab.id}
-							onToggle={(id) => setActiveTab(id)}
+					{/* Dane użytkownika */}
+					<div className="text-center md:text-left flex-1">
+						<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-400 mb-3 shadow-inner">
+							<span className="text-[10px] font-black uppercase tracking-widest">
+								{user.plan}
+							</span>
+						</div>
+						<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-sm mb-1">
+							{user.name}
+						</h1>
+						<p className="text-sm font-medium text-slate-400">
+							Kapitał pracuje od:{" "}
+							<span className="font-bold text-slate-300">
+								{summary.globalTenure}
+							</span>
+						</p>
+					</div>
+
+					{/* Przycisk Akcji - Szybka Edycja */}
+					<div className="hidden md:block">
+						<SafeActionButton
+							label="Aktualizuj Profil"
+							icon={Edit3}
+							isDemo={false}
+							variant="outline"
+							className="border-white/20 bg-white/5 text-white hover:bg-white/10 shadow-sm"
+							onClick={() => setActiveTab("appearance")}
 						/>
-					))}
+					</div>
 				</div>
+			</header>
 
-				{/*  */}
-				{/* 3. TAB CONTENTS */}
+			{/* 🚀 STICKY PASEK NAWIGACJI (Zgodny z resztą aplikacji) */}
+			<div className="sticky top-0 z-50 w-full bg-t-bg-base/80 backdrop-blur-xl border-b border-t-border-subtle py-3 transition-all duration-300">
+				<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full">
+					<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest hidden sm:block">
+						Wybierz zakładkę:
+					</span>
+					<div className="flex gap-1.5 flex-wrap">
+						{TABS.map((t) => (
+							<FilterBadge
+								key={t.id}
+								id={t.id}
+								label={t.label}
+								isSelected={activeTab === t.id}
+								onToggle={(id) => setActiveTab(id)}
+								className={
+									activeTab === t.id
+										? "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+										: ""
+								}
+							/>
+						))}
+					</div>
+				</div>
+			</div>
+
+			{/* ZAWARTOŚĆ ZAKŁADEK */}
+			<div className="w-full pt-2">
 				{activeTab === "overview" && (
-					<div className="space-y-6 animate-in slide-in-from-bottom-4 fade-in duration-500">
-						{/* 🚀 BANER INFORMACYJNY O WIDOKU ZSUMOWANYM */}
+					<div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
 						<div className="bg-theme-soft/50 border border-theme-border rounded-2xl p-4 flex items-start gap-4">
 							<div className="bg-theme-primary/10 p-2 rounded-full shrink-0">
 								<Info className="w-5 h-5 text-theme-primary" />
@@ -332,16 +346,15 @@ export default function InvestorProfileClient({
 									Skonsolidowany Widok Majątku
 								</h4>
 								<p className="text-xs text-t-text-tertiary mt-1 leading-relaxed max-w-3xl">
-									Dane widoczne w tej sekcji (wynik, cele, staż, alokacja)
-									stanowią sumę ze wszystkich Twoich portfeli. Służą one ocenie
-									całkowitej sytuacji finansowej i zrealizowanych założeń z lotu
-									ptaka.
+									Dane widoczne w tej sekcji stanowią sumę ze wszystkich Twoich
+									portfeli. Służą one ocenie całkowitej sytuacji finansowej i
+									zrealizowanych założeń z lotu ptaka.
 								</p>
 							</div>
 						</div>
 
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							{/* GLOBALNY WYNIK (Z wbudowanym Tooltipem MWR) */}
+							{/* GLOBALNY WYNIK */}
 							<ProfileCard
 								icon={TrendingUp}
 								title="Całkowita wycena (Suma portfeli)"
@@ -388,28 +401,20 @@ export default function InvestorProfileClient({
 									</div>
 									<div className="flex justify-between items-center text-sm font-bold">
 										<span className="text-t-text-secondary">Stopa prosta</span>
-										<div className="text-right">
-											<span
-												className={cn(
-													profit >= 0 ? "text-emerald-500" : "text-rose-500",
-													"block",
-												)}
-											>
-												<span className="ml-2">
-													{profit > 0 ? "+" : ""}
-													{profitPercent.toFixed(2)}%
-												</span>
-											</span>
-										</div>
+										<span
+											className={cn(
+												profit >= 0 ? "text-emerald-500" : "text-rose-500",
+											)}
+										>
+											{profit > 0 ? "+" : ""}
+											{profitPercent.toFixed(2)}%
+										</span>
 									</div>
 									<div className="flex justify-between items-center text-sm font-bold group/mwr relative">
-										{/* 🚀 DODANA IKONA Z TOOLTIPEM DLA MWR */}
 										<span className="text-t-text-secondary flex items-center gap-1.5 cursor-help">
 											Stopa MWR
 											<Info className="w-3.5 h-3.5 text-t-text-tertiary hover:text-theme-primary transition-colors" />
 										</span>
-
-										{/* Wyjeżdżający dymek HTML CSS */}
 										<div className="absolute left-0 bottom-6 w-64 p-2 bg-t-bg-panel border border-t-border rounded-lg shadow-xl opacity-0 invisible group-hover/mwr:opacity-100 group-hover/mwr:visible transition-all z-50 text-[10px] font-medium text-t-text-tertiary leading-tight pointer-events-none">
 											<span className="font-bold text-t-text-primary block mb-1">
 												Money-Weighted Return (XIRR)
@@ -417,35 +422,28 @@ export default function InvestorProfileClient({
 											Roczna stopa zwrotu precyzyjnie uwzględniająca wielkość i
 											daty wszystkich Twoich historycznych wpłat oraz wypłat.
 										</div>
-
-										<div className="text-right">
-											<span
-												className={cn(
-													summary.globalMwr >= 0
-														? "text-emerald-500"
-														: "text-rose-500",
-													"block",
-												)}
-											>
-												<span className="ml-2">
-													{summary.globalMwr > 0 ? "+" : ""}
-													{summary.globalMwr.toFixed(2)}%
-												</span>
-											</span>
-										</div>
+										<span
+											className={cn(
+												summary.globalMwr >= 0
+													? "text-emerald-500"
+													: "text-rose-500",
+											)}
+										>
+											{summary.globalMwr > 0 ? "+" : ""}
+											{summary.globalMwr.toFixed(2)}%
+										</span>
 									</div>
 								</div>
 							</ProfileCard>
 
-							{/* POSIADANE PORTFELE I STAŻ */}
+							{/* POSIADANE PORTFELE */}
 							<ProfileCard
 								icon={Wallet}
 								title="Twoje Portfele (Wartość i Staż)"
 								color="text-purple-500"
 								bgColor="bg-purple-500/10"
 							>
-								<div className="space-y-4 mt-2   pr-2 ">
-									{/* <div className="space-y-4 mt-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar"> */}
+								<div className="space-y-4 mt-2 pr-2">
 									{portfolios.map((p) => (
 										<div
 											key={p.id}
@@ -478,7 +476,7 @@ export default function InvestorProfileClient({
 								</div>
 							</ProfileCard>
 
-							{/* REALIZACJA CELÓW (Global + Indywidualne) */}
+							{/* REALIZACJA CELÓW */}
 							<ProfileCard
 								icon={Target}
 								title="Realizacja Celów"
@@ -486,7 +484,6 @@ export default function InvestorProfileClient({
 								bgColor="bg-blue-500/10"
 							>
 								<div className="space-y-6 mt-2">
-									{/* Globalny cel */}
 									{summary.totalGoal > 0 ? (
 										<div>
 											<div className="flex justify-between text-xs font-bold mb-2">
@@ -517,7 +514,6 @@ export default function InvestorProfileClient({
 										</p>
 									)}
 
-									{/* Cele per portfel */}
 									<div className="space-y-3 pt-4 border-t border-t-border-subtle">
 										{portfolios
 											.filter((p) => p.goal)
@@ -577,365 +573,348 @@ export default function InvestorProfileClient({
 					</div>
 				)}
 
-				{/* APPEARANCE TAB */}
+				{/* 🚀 NOWY LAYOUT DLA USTAWIEŃ KONTA */}
 				{activeTab === "appearance" && (
-					<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-6 sm:p-8 shadow-sm animate-in fade-in duration-300">
-						<form onSubmit={handleSaveSettings} className="space-y-8">
-							{/* 1. DANE KONTA I SUBSKRYPCJA */}
-							<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle">
-								<div className="space-y-1">
-									<p className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary mb-2">
-										Status Konta
-									</p>
-									<div className="flex items-center gap-2 mt-1">
-										<p className="text-sm font-medium text-t-text-primary">
-											Aktywny plan:
+					<div className="animate-in slide-in-from-right-4 fade-in duration-300">
+						<SectionLayout
+							title="Dane konta i Wygląd"
+							titleIcon={UserCog}
+							subtitle="Zarządzaj swoją tożsamością"
+							description="Zaktualizuj swoje dane osobowe, podłącz autoryzację bezpiecznym hasłem i dostosuj kolory poszczególnych portfeli według własnych upodobań."
+						>
+							<form
+								onSubmit={handleSaveSettings}
+								className="space-y-8 w-full bg-t-bg-panel border border-t-border rounded-2xl p-6 shadow-sm"
+							>
+								<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle">
+									<div className="space-y-1">
+										<p className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary mb-2">
+											Status Konta
 										</p>
-										<span className="inline-block px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-md font-bold uppercase text-[10px]">
-											{user.plan}
-										</span>
-									</div>
-									<p className="text-xs font-medium text-t-text-tertiary mt-1">
-										Wygasa:{" "}
-										<span className="font-bold text-t-text-secondary">
-											{user.planExpiresAt || "31 grudnia 2026"}
-										</span>
-									</p>
-								</div>
-
-								<Button
-									type="button"
-									variant="outline"
-									className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400 font-bold rounded-xl shadow-sm transition-colors cursor-not-allowed opacity-50"
-									disabled
-								>
-									Zarządzaj Subskrypcją
-								</Button>
-							</div>
-
-							{/* 2. DANE OSOBOWE I LOGOWANIE */}
-							<div className="pt-6 border-t border-t-border-subtle space-y-6">
-								<div>
-									<h3 className="text-lg font-bold text-t-text-primary">
-										Dane Osobowe
-									</h3>
-									<p className="text-xs font-medium text-t-text-tertiary mt-1">
-										Zaktualizuj swoje zdjęcie oraz imię i nazwisko.
-									</p>
-								</div>
-
-								<div className="flex flex-col md:flex-row gap-8">
-									{/* Moduł zdjęcia profilowego (Z obsługą wgrywania) */}
-									<div className="flex flex-col items-center gap-3 shrink-0">
-										{/* Kliknięcie w ten div wyzwoli input file ukryty niżej */}
-										<div
-											className="relative group cursor-pointer"
-											onClick={() =>
-												document.getElementById("avatar-upload")?.click()
-											}
-										>
-											<div className="w-28 h-28 rounded-2xl border-2 border-t-border-subtle bg-t-bg-base/50 flex items-center justify-center overflow-hidden shadow-sm">
-												{avatarPreview ? (
-													<Image
-														src={avatarPreview}
-														alt="Avatar"
-														width={112}
-														height={112}
-														className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
-													/>
-												) : (
-													<User className="w-12 h-12 text-t-text-tertiary group-hover:opacity-50 transition-opacity" />
-												)}
-											</div>
-											<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 dark:bg-black/40 rounded-2xl">
-												<Camera className="w-8 h-8 text-white" />
-											</div>
-											<input
-												id="avatar-upload"
-												type="file"
-												className="hidden"
-												accept="image/*"
-												onChange={handleAvatarChange}
-											/>
+										<div className="flex items-center gap-2 mt-1">
+											<p className="text-sm font-medium text-t-text-primary">
+												Aktywny plan:
+											</p>
+											<span className="inline-block px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-md font-bold uppercase text-[10px]">
+												{user.plan}
+											</span>
 										</div>
-										<span className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-											Zmień Avatar
-										</span>
+										<p className="text-xs font-medium text-t-text-tertiary mt-1">
+											Wygasa:{" "}
+											<span className="font-bold text-t-text-secondary">
+												{user.planExpiresAt || "31 grudnia 2026"}
+											</span>
+										</p>
 									</div>
+									<Button
+										type="button"
+										variant="outline"
+										className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400 font-bold rounded-xl shadow-sm transition-colors cursor-not-allowed opacity-50"
+										disabled
+									>
+										Zarządzaj Subskrypcją
+									</Button>
+								</div>
 
-									{/* Pola tekstowe i Bezpieczeństwo */}
-									<div className="flex-1 space-y-6">
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-											<div className="space-y-2">
-												<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-													Imię i Nazwisko
-												</label>
-												{/* 🚀 Odblokowane pole Imienia */}
-												<input
-													type="text"
-													value={userName}
-													onChange={(e) => setUserName(e.target.value)}
-													className={inputStyles}
-													placeholder="Wpisz swoje dane"
-												/>
-											</div>
-											<div className="space-y-2">
-												<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
-													Adres Email
-												</label>
-												<input
-													type="email"
-													defaultValue={user.email}
-													disabled
-													className={cn(
-														inputStyles,
-														"opacity-70 cursor-not-allowed bg-black/5 dark:bg-white/5",
+								{/* DANE OSOBOWE */}
+								<div className="pt-6 border-t border-t-border-subtle space-y-6">
+									<div>
+										<h3 className="text-lg font-bold text-t-text-primary">
+											Dane Osobowe
+										</h3>
+										<p className="text-xs font-medium text-t-text-tertiary mt-1">
+											Zaktualizuj swoje zdjęcie oraz imię i nazwisko.
+										</p>
+									</div>
+									<div className="flex flex-col md:flex-row gap-8">
+										<div className="flex flex-col items-center gap-3 shrink-0">
+											<div
+												className="relative group cursor-pointer"
+												onClick={() =>
+													document.getElementById("avatar-upload")?.click()
+												}
+											>
+												<div className="w-28 h-28 rounded-2xl border-2 border-t-border-subtle bg-t-bg-base/50 flex items-center justify-center overflow-hidden shadow-sm">
+													{avatarPreview ? (
+														<Image
+															src={avatarPreview}
+															alt="Avatar"
+															width={112}
+															height={112}
+															className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
+														/>
+													) : (
+														<User className="w-12 h-12 text-t-text-tertiary group-hover:opacity-50 transition-opacity" />
 													)}
+												</div>
+												<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 dark:bg-black/40 rounded-2xl">
+													<Camera className="w-8 h-8 text-white" />
+												</div>
+												<input
+													id="avatar-upload"
+													type="file"
+													className="hidden"
+													accept="image/*"
+													onChange={handleAvatarChange}
 												/>
 											</div>
+											<span className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+												Zmień Avatar
+											</span>
 										</div>
 
-										<div className="flex items-center justify-between p-4 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle mt-4">
-											<div className="flex items-center gap-4">
-												<div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 flex items-center justify-center">
-													<Lock className="w-5 h-5" />
+										<div className="flex-1 space-y-6">
+											<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+												<div className="space-y-2">
+													<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+														Imię i Nazwisko
+													</label>
+													<input
+														type="text"
+														value={userName}
+														onChange={(e) => setUserName(e.target.value)}
+														className={inputStyles}
+														placeholder="Wpisz swoje dane"
+													/>
 												</div>
-												<div>
-													<p className="text-sm font-bold text-t-text-primary">
-														Ustawienia logowania
-													</p>
-													<p className="text-xs text-t-text-tertiary mt-0.5">
-														{/* 🚀 Dynamiczny tekst w zależności od tego, czy user ma hasło */}
-														{user.hasPassword
-															? "Konto zabezpieczone hasłem"
-															: "Zalogowano za pomocą Google OAuth"}
-													</p>
+												<div className="space-y-2">
+													<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary">
+														Adres Email
+													</label>
+													<input
+														type="email"
+														defaultValue={user.email}
+														disabled
+														className={cn(
+															inputStyles,
+															"opacity-70 cursor-not-allowed bg-black/5 dark:bg-white/5",
+														)}
+													/>
 												</div>
 											</div>
-											{/* 🚀 Przekazujemy prawdziwy status z bazy */}
-											<ChangePasswordModal hasPassword={!!user.hasPassword} />
+											<div className="flex items-center justify-between p-4 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle mt-4">
+												<div className="flex items-center gap-4">
+													<div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 flex items-center justify-center">
+														<Lock className="w-5 h-5" />
+													</div>
+													<div>
+														<p className="text-sm font-bold text-t-text-primary">
+															Ustawienia logowania
+														</p>
+														<p className="text-xs text-t-text-tertiary mt-0.5">
+															{user.hasPassword
+																? "Konto zabezpieczone hasłem"
+																: "Zalogowano za pomocą Google OAuth"}
+														</p>
+													</div>
+												</div>
+												<ChangePasswordModal hasPassword={!!user.hasPassword} />
+											</div>
 										</div>
 									</div>
 								</div>
-							</div>
 
-							{/* 3. MOTYWY PORTFELI */}
-							<div className="pt-8 border-t border-t-border-subtle space-y-6">
-								<div>
-									<h3 className="text-lg font-bold text-t-text-primary">
-										Kolorystyka Portfeli
-									</h3>
-									<p className="text-xs font-medium text-t-text-tertiary mt-1">
-										Wybierz motyw przewodni dla każdego ze swoich portfeli.
-										Zmiany zostaną zastosowane po kliknięciu "Zapisz Zmiany
-										Profilu".
-									</p>
-								</div>
-
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-									{portfolios.map((portfolio) => (
-										<div
-											key={portfolio.id}
-											className="p-5 border border-t-border-subtle rounded-xl bg-t-bg-base/30 dark:bg-black/20 space-y-4"
-											data-theme={portfolio.colorTheme}
-										>
-											<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
-												<div className="w-2.5 h-2.5 rounded-full bg-theme-primary" />
-												{portfolio.name}
-											</label>
-											<div className="flex flex-wrap gap-2.5">
-												{PREDEFINED_COLORS.map((themeName) => (
-													<button
-														key={themeName}
-														type="button"
-														onClick={() => {
-															setPortfolios((prev) =>
-																prev.map((p) =>
-																	p.id === portfolio.id
-																		? { ...p, colorTheme: themeName }
-																		: p,
-																),
-															);
-														}}
-														className={cn(
-															"w-7 h-7 rounded-full transition-all duration-200 border-2",
-															portfolio.colorTheme === themeName
-																? "scale-110 shadow-md ring-2 ring-offset-2 ring-offset-t-bg-panel ring-t-text-primary/20 border-t-text-primary"
-																: "border-transparent opacity-70 hover:opacity-100 hover:scale-105",
-														)}
-														style={{
-															backgroundColor: `var(--color-${themeName}-500, var(--theme-primary))`,
-														}}
-														title={themeName}
-													/>
-												))}
+								{/* MOTYWY PORTFELI */}
+								<div className="pt-8 border-t border-t-border-subtle space-y-6">
+									<div>
+										<h3 className="text-lg font-bold text-t-text-primary">
+											Kolorystyka Portfeli
+										</h3>
+										<p className="text-xs font-medium text-t-text-tertiary mt-1">
+											Wybierz motyw przewodni dla każdego ze swoich portfeli.
+										</p>
+									</div>
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										{portfolios.map((portfolio) => (
+											<div
+												key={portfolio.id}
+												className="p-5 border border-t-border-subtle rounded-xl bg-t-bg-base/30 dark:bg-black/20 space-y-4"
+												data-theme={portfolio.colorTheme}
+											>
+												<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
+													<div className="w-2.5 h-2.5 rounded-full bg-theme-primary" />
+													{portfolio.name}
+												</label>
+												<div className="flex flex-wrap gap-2.5">
+													{PREDEFINED_COLORS.map((themeName) => (
+														<button
+															key={themeName}
+															type="button"
+															onClick={() => {
+																setPortfolios((prev) =>
+																	prev.map((p) =>
+																		p.id === portfolio.id
+																			? { ...p, colorTheme: themeName }
+																			: p,
+																	),
+																);
+															}}
+															className={cn(
+																"w-7 h-7 rounded-full transition-all duration-200 border-2",
+																portfolio.colorTheme === themeName
+																	? "scale-110 shadow-md ring-2 ring-offset-2 ring-offset-t-bg-panel ring-t-text-primary/20 border-t-text-primary"
+																	: "border-transparent opacity-70 hover:opacity-100 hover:scale-105",
+															)}
+															style={{
+																backgroundColor: `var(--color-${themeName}-500, var(--theme-primary))`,
+															}}
+															title={themeName}
+														/>
+													))}
+												</div>
 											</div>
-										</div>
-									))}
+										))}
+									</div>
 								</div>
-							</div>
 
-							{/* 4. SEKCJA ZAPISU */}
-							<div className="flex justify-end pt-8 border-t border-t-border-subtle">
-								<Button
-									type="submit"
-									disabled={isPending}
-									className="h-12 px-8 rounded-xl bg-theme-primary hover:opacity-90 text-white font-bold transition-all shadow-sm disabled:opacity-50"
-								>
-									{isPending ? "Zapisywanie..." : "Zapisz Zmiany Profilu"}
-								</Button>
-							</div>
-						</form>
+								<div className="flex justify-end pt-8 border-t border-t-border-subtle">
+									<Button
+										type="submit"
+										disabled={isPending}
+										className="h-12 px-8 rounded-xl bg-theme-primary hover:opacity-90 text-white font-bold transition-all shadow-sm disabled:opacity-50"
+									>
+										{isPending ? "Zapisywanie..." : "Zapisz Zmiany Profilu"}
+									</Button>
+								</div>
+							</form>
+						</SectionLayout>
 					</div>
 				)}
-				{/* ALERTS TAB */}
+
+				{/* 🚀 NOWY LAYOUT DLA ALERTÓW */}
 				{activeTab === "alerts" && (
-					<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-6 sm:p-8 shadow-sm animate-in fade-in duration-300 space-y-8">
-						<div>
-							<h3 className="text-lg font-bold text-t-text-primary">
-								Strażnicy Portfela
-							</h3>
-							<p className="text-xs font-medium text-t-text-tertiary mt-1">
-								Zarządzaj inteligentnymi alertami, które będą wysyłane na adres{" "}
-								<span className="text-t-text-secondary font-bold">
-									{user.email}
-								</span>
-							</p>
-						</div>
-
-						<div className="space-y-4">
-							{/* 1. STRAŻNIK OBLIGACJI */}
-							<div className="flex items-center justify-between p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle transition-colors hover:border-t-border">
-								<div className="flex items-center gap-4">
-									<div className="w-10 h-10 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 flex items-center justify-center shrink-0">
-										<ShieldAlert className="w-5 h-5" />
+					<div className="animate-in slide-in-from-right-4 fade-in duration-300">
+						<SectionLayout
+							title="Konfiguracja Powiadomień"
+							titleIcon={ShieldAlert}
+							subtitle="Kontroluj przepływ informacji"
+							description="Zdecyduj, o jakich zdarzeniach system ma Cię informować za pomocą wiadomości e-mail."
+						>
+							<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-6 sm:p-8 shadow-sm space-y-8">
+								<div className="space-y-4">
+									<div className="flex items-center justify-between p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle transition-colors hover:border-t-border">
+										<div className="flex items-center gap-4">
+											<div className="w-10 h-10 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 flex items-center justify-center shrink-0">
+												<ShieldAlert className="w-5 h-5" />
+											</div>
+											<div>
+												<p className="text-sm font-bold text-t-text-primary">
+													Zapadalność Obligacji
+												</p>
+												<p className="text-xs text-t-text-tertiary mt-0.5 max-w-md">
+													Otrzymaj powiadomienie e-mail, gdy do wykupu Twoich
+													obligacji pozostanie mniej niż 30 dni.
+												</p>
+											</div>
+										</div>
+										<button
+											type="button"
+											onClick={() => toggleAlert("bonds")}
+											className={cn(
+												"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-t-bg-panel",
+												alerts.bonds ? "bg-blue-800" : "bg-t-border",
+											)}
+										>
+											<span
+												className={cn(
+													"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+													alerts.bonds ? "translate-x-5" : "translate-x-0",
+												)}
+											/>
+										</button>
 									</div>
-									<div>
-										<p className="text-sm font-bold text-t-text-primary">
-											Zapadalność Obligacji
-										</p>
-										<p className="text-xs text-t-text-tertiary mt-0.5 max-w-md">
-											Otrzymaj powiadomienie e-mail, gdy do wykupu Twoich
-											obligacji skarbowych (np. EDO, DOS) pozostanie mniej niż
-											30 dni.
-										</p>
+									<div className="flex items-center justify-between p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle transition-colors hover:border-t-border">
+										<div className="flex items-center gap-4">
+											<div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 flex items-center justify-center shrink-0">
+												<PieChart className="w-5 h-5" />
+											</div>
+											<div>
+												<p className="text-sm font-bold text-t-text-primary">
+													Rebalancing i Alokacja
+												</p>
+												<p className="text-xs text-t-text-tertiary mt-0.5 max-w-md">
+													Powiadomienia, gdy wybrane aktywa niebezpiecznie
+													przekroczą założony procent w portfelu.
+												</p>
+											</div>
+										</div>
+										<button
+											type="button"
+											onClick={() => toggleAlert("rebalancing")}
+											className={cn(
+												"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
+												alerts.rebalancing ? "bg-blue-800" : "bg-t-border",
+											)}
+										>
+											<span
+												className={cn(
+													"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+													alerts.rebalancing
+														? "translate-x-5"
+														: "translate-x-0",
+												)}
+											/>
+										</button>
+									</div>
+									<div className="flex items-center justify-between p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle transition-colors hover:border-t-border">
+										<div className="flex items-center gap-4">
+											<div className="w-10 h-10 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-500 flex items-center justify-center shrink-0">
+												<CalendarClock className="w-5 h-5" />
+											</div>
+											<div>
+												<p className="text-sm font-bold text-t-text-primary">
+													Dyscyplina Planu
+												</p>
+												<p className="text-xs text-t-text-tertiary mt-0.5 max-w-md">
+													Przypomnienie pod koniec miesiąca, jeśli Twój założony
+													Plan Inwestycyjny wciąż ma status niezrealizowanego.
+												</p>
+											</div>
+										</div>
+										<button
+											type="button"
+											onClick={() => toggleAlert("plans")}
+											className={cn(
+												"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
+												alerts.plans ? "bg-blue-800" : "bg-t-border",
+											)}
+										>
+											<span
+												className={cn(
+													"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+													alerts.plans ? "translate-x-5" : "translate-x-0",
+												)}
+											/>
+										</button>
 									</div>
 								</div>
-								<button
-									type="button"
-									onClick={() => toggleAlert("bonds")}
-									className={cn(
-										"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-t-bg-panel",
-										alerts.bonds ? "bg-blue-800" : "bg-t-border",
-									)}
-								>
-									<span
-										className={cn(
-											"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-											alerts.bonds ? "translate-x-5" : "translate-x-0",
-										)}
-									/>
-								</button>
-							</div>
 
-							{/* 2. STRAŻNIK ALOKACJI */}
-							<div className="flex items-center justify-between p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle transition-colors hover:border-t-border">
-								<div className="flex items-center gap-4">
-									<div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-500 flex items-center justify-center shrink-0">
-										<PieChart className="w-5 h-5" />
-									</div>
-									<div>
-										<p className="text-sm font-bold text-t-text-primary">
-											Rebalancing i Alokacja
-										</p>
-										<p className="text-xs text-t-text-tertiary mt-0.5 max-w-md">
-											Powiadomienia, gdy wybrane aktywa (np. Booster)
-											niebezpiecznie przekroczą założony docelowy procent w
-											portfelu.
-										</p>
-									</div>
+								<div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-t-border-subtle gap-4">
+									<Button
+										type="button"
+										variant="outline"
+										onClick={handleTestEmail}
+										className="w-full sm:w-auto h-12 px-6 rounded-xl border-t-border-subtle text-t-text-secondary hover:text-t-text-primary font-bold shadow-sm"
+									>
+										<Activity className="w-4 h-4 mr-2" />
+										Wymuś Skanowanie
+									</Button>
+									<Button
+										type="button"
+										onClick={handleSaveAlerts}
+										className="w-full sm:w-auto h-12 px-8 rounded-xl bg-theme-primary hover:opacity-90 text-white font-bold transition-all shadow-sm"
+									>
+										Zapisz Ustawienia
+									</Button>
 								</div>
-								<button
-									type="button"
-									onClick={() => toggleAlert("rebalancing")}
-									className={cn(
-										"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
-										alerts.rebalancing ? "bg-blue-800" : "bg-t-border",
-									)}
-								>
-									<span
-										className={cn(
-											"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-											alerts.rebalancing ? "translate-x-5" : "translate-x-0",
-										)}
-									/>
-								</button>
 							</div>
-
-							{/* 3. STRAŻNIK DYSCYPLINY */}
-							<div className="flex items-center justify-between p-5 rounded-xl bg-t-bg-base/30 dark:bg-black/20 border border-t-border-subtle transition-colors hover:border-t-border">
-								<div className="flex items-center gap-4">
-									<div className="w-10 h-10 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-500 flex items-center justify-center shrink-0">
-										<CalendarClock className="w-5 h-5" />
-									</div>
-									<div>
-										<p className="text-sm font-bold text-t-text-primary">
-											Dyscyplina Planu
-										</p>
-										<p className="text-xs text-t-text-tertiary mt-0.5 max-w-md">
-											Przypomnienie pod koniec miesiąca, jeśli Twój założony
-											Plan Inwestycyjny wciąż ma status niezrealizowanego.
-										</p>
-									</div>
-								</div>
-								<button
-									type="button"
-									onClick={() => toggleAlert("plans")}
-									className={cn(
-										"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
-										alerts.plans ? "bg-blue-800" : "bg-t-border",
-									)}
-								>
-									<span
-										className={cn(
-											"pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-											alerts.plans ? "translate-x-5" : "translate-x-0",
-										)}
-									/>
-								</button>
-							</div>
-						</div>
-
-						{/* SEKCJA ZAPISU I RĘCZNEGO SKANOWANIA */}
-						<div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-t-border-subtle gap-4">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={handleTestEmail}
-								className="w-full sm:w-auto h-12 px-6 rounded-xl border-t-border-subtle text-t-text-secondary hover:text-t-text-primary font-bold shadow-sm"
-							>
-								<Activity className="w-4 h-4 mr-2" />
-								Wymuś Skanowanie
-							</Button>
-
-							<Button
-								type="button"
-								onClick={handleSaveAlerts}
-								className="w-full sm:w-auto h-12 px-8 rounded-xl bg-theme-primary hover:opacity-90 text-white font-bold transition-all shadow-sm"
-							>
-								Zapisz Ustawienia
-							</Button>
-						</div>
+						</SectionLayout>
 					</div>
 				)}
 			</div>
-		</SectionLayout>
+		</div>
 	);
 }
-
-// =========================================================
-// WIDGET COMPONENTS
-// =========================================================
 
 function ProfileCard({
 	icon: Icon,

@@ -108,7 +108,7 @@ export default function PortfolioSettingsClient({
 
 					{/* KARTY Z UPRAWNIENIAMI I MAILEM */}
 					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1 sm:gap-3 pt-2">
-						<div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3 ">
+						<div className="flex flex-row flex-wrap justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3 ">
 							<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
 								<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
 								<span>Poziom uprawnień:</span>
@@ -124,7 +124,7 @@ export default function PortfolioSettingsClient({
 							</div>
 						</div>
 
-						<div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3">
+						<div className="flex flex-row flex-wrap justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3">
 							<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
 								<User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
 								<span>Adres E-mail:</span>

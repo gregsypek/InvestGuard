@@ -23,6 +23,7 @@
 		@apply flex justify-between items-center;
 	}
 
+	/* 🚀 ZOPTYMALIZOWANE KLASY SKALOWANIA */
 	.h1-bold {
 		@apply font-bold text-3xl lg:text-4xl;
 	}
@@ -33,6 +34,11 @@
 
 	.h3-bold {
 		@apply font-bold text-xl lg:text-2xl;
+	}
+
+	/* 🚀 NOWE: Płynne (fluid) klasy dla nagłówków Hero */
+	.h1-hero {
+		@apply font-black tracking-tighter text-white drop-shadow-sm text-3xl md:text-4xl lg:text-5xl;
 	}
 }
 

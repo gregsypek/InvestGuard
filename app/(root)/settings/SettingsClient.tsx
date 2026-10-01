@@ -94,11 +94,11 @@ export default function SettingsClient({
 	}, [isAdmin, activeTab]);
 
 	return (
-		<div className="w-full animate-in fade-in duration-500">
-			{/* 🚀 ZINTEGROWANY, SPÓJNY NAGŁÓWEK (W stylu UserDashboard) */}
-			<header className="relative overflow-hidden flex flex-col w-full border-b border-white/10 bg-slate-900 rounded-b-2xl text-slate-100 p-6 md:p-8 shadow-lg mb-8">
-				{/* 1. Tło SVG (Świetlny Gradient) */}
-				<div className="absolute inset-0 pointer-events-none select-none opacity-40 mix-blend-screen">
+		<div className="max-w-7xl mx-auto w-full space-y-6 animate-in fade-in duration-500 pb-24">
+			{/* 1. WYSOKI NAGŁÓWEK HERO (Bez zakładek w środku!) */}
+			<header className="relative overflow-hidden flex flex-col w-full border-b border-white/10 bg-slate-900 rounded-b-2xl text-slate-100 p-6 md:p-8 lg:p-10 shadow-lg mt-2 md:mt-0 transition-all duration-500">
+				{/* Świetlny Gradient SVG */}
+				<div className="absolute inset-0 pointer-events-none select-none opacity-50 mix-blend-screen">
 					<svg
 						viewBox="0 0 1024 1024"
 						className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-y-1/2 [mask-image:radial-gradient(closest-side,white,transparent)] sm:left-full sm:-ml-80 lg:left-1/2 lg:ml-0 lg:-translate-x-1/2 lg:translate-y-0"
@@ -109,7 +109,7 @@ export default function SettingsClient({
 							cy={512}
 							r={512}
 							fill="url(#settings-gradient)"
-							fillOpacity="0.7"
+							fillOpacity="0.8"
 						/>
 						<defs>
 							<radialGradient id="settings-gradient">
@@ -120,14 +120,14 @@ export default function SettingsClient({
 					</svg>
 				</div>
 
-				<div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col gap-4">
-					{/* Ścieżka powrotu */}
+				<div className="relative z-10 w-full flex flex-col gap-6">
+					{/* Ścieżka powrotu (wyświetlana tylko przy wejściu z zewnątrz) */}
 					{fromDashboard && (
-						<nav className="flex items-center gap-2 mb-2 text-sm text-slate-400">
+						<nav className="flex items-center gap-2 text-sm text-slate-400">
 							<Link
 								href="/"
 								className={cn(
-									"inline-flex items-center transition-all h-5 text-amber-500 hover:text-amber-400  decoration-amber-500/40 underline-offset-4 cursor-pointer font-medium",
+									"inline-flex items-center transition-all h-5 text-amber-500 hover:text-amber-400 underline decoration-amber-500/40 underline-offset-4 cursor-pointer font-medium",
 								)}
 							>
 								<ChevronLeft
@@ -143,102 +143,71 @@ export default function SettingsClient({
 						</nav>
 					)}
 
-					{/* Tytuł i zakładki */}
-					<div className="flex flex-col gap-2 mb-2">
-						<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-sm mb-3">
-							Ustawienia Konta
-						</h1>
+					{/* Tytuł główny (korzysta z nowej, responsywnej klasy) */}
+					<div>
+						<h1 className="h1-hero mb-1">Ustawienia Aplikacji</h1>
+					</div>
 
-						<div className="flex flex-wrap items-center gap-2 mt-2">
-							<span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">
-								Wybierz zakładkę:
-							</span>
-							<div className="flex gap-2 flex-wrap">
-								{TABS.map((t) => (
-									<FilterBadge
-										key={t.id}
-										id={t.id}
-										label={t.label}
-										isSelected={activeTab === t.id}
-										onToggle={(id) => setActiveTab(id)}
-										className={activeTab === t.id ? "text-blue-300" : ""}
+					{/* KARTY: UPRAWNIENIA I E-MAIL (Wyrównane ze stylem profilu) */}
+					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1 sm:gap-3 pt-2">
+						{/* Karta: Poziom Uprawnień */}
+						<div className="flex flex-row flex-wrap justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3 ">
+							<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+								<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+								<span>Uprawnienia:</span>
+							</div>
+							<div className="flex justify-center items-center gap-2 text-xs sm:text-sm font-black text-white tracking-wide uppercase">
+								{userRole}
+								{userRole === "ADMIN" && (
+									<span
+										className="flex h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(243,24,96,0.8)] shrink-0"
+										title="Pełen dostęp"
 									/>
-								))}
+								)}
 							</div>
 						</div>
-					</div>
-				</div>
 
-				{/* 2. Dolna sekcja (Bliźniacze karty profilowe) */}
-				{/* <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-6 mt-6 border-t border-white/10">
-					<div className="flex flex-row justify-center items-center gap-3 px-5 py-3.5 w-full sm:w-auto ">
-						<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-							<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-							<span>Poziom uprawnień:</span>
-						</div>
-
-						<div className="flex items-center justify-center gap-3 text-sm sm:text-base font-black text-white tracking-wide uppercase">
-							{userRole}
-							{userRole === "ADMIN" && (
-								<span
-									className="flex h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(243,24,96,0.8)] shrink-0"
-									title="Pełen dostęp"
-								/>
-							)}
-						</div>
-					</div>
-
-					<div className="flex flex-row justify-center items-center gap-3 px-5 py-3.5 w-full sm:w-auto">
-						<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-							<User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-							<span>Adres E-mail:</span>
-						</div>
-
-						<div className="text-sm sm:text-base font-black text-white tracking-wide">
-							{email || "Brak przypisanego adresu"}
-						</div>
-					</div>
-				</div> */}
-				{/* 2. Dolna sekcja (Responsywne karty profilowe) */}
-				<div className="relative z-10 max-w-7xl  sm:w-full flex flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4 pt-6 mt-6 border-t border-white/10">
-					{/* Karta: Poziom Uprawnień */}
-					<div className="flex flex-col  sm:flex-row justify-start items-center gap-1.5 sm:gap-3  w-full sm:w-auto">
-						{/* Etykieta z ikoną */}
-						<div className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">
-							<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-							<span>Poziom uprawnień:</span>
-						</div>
-
-						{/* Wartość (Rola) i kropka */}
-						<div className="flex justify-start gap-2 text-[10px] sm:text-sm font-black text-white tracking-wide uppercase">
-							{userRole}
-							{userRole === "ADMIN" && (
-								<span
-									className="flex h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(243,24,96,0.8)] shrink-0"
-									title="Pełen dostęp"
-								/>
-							)}
-						</div>
-					</div>
-
-					{/* Karta: Adres e-mail */}
-					<div className="flex flex-col sm:flex-row justify-center  md sm:justify-start items-center gap-1.5 sm:gap-3  w-full sm:w-auto">
-						{/* Etykieta z ikoną */}
-						<div className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">
-							<User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-							<span>Adres E-mail:</span>
-						</div>
-
-						{/* Wartość (Email) */}
-						<div className="text-xs sm:text-sm font-black text-white tracking-wide break-all sm:break-normal text-center sm:text-left">
-							{email || "Brak przypisanego adresu"}
+						{/* Karta: Adres E-mail */}
+						<div className="flex flex-row flex-wrap justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3">
+							<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+								<User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+								<span>Konto:</span>
+							</div>
+							<div className="text-xs sm:text-sm font-black text-white tracking-wide break-all sm:break-normal text-center sm:text-left">
+								{email || "Brak przypisanego adresu"}
+							</div>
 						</div>
 					</div>
 				</div>
 			</header>
 
-			{/* TREŚĆ ZAKŁADEK */}
-			<div className="max-w-7xl mx-auto w-full">
+			{/* 🚀 2. STICKY PASEK NAWIGACJI ZAKŁADEK */}
+			<div className="sticky top-0 z-50 w-full bg-t-bg-base/80 backdrop-blur-xl border-b border-t-border-subtle py-3 transition-all duration-300">
+				<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full">
+					<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest hidden sm:block">
+						Wybierz sekcję:
+					</span>
+					<div className="flex gap-1.5 flex-wrap">
+						{TABS.map((t) => (
+							<FilterBadge
+								key={t.id}
+								id={t.id}
+								label={t.label}
+								isSelected={activeTab === t.id}
+								onToggle={(id) => setActiveTab(id)}
+								className={
+									activeTab === t.id
+										? "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+										: ""
+								}
+							/>
+						))}
+					</div>
+				</div>
+			</div>
+
+			{/* ZAWARTOŚĆ ZAKŁADEK */}
+			<div className="w-full pt-2">
 				{activeTab === "dashboard" && (
 					<div className="animate-in slide-in-from-right-4 duration-300 fade-in">
 						<SectionLayout

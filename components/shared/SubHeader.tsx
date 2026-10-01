@@ -17,13 +17,13 @@ export function SubHeader({
 	children,
 }: SubHeaderProps) {
 	return (
-		// ZMIANA: dodano spójny padding z dołu
 		<div className={cn("pb-4", className)}>
 			<div className="flex items-center justify-between">
-				{/* ZMIANA: text-slate-400 na text-t-text-secondary */}
-				<h3 className="text-sm font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
-					{/* ZMIANA: text-slate-500 na text-t-text-tertiary */}
-					{Icon && <Icon className="h-4 w-4 text-t-text-tertiary" />}
+				{/* DODANO: Skalowanie czcionki i ikon dla mobile (text-[10px] sm:text-xs) */}
+				<h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-1.5 md:gap-2">
+					{Icon && (
+						<Icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-t-text-tertiary shrink-0" />
+					)}
 					{title}
 				</h3>
 
@@ -31,7 +31,8 @@ export function SubHeader({
 			</div>
 
 			{description && (
-				<p className="text-xs font-medium text-t-text-tertiary mt-1.5">
+				// DODANO: leading-relaxed dla lepszej czytelności oraz max-w-3xl aby tekst nie rozciągał się w nieskończoność na monitorach 4K
+				<p className="text-xs md:text-sm font-medium text-t-text-tertiary mt-1.5 leading-relaxed max-w-3xl">
 					{description}
 				</p>
 			)}

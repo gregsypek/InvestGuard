@@ -143,8 +143,8 @@ export default async function RootLayout({
 
 						{/* 1. Główny wrapper rozciągnięty na pełny ekran z tłem systemowym */}
 						<div className="w-full min-h-screen bg-t-bg-base transition-colors duration-300">
-							{/* 2. Wewnętrzny kontener trzymający strukturę i szerokość treści */}
-							<div className="max-w-7xl mx-auto w-full px-4 md:px-8 pb-10 pt-0 space-y-8">
+							{/* 🚀 ZMIANA: Zastosowanie globalnych klas zamiast ręcznych Tailwindów */}
+							<div className="page-container section-gap pb-10 pt-4 md:pt-6">
 								{children}
 							</div>
 						</div>

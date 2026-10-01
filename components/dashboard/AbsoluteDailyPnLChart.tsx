@@ -462,7 +462,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	// that takes up its own space, so the chart is pushed down instead of
 	// being covered.
 	return (
-		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-5 shadow-sm">
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-sm">
 			<div className="flex justify-between items-start z-20 mb-2">
 				<div>{trendBadge(true)}</div>
 				<button

@@ -15,10 +15,13 @@ export function SectionHeader({
 	children,
 }: SectionHeaderProps) {
 	return (
-		<div className={cn("flex justify-between items-center mb-6", className)}>
-			{/* ZMIANA: text-slate-200 na text-t-text-primary */}
-			<h2 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2 text-t-text-primary">
-				{Icon && <Icon className="h-5 w-5 md:h-6 md:w-6 text-theme-primary" />}
+		// USUNIĘTO: sztywne mb-6. Marginesami zarządza teraz rodzic.
+		<div className={cn("flex justify-between items-center", className)}>
+			{/* DODANO: text-fluid-h2 (z globals.css) do płynnego skalowania */}
+			<h2 className="text-fluid-h2 text-t-text-primary flex items-center gap-2 md:gap-3">
+				{Icon && (
+					<Icon className="h-5 w-5 md:h-6 md:w-6 text-theme-primary shrink-0" />
+				)}
 				{title}
 			</h2>
 

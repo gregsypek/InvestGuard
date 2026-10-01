@@ -40,6 +40,62 @@
 	.h1-hero {
 		@apply font-black tracking-tighter text-white drop-shadow-sm text-3xl md:text-4xl lg:text-5xl;
 	}
+
+	/* Typografia - płynne skalowanie od mobile do desktop */
+	.text-fluid-h1 {
+		/* clamp(MIN, VAL, MAX) - np. od 28px na mobile do 48px na desktopie */
+		font-size: clamp(1.75rem, 5vw, 3rem);
+		line-height: 1.1;
+		@apply font-black tracking-tighter;
+	}
+
+	.text-fluid-h2 {
+		font-size: clamp(1.5rem, 4vw, 2.25rem);
+		line-height: 1.2;
+		@apply font-bold tracking-tight;
+	}
+
+	.text-fluid-h3 {
+		font-size: clamp(1.25rem, 3vw, 1.75rem);
+		line-height: 1.3;
+		@apply font-bold;
+	}
+
+	/* Zunifikowane odstępy wewnątrz kart (Padding) */
+	.card-padding {
+		@apply p-4 md:p-6 lg:p-8;
+	}
+
+	/* Zunifikowane odstępy między sekcjami (Margin/Gap) */
+	.section-gap {
+		@apply space-y-6 md:space-y-8 lg:space-y-12;
+	}
+
+	/* Główny kontener strony */
+	.page-container {
+		@apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+	}
+	/* 1. Globalne odstępy (Padding) dla głównych sekcji */
+	.section-padding {
+		/*  Zostawiono tylko pion (py) */
+		@apply py-6 sm:py-8 lg:py-10;
+	}
+
+	/* 2. Globalny odstęp (Margin Top) oddzielający nagłówek sekcji od jej treści */
+	.content-mt {
+		@apply mt-5 md:mt-6 lg:mt-8;
+	}
+
+	/* 3. Fluid Typography dla mniejszych nagłówków (używane w SectionHeader) */
+	.text-fluid-h2 {
+		font-size: clamp(
+			1.25rem,
+			3.5vw,
+			1.75rem
+		); /* od 20px (mobile) do 28px (desktop) */
+		line-height: 1.2;
+		@apply font-black tracking-tight;
+	}
 }
 
 @theme {

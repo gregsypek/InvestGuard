@@ -9,6 +9,7 @@ import {
 	Settings,
 	Wallet2,
 	WalletCards,
+	Wrench,
 } from "lucide-react";
 import {
 	Select,
@@ -25,6 +26,7 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
@@ -34,7 +36,6 @@ import Menu from "./shared/DesktopNav";
 import ModeToggle from "./shared/header/ModeToggle";
 import { RefreshButton } from "./RefreshButton";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
 
 interface HeaderProps {
 	portfolios: { id: string; name: string; colorTheme?: string }[];
@@ -57,10 +58,13 @@ export default function Header({
 	const isDemoMode = pathname.startsWith("/demo");
 	const router = useRouter();
 
+	const [isMobileOpen, setIsMobileOpen] = useState(false);
+
 	const urlPortfolioId =
 		searchParams.get("portfolioId") || searchParams.get("portfolio");
 	const strategy = searchParams.get("s");
 	const segments = pathname.split("/");
+
 	const getPathId = () => {
 		const targetKeys = [
 			"dashboard",
@@ -84,16 +88,11 @@ export default function Header({
 	const currentEnvId = urlPortfolioId || idFromPath;
 	const isCurrentValid = portfolios.some((p) => p.id === currentEnvId);
 
-	// 1. ZMIANA: Czyste ID bez zabugowanego "ALL"
 	const rawId = isCurrentValid ? currentEnvId : (selectedPortfolioId ?? "");
 	const displayValue = isDemoMode ? "" : rawId;
 
-	// 2. ZMIANA: Jasna definicja stron globalnych (te same zarządzają checkboxami)
 	const isGlobalPage =
-		pathname === "/" ||
-		// pathname === "/dashboard" ||
-		pathname === "/profile" ||
-		pathname === "/settings";
+		pathname === "/" || pathname === "/profile" || pathname === "/settings";
 
 	const handlePortfolioChange = (id: string) => {
 		if (id === "enter-demo") {
@@ -102,9 +101,6 @@ export default function Header({
 		}
 
 		Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
-
-		// 🚀 FIX 1: Twarde zdjęcie blokady z Radix UI.
-		// Gwarantuje, że po kliknięciu strona nigdy nie zostanie "zamrożona" na kliknięcia.
 		document.body.style.pointerEvents = "auto";
 
 		setTimeout(() => {
@@ -115,15 +111,11 @@ export default function Header({
 			} else if (pathname.startsWith("/settings")) {
 				router.push(`/settings?portfolioId=${id}`);
 			} else {
-				// 🚀 FIX 2: CATCH-ALL (Opcja domyślna).
-				// Jeśli zmienisz portfel będąc na Profilu lub jakiejkolwiek innej
-				// nieobsługiwanej wyżej stronie, bezpiecznie wylądujesz w Przeglądzie tego portfela.
 				router.push(`/dashboard/${id}`);
 			}
 		}, 150);
 	};
 
-	// Zachowujemy ostatnio odwiedzony portfel w ciastku (bez wymuszania przekierowań!)
 	useEffect(() => {
 		if (pathname.startsWith("/demo")) return;
 		const currentId = urlPortfolioId || idFromPath;
@@ -132,9 +124,6 @@ export default function Header({
 		}
 	}, [urlPortfolioId, idFromPath, pathname]);
 
-	// 🚀 USUNIĘTO: Błędny `useEffect`, który bez pytania wyrzucał Cię na router.replace(). To on gubił portfele!
-
-	// 3. ZMIANA: Uproszczona logika motywów (kolorów)
 	useEffect(() => {
 		const activePortfolio = portfolios.find((p) => p.id === displayValue);
 		const theme = isDemoMode
@@ -154,9 +143,9 @@ export default function Header({
 	return (
 		<header className="flex justify-between items-center p-3 md:px-5 border-b border-t-border-subtle sticky top-0 z-50 bg-white/70 dark:bg-t-bg-sticky backdrop-blur-md shadow-sm">
 			<div className="flex items-center gap-3 flex-1">
-				{/* MOBILNY HAMBURGER (Został bez zmian) */}
+				{/* MOBILNY HAMBURGER */}
 				<div className="md:hidden">
-					<Sheet>
+					<Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
 						<SheetTrigger className="p-2 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-t-text-secondary transition-colors">
 							<HamburgerIcon className="w-5 h-5" />
 						</SheetTrigger>
@@ -171,35 +160,36 @@ export default function Header({
 							</SheetDescription>
 
 							<div className="p-5 border-b border-t-border-subtle flex items-center gap-3 bg-black/5 dark:bg-white/5">
-								<SheetTrigger asChild>
-									<Link
-										href="/"
-										className="flex items-center gap-3 group hover:cursor-pointer"
-									>
-										<div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm">
-											<Image
-												src="/logo.svg"
-												alt="InvestGuard"
-												width={32}
-												height={32}
-												className="block dark:hidden"
-												style={{ width: "auto", height: "auto" }}
-											/>
-											<Image
-												src="/logo-light.svg"
-												alt="InvestGuard"
-												width={32}
-												height={32}
-												className="hidden dark:block"
-												style={{ width: "auto", height: "auto" }}
-											/>
-										</div>
-										<span className="text-xl font-black tracking-tighter text-theme-primary">
-											{APP_NAME}
-											<span className="text-theme-primary">.</span>
+								<Link
+									href="/"
+									onClick={() => setIsMobileOpen(false)}
+									className="flex items-center gap-3 group hover:cursor-pointer"
+								>
+									<div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm">
+										<Image
+											src="/logo.svg"
+											alt="InvestGuard"
+											width={32}
+											height={32}
+											className="block dark:hidden"
+											style={{ width: "auto", height: "auto" }}
+										/>
+										<Image
+											src="/logo-light.svg"
+											alt="InvestGuard"
+											width={32}
+											height={32}
+											className="hidden dark:block"
+											style={{ width: "auto", height: "auto" }}
+										/>
+									</div>
+									<span className="text-xl font-black tracking-tighter text-slate-900 dark:text-slate-100">
+										{APP_NAME}
+										<span className="text-slate-900 dark:text-slate-100">
+											.
 										</span>
-									</Link>
-								</SheetTrigger>
+									</span>
+								</Link>
 							</div>
 
 							<div className="flex-1 flex flex-col p-4 space-y-1.5 overflow-y-auto">
@@ -222,58 +212,81 @@ export default function Header({
 									}
 
 									return (
-										<SheetTrigger asChild key={item.href}>
-											<Link
-												href={finalHref}
+										<Link
+											key={item.href}
+											href={finalHref}
+											onClick={() => setIsMobileOpen(false)}
+											className={cn(
+												"flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all",
+												isActive
+													? "bg-theme-soft text-theme-primary"
+													: "hover:bg-black/5 dark:hover:bg-white/5 text-t-text-secondary hover:text-t-text-primary",
+												isDemoMode &&
+													!["/dashboard", "/portfolios", "/planner"].includes(
+														item.href,
+													) &&
+													"opacity-30 pointer-events-none",
+											)}
+										>
+											<item.icon
 												className={cn(
-													"flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all",
+													"w-5 h-5",
 													isActive
-														? "bg-theme-soft text-theme-primary"
-														: "hover:bg-black/5 dark:hover:bg-white/5 text-t-text-secondary hover:text-t-text-primary",
-													isDemoMode &&
-														!["/dashboard", "/portfolios", "/planner"].includes(
-															item.href,
-														) &&
-														"opacity-30 pointer-events-none",
+														? "text-theme-primary"
+														: "text-t-text-tertiary",
 												)}
-											>
-												<item.icon
-													className={cn(
-														"w-5 h-5",
-														isActive
-															? "text-theme-primary"
-															: "text-t-text-tertiary",
-													)}
-												/>
-												<span>{item.name}</span>
-											</Link>
-										</SheetTrigger>
+											/>
+											<span>{item.name}</span>
+										</Link>
 									);
 								})}
 							</div>
 
-							<div className="p-5 border-t border-t-border-subtle flex items-center justify-between bg-black/5 dark:bg-white/5">
-								<div className="flex items-center gap-3 hover:cursor-pointer">
-									<ModeToggle />
-									{userButton}
-								</div>
-								<SheetTrigger asChild>
+							{/* DOLNA SEKCJA - NARZĘDZIA I USTAWIENIA */}
+							<div className="p-5 border-t border-t-border-subtle flex flex-col gap-2 bg-black/5 dark:bg-white/5">
+								{rawId && !isDemoMode && (
 									<Link
-										href="/settings"
-										className="p-2.5 rounded-xl text-t-text-tertiary hover:text-t-text-primary hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+										href={`/dashboard/${rawId}/settings`}
+										onClick={() => setIsMobileOpen(false)}
+										className="flex items-center gap-3 p-2 rounded-xl text-t-text-tertiary hover:text-t-text-primary hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold text-sm tracking-wide"
 									>
-										<Settings className="w-5 h-5" />
+										<Wrench className="w-5 h-5" />
+										<span>Narzędzia Portfela</span>
 									</Link>
-								</SheetTrigger>
+								)}
+
+								<Link
+									href="/settings"
+									onClick={() => setIsMobileOpen(false)}
+									className="flex items-center gap-3 p-2 rounded-xl text-t-text-tertiary hover:text-t-text-primary hover:bg-black/10 dark:hover:bg-white/10 transition-colors font-bold text-sm tracking-wide"
+								>
+									<Settings className="w-5 h-5" />
+									<span>Ustawienia Systemu</span>
+								</Link>
+
+								<div className="w-full h-px bg-t-border-subtle my-2"></div>
+
+								{/* Profil / Opcje Użytkownika */}
+								<div className="flex items-center justify-between mt-1">
+									<div className="flex items-center gap-3">
+										<ModeToggle />
+										{/* 🚀 PROFIL INWESTORA - owinięty w div, który nasłuchuje kliknięcia i wymusza zamknięcie szuflady! */}
+										<div
+											onClick={() => setIsMobileOpen(false)}
+											className="hover:cursor-pointer flex items-center"
+										>
+											{userButton}
+										</div>
+									</div>
+								</div>
 							</div>
 						</SheetContent>
 					</Sheet>
 				</div>
 
-				{/* 4. ZMIANA: KONTEKSTOWY SELEKTOR PORTFELA */}
+				{/* 4. KONTEKSTOWY SELEKTOR PORTFELA */}
 				<div className="w-full">
 					{isGlobalPage ? (
-						// Odznaka Globalna - kiedy Dashboard sam zarządza filtrami
 						<div className="flex items-center gap-2 px-4 h-11 w-full md:w-80 bg-theme-soft/50 border border-theme-border rounded-xl shadow-sm text-theme-primary cursor-default">
 							<Globe2 className="h-4 w-4 shrink-0" />
 							<span className="font-black text-[10px] md:text-[11px] uppercase tracking-widest mt-0.5 truncate">
@@ -281,9 +294,7 @@ export default function Header({
 							</span>
 						</div>
 					) : (
-						// Standardowy Selektor - tylko dla stron roboczych
 						<Select
-							// key={isDemoMode ? "demo" : `real-${displayValue}`}
 							value={displayValue || undefined}
 							onValueChange={handlePortfolioChange}
 						>

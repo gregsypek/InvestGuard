@@ -2,7 +2,7 @@
 
 import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
 import { Settings, Wrench } from "lucide-react";
-import { useEffect, useState } from "react"; // 🚀 DODANY IMPORT
+import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
@@ -10,7 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-export default function Aside() {
+export default function Aside({ onClose }: { onClose?: () => void }) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
@@ -18,17 +18,16 @@ export default function Aside() {
 	const strategy = searchParams.get("s");
 	const idFromParams = searchParams.get("portfolioId");
 	const segments = pathname.split("/");
-	// 🚀 STAN DO HYDRACJI CIASTECZKA
+
 	const [cookieId, setCookieId] = useState<string | null>(null);
 
 	useEffect(() => {
-		// Wykonuje się asynchronicznie - omija rygorystyczny błąd Lintera i błąd Hydracji!
 		const timer = setTimeout(() => {
 			setCookieId(Cookies.get("selectedPortfolioId") || null);
 		}, 0);
 
 		return () => clearTimeout(timer);
-	}, [pathname]); // <-- Aktualizuj przy każdej zmianie strony
+	}, [pathname]);
 
 	const getPathId = () => {
 		const targetKeys = [
@@ -49,7 +48,6 @@ export default function Aside() {
 		return "";
 	};
 
-	// 🚀 ZMIANA: Zamiast bezpośrednio z Cookies, bierzemy ze stanu!
 	const activePortfolioId = idFromParams || getPathId() || cookieId;
 
 	return (
@@ -58,6 +56,7 @@ export default function Aside() {
 			<div className="p-3 lg:p-6 flex justify-center lg:justify-start">
 				<Link
 					href="/"
+					onClick={onClose}
 					className="flex items-center gap-3 group hover:cursor-pointer"
 				>
 					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm border border-t-border-subtle">
@@ -78,7 +77,8 @@ export default function Aside() {
 							style={{ width: "auto", height: "auto" }}
 						/>
 					</div>
-					<span className="text-xl font-black tracking-tighter hidden lg:inline-block transition-colors text-t-text-primary">
+
+					<span className="text-xl font-black tracking-tighter !text-slate-900 dark:!text-slate-100">
 						{APP_NAME}.
 					</span>
 				</Link>
@@ -115,6 +115,7 @@ export default function Aside() {
 						<Link
 							key={item.href}
 							href={finalHref}
+							onClick={onClose}
 							className={cn(
 								"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
 								isActive
@@ -144,8 +145,8 @@ export default function Aside() {
 				})}
 			</nav>
 
-			{/* Stopka (Narzędzia i Ustawienia) */}
-			<div className="p-4 border-t border-t-border-subtle flex flex-col gap-2">
+			{/* 🚀 ZMIANA 4: Poprawiona Stopka (Narzędzia i Ustawienia) - Flex na małych ekranach */}
+			<div className="p-2 md:p-4 border-t border-t-border-subtle flex flex-col gap-2">
 				{activePortfolioId &&
 					!isDemoMode &&
 					(() => {
@@ -154,6 +155,7 @@ export default function Aside() {
 						return (
 							<Link
 								href={toolsHref}
+								onClick={onClose}
 								className={cn(
 									"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
 									isToolsActive
@@ -185,6 +187,7 @@ export default function Aside() {
 					return (
 						<Link
 							href={settingsHref}
+							onClick={onClose}
 							className={cn(
 								"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
 								isSettingsActive

@@ -22,6 +22,7 @@ import { QuickDepositForm } from "@/components/ui/QuickDepositForm";
 import { RevertLastTrancheTool } from "@/components/shared/RevertLastTrancheTool";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { XtbImporter } from "@/components/ui/XtbImporter";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 export default function PortfolioSettingsClient({
@@ -32,7 +33,7 @@ export default function PortfolioSettingsClient({
 	assetsForMigration,
 	userRole,
 	email,
-	fromDashboard, // 🚀 DODANE ODBIERANIE FLAGI
+	fromDashboard,
 }: any) {
 	const [activeTab, setActiveTab] = useState("add");
 
@@ -45,8 +46,8 @@ export default function PortfolioSettingsClient({
 
 	return (
 		<div className="max-w-7xl mx-auto w-full space-y-6 animate-in fade-in duration-500 pb-24">
-			{/* ZINTEGROWANY NAGŁÓWEK NARZĘDZI */}
-			<header className="relative sticky overflow-hidden flex flex-col w-full border-b border-white/10 bg-slate-900 rounded-b-2xl text-slate-100 p-3 md:p-8 shadow-lg mb-8 mt-2 md:mt-0">
+			{/* 1. WYSOKI NAGŁÓWEK (Czysty, bez zakładek, bez sticky) */}
+			<header className="relative overflow-hidden flex flex-col w-full border-b border-white/10 bg-slate-900 rounded-b-2xl text-slate-100 p-6 md:p-8 lg:p-10 shadow-lg mt-2 md:mt-0 transition-all duration-500">
 				{/* Świetlny Gradient SVG */}
 				<div className="absolute inset-0 pointer-events-none select-none opacity-40 mix-blend-screen">
 					<svg
@@ -70,13 +71,13 @@ export default function PortfolioSettingsClient({
 					</svg>
 				</div>
 
-				<div className="relative z-10 w-full flex flex-col gap-4">
-					{/* 🚀 Ścieżka powrotu ukazuje się TYLKO gdy przyszliśmy z pulpitu */}
+				<div className="relative z-10 w-full flex flex-col gap-6">
+					{/* Ścieżka powrotu ukazuje się TYLKO gdy przyszliśmy z pulpitu */}
 					{fromDashboard && (
-						<nav className="flex items-center gap-2 mb-2 text-sm text-slate-400">
+						<nav className="flex items-center gap-2 text-sm text-slate-400">
 							<Link
 								href={`/dashboard/${portfolioId}`}
-								className="inline-flex items-center transition-all h-5 text-amber-500 hover:text-amber-400  decoration-amber-500/40 underline-offset-4 cursor-pointer font-medium"
+								className="inline-flex items-center transition-all h-5 text-amber-500 hover:text-amber-400 decoration-amber-500/40 underline-offset-4 cursor-pointer font-medium"
 							>
 								<ChevronLeft
 									className="w-4 h-4 mr-0.5 no-underline"
@@ -98,77 +99,51 @@ export default function PortfolioSettingsClient({
 						</nav>
 					)}
 
-					{/* Tytuł i zakładki */}
-					<div className="flex flex-col gap-2 mb-2">
-						<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-sm mb-3">
+					{/* Tytuł (bez zakładek!) */}
+					<div>
+						<h1 className="text-3xl md:text-5xl font-black tracking-tighter text-white drop-shadow-sm mb-1">
 							Narzędzia Portfela
 						</h1>
+					</div>
 
-						<div className="flex flex-wrap items-center gap-2 mt-2">
-							<span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">
-								Wybierz narzędzia:
-							</span>
-							<div className="flex gap-2 flex-wrap">
-								{TABS.map((t) => (
-									<FilterBadge
-										key={t.id}
-										id={t.id}
-										label={t.label}
-										isSelected={activeTab === t.id}
-										onToggle={(id) => setActiveTab(id)}
-										className={activeTab === t.id ? "text-blue-300" : ""}
+					{/* KARTY Z UPRAWNIENIAMI I MAILEM */}
+					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1 sm:gap-3 pt-2">
+						<div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3 ">
+							<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+								<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+								<span>Poziom uprawnień:</span>
+							</div>
+							<div className="flex justify-center items-center gap-2 text-xs sm:text-sm font-black text-white tracking-wide uppercase">
+								{userRole}
+								{userRole === "ADMIN" && (
+									<span
+										className="flex h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(243,24,96,0.8)] shrink-0"
+										title="Pełen dostęp"
 									/>
-								))}
+								)}
 							</div>
 						</div>
-					</div>
-				</div>
 
-				{/* 🚀 IDEALNIE SPÓJNE KARTY (Przekopiowane z Twojego SettingsClient) */}
-				<div className="relative z-10 max-w-7xl sm:w-full flex flex-row items-stretch sm:items-center justify-between gap-2 pt-2 mt-2  sm:gap-4 xl:pt-6 xl:mt-6 border-t border-white/10">
-					{/* Karta: Poziom Uprawnień */}
-					<div className="flex flex-col sm:flex-row justify-start items-center gap-1.5 sm:gap-3 w-full sm:w-auto">
-						{/* Etykieta z ikoną */}
-						<div className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">
-							<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-							<span>Poziom uprawnień:</span>
-						</div>
-
-						{/* Wartość (Rola) i kropka */}
-						<div className="flex justify-start gap-2 text-[10px] sm:text-sm font-black text-white tracking-wide uppercase">
-							{userRole}
-							{userRole === "ADMIN" && (
-								<span
-									className="flex h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(243,24,96,0.8)] shrink-0"
-									title="Pełen dostęp"
-								/>
-							)}
-						</div>
-					</div>
-
-					{/* Karta: Adres e-mail */}
-					<div className="flex flex-col sm:flex-row justify-center md sm:justify-start items-center gap-1.5 sm:gap-3 w-full sm:w-auto">
-						{/* Etykieta z ikoną */}
-						<div className="flex items-center gap-1.5 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">
-							<User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-							<span>Adres E-mail:</span>
-						</div>
-
-						{/* Wartość (Email) */}
-						<div className="text-xs sm:text-sm font-black text-white tracking-wide break-all sm:break-normal text-center sm:text-left">
-							{email || "Brak przypisanego adresu"}
+						<div className="flex flex-col sm:flex-row justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3">
+							<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+								<User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+								<span>Adres E-mail:</span>
+							</div>
+							<div className="text-xs sm:text-sm font-black text-white tracking-wide break-all sm:break-normal text-center sm:text-left">
+								{email || "Brak przypisanego adresu"}
+							</div>
 						</div>
 					</div>
 				</div>
 			</header>
 
-			{/* 🚀 STICKY PASEK NARZĘDZI (Przykleja się do góry przy scrollu) */}
-			{/* <div className="sticky top-0 z-50 w-full bg-slate-900 backdrop-blur-md border-b border-t-border-subtle py-3 px-1 transition-all duration-300">
-				<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 max-w-7xl mx-auto">
-					<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
+			{/* 🚀 2. STICKY PASEK NARZĘDZI (Szklany efekt, zawsze na wierzchu przy scrollowaniu) */}
+			<div className="sticky top-0 z-50 w-full bg-t-bg-base/80 backdrop-blur-xl border-b border-t-border-subtle py-3 transition-all duration-300">
+				<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full">
+					<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest hidden sm:block">
 						Wybierz narzędzia:
 					</span>
-					<div className="flex gap-2 flex-wrap">
+					<div className="flex gap-1.5 flex-wrap">
 						{TABS.map((t) => (
 							<FilterBadge
 								key={t.id}
@@ -185,13 +160,13 @@ export default function PortfolioSettingsClient({
 						))}
 					</div>
 				</div>
-			</div> */}
+			</div>
 
-			{/* ZAWARTOŚĆ ZAKŁADEK (bez zmian) */}
-			<div className="w-full">
+			{/* ZAWARTOŚĆ ZAKŁADEK */}
+			<div className="w-full pt-2">
 				{/* 1. DODAWANIE ŚRODKÓW */}
 				{activeTab === "add" && (
-					<div className="grid grid-cols-1  gap-8 items-start animate-in slide-in-from-right-4 duration-300 fade-in">
+					<div className="grid grid-cols-1 gap-8 items-start animate-in slide-in-from-right-4 duration-300 fade-in">
 						<SectionLayout
 							title="Ręczne dodawanie aktywów"
 							titleIcon={LibrarySquareIcon}
@@ -222,7 +197,7 @@ export default function PortfolioSettingsClient({
 
 				{/* 2. IMPORT DANYCH */}
 				{activeTab === "import" && (
-					<div className="grid grid-cols-1  gap-8 items-start animate-in slide-in-from-right-4 duration-300 fade-in">
+					<div className="grid grid-cols-1 gap-8 items-start animate-in slide-in-from-right-4 duration-300 fade-in">
 						<SectionLayout
 							title="Import raportu (XTB)"
 							titleIcon={UploadCloud}

@@ -18,12 +18,12 @@ import {
 	Minimize2,
 	WalletCards,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
-import { useState } from "react";
 
 interface PortfolioDataPoint {
 	date: string | Date;
@@ -97,8 +97,16 @@ export function PortfoliosComparisonChart({
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
 	const [prevActiveIds, setPrevActiveIds] = useState<string>("");
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [isMobile, setIsMobile] = useState(false);
 
 	const currentActiveIdsStr = activeIds.join(",");
+
+	useEffect(() => {
+		const checkMobile = () => setIsMobile(window.innerWidth < 640);
+		checkMobile();
+		window.addEventListener("resize", checkMobile);
+		return () => window.removeEventListener("resize", checkMobile);
+	}, []);
 	if (currentActiveIdsStr !== prevActiveIds) {
 		setPrevActiveIds(currentActiveIdsStr);
 		const nextHidden: Record<string, boolean> = {};
@@ -141,7 +149,7 @@ export function PortfoliosComparisonChart({
 		if (!payload) return null;
 
 		return (
-			<div>
+			<div className="w-full flex flex-col items-center">
 				<ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
 					{payload.map((entry) => {
 						const dataKey = String(entry.dataKey);
@@ -176,7 +184,7 @@ export function PortfoliosComparisonChart({
 					})}
 				</ul>
 				<p className="text-[9px] text-center text-t-text-tertiary uppercase tracking-widest font-bold my-4 opacity-70">
-					💡 Kliknij w nazwę portfela, aby włączyć lub wyłączyć go z wykresu
+					💡 Kliknij w nazwę portfela, aby włączyć lub wyłączyć go z wykresu22
 				</p>
 			</div>
 		);
@@ -187,8 +195,13 @@ export function PortfoliosComparisonChart({
 			<ResponsiveContainer width="100%" height="100%">
 				<LineChart
 					data={data}
-					// 1. Wyrównujemy marginesy wewnętrzne Recharts, aby wykres ładnie wypełniał Canvas
-					margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+					// Aby uwzględnić isMobile (usunięto left: -15)
+					margin={{
+						top: 5,
+						right: isMobile ? 0 : 10,
+						left: 0,
+						bottom: isMobile ? 20 : 0,
+					}}
 				>
 					<CartesianGrid
 						strokeDasharray="2 6"
@@ -205,6 +218,8 @@ export function PortfoliosComparisonChart({
 							fontWeight: 500,
 						}}
 						tickMargin={12}
+						// 🚀 ZMIANA 2: Zapobiega nakładaniu się dat na komórce
+						minTickGap={20}
 						tickFormatter={(val) =>
 							format(new Date(val), "dd MMM", { locale: pl })
 						}
@@ -227,6 +242,8 @@ export function PortfoliosComparisonChart({
 								? [-yDomain, yDomain]
 								: ["auto", "auto"]
 						}
+						// 🚀 ZMIANA 3: Dynamiczna szerokość YAxis! W tym tkwił główny problem obciętych liczb.
+						width={isMobile ? 35 : 45}
 					/>
 					<ReferenceLine y={0} stroke="var(--t-border)" strokeWidth={1} />
 					<Tooltip
@@ -237,7 +254,6 @@ export function PortfoliosComparisonChart({
 							/>
 						}
 						cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
-						// 2. Podnosimy zIndex drastycznie wyżej niż legenda i resetujemy outline
 						wrapperStyle={{ zIndex: 1000, outline: "none" }}
 					/>
 					<Legend
@@ -245,13 +261,13 @@ export function PortfoliosComparisonChart({
 						verticalAlign="bottom"
 						wrapperStyle={{
 							position: "relative",
-							// 3. Obniżamy zIndex legendy, aby tekst "Kliknij w nazwę..." nie przebijał
 							zIndex: 10,
+							// 🚀 ZMIANA 4: Dodano paddingTop do legendy w głównym komponencie (odsunie "💡 Kliknij..." w dół)
+							paddingTop: "16px",
 						}}
 					/>
 
 					{portfolios.map((p) => {
-						// Fallback to blue if colorTheme is missing or invalid
 						const themeColor =
 							THEME_COLORS[p.colorTheme || "blue"] || THEME_COLORS.blue;
 
@@ -308,18 +324,21 @@ export function PortfoliosComparisonChart({
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
-			<div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
+		// 🚀 Używamy globalnego card-padding
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-sm">
+			{/* 🚀 Naturalny wiersz dla przycisku, zamiast absolute. Dzięki temu wykres nigdy nie wjedzie pod ikonę! */}
+			<div className="flex justify-end items-start z-20 mb-2 sm:mb-4">
 				<button
 					onClick={() => setIsExpanded(true)}
-					className="p-1.5 bg-t-bg-base border border-t-border text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-sm"
+					className="p-1.5 bg-t-bg-base border border-t-border text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
 					title="Powiększ wykres"
 				>
 					<Maximize2 className="w-4 h-4" />
 				</button>
 			</div>
-			{/* Zmieniono 'py-3' na 'pt-6', aby wykres naturalnie odsunął się od górnego przycisku i zachował symetrię względem bocznych paddingów */}
-			<div className="flex-1 w-full h-full min-h-0 pt-6">{chartContent}</div>
+
+			{/* Wstrzykujemy poprawiony zmienną chartContent */}
+			<div className="flex-1 w-full min-h-0 relative z-10">{chartContent}</div>
 		</div>
 	);
 }

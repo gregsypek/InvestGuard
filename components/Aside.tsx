@@ -78,7 +78,7 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 						/>
 					</div>
 
-					<span className="text-xl font-black tracking-tighter !text-slate-900 dark:!text-slate-100">
+					<span className="text-xl font-black tracking-tighter hidden lg:inline-block transition-colors text-t-text-primary">
 						{APP_NAME}.
 					</span>
 				</Link>

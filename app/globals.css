@@ -99,6 +99,7 @@
 }
 
 @theme {
+	--breakpoint-xs: 420px;
 	/* Rejestracja w Tailwind, aby używać klas np. bg-t-bg-panel */
 	--color-t-bg-base: var(--t-bg-base);
 	--color-t-bg-panel: var(--t-bg-panel);

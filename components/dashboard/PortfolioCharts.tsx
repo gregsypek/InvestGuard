@@ -12,14 +12,8 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
-import {
-	Maximize2,
-	Minimize2,
-	TrendingDown,
-	TrendingUp,
-	Wallet2,
-} from "lucide-react";
-import React, { useMemo, useState } from "react";
+import { Maximize2, Minimize2, Wallet2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
@@ -68,6 +62,14 @@ export function PortfolioChart({
 	mode = "VALUE",
 }: PortfolioChartProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [isMobile, setIsMobile] = useState(false);
+
+	useEffect(() => {
+		const checkMobile = () => setIsMobile(window.innerWidth < 640);
+		checkMobile();
+		window.addEventListener("resize", checkMobile);
+		return () => window.removeEventListener("resize", checkMobile);
+	}, []);
 
 	// --- LOGIC FOR MERGING TRANSACTIONS WITH CHART DATA ---
 	const mergedData: MergedDataPoint[] = useMemo(() => {
@@ -151,11 +153,6 @@ export function PortfolioChart({
 						: "bg-rose-500/10 border-rose-500/20"
 				}`}
 			>
-				{/* {isPositive ? (
-					<TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-				) : (
-					<TrendingDown className="w-3.5 h-3.5 text-rose-500" />
-				)} */}
 				<span
 					className={`text-[11px] font-bold tabular-nums ${isPositive ? "text-emerald-500" : "text-rose-500"}`}
 				>
@@ -186,11 +183,17 @@ export function PortfolioChart({
 
 	// --- CHART RENDERING ---
 	const chartContent = (
-		<ChartContainer className="h-full min-h-[300px] w-full flex-1">
+		<ChartContainer className="h-full min-h-0 w-full flex-1">
 			<ResponsiveContainer width="100%" height="100%">
 				<ComposedChart
 					data={mergedData}
-					margin={{ top: 10, right: 10, left: -15, bottom: 5 }}
+					// 🚀 ZMIANA: Dynamiczne marginesy, wyzerowany left margin
+					margin={{
+						top: 5,
+						right: isMobile ? 0 : 10,
+						left: 0,
+						bottom: isMobile ? 10 : 0,
+					}}
 				>
 					<defs>
 						<filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%">
@@ -221,9 +224,8 @@ export function PortfolioChart({
 						tickFormatter={(val) =>
 							format(new Date(val), "dd MMM", { locale: pl })
 						}
-						minTickGap={20}
+						minTickGap={20} // 🚀 ZMIANA: Zabezpieczenie przed nakładaniem się dat na osi X
 					/>
-
 					<YAxis
 						axisLine={false}
 						tickLine={false}
@@ -232,14 +234,15 @@ export function PortfolioChart({
 							fill: "var(--t-text-tertiary)",
 							fontWeight: 500,
 						}}
-						width={mode === "PERCENTAGE" ? 40 : 55}
+						// 🚀 ZMIANA: Zwiększono szerokość z 35 na 48 (mobile) i 45 na 60 (PC)
+						width={isMobile ? 52 : 60}
 						domain={["auto", "auto"]}
 						tickFormatter={(val) => {
 							if (mode === "PERCENTAGE") return `${val > 0 ? "+" : ""}${val}%`;
-							return new Intl.NumberFormat("pl-PL", {
+							return `${new Intl.NumberFormat("pl-PL", {
 								notation: "compact",
 								compactDisplay: "short",
-							}).format(val);
+							}).format(val)}\u00A0zł`;
 						}}
 					/>
 
@@ -295,7 +298,7 @@ export function PortfolioChart({
 
 	if (isExpanded) {
 		return (
-			<div className="fixed inset-0 z-[999] bg-t-bg-base/95 backdrop-blur-xl p-4 sm:p-8 md:p-12 flex flex-col animate-in fade-in duration-200">
+			<div className="fixed inset-0 z-[100] bg-t-bg-base/95 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
 				<div
 					className="pointer-events-none absolute inset-0 opacity-40"
 					style={{
@@ -326,7 +329,7 @@ export function PortfolioChart({
 						<Minimize2 className="w-5 h-5 sm:w-6 sm:h-6" />
 					</button>
 				</div>
-				<div className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-xl">
+				<div className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-xl">
 					{chartContent}
 				</div>
 			</div>
@@ -334,8 +337,10 @@ export function PortfolioChart({
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-5 shadow-sm">
-			<div className="flex justify-between items-start z-20 mb-2">
+		// 🚀 ZMIANA: Globalne `card-padding` użyte w głównym kontenerze
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-sm">
+			{/* 🚀 ZMIANA: Przycisk Maximize umieszczony w normalnym rzędzie (nie na absolute) */}
+			<div className="flex justify-between items-start z-20 mb-2 sm:mb-4">
 				<div>{trendBadge(true)}</div>
 				<button
 					onClick={() => setIsExpanded(true)}
@@ -378,7 +383,6 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 		const formatVal = (val: number) => {
 			if (mode === "PERCENTAGE")
 				return `${val > 0 ? "+" : ""}${val.toFixed(2)}%`;
-			// Using the resilient formatCurrency utility
 			return `${formatCurrency(val)} PLN`;
 		};
 

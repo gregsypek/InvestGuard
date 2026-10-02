@@ -118,92 +118,66 @@ export function PremiumMarketCard({
 	const { cleanName, isETF, provider } = formatAssetName(name);
 
 	return (
-		<div className="relative flex flex-1  flex-col min-w-[180px] md:min-w-[300px] sm:flex-row sm:justify-between sm:items-center p-2 rounded-xl bg-t-bg-base/20 cursor-default gap-2 overflow-hidden">
-			{/* LEWA STRONA: Logo i tekst - elastyczna szerokość */}
-			<div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-				{/* Kontener na Logo z potencjalną plakietką dostawcy */}
-				<div className="relative shrink-0">
-					<div className="md:w-8 md:h-8 h-6 w-6 rounded-full overflow-hidden bg-t-bg-sticky border border-t-border flex items-center justify-center shadow-sm p-1 md:p-1.5 ">
+		<div className="flex items-center bg justify-between p-2 rounded-xl bg-t-bg-panel border border-t-border w-full min-w-0 gap-2 overflow-hidden">
+			{/* LEWA STRONA: Logo, Nazwa i Ticker */}
+			<div className="flex items-center gap-2 flex-1 min-w-0">
+				<div className="shrink-0">
+					<div className="w-6 h-6 rounded-full overflow-hidden bg-t-bg-sticky border border-t-border flex items-center justify-center shadow-sm p-1">
 						{logo ? (
 							<Image
 								src={logo}
 								alt={name}
-								width={8}
-								height={8}
+								width={12}
+								height={12}
 								className="w-full h-full object-contain dark:invert"
 							/>
 						) : (
-							<span className="text-[10px] sm:text-xs font-bold text-slate-400">
+							<span className="text-[9px] font-medium text-slate-400">
 								{name.charAt(0)}
 							</span>
 						)}
 					</div>
 				</div>
 
-				<div className="flex flex-col flex-1  justify-center">
-					{/* 🚀 Górny rządek z nowym badge'em ETF i wyczyszczoną nazwą */}
+				<div className="flex flex-col min-w-0 justify-center">
 					<div className="flex items-center gap-1.5">
 						<p
-							className="font-bold text-xs sm:text-sm text-t-text-primary tracking-tight truncate max-w-[140px] sm:max-w-[180px]"
+							className="font-medium text-[10px] text-t-text-primary tracking-tight truncate"
 							title={cleanName}
 						>
 							{cleanName}
 						</p>
 						{isETF && (
-							<span className="shrink-0 px-1 py-0.5 rounded bg-theme-soft border border-blue-500/20 text-[6px] sm:text-[8px] font-black uppercase text-theme-primary tracking-widest mt-0.5">
+							<span className="shrink-0 px-1 py-0.2 rounded bg-theme-soft border border-blue-500/20 text-[6px] font-bold uppercase text-theme-primary tracking-widest hidden xs:inline-block">
 								ETF
 							</span>
 						)}
 					</div>
 
-					{/* 🚀 Dolny rządek z tickerem i ew. dostawcą */}
-					<div className="flex items-center gap-1.5 mt-0.5">
-						{ticker && (
-							<p className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary truncate">
-								{ticker}
-							</p>
-						)}
-						{provider && (
-							<>
-								<span className="text-[8px] hidden xl:block text-t-text-tertiary/50">
-									•
-								</span>
-								<p className="text-[9px] font-medium text-t-text-tertiary hidden xl:block truncate">
-									{provider}
-								</p>
-							</>
-						)}
-					</div>
+					{ticker && (
+						<p className="text-[8px] font-medium uppercase tracking-widest text-t-text-tertiary truncate">
+							{ticker}
+						</p>
+					)}
 				</div>
 			</div>
 
-			{/* PRAWA STRONA: Wykres i liczby */}
-			<div className="absolute bottom-0  right-2  items-center shrink-0">
+			{/* PRAWA STRONA: Wynik procentowy w tej samej linii */}
+			<div className="flex  bottom-0  right-2  items-center shrink-0">
 				{historyData && historyData.length > 0 && (
 					<div className="opacity-70 shrink-0 hidden md:block">
 						<Sparkline data={historyData} isPositive={isPositive} />
 					</div>
-				)}
-
-				<div className="flex items-center gap-1 min-w-[70px] sm:min-w-[100px] justify-end ">
+				)}{" "}
+				<div className="flex items-center gap-1 shrink-0 ml-1">
 					{isPositive ? (
-						<TrendingUp
-							className={cn(
-								"w-3 sm:w-3.5 h-3 sm:h-3.5 md:hidden opacity-70 ",
-								changeColor,
-							)}
-						/>
+						<TrendingUp className={cn("w-3 h-3 opacity-70", changeColor)} />
 					) : (
-						<TrendingDown
-							className={cn(
-								"w-3 sm:w-3.5 h-3 sm:h-3.5 md:hidden opacity-70",
-								changeColor,
-							)}
-						/>
+						<TrendingDown className={cn("w-3 h-3 opacity-70", changeColor)} />
 					)}
 					<p
 						className={cn(
-							"font-mono text-[11px] sm:text-xs font-bold opacity-70",
+							"font-mono text-[10px] font-medium opacity-90",
 							changeColor,
 						)}
 					>

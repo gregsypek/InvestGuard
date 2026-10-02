@@ -4,6 +4,8 @@ import {
 	Activity,
 	Banknote,
 	Briefcase,
+	Calendar,
+	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
 	Container,
@@ -103,7 +105,7 @@ export function UserDashboard(props: UserDashboardProps) {
 	// 🚀 NOWE: Logika globalnego odświeżania kursów
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const isPremium = props.role === "ADMIN" || props.role === "SUBSCRIBER";
-
+	const [isMobileTimeOpen, setIsMobileTimeOpen] = useState(false);
 	const handleGlobalRefresh = async () => {
 		setIsRefreshing(true);
 		let successCount = 0;
@@ -376,27 +378,28 @@ export function UserDashboard(props: UserDashboardProps) {
 				</div>
 			</SectionLayout>
 			{/* === STICKY HEADER (Zawsze na górze, stała szerokość) === */}
-			<div className="sticky top-0 z-50 bg-t-bg-base  py-2 px-4 sm:px-6 md:px-8 transition-all duration-300 w-full ">
-				<div className="flex flex-col gap-2 max-w-7xl mx-auto w-full">
-					{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Otwarty domyślnie, reaguje tylko na przycisk) */}
+			<div className="sticky top-0 z-50 bg-t-bg-base transition-all duration-300 w-full pt-1 pb-2">
+				<div className="flex flex-col gap-1.5 max-w-7xl mx-auto w-full">
+					{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Teraz ZAWSZE w 1 linii na mobile) */}
 					{showAdvancedToolbar && (
-						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full animate-in fade-in slide-in-from-top-1 pb-1">
+						<div className="flex flex-row items-center justify-between gap-1 w-full animate-in fade-in slide-in-from-top-1 pb-1.5 border-b border-t-border-subtle">
 							{/* Kwota i PnL */}
-							<div className="flex items-center gap-2 shrink-0">
+							<div className="flex items-center gap-1.5 shrink-0">
 								<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest hidden sm:block">
 									Zaznaczone:
 								</span>
-								<div className="flex items-baseline gap-1">
-									<span className="text-sm font-black text-t-text-primary tracking-tight">
+								<div className="flex items-baseline gap-0.5 sm:gap-1">
+									{/* 🚀 ZMIANA: Mniejszy font kwoty na smartfonach, by zmieścić paginację w jednym rzędzie */}
+									<span className="text-xs sm:text-sm font-black text-t-text-primary tracking-tight">
 										{formatCurrency(totalCurrent)}
 									</span>
-									<span className="text-[9px] text-t-text-secondary font-bold">
+									<span className="text-[8px] sm:text-[9px] text-t-text-secondary font-bold hidden xs:inline-block">
 										PLN
 									</span>
 								</div>
 								<div
 									className={cn(
-										"px-1.5 py-0.5 rounded text-[10px] font-black transition-colors",
+										"px-1 py-0.5 rounded text-[9px] font-black transition-colors",
 										totalPnLPct > 0
 											? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
 											: totalPnLPct < 0
@@ -409,29 +412,24 @@ export function UserDashboard(props: UserDashboardProps) {
 								</div>
 							</div>
 
-							{/* Wybór portfeli (Twarda Paginacja: 4 na stronę) */}
-							{/*  */}
-							{/* Wybór portfeli (Twarda Paginacja: 4 na stronę) */}
-							<div className="flex items-center gap-1 sm:justify-end w-full min-w-0">
-								{/* Lewa strzałka */}
+							{/* Wybór portfeli (Paginacja) */}
+							<div className="flex items-center justify-end min-w-0">
 								{totalPages > 1 && (
 									<button
-										// 🚀 ZMIANA: Używamy safePortfolioPage do obliczeń
 										onClick={() => setPortfolioPage(safePortfolioPage - 1)}
 										disabled={safePortfolioPage === 0}
 										className={cn(
-											"shrink-0 p-1 rounded-full bg-black/5 dark:bg-white/5 border transition-all",
+											"shrink-0 p-0.5 rounded-full transition-all",
 											safePortfolioPage === 0
-												? "opacity-30 cursor-not-allowed border-transparent text-t-text-tertiary"
-												: "border-t-border text-t-text-tertiary hover:text-t-text-primary",
+												? "opacity-30 cursor-not-allowed text-t-text-tertiary"
+												: "text-t-text-secondary hover:text-t-text-primary",
 										)}
 									>
 										<ChevronLeft className="w-3.5 h-3.5" />
 									</button>
 								)}
 
-								{/* Sztywny kontener bez scrolla */}
-								<div className="flex flex-wrap items-center gap-1.5 overflow-hidden px-1">
+								<div className="flex flex-wrap items-center gap-0.5 overflow-hidden">
 									{visiblePortfolios.map((opt) => (
 										<FilterBadge
 											key={opt.id}
@@ -440,26 +438,24 @@ export function UserDashboard(props: UserDashboardProps) {
 											isSelected={selectedIds.includes(opt.id)}
 											onToggle={togglePortfolio}
 											className={cn(
-												"py-0.5 px-2 text-[9px] font-bold uppercase tracking-widest rounded-md transition-all border shrink-0",
+												"py-0.5 px-1.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-widest rounded-md transition-all border shrink-0",
 												selectedIds.includes(opt.id)
 													? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
-													: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
+													: "bg-transparent text-t-text-secondary border-transparent hover:border-t-border-subtle",
 											)}
 										/>
 									))}
 								</div>
 
-								{/* Prawa strzałka */}
 								{totalPages > 1 && (
 									<button
-										// 🚀 ZMIANA: Używamy safePortfolioPage do obliczeń
 										onClick={() => setPortfolioPage(safePortfolioPage + 1)}
 										disabled={safePortfolioPage === totalPages - 1}
 										className={cn(
-											"shrink-0 p-1 rounded-full bg-black/5 dark:bg-white/5 border transition-all",
+											"shrink-0 p-0.5 rounded-full transition-all",
 											safePortfolioPage === totalPages - 1
-												? "opacity-30 cursor-not-allowed border-transparent text-t-text-tertiary"
-												: "border-t-border text-t-text-tertiary hover:text-t-text-primary",
+												? "opacity-30 cursor-not-allowed text-t-text-tertiary"
+												: "text-t-text-secondary hover:text-t-text-primary",
 										)}
 									>
 										<ChevronRight className="w-3.5 h-3.5" />
@@ -469,88 +465,147 @@ export function UserDashboard(props: UserDashboardProps) {
 						</div>
 					)}
 
-					{/* 2. GŁÓWNY PASEK NARZĘDZI (Zawsze widoczny) */}
-					<div className="flex flex-wrap xl:flex-nowrap items-center justify-between gap-2 w-full">
-						{/* Lewa Strona: Tryby wyświetlania */}
-						<div className="flex items-center gap-1 p-1 shrink-0">
-							<FilterBadge
-								id="VALUE"
-								label="PLN"
-								isSelected={chartMode === "VALUE"}
-								onToggle={() => setChartMode("VALUE")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] font-bold rounded-md transition-all",
-									chartMode === "VALUE"
-										? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
-										: "text-t-text-tertiary",
-								)}
-							/>
-							<FilterBadge
-								id="PERCENTAGE"
-								label="%"
-								isSelected={chartMode === "PERCENTAGE"}
-								onToggle={() => setChartMode("PERCENTAGE")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] font-bold rounded-md transition-all",
-									chartMode === "PERCENTAGE"
-										? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
-										: "text-t-text-tertiary",
-								)}
-							/>
-						</div>
-
-						<div className="flex items-center gap-1 shrink-0">
-							<FilterBadge
-								id="REAL"
-								label="Realne"
-								isSelected={dataMode === "REAL"}
-								onToggle={() => setDataMode("REAL")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] font-bold rounded-md transition-all",
-									dataMode === "REAL"
-										? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
-										: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
-								)}
-							/>
-							<FilterBadge
-								id="SIMULATED"
-								label="Symulacja"
-								isSelected={dataMode === "SIMULATED"}
-								onToggle={() => setDataMode("SIMULATED")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] font-bold rounded-md transition-all",
-									dataMode === "SIMULATED"
-										? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
-										: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
-								)}
-							/>
-						</div>
-
-						{/* Prawa Strona: Zakresy czasu i Kontrolki */}
-						<div className="flex items-center justify-between sm:justify-end gap-1 w-full md:w-auto overflow-x-auto scrollbar-hide">
-							<div className="flex items-center gap-0.5 bg-black/5 dark:bg-white/5 p-0.5 rounded-lg border border-t-border">
-								{TIME_RANGES.map((range) => (
-									<button
-										key={range}
-										onClick={() =>
-											!isRangeDisabled(range) && handleRangeChange(range)
-										}
-										disabled={isRangeDisabled(range)}
-										className={cn(
-											"px-2 py-1 rounded-md text-[9px] font-bold tracking-wide transition-all shrink-0",
-											isRangeDisabled(range)
-												? "opacity-30 cursor-not-allowed text-t-text-tertiary"
-												: activeRange === range
-													? "bg-t-bg-base text-t-text-primary shadow-sm"
-													: "text-t-text-secondary hover:text-t-text-primary",
-										)}
-									>
-										{range}
-									</button>
-								))}
+					{/* 2. GŁÓWNY PASEK NARZĘDZI */}
+					<div className="flex flex-row  lg:flex-nowrap items-center justify-between gap-2 md:gap-3 w-full">
+						{/* Lewa Strona: Zgrupowane Tryby Wyświetlania w ciasne pojemniki */}
+						{/* 🚀 ZMIANA: Usunięto flex-col, dodano większy gap (gap-2) dla oddechu */}
+						<div className="flex flex-col md:flex-1 sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0">
+							{/* Grupa PLN / % */}
+							<div className="flex items-center md:flex-1 p-0.5 bg-black/5 dark:bg-white/5 rounded-lg gap-2 border border-t-border">
+								<FilterBadge
+									id="VALUE"
+									label="PLN"
+									isSelected={chartMode === "VALUE"}
+									onToggle={() => setChartMode("VALUE")}
+									className={cn(
+										"py-1 px-2 md:flex-1 text-[9px] font-bold rounded-md transition-all",
+										chartMode === "VALUE"
+											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
+											: "text-t-text-tertiary hover:text-t-text-primary",
+									)}
+								/>
+								<FilterBadge
+									id="PERCENTAGE"
+									label="%"
+									isSelected={chartMode === "PERCENTAGE"}
+									onToggle={() => setChartMode("PERCENTAGE")}
+									className={cn(
+										"py-1 md:flex-1 px-2 text-[9px] font-bold rounded-md transition-all",
+										chartMode === "PERCENTAGE"
+											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
+											: "text-t-text-tertiary hover:text-t-text-primary",
+									)}
+								/>
 							</div>
 
-							<div className="shrink-0 ml-1">
+							{/* Grupa Real / Symulacja */}
+							<div className="flex items-center p-0.5 bg-black/5 dark:bg-white/5 gap-2 rounded-lg border border-t-border">
+								<FilterBadge
+									id="REAL"
+									label="Real"
+									isSelected={dataMode === "REAL"}
+									onToggle={() => setDataMode("REAL")}
+									className={cn(
+										"py-1 px-2  md:flex-1 text-[9px] font-bold rounded-md transition-all",
+										dataMode === "REAL"
+											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
+											: "text-t-text-tertiary hover:text-t-text-secondary",
+									)}
+								/>
+								<FilterBadge
+									id="SIMULATED"
+									label="Sym"
+									isSelected={dataMode === "SIMULATED"}
+									onToggle={() => setDataMode("SIMULATED")}
+									className={cn(
+										"py-1 md:flex-1 px-2 text-[9px] font-bold rounded-md transition-all",
+										dataMode === "SIMULATED"
+											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
+											: "text-t-text-tertiary hover:text-t-text-secondary",
+									)}
+								/>
+							</div>
+						</div>
+
+						{/* Prawa Strona: Zakresy czasu, Data i Toggle */}
+						<div className="flex items-center justify-between sm:justify-end gap-2 sm:flex-1 min-w-0 h-full flex-wrap sm:flex-nowrap ">
+							<div className="relative shrink-0">
+								{/* =========================================
+      								DESKTOP VIEW (Pełny pasek czasu, ukryty na mobile)
+      								🚀 FIX: Zmieniono z 'sm' na 'md' aby zsynchronizować breakpointy
+      							========================================= */}
+								<div className="hidden 2xl:flex items-center gap-0.5 bg-black/5 dark:bg-white/5 p-0.5 rounded-lg border border-t-border">
+									{TIME_RANGES.map((range) => (
+										<button
+											key={range}
+											onClick={() =>
+												!isRangeDisabled(range) && handleRangeChange(range)
+											}
+											disabled={isRangeDisabled(range)}
+											className={cn(
+												"px-2 py-1 rounded-md text-[9px] font-bold tracking-wide transition-all shrink-0",
+												isRangeDisabled(range)
+													? "opacity-30 cursor-not-allowed text-t-text-tertiary"
+													: activeRange === range
+														? "bg-t-bg-base text-t-text-primary shadow-sm"
+														: "text-t-text-secondary hover:text-t-text-primary",
+											)}
+										>
+											{range}
+										</button>
+									))}
+								</div>
+
+								{/* =========================================
+      								MOBILE VIEW (Przycisk z kalendarzem)
+      								🚀 FIX: Zmieniono 'sm:hidden' na 'md:hidden'
+      							========================================= */}
+								<div className="2xl:hidden">
+									<button
+										onClick={() => setIsMobileTimeOpen(!isMobileTimeOpen)}
+										className="flex items-center gap-1.5 px-2 py-1.5 bg-black/5 dark:bg-white/5 border border-t-border rounded-lg text-[10px] font-bold text-t-text-primary shadow-sm"
+									>
+										<Calendar className="w-3.5 h-3.5 text-theme-primary" />
+										<span>{activeRange}</span>
+										<ChevronDown
+											className={cn(
+												"w-3.5 h-3.5 transition-transform text-t-text-tertiary",
+												isMobileTimeOpen && "rotate-180",
+											)}
+										/>
+									</button>
+
+									{isMobileTimeOpen && (
+										<div className="absolute left-0 sm:right-0 top-full mt-1.5 z-50 flex flex-col bg-t-bg-panel border border-t-border rounded-xl shadow-xl p-1 min-w-[90px] animate-in fade-in zoom-in-95 duration-200">
+											{TIME_RANGES.map((range) => (
+												<button
+													key={range}
+													onClick={() => {
+														if (!isRangeDisabled(range)) {
+															handleRangeChange(range);
+															setIsMobileTimeOpen(false);
+														}
+													}}
+													disabled={isRangeDisabled(range)}
+													className={cn(
+														"px-3 py-2 text-left rounded-lg text-[10px] font-bold tracking-wide transition-all",
+														isRangeDisabled(range)
+															? "opacity-30 cursor-not-allowed text-t-text-tertiary"
+															: activeRange === range
+																? "bg-theme-soft text-theme-primary"
+																: "text-t-text-secondary hover:bg-black/5 dark:hover:bg-white/5",
+													)}
+												>
+													{range}
+												</button>
+											))}
+										</div>
+									)}
+								</div>
+							</div>
+
+							{/* Wybór daty */}
+							<div className="shrink-0">
 								<DatePickerWithRange
 									from={fromDate}
 									to={toDate}
@@ -558,10 +613,10 @@ export function UserDashboard(props: UserDashboardProps) {
 								/>
 							</div>
 
-							{/* Zwijanie panelu - Zunifikowany przycisk */}
+							{/* Zwijanie panelu */}
 							<button
 								onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
-								className="p-1.5 ml-1 rounded-lg bg-black/5 dark:bg-white/5 border border-t-border text-t-text-secondary hover:text-t-text-primary transition-all shrink-0"
+								className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-t-border text-t-text-secondary hover:text-t-text-primary transition-all shrink-0 ml-auto sm:ml-0"
 								title={
 									showAdvancedToolbar
 										? "Zwiń podsumowanie"

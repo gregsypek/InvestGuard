@@ -106,6 +106,7 @@ export function UserDashboard(props: UserDashboardProps) {
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const isPremium = props.role === "ADMIN" || props.role === "SUBSCRIBER";
 	const [isMobileTimeOpen, setIsMobileTimeOpen] = useState(false);
+	const [visibleAssetsCount, setVisibleAssetsCount] = useState(6);
 	const handleGlobalRefresh = async () => {
 		setIsRefreshing(true);
 		let successCount = 0;
@@ -265,8 +266,16 @@ export function UserDashboard(props: UserDashboardProps) {
 				subtitle="Śledź kluczowe wskaźniki"
 				description="Zestawienie indeksów i walorów z Twojego portfela."
 				action={
-					<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-						<div className="flex items-center gap-2">
+					<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 w-full sm:w-auto">
+						{/* 🚀 ZMIANA 1: Wskaźnik daty układa się ładnie nad przyciskami na mobile */}
+						{props.lastUpdated && (
+							<span className="text-[9px] text-t-text-tertiary font-bold tracking-widest uppercase mb-1 sm:mb-0 mr-1">
+								Stan z: {format(new Date(props.lastUpdated), "HH:mm")}
+							</span>
+						)}
+
+						{/* 🚀 ZMIANA 2: Kontener dostaje w-full na mobile */}
+						<div className="flex items-center gap-2 w-full sm:w-auto">
 							<button
 								onClick={handleGlobalRefresh}
 								disabled={isRefreshing}
@@ -276,43 +285,43 @@ export function UserDashboard(props: UserDashboardProps) {
 										: "Odśwież wyceny (Limit: 1x na dobę)"
 								}
 								className={cn(
-									"flex items-center gap-1.5 px-3 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest transition-colors",
+									// 🚀 ZMIANA 3: flex-1 wymusza podział 50/50 na mobile, ujednolicono też wysokość (h-9 do h-10)
+									"flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-3 h-9 sm:h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest transition-colors w-full sm:w-auto",
 									isRefreshing && "opacity-50 cursor-not-allowed",
 								)}
 							>
 								<RefreshCw
-									className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")}
+									className={cn(
+										"w-3.5 h-3.5 shrink-0",
+										isRefreshing && "animate-spin",
+									)}
 								/>
-								<span className="hidden sm:inline">Odśwież Kursy</span>
+								<span className="hidden sm:inline">Odśwież</span>
 							</button>
+
 							<SafeActionButton
 								label="Konfiguruj"
 								icon={Settings}
 								variant="outline"
-								className="h-9 border-t-border bg-t-bg-base text-t-text-secondary hover:text-t-text-primary"
+								// 🚀 ZMIANA 4: Dodane flex-1 aby dzielił się miejscem z "Odśwież"
+								className="flex-1 sm:flex-none w-full sm:w-auto border-t-border bg-t-bg-base text-t-text-secondary hover:text-t-text-primary"
 								href="/settings?from=dashboard"
 							/>
 						</div>
-						{/* Wskaźnik ostatniej aktualizacji */}
-						{props.lastUpdated && (
-							<span className="text-[9px] text-t-text-tertiary font-bold tracking-widest uppercase mr-1">
-								Stan z: {format(new Date(props.lastUpdated), "HH:mm")}
-							</span>
-						)}
 					</div>
 				}
 			>
 				<div className="flex flex-col gap-4 lg:gap-6">
 					{/* MACRO INDICATORS COLUMN */}
 					{props.userIndices && props.userIndices.length > 0 && (
-						<div className="flex-1 p-3 sm:p-5 bg-t-bg-panel  rounded-2xl border border-t-border">
-							<div className="flex justify-between items-center mb-4">
+						<div className="flex-1 p-3 sm:p-5   rounded-2xl ">
+							{/* <div className="flex justify-between items-center mb-4">
 								<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
 									<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
 								</h4>
-							</div>
+							</div> */}
 
-							<div className="flex justify-between md:justify-around flex-wrap gap-1.5 sm:gap-2.5 flex-1">
+							<div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
 								{props.userIndices.map((indexId) => {
 									const changeValue = props.indexQuotes?.[indexId] || 0;
 									const historyObject =
@@ -334,29 +343,30 @@ export function UserDashboard(props: UserDashboardProps) {
 							</div>
 						</div>
 					)}
-
 					{/* PORTFOLIO ASSETS COLUMN */}
-					<div className="flex-1 p-3 sm:p-5 bg-t-bg-panel  rounded-2xl border border-t-border">
-						<div className="flex items-center mb-4">
+					<div className="flex-1 p-3 sm:p-5 ">
+						{/* <div className="flex items-center mb-4">
 							<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
-								<Briefcase className="w-4 h-4 text-blue-500" /> Z Portfela
+								<Briefcase className="w-4 h-4 text-blue-500" /> Z Portfela (
+								{observedAssets.length})
 							</h4>
-						</div>
+						</div> */}
 
-						{/* 🚀 ZMIANA 3: grid-cols-2 wymusza mniejsze i ciaśniejsze karty na telefonie */}
-						<div className="flex flex-wrap  sm:gap-2.5 flex-1">
+						<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
 							{observedAssets.length > 0 ? (
-								observedAssets.map((asset) => (
-									<PremiumMarketCard
-										key={asset.id}
-										name={asset.name}
-										ticker={asset.ticker}
-										change={asset.dailyChange || 0}
-										logo={getStockLogo(asset.ticker ?? "")}
-									/>
-								))
+								// 🚀 Paginacja: Wyświetlamy tylko określoną liczbę aktywów
+								observedAssets
+									.slice(0, visibleAssetsCount)
+									.map((asset) => (
+										<PremiumMarketCard
+											key={asset.id}
+											name={asset.name}
+											ticker={asset.ticker}
+											change={asset.dailyChange || 0}
+											logo={getStockLogo(asset.ticker ?? "")}
+										/>
+									))
 							) : (
-								/* 🚀 ZMIANA 1: Profesjonalny Empty State powiązany z ustawieniami */
 								<div className="col-span-full flex flex-col items-center justify-center py-8 px-4 text-center border border-dashed rounded-xl border-t-border bg-t-bg-base/50">
 									<p className="text-xs font-bold text-t-text-secondary mb-1">
 										Brak aktywów na radarze
@@ -374,6 +384,28 @@ export function UserDashboard(props: UserDashboardProps) {
 								</div>
 							)}
 						</div>
+
+						{/* 🚀 Przycisk "Pokaż więcej / Pokaż mniej" */}
+						{observedAssets.length > 6 && (
+							<div className="flex justify-center mt-4 pt-3 border-t border-t-border-subtle">
+								{visibleAssetsCount < observedAssets.length ? (
+									<button
+										onClick={() => setVisibleAssetsCount((prev) => prev + 6)}
+										className="px-4 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-t-border text-t-text-secondary hover:text-t-text-primary text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
+									>
+										Pokaż więcej ({observedAssets.length - visibleAssetsCount}{" "}
+										kolejnych)
+									</button>
+								) : (
+									<button
+										onClick={() => setVisibleAssetsCount(6)}
+										className="px-4 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-t-border text-t-text-tertiary hover:text-t-text-primary text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
+									>
+										Zwiń listę
+									</button>
+								)}
+							</div>
+						)}
 					</div>
 				</div>
 			</SectionLayout>
@@ -469,7 +501,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					<div className="flex flex-row  lg:flex-nowrap items-center justify-between gap-2 md:gap-3 w-full">
 						{/* Lewa Strona: Zgrupowane Tryby Wyświetlania w ciasne pojemniki */}
 						{/* 🚀 ZMIANA: Usunięto flex-col, dodano większy gap (gap-2) dla oddechu */}
-						<div className="flex flex-col md:flex-1 sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0">
+						<div className="flex flex-col flex-1 sm:flex-0 sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0">
 							{/* Grupa PLN / % */}
 							<div className="flex items-center md:flex-1 p-0.5 bg-black/5 dark:bg-white/5 rounded-lg gap-2 border border-t-border">
 								<FilterBadge
@@ -478,7 +510,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={chartMode === "VALUE"}
 									onToggle={() => setChartMode("VALUE")}
 									className={cn(
-										"py-1 px-2 md:flex-1 text-[9px] font-bold rounded-md transition-all",
+										"py-1 px-2 flex-1 md:flex-0 text-[9px] font-bold rounded-md transition-all",
 										chartMode === "VALUE"
 											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
 											: "text-t-text-tertiary hover:text-t-text-primary",
@@ -490,7 +522,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={chartMode === "PERCENTAGE"}
 									onToggle={() => setChartMode("PERCENTAGE")}
 									className={cn(
-										"py-1 md:flex-1 px-2 text-[9px] font-bold rounded-md transition-all",
+										"py-1 flex-1 md:flex-0 px-2 text-[9px] font-bold rounded-md transition-all",
 										chartMode === "PERCENTAGE"
 											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
 											: "text-t-text-tertiary hover:text-t-text-primary",
@@ -506,7 +538,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={dataMode === "REAL"}
 									onToggle={() => setDataMode("REAL")}
 									className={cn(
-										"py-1 px-2  md:flex-1 text-[9px] font-bold rounded-md transition-all",
+										"py-1 px-2 flex-1 md:flex-0 text-[9px] font-bold rounded-md transition-all",
 										dataMode === "REAL"
 											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
 											: "text-t-text-tertiary hover:text-t-text-secondary",
@@ -518,7 +550,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={dataMode === "SIMULATED"}
 									onToggle={() => setDataMode("SIMULATED")}
 									className={cn(
-										"py-1 md:flex-1 px-2 text-[9px] font-bold rounded-md transition-all",
+										"py-1 flex-1 md:flex-0 px-2 text-[9px] font-bold rounded-md transition-all",
 										dataMode === "SIMULATED"
 											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
 											: "text-t-text-tertiary hover:text-t-text-secondary",

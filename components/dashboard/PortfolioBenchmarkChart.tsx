@@ -16,10 +16,9 @@ import {
 	Circle,
 	Maximize2,
 	Minimize2,
-	TrendingDown,
 	TrendingUp,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
@@ -48,12 +47,6 @@ const THEME_COLORS: Record<string, string> = {
 	stone: "#78716c",
 };
 
-interface PortfolioBenchmarkChartProps {
-	data: BenchmarkDataPoint[];
-	userIndices: string[];
-	portfolioColorTheme?: string; // 👈 DODANE
-}
-
 // --- TYPES ---
 export interface BenchmarkDataPoint {
 	date: string;
@@ -64,6 +57,7 @@ export interface BenchmarkDataPoint {
 interface PortfolioBenchmarkChartProps {
 	data: BenchmarkDataPoint[];
 	userIndices: string[];
+	portfolioColorTheme?: string;
 }
 
 interface LegendPayloadItem {
@@ -73,13 +67,14 @@ interface LegendPayloadItem {
 }
 
 const INDEX_COLORS: Record<string, string> = {
-	SP500: "#8b5cf6", // Violet
-	NASDAQ: "#ec4899", // Pink
-	WIG20: "#3b82f6", // Modern Blue
-	DAX: "#06b6d4", // Cyan
-	BTC: "#f59e0b", // Golden Orange
-	GOLD: "#fbbf24", // Gold
+	SP500: "#8b5cf6",
+	NASDAQ: "#ec4899",
+	WIG20: "#3b82f6",
+	DAX: "#06b6d4",
+	BTC: "#f59e0b",
+	GOLD: "#fbbf24",
 };
+
 export function PortfolioBenchmarkChart({
 	data,
 	userIndices,
@@ -87,6 +82,14 @@ export function PortfolioBenchmarkChart({
 }: PortfolioBenchmarkChartProps) {
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [isMobile, setIsMobile] = useState(false);
+
+	useEffect(() => {
+		const checkMobile = () => setIsMobile(window.innerWidth < 640);
+		checkMobile();
+		window.addEventListener("resize", checkMobile);
+		return () => window.removeEventListener("resize", checkMobile);
+	}, []);
 
 	const mainPortfolioColor =
 		THEME_COLORS[portfolioColorTheme] || THEME_COLORS.blue;
@@ -107,12 +110,11 @@ export function PortfolioBenchmarkChart({
 			</div>
 		);
 	}
-	// Wyciągamy ostatni dzień, by pokazać łączny wynik portfela w Badge
+
 	const lastDay = data[data.length - 1];
 	const currentPortfolioPct = lastDay?.portfolioPct || 0;
 	const isPortfolioPositive = currentPortfolioPct >= 0;
 
-	// Maksymalne odchylenia do symetrii osi Y
 	const allValues = data.flatMap((d) => [
 		d.portfolioPct,
 		...userIndices.map((idx) => Number(d[idx]) || 0),
@@ -120,7 +122,6 @@ export function PortfolioBenchmarkChart({
 	const maxAbsValue = Math.max(...allValues.map(Math.abs), 5);
 	const yDomain = Math.ceil(maxAbsValue * 1.1);
 
-	// Odznaka trendu dla głównego portfela
 	const trendBadge = (compact = false) => (
 		<div
 			className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
@@ -129,11 +130,6 @@ export function PortfolioBenchmarkChart({
 					: "bg-rose-500/10 border-rose-500/20"
 			}`}
 		>
-			{/* {isPortfolioPositive ? (
-				<TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-			) : (
-				<TrendingDown className="w-3.5 h-3.5 text-rose-500" />
-			)} */}
 			<span
 				className={`text-[11px] font-bold tabular-nums ${
 					isPortfolioPositive ? "text-emerald-500" : "text-rose-500"
@@ -158,7 +154,7 @@ export function PortfolioBenchmarkChart({
 		if (!payload) return null;
 
 		return (
-			<div className="pt-4 pb-1">
+			<div className="w-full flex flex-col items-center">
 				<ul className="flex flex-wrap justify-center gap-x-6 gap-y-3">
 					{payload.map((entry) => {
 						const dataKey = String(entry.dataKey);
@@ -208,11 +204,16 @@ export function PortfolioBenchmarkChart({
 	};
 
 	const chartContent = (
-		<ChartContainer className="h-full min-h-[300px] w-full flex-1">
+		<ChartContainer className="h-full min-h-0 w-full">
 			<ResponsiveContainer width="100%" height="100%">
 				<LineChart
 					data={data}
-					margin={{ top: 10, right: 10, left: -10, bottom: 5 }}
+					margin={{
+						top: 5,
+						right: isMobile ? 0 : 10,
+						left: 0,
+						bottom: isMobile ? 20 : 0,
+					}}
 				>
 					<defs>
 						<linearGradient id="portfolioGradient" x1="0" y1="0" x2="1" y2="0">
@@ -246,6 +247,7 @@ export function PortfolioBenchmarkChart({
 							fontWeight: 500,
 						}}
 						tickMargin={12}
+						minTickGap={20}
 						tickFormatter={(val) =>
 							format(new Date(val), "dd MMM", { locale: pl })
 						}
@@ -261,6 +263,7 @@ export function PortfolioBenchmarkChart({
 						}}
 						tickFormatter={(val) => `${val > 0 ? "+" : ""}${val}%`}
 						domain={[-yDomain, yDomain]}
+						width={isMobile ? 35 : 45}
 					/>
 
 					<ReferenceLine y={0} stroke="var(--t-border)" strokeWidth={1} />
@@ -277,6 +280,7 @@ export function PortfolioBenchmarkChart({
 						wrapperStyle={{
 							position: "relative",
 							zIndex: 10,
+							paddingTop: "16px",
 						}}
 					/>
 
@@ -317,7 +321,7 @@ export function PortfolioBenchmarkChart({
 
 	if (isExpanded) {
 		return (
-			<div className="fixed inset-0 z-[999] bg-t-bg-base/95 backdrop-blur-xl p-4 sm:p-8 md:p-12 flex flex-col animate-in fade-in duration-200">
+			<div className="fixed inset-0 z-[100] bg-t-bg-base/95 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
 				<div
 					className="pointer-events-none absolute inset-0 opacity-40"
 					style={{
@@ -348,7 +352,7 @@ export function PortfolioBenchmarkChart({
 						<Minimize2 className="w-5 h-5 sm:w-6 sm:h-6" />
 					</button>
 				</div>
-				<div className="relative flex flex-col flex-1 min-h-[300px] bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-xl">
+				<div className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-2xl">
 					{chartContent}
 				</div>
 			</div>
@@ -356,8 +360,8 @@ export function PortfolioBenchmarkChart({
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-5 shadow-sm">
-			<div className="flex items-center justify-between z-20 mb-2">
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-sm">
+			<div className="flex justify-between items-start z-20 mb-2 sm:mb-4">
 				<div>{trendBadge(true)}</div>
 				<button
 					onClick={() => setIsExpanded(true)}

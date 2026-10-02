@@ -14,12 +14,12 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
-import { Maximize2, Minimize2, TrendingDown, TrendingUp } from "lucide-react";
+import { Maximize2, Minimize2, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
-import { useState } from "react";
 
 export interface AbsolutePnLDataPoint {
 	date: string;
@@ -34,8 +34,18 @@ interface AbsoluteDailyPnLChartProps {
 }
 
 export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
-	// EN: State to handle fullscreen expansion
 	const [isExpanded, setIsExpanded] = useState(false);
+	const [isMobile, setIsMobile] = useState(false);
+
+	// Śledzimy rozmiar ekranu, by dostosować szerokość osi Y i marginesy
+	useEffect(() => {
+		const handleResize = () => {
+			setIsMobile(window.innerWidth < 640);
+		};
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
 
 	if (!data || data.length === 0) {
 		return (
@@ -47,27 +57,22 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		);
 	}
 
-	// 1. Wyliczamy maksymalne odchylenia dla ZYSKU (lewa oś) i dodajemy 10% marginesu
 	const maxPnL = Math.max(...data.map((d) => Math.abs(d.exactChangePLN)), 50);
 	const pnlDomain = maxPnL * 1.1;
 
-	// 2. Wyliczamy maksymalne odchylenia dla WPŁAT (prawa oś) i dodajemy margines
 	const maxCashFlow = Math.max(
 		...data.map((d) => Math.abs(d.netCashFlow)),
 		1000,
 	);
 	const cashDomain = maxCashFlow * 1.1;
 
-	// --- POPRAWIONE OBLICZENIA (TWR) ---
 	let twrMultiplier = 1;
 	let totalPnL = 0;
 
 	data.forEach((d) => {
 		totalPnL += d.exactChangePLN;
-		// Kapitał pracujący na początku danego dnia (wycena końcowa minus dzisiejszy zysk minus dzisiejsze wpłaty)
 		const startingCapital =
 			d.totalPortfolioValue - d.exactChangePLN - d.netCashFlow;
-
 		if (startingCapital > 0) {
 			twrMultiplier *= 1 + d.exactChangePLN / startingCapital;
 		}
@@ -85,11 +90,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						: "bg-rose-500/10 border-rose-500/20"
 				}`}
 			>
-				{/* {isPeriodPositive ? (
-					<TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-				) : (
-					<TrendingDown className="w-3.5 h-3.5 text-rose-500" />
-				)} */}
 				<span
 					className={`text-[11px] font-bold tabular-nums ${
 						isPeriodPositive ? "text-emerald-500" : "text-rose-500"
@@ -121,7 +121,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 				</span>
 			</div>
 
-			<div className="group relative flex items-center justify-center cursor-help z-50">
+			<div className="group relative  items-center justify-center cursor-help z-50 hidden sm:flex">
 				<div className="w-5 h-5 rounded-full border border-t-text-tertiary flex items-center justify-center">
 					<span className="text-[10px] font-bold text-t-text-tertiary transition-colors">
 						i
@@ -140,22 +140,18 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		</div>
 	);
 
-	// EN: Custom legend — small colored dots instead of Recharts' default squares
 	const renderLegend = () => {
-		// Wyciągamy dzisiejszy punkt Live (jeśli istnieje)
 		const liveEntry = data.find((d) => d.isLive);
 		const isTodayPositive = (liveEntry?.exactChangePLN ?? 0) >= 0;
 
 		return (
-			<div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4">
+			<div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-6 gap-y-2 pt-2 sm:pt-4">
 				<div className="flex items-center gap-2">
 					<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" />
-					<span className="text-[11px] font-semibold text-t-text-secondary tracking-wide">
+					<span className="text-[10px] sm:text-[11px] font-semibold text-t-text-secondary tracking-wide">
 						Dzienny Wynik Rynkowy
 					</span>
 				</div>
-
-				{/* WARUNKOWE RENDEROWANIE: Pokazujemy "Wynik z dzisiaj" TYLKO w trybie Realnym z punktem LIVE */}
 				{liveEntry && (
 					<div className="flex items-center gap-2 animate-in fade-in duration-200">
 						<span
@@ -165,15 +161,14 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 									: "bg-rose-500/20 border-rose-500"
 							}`}
 						/>
-						<span className="text-[11px] font-semibold text-t-text-secondary tracking-wide">
+						<span className="text-[10px] sm:text-[11px] font-semibold text-t-text-secondary tracking-wide">
 							Wynik z dzisiaj
 						</span>
 					</div>
 				)}
-
 				<div className="flex items-center gap-2">
 					<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />
-					<span className="text-[11px] font-semibold text-t-text-secondary tracking-wide">
+					<span className="text-[10px] sm:text-[11px] font-semibold text-t-text-secondary tracking-wide">
 						Wpłaty / Wypłaty
 					</span>
 				</div>
@@ -181,16 +176,20 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		);
 	};
 
-	// EN: Reusable chart content for normal and expanded views
 	const chartContent = (
 		<ChartContainer className="h-full min-h-[300px] w-full flex-1">
 			<ResponsiveContainer width="100%" height="100%">
+				{/* 🚀 ZMIANA: Zwiększony 'bottom' na mobile, aby zrekompensować legendę w dwóch liniach */}
 				<ComposedChart
 					data={data}
-					margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
+					margin={{
+						top: 10,
+						right: isMobile ? 0 : 10,
+						left: isMobile ? -10 : 10,
+						bottom: isMobile ? 20 : 5,
+					}}
 				>
 					<defs>
-						{/* EN: Gradients for gain / loss bars — richer than a flat fill */}
 						<linearGradient
 							id="positiveBarGradient"
 							x1="0"
@@ -234,7 +233,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 								stopOpacity={0}
 							/>
 						</linearGradient>
-						{/* EN: Soft glow filter applied to cash flow dots for a premium feel */}
 						<filter id="dotGlow" x="-100%" y="-100%" width="300%" height="300%">
 							<feGaussianBlur stdDeviation="3" result="blur" />
 							<feMerge>
@@ -263,9 +261,9 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						tickFormatter={(val) =>
 							format(new Date(val), "dd MMM", { locale: pl })
 						}
+						minTickGap={20} // Zmiana: Ukrywa część dat na osi X, jeśli jest za gęsto
 					/>
 
-					{/* EN: LEFT Y-AXIS - Strictly for daily market PnL bars */}
 					<YAxis
 						yAxisId="left"
 						orientation="left"
@@ -277,20 +275,15 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 							fontWeight: 500,
 						}}
 						tickFormatter={(val) =>
-							`${new Intl.NumberFormat("pl-PL", {
-								notation: "compact",
-								maximumFractionDigits: 1,
-							}).format(val)} zł`
+							`${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(val)}\u00A0zł`
 						}
-						width={58}
+						width={isMobile ? 42 : 58} // 🚀 ZMIANA: Dynamiczna szerokość osi na mobile
 						domain={[-pnlDomain, pnlDomain]}
 					/>
 
-					{/* EN: RIGHT Y-AXIS - Independent scale for cash deposits and withdrawals */}
 					<YAxis
 						yAxisId="right"
 						orientation="right"
-						width={65}
 						axisLine={false}
 						tickLine={false}
 						tick={{
@@ -298,17 +291,12 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 							fill: "var(--theme-primary)",
 							fontWeight: 600,
 						}}
-						// FIX: zero now returns an actual empty string instead of being
-						// passed through Intl.NumberFormat (which coerced "" -> 0 -> "0 zł")
 						tickFormatter={(val) =>
 							val === 0
 								? ""
-								: `${new Intl.NumberFormat("pl-PL", {
-										notation: "compact",
-										maximumFractionDigits: 1,
-									}).format(val)} zł`
+								: `${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(val)}\u00A0zł`
 						}
-						// WYMUSZAMY SYMETRIĘ WZGLĘDEM ZERA
+						width={isMobile ? 45 : 65} // 🚀 ZMIANA: Dynamiczna szerokość osi na mobile
 						domain={[-cashDomain, cashDomain]}
 					/>
 
@@ -318,16 +306,19 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						stroke="var(--t-border)"
 						strokeWidth={1}
 					/>
-
 					<Tooltip
 						content={<AbsolutePnLTooltip />}
 						cursor={{ fill: "var(--t-hover)" }}
 						wrapperStyle={{ zIndex: 1000, outline: "none" }}
 					/>
 
-					<Legend content={renderLegend} wrapperStyle={{ zIndex: 10 }} />
+					{/* 🚀 ZMIANA: Dodano verticalAlign aby legenda ułożyła się ładnie na dole, nie najeżdżając na wykres */}
+					<Legend
+						content={renderLegend}
+						wrapperStyle={{ zIndex: 10 }}
+						verticalAlign="bottom"
+					/>
 
-					{/* EN: Bars are bound to the left Y-Axis */}
 					<Bar
 						yAxisId="left"
 						dataKey="exactChangePLN"
@@ -359,7 +350,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						})}
 					</Bar>
 
-					{/* EN: Soft fill under the cash flow line, purely decorative */}
 					<Area
 						yAxisId="right"
 						type="monotone"
@@ -369,8 +359,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						legendType="none"
 						tooltipType="none"
 					/>
-
-					{/* EN: Cash flow line is bound to the right Y-Axis to prevent compression */}
 					<Line
 						yAxisId="right"
 						type="monotone"
@@ -382,9 +370,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						strokeWidth={2.5}
 						dot={(props: any) => {
 							const { cx, cy, payload } = props;
-							// EN: Only draw dots on days where actual cash flow occurred
-							// FIX: was returning an invalid <script> element as a no-op;
-							// returning null is the correct way to render "nothing" here.
 							if (payload.netCashFlow !== 0) {
 								return (
 									<circle
@@ -414,11 +399,9 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		</ChartContainer>
 	);
 
-	// EN: Render fullscreen overlay
 	if (isExpanded) {
 		return (
 			<div className="fixed inset-0 z-[999] bg-t-bg-base/95 backdrop-blur-xl p-4 sm:p-8 md:p-12 flex flex-col animate-in fade-in duration-200">
-				{/* EN: Subtle radial blue glow in the background for a premium fintech feel */}
 				<div
 					className="pointer-events-none absolute inset-0 opacity-40"
 					style={{
@@ -449,18 +432,13 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						<Minimize2 className="w-5 h-5 sm:w-6 sm:h-6" />
 					</button>
 				</div>
-				<div className="relative flex flex-col flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-xl">
+				<div className="relative flex flex-col flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-xl">
 					{chartContent}
 				</div>
 			</div>
 		);
 	}
 
-	// EN: Standard inline view
-	// FIX: the badge used to be `absolute top-0 left-0`, floating directly on
-	// top of the chart's left Y-axis labels. It now sits in a real flex row
-	// that takes up its own space, so the chart is pushed down instead of
-	// being covered.
 	return (
 		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-sm">
 			<div className="flex justify-between items-start z-20 mb-2">
@@ -478,9 +456,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	);
 }
 
-// ----------------------------------------------------------------------
-// TOOLTIP TYPES
-// ----------------------------------------------------------------------
 interface TooltipPayloadItem {
 	dataKey: string;
 	value: number;
@@ -503,20 +478,14 @@ function AbsolutePnLTooltip({ active, payload, label }: CustomTooltipProps) {
 		const rawPayload = payload[0].payload;
 		const totalValue = rawPayload.totalPortfolioValue || 0;
 		const isLive = Boolean(rawPayload.isLive);
-
 		const isPositive = changeValue >= 0;
 		const date = new Date(label);
 
 		return (
 			<div className="bg-t-bg-panel/95 backdrop-blur-md border border-t-border rounded-xl p-4 shadow-xl max-w-[280px]">
 				<div
-					className={`absolute top-0 left-0 right-0 h-[2px] ${
-						isPositive
-							? "bg-gradient-to-r from-emerald-400 to-emerald-600"
-							: "bg-gradient-to-r from-rose-400 to-rose-600"
-					}`}
+					className={`absolute top-0 left-0 right-0 h-[2px] ${isPositive ? "bg-gradient-to-r from-emerald-400 to-emerald-600" : "bg-gradient-to-r from-rose-400 to-rose-600"}`}
 				/>
-
 				<div className="flex items-center justify-between gap-4 mb-3 border-b border-t-border pb-2">
 					<p className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
 						{format(date, "dd MMMM yyyy", { locale: pl })}
@@ -527,15 +496,12 @@ function AbsolutePnLTooltip({ active, payload, label }: CustomTooltipProps) {
 						</span>
 					)}
 				</div>
-
 				<div className="space-y-1 mb-3">
 					<p className="text-[10px] text-t-text-secondary uppercase tracking-wider font-semibold">
 						Czysty Wynik Rynkowy
 					</p>
 					<p
-						className={`text-xl font-black tracking-tight ${
-							isPositive ? "text-emerald-500" : "text-rose-500"
-						}`}
+						className={`text-xl font-black tracking-tight ${isPositive ? "text-emerald-500" : "text-rose-500"}`}
 					>
 						{isPositive ? "+" : ""}
 						{new Intl.NumberFormat("pl-PL", {
@@ -544,9 +510,8 @@ function AbsolutePnLTooltip({ active, payload, label }: CustomTooltipProps) {
 						}).format(changeValue)}
 					</p>
 				</div>
-
 				{netCashFlow !== 0 && (
-					<div className="mb-3 pt-2 border-t border-t-border-subtle flex justify-between items-center bg-[var(--theme-soft)] -mx-1 px-2 py-1.5 rounded-lg">
+					<div className="mb-3 pt-2 border-t border-t-border-subtle flex justify-between items-center bg-(--theme-soft) -mx-1 px-2 py-1.5 rounded-lg">
 						<span className="text-[9px] text-[var(--theme-primary)] uppercase tracking-widest font-bold">
 							{netCashFlow > 0 ? "Wpłata" : "Wypłata"}
 						</span>
@@ -560,7 +525,6 @@ function AbsolutePnLTooltip({ active, payload, label }: CustomTooltipProps) {
 						</span>
 					</div>
 				)}
-
 				<div className="mt-2 pt-2 border-t border-t-border-subtle flex justify-between items-center gap-4">
 					<span className="text-[9px] text-t-text-tertiary uppercase tracking-widest font-bold">
 						Suma aktywów

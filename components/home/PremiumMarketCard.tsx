@@ -118,7 +118,8 @@ export function PremiumMarketCard({
 	const { cleanName, isETF, provider } = formatAssetName(name);
 
 	return (
-		<div className="flex items-center bg justify-between p-2 rounded-xl bg-t-bg-panel border border-t-border w-full min-w-0 gap-2 overflow-hidden">
+		<div className="flex items-center bg justify-between p-1 sm:p-2 border border-t-border  rounded-xl w-full min-w-0 gap-2 overflow-hidden">
+			{/* <div className="flex items-center bg justify-between p-2 rounded-xl  bg-black/2 border border-t-border w-full min-w-0 gap-2 overflow-hidden"> */}
 			{/* LEWA STRONA: Logo, Nazwa i Ticker */}
 			<div className="flex items-center gap-2 flex-1 min-w-0">
 				<div className="shrink-0">
@@ -132,7 +133,7 @@ export function PremiumMarketCard({
 								className="w-full h-full object-contain dark:invert"
 							/>
 						) : (
-							<span className="text-[9px] font-medium text-slate-400">
+							<span className="text-[9px] font-medium text-slate-500">
 								{name.charAt(0)}
 							</span>
 						)}

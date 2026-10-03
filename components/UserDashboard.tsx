@@ -172,7 +172,6 @@ export function UserDashboard(props: UserDashboardProps) {
 	return (
 		<div className="space-y-8">
 			{/* HEADER */}
-			{/* 🚀 ZMIANA: Zaadoptowano styl (bg-gradient, SVG mask, p-5 sm:p-6 md:p-8) z widoku portfela, zachowując zunifikowany design */}
 			<header className="relative overflow-hidden flex flex-col gap-6 md:gap-8 w-full bg-slate-950 bg-gradient-to-r from-blue-500/10 dark:from-blue-500/10 via-slate-900 to-slate-950 text-slate-100 p-4 sm:p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors shadow-lg">
 				{/* --- TEKSTURA SVG --- */}
 				<div

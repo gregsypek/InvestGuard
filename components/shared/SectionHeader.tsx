@@ -20,7 +20,7 @@ export function SectionHeader({
 			{/* DODANO: text-fluid-h2 (z globals.css) do płynnego skalowania */}
 			<h2 className="text-fluid-h2 text-t-text-primary flex items-center gap-2 md:gap-3">
 				{Icon && (
-					<Icon className="h-5 w-5 md:h-6 md:w-6 text-theme-primary shrink-0" />
+					<Icon className="h-5 w-5 md:h-6 hidden sm:block md:w-6 text-theme-primary shrink-0" />
 				)}
 				{title}
 			</h2>

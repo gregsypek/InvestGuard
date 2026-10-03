@@ -57,7 +57,7 @@ export const CATEGORY_LABELS: Record<AssetCategory, string> = {
 	DEVELOPED: "Rynki Rozwinięte",
 	EMERGING: "Rynki Wschodzące",
 	GOLD: "Złoto",
-	BOOSTER: "Akcje (Booster)",
+	BOOSTER: "Akcje",
 	CASH: "Gotówka",
 	CRYPTO: "Kryptowaluty",
 	COMMODITIES: "Surowce",

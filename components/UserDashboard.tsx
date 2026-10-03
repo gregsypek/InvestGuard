@@ -172,21 +172,47 @@ export function UserDashboard(props: UserDashboardProps) {
 	return (
 		<div className="space-y-8">
 			{/* HEADER */}
-			<header className="relative overflow-hidden flex flex-col gap-4 md:gap-8 w-full border-b border-white/10 bg-slate-900 rounded-b-2xl text-slate-100 p-6 md:p-8 shadow-lg">
-				<div className="relative z-10">
-					<h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-sm mb-3">
-						Przegląd Inwestycji
-					</h1>
-					<div className="flex flex-wrap items-center gap-2 mt-2">
-						<span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">
-							Wybierz, aby porównać:
+			{/* 🚀 ZMIANA: Zaadoptowano styl (bg-gradient, SVG mask, p-5 sm:p-6 md:p-8) z widoku portfela, zachowując zunifikowany design */}
+			<header className="relative overflow-hidden flex flex-col gap-6 md:gap-8 w-full bg-slate-950 bg-gradient-to-r from-blue-500/10 dark:from-blue-500/10 via-slate-900 to-slate-950 text-slate-100 p-4 sm:p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors shadow-lg">
+				{/* --- TEKSTURA SVG --- */}
+				<div
+					className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
+					style={{
+						backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg stroke='%233b82f6' stroke-width='1.5' stroke-opacity='0.4'%3E%3Cline x1='15' y1='20' x2='15' y2='60'/%3E%3Crect x='11' y='30' width='8' height='20' fill='%233b82f6' fill-opacity='0.3'/%3E%3Cline x1='35' y1='40' x2='35' y2='80'/%3E%3Crect x='31' y='50' width='8' height='15' fill='none'/%3E%3Cline x1='55' y1='10' x2='55' y2='45'/%3E%3Crect x='51' y='15' width='8' height='25' fill='%2310b981' fill-opacity='0.6'/%3E%3Cline x1='75' y1='30' x2='75' y2='70'/%3E%3Crect x='71' y='45' width='8' height='10' fill='none'/%3E%3Cline x1='95' y1='50' x2='95' y2='90'/%3E%3Crect x='91' y='60' width='8' height='25' fill='%2310b981' fill-opacity='0.2'/%3E%3C/g%3E%3C/svg%3E")`,
+						WebkitMaskImage:
+							"radial-gradient(circle at 95% 2%, black 0%, transparent 20%)",
+						maskImage:
+							"radial-gradient(circle at 90% 2%, black 5%, transparent 20%)",
+					}}
+				/>
+
+				<div className="relative z-10 flex flex-col gap-2">
+					<div>
+						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter text-white drop-shadow-sm">
+							Przegląd Inwestycji
+						</h1>
+						<p className="text-slate-400 font-medium mt-1 text-[11px] sm:text-sm md:text-base leading-tight">
+							Holistyczne spojrzenie na wszystkie Twoje strategie
+						</p>
+					</div>
+
+					{/* 🚀 NOWOŚĆ: Poziomo przewijany pasek portfeli dostosowany z DashboardHeader */}
+					<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 sm:mt-4 p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm shadow-inner w-full min-w-0">
+						<span className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+							<Wallet2 className="w-3 h-3 text-theme-primary" /> Analiza dla:
 						</span>
-						<div className="flex gap-3 flex-wrap">
+						<div className="flex gap-1.5 sm:gap-2 flex-nowrap overflow-x-auto sm:flex-wrap sm:overflow-visible pb-1 sm:pb-0 w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 							<FilterBadge
 								id="ALL"
 								label="Wszystkie Portfele"
 								isSelected={selectedIds.includes("ALL")}
 								onToggle={togglePortfolio}
+								className={cn(
+									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0",
+									selectedIds.includes("ALL")
+										? "bg-blue-500 text-white border-transparent"
+										: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+								)}
 							/>
 							{props.portfolios.map((p) => (
 								<FilterBadge
@@ -195,29 +221,41 @@ export function UserDashboard(props: UserDashboardProps) {
 									label={p.name}
 									isSelected={selectedIds.includes(p.id)}
 									onToggle={togglePortfolio}
-									className="text-blue-300"
+									className={cn(
+										"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0",
+										selectedIds.includes(p.id)
+											? "bg-theme-soft text-theme-primary border-theme-primary/30"
+											: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+									)}
 								/>
 							))}
 						</div>
 					</div>
 				</div>
 
-				<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-4 md:gap-8 pt-4">
-					<div className="space-y-1">
-						<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[10px] uppercase mb-1">
-							<Wallet2 className="w-3.5 h-3.5" />
-							<span>Wartość Zaznaczonych</span>
+				<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6 md:gap-8 pb-1">
+					{/* OGROMNA Całkowita Wartość */}
+					<div className="space-y-1 w-full md:w-auto shrink-0">
+						<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[9px] sm:text-[10px] uppercase mb-1">
+							<Wallet2 className="w-3.5 h-3.5 text-slate-300" />
+							<span>
+								{selectedIds.includes("ALL")
+									? "Wartość Całkowita"
+									: "Wartość Zaznaczonych"}
+							</span>
 						</div>
-						<div className="flex items-baseline gap-2">
-							<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white">
+						<div className="flex items-baseline gap-1.5 sm:gap-2">
+							<h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm truncate">
 								{formatCurrency(totalCurrent)}
 							</h2>
-							<span className="text-xl md:text-2xl text-slate-500 font-bold">
+							<span className="text-lg sm:text-xl md:text-2xl text-slate-500 font-bold">
 								PLN
 							</span>
 						</div>
 					</div>
-					<div className="flex self-start sm:justify-end flex-wrap gap-4 md:gap-12 overflow-x-auto no-scrollbar">
+
+					{/* PRAWA STRONA: Mniejsze statystyki (Kapitał, P&L) */}
+					<div className="flex self-start sm:justify-end flex-wrap gap-4 sm:gap-6 md:gap-10 w-full md:w-auto">
 						<ValueCard
 							label="Zainwestowany kapitał"
 							icon={Container}
@@ -229,10 +267,9 @@ export function UserDashboard(props: UserDashboardProps) {
 							<div className="flex items-center gap-2 font-mono">
 								<span
 									className={cn(
-										"text-xl font-bold tracking-tight transition-colors",
+										"text-lg sm:text-xl font-bold tracking-tight transition-colors",
 										totalPnL > 0
-											? // EN: Dark background allows for neon glow effects
-												"text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]"
+											? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]"
 											: totalPnL < 0
 												? "text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]"
 												: "text-slate-400",
@@ -243,7 +280,7 @@ export function UserDashboard(props: UserDashboardProps) {
 								</span>
 								<span
 									className={cn(
-										"flex items-center text-xs font-bold px-2 py-0.5 rounded-sm transition-colors",
+										"flex items-center text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-sm transition-colors",
 										totalPnLPct > 0
 											? "bg-emerald-500/10 text-emerald-400"
 											: totalPnLPct < 0
@@ -314,7 +351,7 @@ export function UserDashboard(props: UserDashboardProps) {
 				<div className="flex flex-col gap-4 lg:gap-6">
 					{/* MACRO INDICATORS COLUMN */}
 					{props.userIndices && props.userIndices.length > 0 && (
-						<div className="flex-1 p-3 sm:p-5   rounded-2xl ">
+						<div className="flex-1 rounded-2xl ">
 							{/* <div className="flex justify-between items-center mb-4">
 								<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
 									<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
@@ -344,7 +381,7 @@ export function UserDashboard(props: UserDashboardProps) {
 						</div>
 					)}
 					{/* PORTFOLIO ASSETS COLUMN */}
-					<div className="flex-1 p-3 sm:p-5 ">
+					<div className="flex-1">
 						{/* <div className="flex items-center mb-4">
 							<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
 								<Briefcase className="w-4 h-4 text-blue-500" /> Z Portfela (
@@ -416,7 +453,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					{showAdvancedToolbar && (
 						<div className="flex flex-row items-center justify-between gap-1 w-full animate-in fade-in slide-in-from-top-1 pb-1.5 border-b border-t-border-subtle">
 							{/* Kwota i PnL */}
-							<div className="flex items-center gap-1.5 shrink-0">
+							<div className="flex flex-col xs:flex-row items-center gap-1.5 shrink-0">
 								<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest hidden sm:block">
 									Zaznaczone:
 								</span>
@@ -498,22 +535,23 @@ export function UserDashboard(props: UserDashboardProps) {
 					)}
 
 					{/* 2. GŁÓWNY PASEK NARZĘDZI */}
-					<div className="flex flex-row  lg:flex-nowrap items-center justify-between gap-2 md:gap-3 w-full">
-						{/* Lewa Strona: Zgrupowane Tryby Wyświetlania w ciasne pojemniki */}
-						{/* 🚀 ZMIANA: Usunięto flex-col, dodano większy gap (gap-2) dla oddechu */}
-						<div className="flex flex-col flex-1 sm:flex-0 sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 shrink-0">
+					{/* 🚀 ZMIANA: flex-wrap dla mobile, ale od 'md' (768px) wymuszamy jedną linię (md:flex-nowrap) */}
+					<div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 w-full">
+						{/* LEWA STRONA: Filtry */}
+						{/* 🚀 ZMIANA: w-full znika od 'sm' (sm:w-auto), pozwalając prawej stronie wejść do tego samego rzędu */}
+						<div className="flex flex-row items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto shrink-0">
 							{/* Grupa PLN / % */}
-							<div className="flex items-center md:flex-1 p-0.5 bg-black/5 dark:bg-white/5 rounded-lg gap-2 border border-t-border">
+							<div className="flex items-center gap-1.5 flex-1 sm:flex-none">
 								<FilterBadge
 									id="VALUE"
 									label="PLN"
 									isSelected={chartMode === "VALUE"}
 									onToggle={() => setChartMode("VALUE")}
 									className={cn(
-										"py-1 px-2 flex-1 md:flex-0 text-[9px] font-bold rounded-md transition-all",
+										"py-1.5 px-3 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
 										chartMode === "VALUE"
-											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
-											: "text-t-text-tertiary hover:text-t-text-primary",
+											? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
+											: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
 									)}
 								/>
 								<FilterBadge
@@ -522,26 +560,29 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={chartMode === "PERCENTAGE"}
 									onToggle={() => setChartMode("PERCENTAGE")}
 									className={cn(
-										"py-1 flex-1 md:flex-0 px-2 text-[9px] font-bold rounded-md transition-all",
+										"py-1.5 px-3 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
 										chartMode === "PERCENTAGE"
-											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
-											: "text-t-text-tertiary hover:text-t-text-primary",
+											? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
+											: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
 									)}
 								/>
 							</div>
 
-							{/* Grupa Real / Symulacja */}
-							<div className="flex items-center p-0.5 bg-black/5 dark:bg-white/5 gap-2 rounded-lg border border-t-border">
+							{/* Separator widoczny od 'sm' */}
+							<div className="w-px h-5 bg-t-border mx-1 hidden sm:block" />
+
+							{/* Grupa Real / Sym */}
+							<div className="flex items-center gap-1.5 flex-1 sm:flex-none">
 								<FilterBadge
 									id="REAL"
 									label="Real"
 									isSelected={dataMode === "REAL"}
 									onToggle={() => setDataMode("REAL")}
 									className={cn(
-										"py-1 px-2 flex-1 md:flex-0 text-[9px] font-bold rounded-md transition-all",
+										"py-1.5 px-3 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
 										dataMode === "REAL"
-											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
-											: "text-t-text-tertiary hover:text-t-text-secondary",
+											? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
+											: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
 									)}
 								/>
 								<FilterBadge
@@ -550,23 +591,22 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={dataMode === "SIMULATED"}
 									onToggle={() => setDataMode("SIMULATED")}
 									className={cn(
-										"py-1 flex-1 md:flex-0 px-2 text-[9px] font-bold rounded-md transition-all",
+										"py-1.5 px-3 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
 										dataMode === "SIMULATED"
-											? "bg-t-bg-base text-t-text-primary shadow-sm dark:text-blue-400"
-											: "text-t-text-tertiary hover:text-t-text-secondary",
+											? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
+											: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
 									)}
 								/>
 							</div>
 						</div>
 
-						{/* Prawa Strona: Zakresy czasu, Data i Toggle */}
-						<div className="flex items-center justify-between sm:justify-end gap-2 sm:flex-1 min-w-0 h-full flex-wrap sm:flex-nowrap ">
+						{/* PRAWA STRONA: Czas, Data, Zwijanie */}
+						{/* 🚀 ZMIANA: Od 'sm' element zajmuje tylko potrzebną szerokość i dokleja się do lewej strony w jednym rzędzie */}
+						<div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
+							{/* Kontener czasu */}
 							<div className="relative shrink-0">
-								{/* =========================================
-      								DESKTOP VIEW (Pełny pasek czasu, ukryty na mobile)
-      								🚀 FIX: Zmieniono z 'sm' na 'md' aby zsynchronizować breakpointy
-      							========================================= */}
-								<div className="hidden 2xl:flex items-center gap-0.5 bg-black/5 dark:bg-white/5 p-0.5 rounded-lg border border-t-border">
+								{/* Pełny pasek czasu pokazujemy dopiero od 'lg' (1024px), bo inaczej zabrakłoby miejsca na kalendarz obok filtrów */}
+								<div className="hidden lg:flex items-center gap-1.5">
 									{TIME_RANGES.map((range) => (
 										<button
 											key={range}
@@ -575,12 +615,12 @@ export function UserDashboard(props: UserDashboardProps) {
 											}
 											disabled={isRangeDisabled(range)}
 											className={cn(
-												"px-2 py-1 rounded-md text-[9px] font-bold tracking-wide transition-all shrink-0",
+												"py-1.5 px-2.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border",
 												isRangeDisabled(range)
-													? "opacity-30 cursor-not-allowed text-t-text-tertiary"
+													? "opacity-30 cursor-not-allowed text-t-text-tertiary border-transparent"
 													: activeRange === range
-														? "bg-t-bg-base text-t-text-primary shadow-sm"
-														: "text-t-text-secondary hover:text-t-text-primary",
+														? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
+														: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
 											)}
 										>
 											{range}
@@ -588,16 +628,13 @@ export function UserDashboard(props: UserDashboardProps) {
 									))}
 								</div>
 
-								{/* =========================================
-      								MOBILE VIEW (Przycisk z kalendarzem)
-      								🚀 FIX: Zmieniono 'sm:hidden' na 'md:hidden'
-      							========================================= */}
-								<div className="2xl:hidden">
+								{/* Kompaktowy przycisk dla telefonów i tabletów (do 'lg') */}
+								<div className="lg:hidden">
 									<button
 										onClick={() => setIsMobileTimeOpen(!isMobileTimeOpen)}
-										className="flex items-center gap-1.5 px-2 py-1.5 bg-black/5 dark:bg-white/5 border border-t-border rounded-lg text-[10px] font-bold text-t-text-primary shadow-sm"
+										className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-t-border text-[10px] font-bold uppercase tracking-widest text-t-text-primary shadow-sm hover:border-t-border-subtle bg-t-bg-base"
 									>
-										<Calendar className="w-3.5 h-3.5 text-theme-primary" />
+										<Calendar className="w-3.5 h-3.5 text-blue-500" />
 										<span>{activeRange}</span>
 										<ChevronDown
 											className={cn(
@@ -608,7 +645,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									</button>
 
 									{isMobileTimeOpen && (
-										<div className="absolute left-0 sm:right-0 top-full mt-1.5 z-50 flex flex-col bg-t-bg-panel border border-t-border rounded-xl shadow-xl p-1 min-w-[90px] animate-in fade-in zoom-in-95 duration-200">
+										<div className="absolute left-0 lg:right-0 top-full mt-1.5 z-50 flex flex-col bg-t-bg-panel border border-t-border rounded-xl shadow-xl p-1.5 min-w-[90px] animate-in fade-in zoom-in-95 duration-200">
 											{TIME_RANGES.map((range) => (
 												<button
 													key={range}
@@ -620,11 +657,11 @@ export function UserDashboard(props: UserDashboardProps) {
 													}}
 													disabled={isRangeDisabled(range)}
 													className={cn(
-														"px-3 py-2 text-left rounded-lg text-[10px] font-bold tracking-wide transition-all",
+														"px-3 py-2 text-left rounded-lg text-[10px] font-bold tracking-wide transition-all uppercase",
 														isRangeDisabled(range)
 															? "opacity-30 cursor-not-allowed text-t-text-tertiary"
 															: activeRange === range
-																? "bg-theme-soft text-theme-primary"
+																? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
 																: "text-t-text-secondary hover:bg-black/5 dark:hover:bg-white/5",
 													)}
 												>
@@ -637,7 +674,7 @@ export function UserDashboard(props: UserDashboardProps) {
 							</div>
 
 							{/* Wybór daty */}
-							<div className="shrink-0">
+							<div className="flex-1 sm:flex-none min-w-0">
 								<DatePickerWithRange
 									from={fromDate}
 									to={toDate}
@@ -648,7 +685,7 @@ export function UserDashboard(props: UserDashboardProps) {
 							{/* Zwijanie panelu */}
 							<button
 								onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
-								className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-t-border text-t-text-secondary hover:text-t-text-primary transition-all shrink-0 ml-auto sm:ml-0"
+								className="p-1.5 rounded-lg border border-t-border text-t-text-secondary hover:text-t-text-primary transition-all shrink-0 ml-auto sm:ml-0 shadow-sm bg-t-bg-base"
 								title={
 									showAdvancedToolbar
 										? "Zwiń podsumowanie"
@@ -656,9 +693,9 @@ export function UserDashboard(props: UserDashboardProps) {
 								}
 							>
 								{showAdvancedToolbar ? (
-									<Minimize2 className="w-3.5 h-3.5" />
+									<Minimize2 className="w-4 h-4" />
 								) : (
-									<Maximize2 className="w-3.5 h-3.5" />
+									<Maximize2 className="w-4 h-4" />
 								)}
 							</button>
 						</div>

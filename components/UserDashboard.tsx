@@ -445,19 +445,23 @@ export function UserDashboard(props: UserDashboardProps) {
 					</div>
 				</div>
 			</SectionLayout>
-			{/* === STICKY HEADER (Zawsze na górze, stała szerokość) === */}
-			<div className="sticky top-0 z-50 bg-t-bg-base transition-all duration-300 w-full pt-1 pb-2">
+			{/* =========================================
+            ZAAWANSOWANY PASEK NARZĘDZI (STICKY)        
+        ========================================= */}
+			{/* 🚀 ZMIANA 1: Używamy ujemnych marginesów (-mx-4 sm:-mx-6 lg:-mx-8) aby "wybić" tło poza padding rodzica,
+             zamiast psującego stronę 'w-screen'. Dajemy mu z-40 żeby był nad wykresem, ale pod głównym Headerem strony. */}
+			<div className="sticky top-0 rounded-b-xl z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 md:py-3 bg-t-bg-base/90 backdrop-blur-md border-y border-t-border shadow-sm transition-all duration-300">
+				{/* 🚀 ZMIANA 2: Ten kontener ogranicza zawartość paska do linii 7xl, tak jak cała reszta strony */}
 				<div className="flex flex-col gap-1.5 max-w-7xl mx-auto w-full">
 					{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Teraz ZAWSZE w 1 linii na mobile) */}
 					{showAdvancedToolbar && (
-						<div className="flex flex-row items-center justify-between gap-1 w-full animate-in fade-in slide-in-from-top-1 pb-1.5 border-b border-t-border-subtle">
+						<div className="flex flex-row items-center justify-between gap-1 w-full animate-in fade-in slide-in-from-top-1  mb-2">
 							{/* Kwota i PnL */}
 							<div className="flex flex-col xs:flex-row items-center gap-1.5 shrink-0">
 								<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest hidden sm:block">
 									Zaznaczone:
 								</span>
 								<div className="flex items-baseline gap-0.5 sm:gap-1">
-									{/* 🚀 ZMIANA: Mniejszy font kwoty na smartfonach, by zmieścić paginację w jednym rzędzie */}
 									<span className="text-xs sm:text-sm font-black text-t-text-primary tracking-tight">
 										{formatCurrency(totalCurrent)}
 									</span>
@@ -535,7 +539,7 @@ export function UserDashboard(props: UserDashboardProps) {
 
 					{/* 2. GŁÓWNY PASEK NARZĘDZI */}
 					{/* 🚀 ZMIANA: flex-wrap dla mobile, ale od 'md' (768px) wymuszamy jedną linię (md:flex-nowrap) */}
-					<div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 w-full">
+					<div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 w-full">
 						{/* LEWA STRONA: Filtry */}
 						{/* 🚀 ZMIANA: w-full znika od 'sm' (sm:w-auto), pozwalając prawej stronie wejść do tego samego rzędu */}
 						<div className="flex flex-row items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto shrink-0">
@@ -547,7 +551,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={chartMode === "VALUE"}
 									onToggle={() => setChartMode("VALUE")}
 									className={cn(
-										"py-1.5 px-3 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
+										"py-1 px-2 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
 										chartMode === "VALUE"
 											? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
 											: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
@@ -559,7 +563,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={chartMode === "PERCENTAGE"}
 									onToggle={() => setChartMode("PERCENTAGE")}
 									className={cn(
-										"py-1.5 px-3 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
+										"py-1 px-2 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
 										chartMode === "PERCENTAGE"
 											? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
 											: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
@@ -578,7 +582,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={dataMode === "REAL"}
 									onToggle={() => setDataMode("REAL")}
 									className={cn(
-										"py-1.5 px-3 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
+										"py-1 px-2 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
 										dataMode === "REAL"
 											? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
 											: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",
@@ -590,7 +594,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									isSelected={dataMode === "SIMULATED"}
 									onToggle={() => setDataMode("SIMULATED")}
 									className={cn(
-										"py-1.5 px-3 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
+										"py-1 px-2 flex-1 sm:flex-none flex justify-center text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all border",
 										dataMode === "SIMULATED"
 											? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
 											: "bg-transparent text-t-text-secondary border-t-border hover:border-t-border-subtle",

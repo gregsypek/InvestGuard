@@ -142,7 +142,7 @@ export const DashboardHeader = ({
 	) : null;
 
 	return (
-		<header className="relative overflow-hidden flex flex-col gap-6 md:gap-8 w-full bg-slate-950 bg-gradient-to-r from-theme-primary/20 dark:from-theme-primary/10 via-slate-900 to-slate-950 text-slate-100 p-4 sm:p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors shadow-lg">
+		<header className="relative overflow-hidden flex flex-col gap-6 md:gap-6 -mx-3 md:-mx-10 px-3 md:px-10 bg-slate-950 bg-gradient-to-r from-theme-primary/20 dark:from-theme-primary/10 via-slate-900 to-slate-950 text-slate-100 py-3 md:py-6 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors shadow-lg">
 			{/* --- TEKSTURA SVG --- */}
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
@@ -198,17 +198,20 @@ export const DashboardHeader = ({
 						</Link>
 					)}
 				</div>
-
 				{/* 🚀 NOWOŚĆ: Poziomo przewijany pasek kategorii korzystający z dynamicznych zmiennych motywu */}
 				{!hideStats &&
 					!isAddAssetPage &&
 					!isSettingsPage &&
 					availableCategories.length > 0 && (
-						<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 sm:mt-4 p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm shadow-inner w-full min-w-0">
-							<span className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+						//  🚀 ZMIANA 2A: overflow-x-auto i ukrycie scrollbara przeniesione na szarego rodzica
+						<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 sm:mt-4 p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm shadow-inner w-full min-w-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+							{/* 🚀 ZMIANA 2B: Dodano 'sticky left-0 w-max' aby etykieta stała w miejscu. Zachowano 'text-theme-primary' dla ikony filtra! */}
+							<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
 								<Filter className="w-3 h-3 text-theme-primary" /> Wycena dla:
 							</span>
-							<div className="flex gap-1.5 sm:gap-2 flex-nowrap overflow-x-auto sm:flex-wrap sm:overflow-visible pb-1 sm:pb-0 w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+
+							{/* 🚀 ZMIANA 2C: Usunięto overflow. Zmieniono szerokość na 'w-max sm:w-full' */}
+							<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
 								<FilterBadge
 									id="ALL"
 									label="Cały Portfel"

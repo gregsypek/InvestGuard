@@ -36,7 +36,7 @@ export function GlobalDashboardHeader({
 	return (
 		// 🚀 ZMIANA: Zastosowano "Bleed Effect" (ujemne marginesy wyrównane wewnętrznym paddingiem)
 		// Zaokrąglenie (rounded-b-2xl) przesuwa się, aby działać z krawędziami ekranu na komórkach
-		<header className="relative overflow-hidden flex flex-col gap-6 md:gap-8 -mx-5 md:-mx-10 px-5 md:px-10 bg-slate-950 bg-gradient-to-r from-blue-500/10 dark:from-blue-500/10 via-slate-900 to-slate-950 text-slate-100 py-6 md:py-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors shadow-lg">
+		<header className="relative overflow-hidden flex flex-col gap-6 md:gap-6 -mx-3 md:-mx-10 px-3 md:px-10 bg-slate-950 bg-gradient-to-r from-blue-500/10 dark:from-blue-500/10 via-slate-900 to-slate-950 text-slate-100 py-3 md:py-6 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors shadow-lg">
 			{/* --- TEKSTURA SVG --- */}
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
@@ -60,13 +60,15 @@ export function GlobalDashboardHeader({
 				</div>
 
 				{/* Pasek Wyboru Portfeli */}
-				<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 sm:mt-4 p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm shadow-inner w-full min-w-0">
-					<span className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+				{/* 🚀 ZMIANA 1: overflow-x-auto i ukrycie scrollbara przeniesione na szarego rodzica */}
+				<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 sm:mt-4 p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm shadow-inner w-full min-w-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+					{/* 🚀 ZMIANA 2: Dodano 'sticky left-0 w-max', żeby napis stał w miejscu, gdy scrollujesz */}
+					<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
 						<Wallet2 className="w-3 h-3 text-blue-400" /> Analiza dla:
 					</span>
 
-					{/* 🚀 ZMIANA: Dynamiczne wsparcie dla Custom Properties w pętli map */}
-					<div className="flex gap-1.5 sm:gap-2 flex-nowrap overflow-x-auto sm:flex-wrap sm:overflow-visible pb-1 sm:pb-0 w-full [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+					{/* 🚀 ZMIANA 3: Usunięto z tego diva overflow. Dodano 'w-max sm:w-full', by kafelki rozepchnęły rodzica na komórce */}
+					<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
 						<FilterBadge
 							id="ALL"
 							label="Wszystkie Portfele"
@@ -81,7 +83,6 @@ export function GlobalDashboardHeader({
 						/>
 						{portfolios.map((p) => {
 							const isSelected = selectedIds.includes(p.id);
-							// Hack dla Reacta: narzucenie zmiennej na poziomie atrybutu "data-theme", aby FilterBadge podchwycił CSS variables (jeśli FilterBadge tego nie potrafi, nadpisujemy w inline-style)
 							return (
 								<div key={p.id} data-theme={p.colorTheme || "blue"}>
 									<FilterBadge
@@ -103,7 +104,7 @@ export function GlobalDashboardHeader({
 				</div>
 			</div>
 
-			<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6 md:gap-8 pb-1">
+			<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-4 md:gap-6 pb-1">
 				{/* OGROMNA Całkowita Wartość */}
 				<div className="space-y-1 w-full md:w-auto shrink-0">
 					<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[9px] sm:text-[10px] uppercase mb-1">

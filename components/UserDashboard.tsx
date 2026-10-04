@@ -337,7 +337,7 @@ export function UserDashboard(props: UserDashboardProps) {
         ========================================= */}
 			{/* 🚀 ZMIANA 1: Używamy ujemnych marginesów (-mx-4 sm:-mx-6 lg:-mx-8) aby "wybić" tło poza padding rodzica,
              zamiast psującego stronę 'w-screen'. Dajemy mu z-40 żeby był nad wykresem, ale pod głównym Headerem strony. */}
-			<div className="sticky top-0 z-40 -mx-5 md:-mx-10 px-5 md:px-10 py-2 md:py-3 bg-t-bg-base/90 backdrop-blur-md border-y border-t-border shadow-sm transition-all rounded-b-2xl duration-300">
+			<div className="sticky top-0 z-40 -mx-3 md:-mx-10 px-3 md:px-10 py-2 md:py-3 bg-t-bg-base/90 backdrop-blur-md border-y border-t-border shadow-sm transition-all rounded-b-2xl duration-300">
 				{/* 🚀 ZMIANA 2: Ten kontener ogranicza zawartość paska do linii 7xl, tak jak cała reszta strony */}
 				<div className="flex flex-col gap-1.5 max-w-7xl mx-auto w-full">
 					{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Teraz ZAWSZE w 1 linii na mobile) */}

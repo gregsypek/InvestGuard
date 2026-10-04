@@ -141,7 +141,7 @@ export default function Header({
 		!displayValue && portfolios.length > 0 && !isDemoMode && !isGlobalPage;
 
 	return (
-		<header className="flex justify-between items-center p-3 md:px-5 border-b border-t-border-subtle sticky top-0 z-50 bg-white/70 dark:bg-t-bg-sticky backdrop-blur-md shadow-sm">
+		<header className="flex justify-between items-center p-3 md:px-5 border-b border-t-border-subtle sticky top-0 z-50 bg-white/70 dark:bg-t-bg-sticky backdrop-blur-md shadow-sm ">
 			<div className="flex items-center gap-3 flex-1">
 				{/* MOBILNY HAMBURGER */}
 				<div className="md:hidden">
@@ -285,9 +285,9 @@ export default function Header({
 				</div>
 
 				{/* 4. KONTEKSTOWY SELEKTOR PORTFELA */}
-				<div className="w-full">
+				<div className= " md:w-full">
 					{isGlobalPage ? (
-						<div className="flex items-center gap-2 px-4 h-11 w-full md:w-80 bg-theme-soft/50 border border-theme-border rounded-xl shadow-sm text-theme-primary cursor-default">
+						<div className="flex items-center gap-2 px-4 h-9 md:h-11 md:w-80 bg-theme-soft/50 border border-theme-border rounded-xl shadow-sm text-theme-primary cursor-default">
 							<Globe2 className="h-4 w-4 shrink-0" />
 							<span className="font-black text-[10px] md:text-[11px] uppercase tracking-widest mt-0.5 truncate">
 								Widok Skonsolidowany

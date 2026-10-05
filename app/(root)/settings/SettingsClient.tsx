@@ -8,6 +8,7 @@ import {
 	Landmark,
 	LayoutDashboard,
 	Lock,
+	Settings2,
 	ShieldCheck,
 	User,
 } from "lucide-react";
@@ -19,7 +20,7 @@ import Cookies from "js-cookie";
 import { DeleteAccountTool } from "./DeleteAccountTool";
 import { ExportDataButton } from "@/components/settings/ExportDataButton";
 import { FilterBadge } from "@/components/shared/FilterBadge";
-import Link from "next/link"; // 🚀 DODANY IMPORT
+import Link from "next/link";
 import { ObservedMarketsManager } from "@/components/settings/ObservedMartektsManager";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { TwoFactorManager } from "@/components/settings/TwoFactorManager";
@@ -94,117 +95,113 @@ export default function SettingsClient({
 	}, [isAdmin, activeTab]);
 
 	return (
+		// 🚀 ZMIANA 1: Upewnienie się, że jest centrowanie
 		<div className="max-w-7xl mx-auto w-full space-y-6 animate-in fade-in duration-500 pb-24">
-			{/* 1. WYSOKI NAGŁÓWEK HERO (Bez zakładek w środku!) */}
-			<header className="relative overflow-hidden flex flex-col w-full border-b border-white/10 bg-slate-900 rounded-b-2xl text-slate-100 p-6 md:p-8 lg:p-10 shadow-lg mt-2 md:mt-0 transition-all duration-500">
-				{/* Świetlny Gradient SVG */}
-				<div className="absolute inset-0 pointer-events-none select-none opacity-50 mix-blend-screen">
-					<svg
-						viewBox="0 0 1024 1024"
-						className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-y-1/2 [mask-image:radial-gradient(closest-side,white,transparent)] sm:left-full sm:-ml-80 lg:left-1/2 lg:ml-0 lg:-translate-x-1/2 lg:translate-y-0"
-						aria-hidden="true"
-					>
-						<circle
-							cx={512}
-							cy={512}
-							r={512}
-							fill="url(#settings-gradient)"
-							fillOpacity="0.8"
-						/>
-						<defs>
-							<radialGradient id="settings-gradient">
-								<stop stopColor="#3b82f6" />
-								<stop offset={1} stopColor="#1e3a8a" />
-							</radialGradient>
-						</defs>
-					</svg>
-				</div>
+			{/* 🚀 ZMIANA 2: Bleed Effect dla Headera (-mx-3 md:-mx-10 px-3 md:px-10) */}
+			<header className="relative overflow-hidden flex flex-col gap-6 md:gap-6 -mx-3 md:-mx-10 px-3 md:px-10 bg-slate-950 bg-gradient-to-r from-theme-primary/20 dark:from-theme-primary/10 via-slate-900 to-slate-950 text-slate-100 py-3 md:py-6 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors shadow-lg">
+				{/* --- TEKSTURA SVG --- */}
+				<div
+					className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
+					style={{
+						backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg stroke='%233b82f6' stroke-width='1.5' stroke-opacity='0.4'%3E%3Cline x1='15' y1='20' x2='15' y2='60'/%3E%3Crect x='11' y='30' width='8' height='20' fill='%233b82f6' fill-opacity='0.3'/%3E%3Cline x1='35' y1='40' x2='35' y2='80'/%3E%3Crect x='31' y='50' width='8' height='15' fill='none'/%3E%3Cline x1='55' y1='10' x2='55' y2='45'/%3E%3Crect x='51' y='15' width='8' height='25' fill='%2310b981' fill-opacity='0.6'/%3E%3Cline x1='75' y1='30' x2='75' y2='70'/%3E%3Crect x='71' y='45' width='8' height='10' fill='none'/%3E%3Cline x1='95' y1='50' x2='95' y2='90'/%3E%3Crect x='91' y='60' width='8' height='25' fill='%2310b981' fill-opacity='0.2'/%3E%3C/g%3E%3C/svg%3E")`,
+						WebkitMaskImage:
+							"radial-gradient(circle at 95% 2%, black 0%, transparent 20%)",
+						maskImage:
+							"radial-gradient(circle at 90% 2%, black 5%, transparent 20%)",
+					}}
+				/>
 
-				<div className="relative z-10 w-full flex flex-col gap-6">
-					{/* Ścieżka powrotu (wyświetlana tylko przy wejściu z zewnątrz) */}
+				<div className="relative z-10 flex flex-col gap-2">
+					{/* Ścieżka powrotu */}
 					{fromDashboard && (
-						<nav className="flex items-center gap-2 text-sm text-slate-400">
+						<nav className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic">
 							<Link
 								href="/"
-								className={cn(
-									"inline-flex items-center transition-all h-5 text-amber-500 hover:text-amber-400 underline decoration-amber-500/40 underline-offset-4 cursor-pointer font-medium",
-								)}
+								className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
 							>
-								<ChevronLeft
-									className="w-4 h-4 mr-0.5 no-underline"
-									strokeWidth={2.5}
-								/>
+								<ChevronLeft className="h-4 w-4" />
 								<span>Przegląd inwestycji</span>
 							</Link>
-							<span className="text-slate-600">/</span>
+							<span className="text-slate-500">/</span>
 							<span className="text-slate-200 font-medium lowercase">
 								Ustawienia
 							</span>
 						</nav>
 					)}
 
-					{/* Tytuł główny (korzysta z nowej, responsywnej klasy) */}
-					<div>
-						<h1 className="h1-hero mb-1">Ustawienia Aplikacji</h1>
+					<div className="mt-1 sm:mt-2">
+						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">
+							Ustawienia Aplikacji
+						</h1>
+						<p className="text-slate-400 font-medium mt-1 text-[11px] sm:text-sm md:text-base leading-tight">
+							Zarządzaj swoim profilem, zabezpieczeniami i preferencjami
+							systemowymi.
+						</p>
 					</div>
 
-					{/* KARTY: UPRAWNIENIA I E-MAIL (Wyrównane ze stylem profilu) */}
-					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1 sm:gap-3 pt-2">
-						{/* Karta: Poziom Uprawnień */}
-						<div className="flex flex-row flex-wrap justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3 ">
-							<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-								<ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-								<span>Uprawnienia:</span>
-							</div>
-							<div className="flex justify-center items-center gap-2 text-xs sm:text-sm font-black text-white tracking-wide uppercase">
-								{userRole}
-								{userRole === "ADMIN" && (
-									<span
-										className="flex h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(243,24,96,0.8)] shrink-0"
-										title="Pełen dostęp"
-									/>
-								)}
-							</div>
-						</div>
+					{/* 🚀 ZAKŁADKI W RAMCE */}
+					<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 sm:mt-4 p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm shadow-inner w-full min-w-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+						<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+							<Settings2 className="w-3 h-3 text-theme-primary" /> Sekcja:
+						</span>
 
-						{/* Karta: Adres E-mail */}
-						<div className="flex flex-row flex-wrap justify-center sm:justify-start items-center gap-1 sm:gap-3 px-2 py-1 sm:px-5 sm:py-3">
-							<div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-								<User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-								<span>Konto:</span>
-							</div>
-							<div className="text-xs sm:text-sm font-black text-white tracking-wide break-all sm:break-normal text-center sm:text-left">
+						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
+							{TABS.map((t) => (
+								<FilterBadge
+									key={t.id}
+									id={t.id}
+									label={t.label}
+									isSelected={activeTab === t.id}
+									onToggle={(id) => setActiveTab(id)}
+									className={cn(
+										"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
+										activeTab === t.id
+											? t.id === "bonds-admin"
+												? "bg-amber-500 text-white border-transparent shadow-sm"
+												: "bg-theme-primary text-white border-transparent shadow-sm"
+											: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+									)}
+								/>
+							))}
+						</div>
+					</div>
+				</div>
+
+				{/* DÓŁ: Uprawnienia i Konto */}
+				<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-start gap-4 md:gap-8 pb-1 border-t border-white/10 pt-4 mt-2">
+					{/* INFO: Uprawnienia */}
+					<div className="space-y-1 shrink-0">
+						<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[9px] sm:text-[10px] uppercase mb-1">
+							<ShieldCheck className="w-3.5 h-3.5 text-slate-300" />
+							<span>Uprawnienia systemowe</span>
+						</div>
+						<div className="flex items-center gap-2">
+							<h2 className="text-xl sm:text-2xl font-black tracking-tighter text-white drop-shadow-sm uppercase">
+								{userRole}
+							</h2>
+							{userRole === "ADMIN" && (
+								<span
+									className="flex h-2.5 w-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(243,24,96,0.8)] shrink-0"
+									title="Pełen dostęp"
+								/>
+							)}
+						</div>
+					</div>
+
+					{/* INFO: Email */}
+					<div className="space-y-1 shrink-0">
+						<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[9px] sm:text-[10px] uppercase mb-1">
+							<User className="w-3.5 h-3.5 text-slate-300" />
+							<span>Konto Użytkownika</span>
+						</div>
+						<div className="flex items-center gap-2">
+							<h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-200 truncate max-w-[250px] sm:max-w-md">
 								{email || "Brak przypisanego adresu"}
-							</div>
+							</h2>
 						</div>
 					</div>
 				</div>
 			</header>
-
-			{/* 🚀 2. STICKY PASEK NAWIGACJI ZAKŁADEK */}
-			<div className="sticky top-0 z-50 w-full bg-t-bg-base/80 backdrop-blur-xl border-b border-t-border-subtle py-3 transition-all duration-300">
-				<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full">
-					<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest hidden sm:block">
-						Wybierz sekcję:
-					</span>
-					<div className="flex gap-1.5 flex-wrap">
-						{TABS.map((t) => (
-							<FilterBadge
-								key={t.id}
-								id={t.id}
-								label={t.label}
-								isSelected={activeTab === t.id}
-								onToggle={(id) => setActiveTab(id)}
-								className={
-									activeTab === t.id
-										? "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400"
-										: ""
-								}
-							/>
-						))}
-					</div>
-				</div>
-			</div>
 
 			{/* ZAWARTOŚĆ ZAKŁADEK */}
 			<div className="w-full pt-2">

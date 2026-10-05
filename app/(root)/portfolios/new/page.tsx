@@ -5,7 +5,6 @@ import PortfolioForm from "@/components/PortfolioForm";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
-import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getGlobalStats } from "@/lib/calculations";
 import { redirect } from "next/navigation";
@@ -31,30 +30,23 @@ export default async function NewPortfolioPage() {
 		getGlobalStats(allPortfolios);
 
 	return (
-		<div>
+		<div className="space-y-8 animate-in fade-in duration-500 pb-20">
 			<PortfoliosHeader
 				title="Stwórz nowy portfel"
 				totalValue={totalValue}
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
 				customBreadcrumbs={
-					<nav className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+					<nav className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic">
 						<Link
 							href="/portfolios"
-							className={cn(
-								"inline-flex items-center transition-all h-5 italic text-amber-600  decoration-amber-600/40 underline-offset-4 cursor-pointer font-medium",
-							)}
+							className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
 						>
-							<ChevronLeft
-								className="w-4 h-4 mr-0.5 no-underline"
-								strokeWidth={2.5}
-							/>
+							<ChevronLeft className="h-4 w-4" />
 							<span>Portfele</span>
 						</Link>
-						<span className="text-muted-foreground">/</span>
-						<span className="text-theme-primary font-medium lowercase italic">
-							Nowy
-						</span>
+						<span className="text-slate-500">/</span>
+						<span className="text-slate-200 font-medium lowercase">Nowy</span>
 					</nav>
 				}
 			/>

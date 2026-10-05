@@ -6,7 +6,6 @@ import PortfolioForm from "@/components/PortfolioForm";
 import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
-import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getGlobalStats } from "@/lib/calculations";
 
@@ -49,39 +48,33 @@ export default async function EditPortfolioPage({ params }: Props) {
 		getGlobalStats(allPortfolios);
 
 	return (
-		<div>
+		// 🚀 ZMIANA: Animacja wejścia i odstępy zgodne z nowym standardem
+		<div className="space-y-8 animate-in fade-in duration-500 pb-20">
 			<PortfoliosHeader
 				title="Edytuj portfel"
 				totalValue={totalValue}
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
 				customBreadcrumbs={
-					<nav className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+					// 🚀 ZMIANA: Responsywne okruszki (Breadcrumbs)
+					<nav className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic">
 						<Link
 							href="/portfolios"
-							className={cn(
-								"inline-flex items-center transition-all h-5 text-amber-600 underline decoration-amber-600/40 underline-offset-4 cursor-pointer font-medium",
-							)}
+							className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
 						>
-							<ChevronLeft
-								className="w-4 h-4 mr-0.5 no-underline"
-								strokeWidth={2.5}
-							/>
+							<ChevronLeft className="h-4 w-4" />
 							<span>Portfele</span>
 						</Link>
-						<span className="text-muted-foreground/40">/</span>
-						<span className="lowercase">edycja</span>
-						<span className="text-muted-foreground/40">/</span>
-						<span className="text-primary font-medium lowercase">
+						<span className="text-slate-500">/</span>
+						<span className="text-slate-300 lowercase">edycja</span>
+						<span className="text-slate-500">/</span>
+						<span className="text-slate-200 font-medium lowercase">
 							{portfolio.name}
 						</span>
 					</nav>
 				}
 			/>
-			{/* 
-			<section className="w-full flex flex-col justify-start md:px-0 overflow-x-hidden">
-				<PortfolioForm initialData={portfolio} portfolioId={id} />
-			</section> */}
+
 			<SectionLayout
 				title={portfolio ? `Edycja: ${portfolio.name}` : "Nowy Portfel"}
 				titleIcon={Settings2}

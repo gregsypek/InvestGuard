@@ -138,9 +138,14 @@ export default function AddAssetForm({
 	const isBondOnly =
 		allowedCategories.includes("BONDS") && filteredCategories.length === 0;
 
+	// 🚀 ZMIANA: Inteligentne rozpoznawanie trybu obligacji na podstawie różnych parametrów URL
+	const isBondSource =
+		searchParams.get("source") === "bonds" ||
+		searchParams.get("cat") === "BONDS";
 	const viewMode =
-		searchParams.get("view") === "bond" || isBondOnly ? "bond" : "asset";
-
+		searchParams.get("view") === "bond" || isBondSource || isBondOnly
+			? "bond"
+			: "asset";
 	// --- 5. EFEKTY SYNCHRONIZACJI ---
 	useEffect(() => {
 		if (isCash) {

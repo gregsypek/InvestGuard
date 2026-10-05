@@ -1,6 +1,5 @@
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import PortfoliosClientView from "@/components/ui/PortfolioClientView";
-import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getActivePortfolioId } from "@/lib/session";
@@ -53,21 +52,6 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 		);
 	return (
 		<div className="space-y-10">
-			<PortfoliosHeader
-				title="Moje Portfele"
-				totalValue={totalValue}
-				portfoliosCount={portfoliosCount}
-				assetsCount={assetsCount}
-				customBreadcrumbs={
-					<nav className="text-sm text-muted-foreground flex items-center gap-2 italic">
-						Portfele
-						<span className="text-muted-foreground">/</span>
-						<span className="text-theme-primary font-medium lowercase italic">
-							Wszystkie
-						</span>
-					</nav>
-				}
-			/>
 			<PortfoliosClientView
 				portfolios={portfolios}
 				portfolioId={portfolioId ?? undefined}
@@ -75,6 +59,12 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 				realSnapshots={realSnapshots}
 				snapshots={simulatedSnapshots}
 				oldestRealSnapshotDate={oldestRealSnapshotDate}
+				// 🚀 DODANE: Przekazujemy statystyki przeliczone na Serwerze
+				globalStats={{
+					totalValue,
+					portfoliosCount,
+					assetsCount,
+				}}
 			/>
 		</div>
 	);

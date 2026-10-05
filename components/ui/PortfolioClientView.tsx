@@ -10,18 +10,18 @@ import {
 	TrendingUp,
 	WalletCards,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { AssetFilterPanel } from "../shared/AssetFilterPanel";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { CategoryTable } from "@/components/CategoryTable";
 import GlobalAnalyticsCharts from "./GlobalAnalyticsCharts";
-import { GlobalFiltersBar } from "./GlobalFiltersBar";
 import { InlineChartFilters } from "./InlineChartFilters";
 import { InteractiveChartSection } from "../InteractiveChartSection";
 import PortfolioCard from "@/components/PortfolioCard";
 import { PortfolioWithAssets } from "@/lib/types";
 import { PortfoliosComparisonChart } from "../dashboard/PortfoliosComparisonChart";
+import { PortfoliosHeader } from "@/components/PortfoliosHeader";
 import { SafeActionButton } from "./SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
 import { SimulatedSnapshot } from "./useDashboardData";
@@ -37,6 +37,11 @@ interface Props {
 	snapshots?: SimulatedSnapshot[];
 	realSnapshots?: SimulatedSnapshot[];
 	oldestRealSnapshotDate?: Date;
+	globalStats?: {
+		totalValue: number;
+		portfoliosCount: number;
+		assetsCount: number;
+	};
 }
 
 export default function PortfoliosClientView({
@@ -46,10 +51,58 @@ export default function PortfoliosClientView({
 	snapshots,
 	realSnapshots = [],
 	oldestRealSnapshotDate,
+	globalStats,
 }: Props) {
 	// 1. Zaciągamy z kontekstu tylko to, czego potrzebujemy na tej stronie
 	const { chartMode, selectedIds } = useChartContext();
 
+	// 🚀 ZMIANA: Zastępujemy router lokalnym stanem. Wybrany portfel w Headerze to teraz niezależny byt.
+	const [headerSelectedIds, setHeaderSelectedIds] = useState<string[]>(["ALL"]);
+
+	const handleToggleHeaderPortfolio = useCallback((id: string) => {
+		setHeaderSelectedIds((prev) => {
+			if (id === "ALL") return ["ALL"];
+			const next = prev.filter((c) => c !== "ALL");
+			if (next.includes(id)) {
+				const filtered = next.filter((c) => c !== id);
+				return filtered.length === 0 ? ["ALL"] : filtered;
+			}
+			return [...next, id];
+		});
+	}, []);
+
+	// 🚀 NOWOŚĆ: Przeliczanie statystyk w locie na podstawie zaklikanych kafelków w Headerze
+	const headerDynamicStats = useMemo(() => {
+		// Jeśli zaznaczono "ALL", bierzemy wszystko co wyliczył szybki Serwer
+		if (headerSelectedIds.includes("ALL")) {
+			return {
+				totalValue: globalStats?.totalValue || 0,
+				portfoliosCount: globalStats?.portfoliosCount || 0,
+				assetsCount: globalStats?.assetsCount || 0,
+			};
+		}
+
+		// W przeciwnym razie - przeliczamy tylko te wybrane!
+		const activePortfolios = portfolios.filter((p) =>
+			headerSelectedIds.includes(p.id),
+		);
+
+		let totalVal = 0;
+		let assetsCnt = 0;
+
+		activePortfolios.forEach((p) => {
+			assetsCnt += p.assets.length;
+			p.assets.forEach((a) => {
+				totalVal += a.currentValue || 0;
+			});
+		});
+
+		return {
+			totalValue: totalVal,
+			portfoliosCount: activePortfolios.length,
+			assetsCount: assetsCnt,
+		};
+	}, [headerSelectedIds, portfolios, globalStats]);
 	// 3. Wyliczamy dane dla wykresu "Wyścig Portfeli"
 	const { portfoliosComparisonData } = usePortfoliosComparison(
 		portfolios,
@@ -176,6 +229,34 @@ export default function PortfoliosClientView({
 
 	return (
 		<>
+			{/*  Header pokazuje wyłącznie przeliczone lokalnie statystyki */}
+			<div className="mb-8 md:mb-10">
+				<PortfoliosHeader
+					title={isDemo ? "Portfele Demo" : "Moje Portfele"}
+					// Zasilamy go dynamicznymi wartościami
+					totalValue={headerDynamicStats.totalValue}
+					portfoliosCount={headerDynamicStats.portfoliosCount}
+					assetsCount={headerDynamicStats.assetsCount}
+					portfolios={portfolios}
+					selectedIds={headerSelectedIds}
+					togglePortfolio={handleToggleHeaderPortfolio}
+					customBreadcrumbs={
+						<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-2">
+							Portfele
+							<span className="text-slate-500">/</span>
+							<span className="text-theme-primary font-medium lowercase italic">
+								{headerSelectedIds.includes("ALL")
+									? "Wszystkie"
+									: headerSelectedIds.length === 1
+										? portfolios.find((p) => p.id === headerSelectedIds[0])
+												?.name
+										: "Wybrane"}
+							</span>
+						</nav>
+					}
+				/>
+			</div>
+
 			{/* SEKCJA 1: Twoje Portfele */}
 			<SectionLayout
 				title="Zarządzanie Portfelami"

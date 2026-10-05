@@ -103,12 +103,14 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 
 	return (
 		<div>
-			{/* NAGŁÓWEK GŁÓWNY (Z zintegrowanymi statystykami) */}
+			{/* NAGŁÓWEK GŁÓWNY (Teraz interaktywny, ze sprytnym filtrowaniem Tickerów) */}
 			<BondHeader
 				title="Moje Obligacje"
 				totalBonds={totalBondsQuantity}
 				stats={stats}
 				portfolioName={portfolioName}
+				// Przekazujemy wszystkie obligacje, by Header mógł je przefiltrować
+				bonds={bonds}
 			/>
 			<SectionLayout
 				title="Historia Aktywności"

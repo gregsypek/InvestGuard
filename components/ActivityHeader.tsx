@@ -4,6 +4,7 @@ import { Filter, History, Wallet2 } from "lucide-react";
 
 import { FilterBadge } from "./shared/FilterBadge";
 import { ValueCard } from "./shared/ValueCard";
+import { cn } from "@/lib/utils";
 import { useChartContext } from "./providers/ChartProvider";
 
 interface ActivityHeaderProps {
@@ -16,7 +17,6 @@ export function ActivityHeader({
 	hasActiveFilters,
 	portfolios,
 }: ActivityHeaderProps) {
-	// Usunięto isPending, ponieważ FilterBadge nie obsługuje disabled
 	const { selectedIds, togglePortfolio } = useChartContext();
 
 	const dynamicName = selectedIds.includes("ALL")
@@ -44,8 +44,8 @@ export function ActivityHeader({
 		.reduce((sum, p) => sum + (p.transactionHistories?.length || 0), 0);
 
 	return (
-		<header className="relative overflow-hidden flex flex-col gap-8 w-full bg-slate-950 bg-gradient-to-r from-theme-primary/20 dark:from-theme-primary/10 via-slate-900 to-slate-950 text-slate-100 p-6 md:p-8 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors">
-			{" "}
+		<header className="relative overflow-hidden flex flex-col gap-6 md:gap-6 -mx-3 md:-mx-10 px-3 md:px-10 bg-slate-950 bg-gradient-to-r from-theme-primary/20 dark:from-theme-primary/10 via-slate-900 to-slate-950 text-slate-100 py-3 md:py-6 border-b border-white/10 dark:border-t-border rounded-b-2xl transition-colors shadow-lg">
+			{/* --- TEKSTURA SVG --- */}
 			<div
 				className="absolute inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 transition-opacity"
 				style={{
@@ -56,65 +56,95 @@ export function ActivityHeader({
 						"radial-gradient(circle at 90% 2%, black 5%, transparent 20%)",
 				}}
 			/>
-			<div className="relative z-10">
-				<nav className="text-sm text-slate-400 italic flex items-center gap-1.5">
+
+			{/* GÓRA: Nawigacja i Tytuł */}
+			<div className="relative z-10 flex flex-col gap-2">
+				<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-1.5">
 					Historia /{" "}
 					<span className="text-theme-primary font-medium lowercase">
 						{dynamicName}
 					</span>
-					{/* {hasActiveFilters && (
-						<span className="flex items-center gap-1 ml-2 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-widest not-italic">
-							<Filter className="w-3 h-3" /> Aktywne filtry w tabeli
-						</span>
-					)} */}
 				</nav>
-				<div className="mt-2">
-					<h1 className="text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">
+				<div className="mt-1 sm:mt-2">
+					<h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">
 						Historia Operacji
 					</h1>
+					<p className="text-slate-400 font-medium mt-1 text-[11px] sm:text-sm md:text-base leading-tight">
+						Pełny rejestr zrealizowanych transakcji oraz historii kapitału.
+					</p>
 				</div>
+
+				{/* 🚀 PASEK WYBORU PORTFELI (W ramce) */}
+				{portfolios.length > 0 && (
+					<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 sm:mt-4 p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-sm shadow-inner w-full min-w-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+						<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+							<Wallet2 className="w-3 h-3 text-theme-primary" /> Wybierz
+							portfel:
+						</span>
+
+						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
+							<FilterBadge
+								id="ALL"
+								label="Wszystkie Portfele"
+								isSelected={selectedIds.includes("ALL")}
+								onToggle={() => togglePortfolio("ALL")}
+								className={cn(
+									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
+									selectedIds.includes("ALL")
+										? "bg-theme-primary text-white border-transparent shadow-sm"
+										: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+								)}
+							/>
+							{portfolios.map((p) => {
+								const isSelected = selectedIds.includes(p.id);
+								return (
+									<div key={p.id} data-theme={p.colorTheme || "blue"}>
+										<FilterBadge
+											id={p.id}
+											label={p.name}
+											isSelected={isSelected}
+											onToggle={() => togglePortfolio(p.id)}
+											className={cn(
+												"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
+												isSelected
+													? "bg-theme-soft text-theme-primary border-theme-border shadow-sm"
+													: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+											)}
+										/>
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				)}
 			</div>
-			<div className="relative z-10 flex items-center flex-wrap gap-2 py-2">
-				<span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">
-					Wybierz portfel:
-				</span>
-				<FilterBadge
-					id="ALL"
-					label="Wszystkie Portfele"
-					isSelected={selectedIds.includes("ALL")}
-					onToggle={() => togglePortfolio("ALL")}
-				/>
-				{portfolios.map((p) => (
-					<FilterBadge
-						key={p.id}
-						id={p.id}
-						label={p.name}
-						isSelected={selectedIds.includes(p.id)}
-						onToggle={() => togglePortfolio(p.id)}
-					/>
-				))}
-			</div>
-			<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-8 pb-2 md:pb-0">
-				<div className="space-y-1">
-					<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[10px] uppercase mb-1">
-						<History className="w-3.5 h-3.5" />
+
+			{/* DÓŁ: Główne Statystyki */}
+			<div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-4 md:gap-6 pb-1">
+				<div className="space-y-1 w-full md:w-auto shrink-0">
+					<div className="flex items-center gap-1.5 text-slate-400 font-bold tracking-widest text-[9px] sm:text-[10px] uppercase mb-1">
+						<History className="w-3.5 h-3.5 text-slate-300" />
 						<span>Wszystkie Zarejestrowane</span>
 					</div>
-					<div className="flex items-baseline gap-2">
-						<h2 className="text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm">
-							{/* 🚀 ZMIANA: Wyświetlamy nasz dynamiczny stan */}
+					<div className="flex items-baseline gap-1.5 sm:gap-2">
+						{/* 🚀 Skalowane liczby */}
+						<h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm truncate">
 							{dynamicTotalTransactions}
 						</h2>
-						<span className="text-xl md:text-2xl text-slate-500 font-bold uppercase">
+						<span className="text-lg sm:text-xl md:text-2xl text-slate-500 font-bold uppercase">
 							szt.
 						</span>
 					</div>
 				</div>
 
-				<div className="flex self-start sm:justify-end flex-wrap gap-8 md:gap-12 overflow-x-auto no-scrollbar">
-					<ValueCard label="Bieżąca Wycena" icon={Wallet2}>
+				<div className="flex self-start sm:justify-end flex-wrap gap-4 sm:gap-6 md:gap-10 w-full md:w-auto">
+					<ValueCard
+						label="Bieżąca Wycena"
+						icon={Wallet2}
+						className="text-white"
+					>
 						<div className="flex items-baseline gap-1.5 font-mono">
-							<span className="text-2xl font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+							<span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
 								{new Intl.NumberFormat("pl-PL", {
 									style: "currency",
 									currency: "PLN",

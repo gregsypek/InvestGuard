@@ -63,14 +63,18 @@ export default async function DemoPlannerPage({
 					{/* HEADER PLANNERA (Wartości i Breadcrumbs)  */}
 					{/* ========================================= */}
 					<PlannerHeader
-						totalPlannedValue={totalPlannedValue}
-						plannedCount={plannedCount}
+						// 1. Zmienione nazwy właściwości:
+						initialTotalPlannedValue={totalPlannedValue}
+						initialPlannedCount={plannedCount}
+						// 2. Wymagane tablice (jeśli w pliku Demo są jakieś demoPortfele, możesz je tu wstawić zamiast pustych [])
+						portfolios={[]}
+						plans={[]}
 						customBreadcrumbs={
 							<div className="flex items-center gap-2 mb-2">
-								<nav className="text-sm text-t-text-tertiary italic">
+								<nav className="text-sm text-slate-400 italic">
 									Narzędzia /{" "}
-									<span className="text-emerald-500 font-bold uppercase tracking-widest text-[10px]">
-										Planer (Demo)
+									<span className="text-theme-primary font-medium lowercase">
+										Planer
 									</span>
 								</nav>
 							</div>

@@ -122,11 +122,15 @@ export default async function PlannerPage({ searchParams }: Props) {
 		<div>
 			{/* NAGŁÓWEK GŁÓWNY */}
 			<PlannerHeader
-				totalPlannedValue={totalPlannedValue}
-				plannedCount={processedPlans.length}
+				// Główne wartości startowe
+				initialTotalPlannedValue={totalPlannedValue}
+				initialPlannedCount={processedPlans.length}
+				// 🚀 Przekazujemy tablice do dynamicznego filtrowania
+				portfolios={allUserPortfolios}
+				plans={processedPlans}
 				customBreadcrumbs={
 					<div className="flex items-center gap-2 mb-2">
-						<nav className="text-sm text-slate-400 italic">
+						<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-2">
 							Narzędzia /{" "}
 							<span className="text-theme-primary font-medium lowercase">
 								Planer

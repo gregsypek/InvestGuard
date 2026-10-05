@@ -170,7 +170,6 @@ const DashboardAnalytics = ({
 			>
 				<StrategyHealthTable data={portfolioStatus} />
 			</SectionLayout>
-
 			{/* 2. NOWA SEKCJA: NOMINALNY WYNIK DZIENNY */}
 			<SectionLayout
 				title="Nominalny Wynik Dzienny"
@@ -178,15 +177,18 @@ const DashboardAnalytics = ({
 				subtitle="Faktyczna kwota wypracowana na rynku"
 				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują wpłaty i wypłaty z tego dnia."
 			>
-				<div className="h-[400px] mt-6 flex flex-col">
-					{/* Używamy naszego odchudzonego paska filtrów (bez pigułek portfeli, bo jesteśmy w jednym konkretnym portfelu) */}
+				{/*  Usunięto sztywne h-[400px] z rodzica. Teraz wysokość dostosuje się sama! */}
+				<div className="mt-6 flex flex-col gap-3">
+					{/* Używamy naszego odchudzonego paska filtrów */}
 					<InlineChartFilters
 						portfolios={[portfolio]}
 						oldestRealSnapshotDate={oldestRealSnapshotDate}
-						showModeToggle={false} // Wyłączamy przełącznik PLN/% dla tej sekcji
+						showModeToggle={false}
 					/>
+
 					{/* KONTENER Z WYKRESEM I SPINNEREM */}
-					<div className="relative flex-1 min-h-0 mt-2">
+					{/*  Nadajemy wysokość stricte kontenerowi wykresu (np. 350px na mobile, 400px wyżej) */}
+					<div className="relative w-full h-[350px] sm:h-[400px]">
 						{/* NAKŁADKA ŁADUJĄCA */}
 						{isPending && (
 							<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-2xl transition-all duration-300 flex items-center justify-center">
@@ -198,7 +200,8 @@ const DashboardAnalytics = ({
 								</div>
 							</div>
 						)}
-						{/* <div className="flex-1 min-h-0 mt-2"> */}
+
+						{/* Wykres bezpiecznie zajmie teraz 100% swojej własnej, ustalonej wysokości */}
 						<AbsoluteDailyPnLChart key={chartMode} data={absoluteChartData} />
 					</div>
 				</div>

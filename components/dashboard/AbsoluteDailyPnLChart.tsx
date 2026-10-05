@@ -145,15 +145,16 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		const isTodayPositive = (liveEntry?.exactChangePLN ?? 0) >= 0;
 
 		return (
-			<div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-6 gap-y-2 pt-2 sm:pt-4">
-				<div className="flex items-center gap-2">
+			//  Zmniejszono padding-top (pt-0) i margines w dół, legenda ma przylegać wyżej
+			<div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-6 gap-y-1.5 pt-0 mt-2">
+				<div className="flex items-center gap-1.5">
 					<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" />
-					<span className="text-[10px] sm:text-[11px] font-semibold text-t-text-secondary tracking-wide">
-						Dzienny Wynik Rynkowy
+					<span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-widest text-t-text-secondary">
+						Dzienny Wynik
 					</span>
 				</div>
 				{liveEntry && (
-					<div className="flex items-center gap-2 animate-in fade-in duration-200">
+					<div className="flex items-center gap-1.5 animate-in fade-in duration-200">
 						<span
 							className={`inline-block w-3 h-3 rounded-sm border border-dashed shrink-0 ${
 								isTodayPositive
@@ -161,15 +162,15 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 									: "bg-rose-500/20 border-rose-500"
 							}`}
 						/>
-						<span className="text-[10px] sm:text-[11px] font-semibold text-t-text-secondary tracking-wide">
-							Wynik z dzisiaj
+						<span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-widest text-t-text-secondary">
+							Dzisiaj
 						</span>
 					</div>
 				)}
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-1.5">
 					<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />
-					<span className="text-[10px] sm:text-[11px] font-semibold text-t-text-secondary tracking-wide">
-						Wpłaty / Wypłaty
+					<span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-widest text-t-text-secondary">
+						Transfery
 					</span>
 				</div>
 			</div>
@@ -179,14 +180,14 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	const chartContent = (
 		<ChartContainer className="h-full min-h-[300px] w-full flex-1">
 			<ResponsiveContainer width="100%" height="100%">
-				{/* 🚀 ZMIANA: Zwiększony 'bottom' na mobile, aby zrekompensować legendę w dwóch liniach */}
+				{/* 🚀 ZMIANA KLUCZOWA: Zwiększono diametralnie margines z dołu, aby zrobić bufor na załamaną legendę! */}
 				<ComposedChart
 					data={data}
 					margin={{
 						top: 10,
 						right: isMobile ? 0 : 10,
 						left: isMobile ? -10 : 10,
-						bottom: isMobile ? 20 : 5,
+						bottom: isMobile ? 40 : 25,
 					}}
 				>
 					<defs>
@@ -253,15 +254,18 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						axisLine={false}
 						tickLine={false}
 						tick={{
-							fontSize: 10,
+							fontSize: 9,
 							fill: "var(--t-text-tertiary)",
 							fontWeight: 500,
 						}}
 						tickMargin={12}
+						//  Na małym ekranie format to tylko 'dd MMM', bez dodatkowych spacji, oszczędza miejsce
 						tickFormatter={(val) =>
-							format(new Date(val), "dd MMM", { locale: pl })
+							format(new Date(val), isMobile ? "dd MMM" : "dd MMM", {
+								locale: pl,
+							})
 						}
-						minTickGap={20} // Zmiana: Ukrywa część dat na osi X, jeśli jest za gęsto
+						minTickGap={25}
 					/>
 
 					<YAxis
@@ -277,7 +281,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						tickFormatter={(val) =>
 							`${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(val)}\u00A0zł`
 						}
-						width={isMobile ? 42 : 58} // 🚀 ZMIANA: Dynamiczna szerokość osi na mobile
+						width={isMobile ? 42 : 58}
 						domain={[-pnlDomain, pnlDomain]}
 					/>
 
@@ -296,7 +300,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 								? ""
 								: `${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(val)}\u00A0zł`
 						}
-						width={isMobile ? 45 : 65} // 🚀 ZMIANA: Dynamiczna szerokość osi na mobile
+						width={isMobile ? 45 : 65}
 						domain={[-cashDomain, cashDomain]}
 					/>
 
@@ -306,13 +310,14 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						stroke="var(--t-border)"
 						strokeWidth={1}
 					/>
+
 					<Tooltip
 						content={<AbsolutePnLTooltip />}
 						cursor={{ fill: "var(--t-hover)" }}
 						wrapperStyle={{ zIndex: 1000, outline: "none" }}
 					/>
 
-					{/* 🚀 ZMIANA: Dodano verticalAlign aby legenda ułożyła się ładnie na dole, nie najeżdżając na wykres */}
+					{/* 🚀 ZMIANA: Utrzymano verticalAlign, ale layout renderLegend został mocno odchudzony! */}
 					<Legend
 						content={renderLegend}
 						wrapperStyle={{ zIndex: 10 }}

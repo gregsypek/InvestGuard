@@ -124,7 +124,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 						className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
 					>
 						<Link
-							href={`/bond-reports/${id}/add-asset`}
+							href={`/dashboard/${id}/add-asset?cat=BONDS&source=bonds`}
 							className="flex items-center gap-2"
 						>
 							<Plus className="w-4 h-4" />
@@ -224,7 +224,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 						className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
 					>
 						<Link
-							href={`/bond-reports/${id}/add-asset`}
+							href={`/dashboard/${id}/add-asset?cat=BONDS&source=bonds`}
 							className="flex items-center gap-2"
 						>
 							<Plus className="w-4 h-4" />

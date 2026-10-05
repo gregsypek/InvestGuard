@@ -90,7 +90,7 @@ export default async function AlphaSelectionPage({
 		alphaCategories.includes(t.category),
 	);
 
-	const targetUrl = `/dashboard/${portfolioId}/add-asset?cat=BOOSTER`;
+	const targetUrl = `/dashboard/${portfolioId}/add-asset?cat=BOOSTER&source=alpha`;
 
 	// =====================================================================
 	// 4. RENDEROWANIE WIDOKU

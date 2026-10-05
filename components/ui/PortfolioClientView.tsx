@@ -303,17 +303,19 @@ export default function PortfoliosClientView({
 				subtitle="Porównanie Strategii"
 				description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w PLN.`}
 			>
-				<div className="h-[400px] mt-6 flex flex-col">
+				{/*  Czysty kontener kolumnowy bez wymuszonej wysokości (h-400) i bez flex-1 */}
+				<div className="mt-6 flex flex-col gap-3">
 					<InlineChartFilters
 						portfolios={portfolios}
 						oldestRealSnapshotDate={oldestRealSnapshotDate}
 					/>
-					<div className="flex-1 min-h-0 mt-2">
+
+					{/*  Wysokość ląduje DOKŁADNIE tutaj, bezpośrednio nad wykresem. Recharts ma się na czym oprzeć! */}
+					<div className="w-full h-[350px] sm:h-[400px]">
 						<PortfoliosComparisonChart
 							key={`compare-${chartMode}`}
 							data={portfoliosComparisonData}
 							portfolios={portfolios}
-							// ZMIANA: Zamiast selectedIds z contextu, dajemy wszystkie ID
 							activeIds={portfolios.map((p) => p.id)}
 							chartMode={chartMode}
 						/>

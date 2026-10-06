@@ -420,7 +420,7 @@ const AssetLedgerTable = ({
 										>
 											<TableCell
 												className={cn(
-													"sticky left-0 z-10 py-3 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none transition-colors w-min-width",
+													"sticky left-0 z-10 py-2 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none transition-colors w-min-width",
 													isExpanded
 														? "bg-t-bg-sticky-hover"
 														: "bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover",

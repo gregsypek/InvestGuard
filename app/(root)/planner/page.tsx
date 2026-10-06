@@ -1,8 +1,5 @@
 import { PlannerDashboardClient } from "@/components/planner/PlannerDashboardClient"; // 👈 Nowy import
-import PlannerForm from "@/components/planner/PlannerForm";
 import { PlannerHeader } from "@/components/PlanerHeader";
-import { PlusSquare } from "lucide-react";
-import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
@@ -119,43 +116,28 @@ export default async function PlannerPage({ searchParams }: Props) {
 		orderBy: { executedAt: "desc" },
 	});
 	return (
-		<div>
+		<div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500 pb-24">
 			{/* NAGŁÓWEK GŁÓWNY */}
 			<PlannerHeader
-				// Główne wartości startowe
 				initialTotalPlannedValue={totalPlannedValue}
 				initialPlannedCount={processedPlans.length}
-				// 🚀 Przekazujemy tablice do dynamicznego filtrowania
 				portfolios={allUserPortfolios}
 				plans={processedPlans}
 				customBreadcrumbs={
-					<div className="flex items-center gap-2 mb-2">
-						<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-2">
-							Narzędzia /{" "}
-							<span className="text-theme-primary font-medium lowercase">
-								Planer
-							</span>
-						</nav>
-					</div>
+					<nav
+						key="planner-nav"
+						className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic mb-2"
+					>
+						<span>Narzędzia</span>
+						<span className="text-slate-500">/</span>
+						<span className="text-theme-primary font-medium lowercase">
+							Planer
+						</span>
+					</nav>
 				}
 			/>
 
-			{/* SEKCJA 1: Formularz (Pozostaje na górze, zapięty na domyślny portfel) */}
-			<SectionLayout
-				title="Nowy plan inwestycyjny"
-				titleIcon={PlusSquare}
-				subtitle="Zdefiniuj aktywo, które zamierzasz dodać do portfela w najbliższym czasie."
-				description="Zaplanowane zakupy pozwalają Ci kontrolować przepływ gotówki i lepiej zarządzać budżetem inwestycyjnym."
-			>
-				<div className="bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 lg:p-8 shadow-sm">
-					<PlannerForm
-						portfolios={allUserPortfolios}
-						defaultPortfolioId={portfolio.id}
-					/>
-				</div>
-			</SectionLayout>
-
-			{/* SEKCJE 2 i 3: Lista i Projekcja (Zarządzane przez nowego klienta) */}
+			{/* SEKCJE 2 i 3: Lista i Projekcja (Zarządzane przez klienta) */}
 			<PlannerDashboardClient
 				portfolios={allUserPortfolios}
 				plans={processedPlans}

@@ -2,6 +2,7 @@ import AddAssetClient from "./AddAssetClient";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getPortfolioCategories } from "@/lib/actions/portfolio.actions";
+import { redirect } from "next/navigation";
 
 interface Props {
 	params: Promise<{ id: string }>;
@@ -10,15 +11,27 @@ interface Props {
 
 export default async function AddAssetPage({ params, searchParams }: Props) {
 	const session = await auth();
+
+	if (!session?.user?.id) {
+		redirect("/sign-in");
+	}
+
 	const { id } = await params;
 	const resolvedParams = await searchParams;
 
 	// 🚀 POBIERAMY DANE BEZPOŚREDNIO Z BAZY DLA WYBRANEGO PORTFELA
-	const [categoriesResult, portfolio, assets] = await Promise.all([
-		getPortfolioCategories(id),
-		db.portfolio.findUnique({ where: { id }, select: { name: true } }),
-		db.asset.findMany({ where: { portfolioId: id } }), // Pełna pula aktywów tego portfela
-	]);
+	// ORAZ DODATKOWO LISTĘ WSZYSTKICH PORTFELI UŻYTKOWNIKA DLA PLANERA
+	const [categoriesResult, portfolio, assets, allUserPortfolios] =
+		await Promise.all([
+			getPortfolioCategories(id),
+			db.portfolio.findUnique({ where: { id }, select: { name: true } }),
+			db.asset.findMany({ where: { portfolioId: id } }), // Pełna pula aktywów tego portfela
+			db.portfolio.findMany({
+				// 🚀 NOWE: Wszystkie portfele usera (id i name do listy w Planerze)
+				where: { userId: session.user.id },
+				select: { id: true, name: true },
+			}),
+		]);
 
 	const categories = categoriesResult.success
 		? categoriesResult.categories
@@ -37,6 +50,9 @@ export default async function AddAssetPage({ params, searchParams }: Props) {
 
 	return (
 		<AddAssetClient
+			// MAGIA: Kiedy zmienia się URL, React automatycznie resetuje CAŁY komponent
+			// do ustawień fabrycznych (odpalając domyślną zakładkę ze stanu), bez użycia useEffect!
+			key={`${resolvedParams?.source}-${resolvedParams?.view}`}
 			id={id}
 			portfolioName={portfolioName}
 			categories={categories}
@@ -46,6 +62,8 @@ export default async function AddAssetPage({ params, searchParams }: Props) {
 			initialView={resolvedParams?.view}
 			portfolioTotalValue={portfolioTotalValue}
 			portfolioInvested={portfolioInvested}
+			// 🚀 PRZEKAZUJEMY PORTFELE DO KLIENTA! (Wymagane przez PlannerForm)
+			allUserPortfolios={allUserPortfolios}
 		/>
 	);
 }

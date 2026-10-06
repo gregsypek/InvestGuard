@@ -2,6 +2,7 @@
 
 import {
 	Briefcase,
+	CalendarPlus,
 	ChevronLeft,
 	Coins,
 	FileText,
@@ -16,6 +17,7 @@ import AddAssetForm from "@/components/ui/assets/AddAssetForm";
 import { BondImporter } from "@/components/ui/BondImporter";
 import { FilterBadge } from "@/components/shared/FilterBadge";
 import Link from "next/link";
+import PlannerForm from "@/components/planner/PlannerForm";
 import { QuickDepositForm } from "@/components/ui/QuickDepositForm";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { ValueCard } from "@/components/shared/ValueCard";
@@ -31,8 +33,9 @@ interface AddAssetClientProps {
 	userRole: "ADMIN" | "SUBSCRIBER" | "REGULAR";
 	source?: string;
 	initialView?: string;
-	portfolioTotalValue: number; // 🚀 DODANE: Statystyki
-	portfolioInvested: number; // 🚀 DODANE: Statystyki
+	portfolioTotalValue: number;
+	portfolioInvested: number;
+	allUserPortfolios?: { id: string; name: string }[]; //Przekazujemy wszystkie portfele dla formularza planera
 }
 
 export default function AddAssetClient({
@@ -45,15 +48,24 @@ export default function AddAssetClient({
 	initialView,
 	portfolioTotalValue,
 	portfolioInvested,
+	allUserPortfolios,
 }: AddAssetClientProps) {
 	// Domyślna zakładka na podstawie źródła
-	const defaultTab = source === "bonds" ? "import-bonds" : "manual";
+	// 🚀 NAPRAWA: Formularz w końcu sprawdza, czy przyszliśmy z planera!
+	const defaultTab =
+		source === "planner" || initialView === "planner"
+			? "planner"
+			: source === "bonds"
+				? "import-bonds"
+				: "manual";
 	const [activeTab, setActiveTab] = useState(defaultTab);
 
 	// 🚀 INTELIGENTNE ZAKŁADKI (Dynamicznie filtrujemy i używamy uniwersalnych nazw)
 	const AVAILABLE_TABS = useMemo(() => {
 		return [
 			{ id: "manual", label: "Formularz Ręczny", show: true },
+
+			{ id: "planner", label: "Nowy Plan", show: true }, // Dodane!
 			{
 				id: "import-market",
 				label: "Import Giełdowy",
@@ -84,12 +96,19 @@ export default function AddAssetClient({
 				moduleName: "Nowa Seria Obligacji",
 			};
 		}
+		if (source === "planner" || initialView === "planner") {
+			return {
+				backUrl: `/planner?portfolioId=${id}`,
+				backLabel: "Planer",
+				moduleName: "Nowy Plan",
+			};
+		}
 		return {
 			backUrl: `/dashboard/${id}`,
 			backLabel: "Panel Główny",
 			moduleName: "Kreator Aktywów",
 		};
-	}, [source, id]);
+	}, [source, initialView, id]);
 
 	return (
 		<div className="max-w-7xl mx-auto w-full space-y-8 animate-in fade-in duration-500 pb-24">
@@ -262,6 +281,25 @@ export default function AddAssetClient({
 						>
 							<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
 								<QuickDepositForm portfolioId={id} />
+							</div>
+						</SectionLayout>
+					</div>
+				)}
+				{/* 🚀 NOWA ZAKŁADKA PLANERA */}
+				{activeTab === "planner" && (
+					<div className="animate-in slide-in-from-right-4 duration-300 fade-in">
+						<SectionLayout
+							title="Nowy plan inwestycyjny"
+							titleIcon={CalendarPlus}
+							subtitle="Planowanie przepływów"
+							description="Zdefiniuj aktywo, które zamierzasz dodać do portfela w najbliższym czasie. Zaplanowane zakupy pozwalają Ci kontrolować przepływ gotówki."
+						>
+							<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
+								<PlannerForm
+									//  Zabezpieczenie przed undefined
+									portfolios={allUserPortfolios || []}
+									defaultPortfolioId={id}
+								/>
 							</div>
 						</SectionLayout>
 					</div>

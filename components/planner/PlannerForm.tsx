@@ -72,8 +72,6 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 	// EN: Now using isCash to dynamically change labels (fixes 'unused' error)
 	// Zabezpieczone sprawdzanie
 	const isCash = (selectedCategory as string) === "CASH";
-	const isBooster = (selectedCategory as string) === "BOOSTER";
-	const isBond = (selectedCategory as string) === "BONDS";
 
 	const filteredCategories = useMemo(() => {
 		return Object.keys(CATEGORY_LABELS).filter((cat) => cat !== "BONDS");
@@ -96,7 +94,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 			if (result.success) {
 				toast.success("Dodano do planu");
 				form.reset();
-				router.refresh();
+				router.push(`/planner?portfolioId=${data.portfolioId}`);
 			}
 		} catch {
 			toast.error("Wystąpił błąd");

@@ -14,6 +14,7 @@ import {
 	ChevronUp,
 	Clock,
 	PiggyBank,
+	PlusSquare,
 	Target,
 	TrendingUp,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { GoalProjectionChart } from "./GoalProjectionChart";
 import { PlannerClientList } from "./PlannerClientList";
+import { SafeActionButton } from "../ui/SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format-currency";
@@ -288,12 +290,26 @@ export function PlannerDashboardClient({
 				subtitle="Monitor bieżących operacji"
 				description="Śledź swój miesięczny postęp wpłat i weryfikuj najnowsze zaksięgowane transakcje."
 				action={
-					<div className="flex flex-col-reverse sm:flex-row items-end sm:items-center gap-3">
-						{renderInlinePortfolioSelector(
-							monthPortfolioId,
-							setMonthPortfolioId,
-						)}
-						{renderInlineCategorySelector(monthCategoryId, setMonthCategoryId)}
+					<div className="flex flex-col gap-3 md:gap-4 items-end ">
+						<SafeActionButton
+							label="Dodaj Nowy Plan"
+							icon={PlusSquare}
+							variant="outline"
+							isDemo={false}
+							className="w-min border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary justify-center"
+							href={`/dashboard/${projPortfolioId}/add-asset?view=planner&source=planner`}
+						/>
+
+						<div className="flex flex-row items-center gap-2 flex-wrap sm:w-auto justify-start sm:justify-end">
+							{renderInlinePortfolioSelector(
+								monthPortfolioId,
+								setMonthPortfolioId,
+							)}
+							{renderInlineCategorySelector(
+								monthCategoryId,
+								setMonthCategoryId,
+							)}
+						</div>
 					</div>
 				}
 			>
@@ -566,7 +582,6 @@ export function PlannerDashboardClient({
 					)}
 				</div>
 			</SectionLayout>
-
 			<SectionLayout
 				title="Oczekujące Realizacje"
 				titleIcon={PiggyBank}
@@ -590,7 +605,6 @@ export function PlannerDashboardClient({
 					currentMonthTransactions={currentMonthTransactions}
 				/>
 			</SectionLayout>
-
 			<SectionLayout
 				title="Projekcja Celu"
 				titleIcon={TrendingUp}

@@ -445,12 +445,13 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-sm">
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel  rounded-2xl card-padding ">
 			<div className="flex justify-between items-start z-20 mb-2">
 				<div>{trendBadge(true)}</div>
 				<button
 					onClick={() => setIsExpanded(true)}
-					className="p-1.5 bg-t-bg-base border border-t-border text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
+					className="p-1.5 
+					 bg-t-bg-base text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
 					title="Powiększ wykres"
 				>
 					<Maximize2 className="w-4 h-4" />

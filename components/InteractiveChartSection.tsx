@@ -121,12 +121,12 @@ export function InteractiveChartSection({
 			{/* KONTENERY WYKRESÓW */}
 			<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 				{/* Wykres Liniowy (Alpha) */}
-				<div className="xl:col-span-2 bg-t-bg-panel p-4 md:p-6 rounded-2xl border border-t-border h-[350px] min-h-[350px] relative w-full flex flex-col">
+				<div className="xl:col-span-2 bg-t-bg-panel  rounded-2xl  h-[350px] min-h-[350px] relative w-full flex flex-col">
 					<AlphaChart data={areaPoints} />
 				</div>
 
 				{/* Wykres Słupkowy (Wpłaty) */}
-				<div className="bg-t-bg-panel p-4 md:p-6 rounded-2xl border border-t-border h-[350px] min-h-[350px] relative w-full flex flex-col">
+				<div className="bg-t-bg-panel p-2 h-[350px] min-h-[350px] relative w-full flex flex-col">
 					<MonthlyDepositsChart data={barPoints} />
 				</div>
 			</div>

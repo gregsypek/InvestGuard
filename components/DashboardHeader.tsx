@@ -161,7 +161,7 @@ export const DashboardHeader = ({
 
 				<div className="flex items-start justify-between gap-4">
 					<div className="flex-1">
-						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter lowercase flex items-center gap-3 drop-shadow-sm text-white">
+						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black  uppercase flex items-center gap-3 drop-shadow-sm text-white">
 							{name}
 						</h1>
 						<p className="text-slate-400 font-medium mt-1 text-[11px] sm:text-sm md:text-base leading-tight">

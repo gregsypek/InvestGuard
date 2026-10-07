@@ -121,7 +121,7 @@ export function InteractiveChartSection({
 			{/* KONTENERY WYKRESÓW */}
 			<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 				{/* Wykres Liniowy (Alpha) */}
-				<div className="xl:col-span-2 p-2 bg-t-bg-panel border border-t-border rounded-2xl  h-[350px] min-h-[350px] relative w-full flex flex-col">
+				<div className="xl:col-span-2  bg-t-bg-panel border border-t-border rounded-2xl  h-[350px] min-h-[350px] relative w-full flex flex-col">
 					<AlphaChart data={areaPoints} />
 				</div>
 

@@ -270,8 +270,7 @@ export default function AlphaLedgerTable({
 			</div>
 
 			{/* WERSJA MOBILE (KARTY) */}
-			<div className="flex flex-col gap-3 p-3 md:hidden">
-				{/* Kod mobilny identyczny z poprzednim (dla zwięzłości), tu również dodano 'sharePercent' */}
+			<div className="flex flex-col gap-2 md:gap-3 p-2 md:p-3 md:hidden">
 				{filteredAndSortedAssets.map((asset) => {
 					const individualRoi =
 						asset.investedCapital > 0

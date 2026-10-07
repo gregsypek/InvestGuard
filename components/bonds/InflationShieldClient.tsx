@@ -139,24 +139,24 @@ export function InflationShieldClient({ inflationData, bonds }: Props) {
 					</div>
 				</div>
 
-				<div className="flex gap-6">
-					<div className="flex flex-col items-end">
+				<div className="flex flex-wrap gap-x-4 gap-y-3 sm:gap-6 w-full md:w-auto pt-3 md:pt-0 border-t border-t-border-subtle md:border-none mt-2 md:mt-0">
+					<div className="flex flex-col items-start sm:items-end flex-1 sm:flex-none">
 						<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest mb-1">
 							Inflacja GUS
 						</span>
-						<span className="text-sm font-bold text-rose-500">
+						<span className="text-sm font-bold text-theme-primary">
 							{latestInflation.toFixed(2)}%
 						</span>
 					</div>
-					<div className="flex flex-col items-end">
-						<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest mb-1">
-							Średnie Oprocentowanie
+					<div className="flex flex-col items-end sm:items-end flex-1 sm:flex-none">
+						<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest mb-1 truncate">
+							Oprocentowanie
 						</span>
 						<span className="text-sm font-bold text-blue-500">
 							{weightedYield.toFixed(2)}%
 						</span>
 					</div>
-					<div className="flex flex-col items-end pl-6 border-l border-t-border-subtle">
+					<div className="flex flex-col items-end pl-0 sm:pl-6 border-l-0 sm:border-l border-t-border-subtle w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 mt-1 sm:mt-0">
 						<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest mb-1">
 							Zysk Realny
 						</span>
@@ -174,7 +174,6 @@ export function InflationShieldClient({ inflationData, bonds }: Props) {
 
 			{/* Wykres */}
 			<div className="h-75 w-full">
-				{/* NOTE: Każdy przodek na drodze do ResponsiveContainer musi mieć albo jawną wysokość (h-75, h-[350px]), albo h-full/flex-1 w kontenerze, który sam ma jawną wysokość. min-h-* samo w sobie nigdy nie wystarczy jako źródło wysokości dla flex-grow. */}
 				<div className=" flex flex-col h-full  min-h-[250px]">
 					<ChartContainer className="flex-1 min-h-0 w-full">
 						<ResponsiveContainer width="100%" height="100%">
@@ -190,8 +189,16 @@ export function InflationShieldClient({ inflationData, bonds }: Props) {
 										x2="0"
 										y2="1"
 									>
-										<stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
-										<stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+										<stop
+											offset="5%"
+											stopColor="var(--theme-primary)"
+											stopOpacity={0.3}
+										/>
+										<stop
+											offset="95%"
+											stopColor="var(--theme-primary)"
+											stopOpacity={0}
+										/>
 									</linearGradient>
 								</defs>
 								<CartesianGrid
@@ -219,7 +226,7 @@ export function InflationShieldClient({ inflationData, bonds }: Props) {
 									type="monotone"
 									dataKey="inflation"
 									name="Inflacja GUS"
-									stroke="#f43f5e"
+									stroke="var(--theme-primary)"
 									strokeWidth={2}
 									fillOpacity={1}
 									fill="url(#colorInflation)"

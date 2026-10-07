@@ -6,12 +6,23 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format-currency";
 
-export function AlphaStressTest({ assets }: { assets: any[] }) {
+export interface StressTestAsset {
+	category: string;
+	quantity: number;
+	currentValue: number;
+	investedCapital: number;
+}
+
+interface AlphaStressTestProps {
+	assets: StressTestAsset[];
+}
+
+export function AlphaStressTest({ assets }: AlphaStressTestProps) {
 	const [cryptoShock, setCryptoShock] = useState(0);
 	const [stocksShock, setStocksShock] = useState(0);
 
-	const isCrypto = (a: any) => a.category === "CRYPTO";
-	const isBooster = (a: any) => a.category === "BOOSTER";
+	const isCrypto = (a: StressTestAsset) => a.category === "CRYPTO";
+	const isBooster = (a: StressTestAsset) => a.category === "BOOSTER";
 
 	const metrics = useMemo(() => {
 		const activeAssets = assets.filter((a) => a.quantity > 0);
@@ -52,23 +63,23 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 	}, [assets, cryptoShock, stocksShock]);
 
 	return (
-		<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+		<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm flex flex-col">
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
 				{/* LEWA: SUWAKI (STEROWANIE) */}
-				<div className="space-y-8 flex flex-col justify-center">
-					<div className="space-y-4">
-						<div className="flex justify-between items-end">
+				<div className="space-y-6 sm:space-y-8 flex flex-col justify-center">
+					<div className="space-y-3 sm:space-y-4">
+						<div className="flex justify-between items-end gap-4">
 							<div className="space-y-1">
-								<h4 className="text-sm font-bold text-t-text-primary uppercase tracking-widest">
+								<h4 className="text-xs sm:text-sm font-bold text-t-text-primary uppercase tracking-widest">
 									Szok na Krypto
 								</h4>
-								<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest">
+								<p className="text-[9px] sm:text-[10px] text-t-text-tertiary uppercase tracking-widest">
 									Zmiana wyceny kryptowalut
 								</p>
 							</div>
 							<span
 								className={cn(
-									"text-xl font-black font-mono",
+									"text-lg sm:text-xl font-black font-mono shrink-0",
 									cryptoShock > 0
 										? "text-emerald-500"
 										: cryptoShock < 0
@@ -87,23 +98,23 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 							step="5"
 							value={cryptoShock}
 							onChange={(e) => setCryptoShock(Number(e.target.value))}
-							className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-theme-primary"
+							className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-(--theme-primary) hover:opacity-90 transition-opacity"
 						/>
 					</div>
 
-					<div className="space-y-4">
-						<div className="flex justify-between items-end">
+					<div className="space-y-3 sm:space-y-4">
+						<div className="flex justify-between items-end gap-4">
 							<div className="space-y-1">
-								<h4 className="text-sm font-bold text-t-text-primary uppercase tracking-widest">
+								<h4 className="text-xs sm:text-sm font-bold text-t-text-primary uppercase tracking-widest">
 									Szok na Akcjach
 								</h4>
-								<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest">
+								<p className="text-[9px] sm:text-[10px] text-t-text-tertiary uppercase tracking-widest">
 									Zmiana wyceny spółek (Booster)
 								</p>
 							</div>
 							<span
 								className={cn(
-									"text-xl font-black font-mono",
+									"text-lg sm:text-xl font-black font-mono shrink-0",
 									stocksShock > 0
 										? "text-emerald-500"
 										: stocksShock < 0
@@ -122,17 +133,17 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 							step="5"
 							value={stocksShock}
 							onChange={(e) => setStocksShock(Number(e.target.value))}
-							className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-theme-primary"
+							className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-(--theme-primary) hover:opacity-90 transition-opacity"
 						/>
 					</div>
 
-					<div className="flex justify-end">
+					<div className="flex justify-end pt-2">
 						<button
 							onClick={() => {
 								setCryptoShock(0);
 								setStocksShock(0);
 							}}
-							className="text-xs font-bold text-t-text-tertiary hover:text-t-text-primary uppercase tracking-widest transition-colors"
+							className="text-[10px] sm:text-xs font-bold text-t-text-tertiary hover:text-t-text-primary uppercase tracking-widest transition-colors py-2 px-3 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
 						>
 							Resetuj symulację
 						</button>
@@ -140,31 +151,35 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 				</div>
 
 				{/* PRAWA: WYNIKI SYMULACJI */}
-				<div className="bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-xl p-6 flex flex-col justify-center">
-					<div className="flex items-center gap-2 mb-6 text-t-text-secondary">
-						<Activity className="w-5 h-5" />
-						<span className="text-xs font-bold uppercase tracking-widest">
+				<div className="bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-xl p-4 sm:p-6 flex flex-col justify-center">
+					<div className="flex items-center gap-2 mb-4 sm:mb-6 text-t-text-secondary">
+						<Activity className="w-4 h-4 sm:w-5 sm:h-5" />
+						<span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest">
 							Projekcja Portfela Alpha
 						</span>
 					</div>
 
-					<div className="space-y-6">
-						<div className="flex justify-between items-center border-b border-t-border-subtle pb-4">
-							<span className="text-sm font-bold text-t-text-tertiary">
+					{/* 🚀 ZMIANA 3: flex-wrap zapobiegający zderzaniu się tekstu z wyceną na bardzo małych ekranach */}
+					<div className="space-y-4 sm:space-y-6">
+						<div className="flex flex-wrap justify-between items-center gap-2 border-b border-t-border-subtle pb-3 sm:pb-4">
+							<span className="text-xs sm:text-sm font-bold text-t-text-tertiary uppercase tracking-widest">
 								Nowa Wycena
 							</span>
-							<span className="text-2xl font-black text-t-text-primary">
-								{formatCurrency(metrics.totalSimulated, 0)} PLN
+							<span className="text-xl sm:text-2xl font-black text-t-text-primary">
+								{formatCurrency(metrics.totalSimulated, 0)}{" "}
+								<span className="text-xs sm:text-sm text-t-text-tertiary uppercase tracking-widest ml-0.5">
+									PLN
+								</span>
 							</span>
 						</div>
 
-						<div className="flex justify-between items-center border-b border-t-border-subtle pb-4">
-							<span className="text-sm font-bold text-t-text-tertiary">
+						<div className="flex flex-wrap justify-between items-center gap-2 border-b border-t-border-subtle pb-3 sm:pb-4">
+							<span className="text-xs sm:text-sm font-bold text-t-text-tertiary uppercase tracking-widest">
 								Zrewidowane ROI
 							</span>
 							<span
 								className={cn(
-									"text-2xl font-black font-mono tracking-tight",
+									"text-xl sm:text-2xl font-black font-mono tracking-tight",
 									metrics.simulatedRoi >= 0
 										? "text-emerald-500"
 										: "text-rose-500",
@@ -175,13 +190,13 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 							</span>
 						</div>
 
-						<div className="flex justify-between items-center">
-							<span className="text-sm font-bold text-t-text-tertiary">
-								Wpływ szoku (PLN)
+						<div className="flex flex-wrap justify-between items-center gap-2">
+							<span className="text-xs sm:text-sm font-bold text-t-text-tertiary uppercase tracking-widest">
+								Wpływ szoku
 							</span>
 							<div
 								className={cn(
-									"flex items-center gap-2 text-lg font-black font-mono",
+									"flex items-center gap-1.5 text-base sm:text-lg font-black font-mono",
 									metrics.impactPLN > 0
 										? "text-emerald-500"
 										: metrics.impactPLN < 0
@@ -190,12 +205,17 @@ export function AlphaStressTest({ assets }: { assets: any[] }) {
 								)}
 							>
 								{metrics.impactPLN > 0 ? (
-									<TrendingUp className="w-5 h-5" />
+									<TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
 								) : metrics.impactPLN < 0 ? (
-									<TrendingDown className="w-5 h-5" />
+									<TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
 								) : null}
-								{metrics.impactPLN > 0 ? "+" : ""}
-								{formatCurrency(metrics.impactPLN, 0)}
+								<span>
+									{metrics.impactPLN > 0 ? "+" : ""}
+									{formatCurrency(metrics.impactPLN, 0)}{" "}
+									<span className="text-[10px] sm:text-xs text-current opacity-70 uppercase tracking-widest ml-0.5">
+										PLN
+									</span>
+								</span>
 							</div>
 						</div>
 					</div>

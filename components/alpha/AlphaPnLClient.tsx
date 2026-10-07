@@ -168,7 +168,9 @@ export function AlphaPnLClient({
 
 			// ELIMINACJA FAKE-SPADKÓW:
 			// Jeśli w danym dniu była transakcja (BUY/SELL/DEPOSIT), ignorujemy
-			// zniekształcony odczyt z bazy (globalChangePLN) i zakładamy neutralny rynek.const isTransactionDay = Math.abs(cf) > 10;
+			// zniekształcony odczyt z bazy (globalChangePLN) i zakładamy neutralny rynek.
+
+			const isTransactionDay = Math.abs(cf) > 10;
 
 			const estimatedPnL =
 				runningInvestedForEstimation > 0 && !isTransactionDay

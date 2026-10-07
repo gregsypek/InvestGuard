@@ -445,7 +445,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel  rounded-2xl card-padding ">
+		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border  rounded-2xl card-padding ">
 			<div className="flex justify-between items-start z-20 mb-2">
 				<div>{trendBadge(true)}</div>
 				<button

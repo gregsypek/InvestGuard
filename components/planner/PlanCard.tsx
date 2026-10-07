@@ -390,27 +390,29 @@ export function PlanCard({
 	return (
 		<div
 			className={cn(
-				"group relative rounded-2xl p-4 transition-all duration-300  flex min-w-[350px] flex-col h-full",
-				// ZMIANA: Przejście na zmienne systemowe
-				"bg-t-bg-panel border border-t-border hover:border-t-border-subtle",
-				isLocked && "backdrop-blur-[1px] opacity-90",
+				"group relative rounded-2xl p-4 sm:p-5 transition-all duration-300 flex flex-col h-full w-full",
+				"bg-t-bg-panel border border-t-border hover:border-t-border-subtle hover:shadow-md",
+				isLocked &&
+					"opacity-75 grayscale-[0.1] hover:opacity-100 hover:grayscale-0",
 			)}
 		>
-			<div className="flex flex-col justify-center gap-4 flex-1">
+			<div className="flex flex-col flex-1 min-w-0">
 				{/* NAGŁÓWEK KARTY */}
 				<div className="flex justify-between items-start gap-3">
-					<div className="space-y-2 min-w-0 flex-1">
-						<div className="flex flex-wrap items-center gap-2">
+					<div className="flex flex-col min-w-0 flex-1 gap-1.5">
+						{/* Tytuł i Tagi */}
+						<div className="flex items-center gap-2 w-full">
 							{plan.isRecurring && (
 								<div
-									className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20"
+									className="flex h-5 w-5 sm:h-6 sm:w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20"
 									title="Plan cykliczny"
 								>
-									<RefreshCw className="h-3 w-3 text-blue-500" />
+									<RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-500" />
 								</div>
 							)}
+
 							<span
-								className="h-2.5 w-2.5 rounded-full shrink-0"
+								className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full shrink-0"
 								style={{
 									backgroundColor:
 										COLORS[plan.targetCategory as keyof typeof COLORS] ||
@@ -418,126 +420,117 @@ export function PlanCard({
 								}}
 							/>
 
-							<h3 className="text-sm font-bold truncate text-t-text-primary w-[180px] flex-1 ">
+							<h3 className="text-sm sm:text-base font-bold truncate text-t-text-primary flex-1">
 								{plan.name ||
 									`Zakup: ${CATEGORY_LABELS[plan.targetCategory as keyof typeof CATEGORY_LABELS] || plan.targetCategory}`}
 							</h3>
 
 							{plan.conviction && (
-								<span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 tabular-nums shrink-0">
+								<span className="text-[9px] sm:text-[10px] font-bold text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 tabular-nums shrink-0">
 									{plan.conviction}%
 								</span>
 							)}
 						</div>
-						{isLocked ? (
-							<div className="flex items-center w-full sm:w-auto mt-1 sm:mt-0">
-								{/* <div className="flex items-center w-full sm:w-auto mt-1 sm:mt-0"> */}
-								<div
-									className="flex items-center  gap-2 flex-1  pe-2.5 py-1  
-									 sm:w-auto"
-								>
-									<Clock className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-500" />
-									<div className="flex flex-col leading-none">
-										{/* <span className="text-[9px] hidden xl:block font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
-												Oczekiwanie
-											</span> */}
-										<span className="text-[10px] font-normal text-t-text-secondary whitespace-nowrap">
-											Dostępny od ({plan.plannedDate})
-										</span>
-									</div>
-								</div>
-							</div>
-						) : (
-							<div className="h-[26px]" aria-hidden="true" />
-						)}
 
-						<p className="text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest truncate">
-							{
-								CATEGORY_LABELS[
-									plan.targetCategory as keyof typeof CATEGORY_LABELS
-								]
-							}{" "}
-							• {plan.portfolio?.name}
-						</p>
+						{/* Sub-header: Kategoria / Portfel / Status Blokady */}
+						<div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-0.5">
+							<p className="text-[9px] sm:text-[10px] text-t-text-tertiary font-bold uppercase tracking-widest truncate">
+								{
+									CATEGORY_LABELS[
+										plan.targetCategory as keyof typeof CATEGORY_LABELS
+									]
+								}{" "}
+								• {plan.portfolio?.name}
+							</p>
+
+							{isLocked && (
+								<div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+									<Clock className="w-3 h-3 text-amber-500" />
+									<span className="text-[9px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest">
+										Od {plan.plannedDate}
+									</span>
+								</div>
+							)}
+						</div>
 					</div>
 
-					{/* PRZYCISKI AKCJI */}
-					<div className="flex items-center gap-1 shrink-0 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+					{/* PRZYCISKI AKCJI (Zawsze widoczne na mobile, hover na desktopie) */}
+					<div className="flex items-center gap-1 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
 						<button
 							onClick={() => setIsOpen(true)}
-							className="p-2.5 rounded-xl bg-t-hover text-t-text-secondary hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+							className="p-2 sm:p-2.5 rounded-xl bg-black/5 dark:bg-white/5 text-t-text-secondary hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors border border-transparent hover:border-emerald-500/20"
 						>
-							<CheckSquare size={16} />
+							<CheckSquare size={16} className="sm:w-4 sm:h-4 w-3.5 h-3.5" />
 						</button>
 
 						<Button
 							variant="ghost"
 							size="icon"
 							onClick={handleDelete}
-							className="h-9 w-9 text-t-text-tertiary hover:bg-rose-500/10 hover:text-rose-600"
+							className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl text-t-text-tertiary hover:bg-rose-500/10 hover:text-rose-500"
 						>
-							<Trash2 className="h-4 w-4" />
+							<Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 						</Button>
 					</div>
 				</div>
 
-				{/* WARTOŚCI I TERMIN */}
-				<div className="flex gap-8 pt-2 border-t border-t-border-subtle">
-					<div className="flex flex-wrap gap-2 items-center">
-						<p className="font-mono text-xs text-t-text-secondary">
-							Planowana kwota:
+				<div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-t-border-subtle">
+					<div className="flex flex-col gap-1">
+						<p className="font-mono text-[9px] sm:text-[10px] text-t-text-tertiary uppercase tracking-widest">
+							Planowana kwota
 						</p>
-						<p className="text-sm font-black tracking-tight text-t-text-primary">
+						<p className="text-sm sm:text-base font-black tracking-tight text-t-text-primary truncate">
 							{formatCurrency(plan.value)}
-							<span className="text-[10px] font-bold text-t-text-tertiary tracking-normal ml-1">
+							<span className="text-[9px] sm:text-[10px] font-bold text-t-text-tertiary ml-1 uppercase">
 								PLN
 							</span>
 						</p>
 					</div>
-					<div className="flex flex-wrap gap-2 items-center">
-						<p className="font-mono text-xs text-t-text-secondary">Termin:</p>
-						<p className="text-xs font-bold flex items-center gap-1.5 text-t-text-primary bg-t-bg-base px-2 py-0.5 rounded border border-t-border">
+					<div className="flex flex-col gap-1 items-start">
+						<p className="font-mono text-[9px] sm:text-[10px] text-t-text-tertiary uppercase tracking-widest">
+							Termin
+						</p>
+						<div className="inline-flex items-center gap-1.5 text-xs font-bold text-t-text-primary bg-t-bg-base px-2 py-0.5 rounded-md border border-t-border">
 							<CalendarIcon size={12} className="text-blue-500" />
 							{plan.plannedDate}
-						</p>
+						</div>
 					</div>
 				</div>
-				<div className="mt-auto flex flex-col gap-2 pt-2">
-					{/* 🚀 SMART UI: Komunikat widoczny bezpośrednio na karcie */}
+
+				{/* 🚀 SMART UI: Komunikaty & Rationale przylegające do dołu karty */}
+				<div className="mt-auto flex flex-col gap-2 pt-4">
 					{isGoalMet ? (
-						<div className="mt-2 px-3 py-2 rounded-lg flex items-center justify-between animate-in fade-in">
-							<div className="flex items-center gap-2">
-								<span className="text-emerald-500 text-xs">✅</span>
-								<span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+						<div className="px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
+							<div className="flex items-center gap-1.5">
+								<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
 									Cel Osiągnięty
 								</span>
 							</div>
-							<span className="text-xs  text-t-text-primary">
+							<span className="text-[11px] sm:text-xs font-black text-emerald-600 dark:text-emerald-400">
 								{formatCurrency(alreadyInvested)} PLN
 							</span>
 						</div>
 					) : alreadyInvested > 0 ? (
-						<div className="mt-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
-							<div className="flex items-center gap-2">
-								<span className="text-amber-500 text-xs">💡</span>
-								<span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-500">
-									Zainwestowano w tym m-cu:
+						<div className="px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-between animate-in fade-in">
+							<div className="flex items-center gap-1.5">
+								<span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
+									Zainwestowano
 								</span>
 							</div>
-							<span className="text-xs text-t-text-primary">
+							<span className="text-[11px] sm:text-xs font-black text-amber-600 dark:text-amber-500">
 								{formatCurrency(alreadyInvested)} PLN
 							</span>
 						</div>
 					) : null}
-				</div>
-				{/* NOTATKA */}
-				{plan.rationale && (
-					<div className="mt-2 text-[11px] text-t-text-secondary leading-relaxed italic border-l-2 border-blue-500/40 pl-3 py-1 bg-t-bg-base/50 rounded-r-lg">
-						&quot;{plan.rationale}&quot;
-					</div>
-				)}
-			</div>
 
+					{/* NOTATKA */}
+					{plan.rationale && (
+						<div className="text-[10px] sm:text-[11px] text-t-text-secondary leading-relaxed italic border-l-2 border-blue-500/40 pl-3 py-1.5 bg-t-bg-base/50 rounded-r-lg mt-1">
+							&quot;{plan.rationale}&quot;
+						</div>
+					)}
+				</div>
+			</div>
 			{/* ======================= MODAL REALIZACJI ======================= */}
 			<Dialog open={isOpen} onOpenChange={setIsOpen}>
 				<DialogContent className="max-w-4xl w-[95vw] bg-t-bg-panel/95 backdrop-blur-xl border-t-border shadow-2xl rounded-2xl p-6 md:p-8 max-h-[90vh] overflow-y-auto overflow-x-hidden">

@@ -106,7 +106,7 @@ export function AlphaHeader({
 					</span>
 				</nav>
 				<div className="mt-1 sm:mt-2">
-					<h1 className="text-2xl sm:text-3xl md:text-4xl font-black  uppercase flex items-center gap-3 drop-shadow-sm text-white">
+					<h1 className="text-2xl sm:text-3xl md:text-4xl font-black  uppercase flex items-center gap-3 drop-shadow-sm text-slate-400">
 						Selekcja Alpha
 					</h1>
 					<p className="text-slate-400 font-medium mt-1 text-[11px] sm:text-sm md:text-base leading-tight">

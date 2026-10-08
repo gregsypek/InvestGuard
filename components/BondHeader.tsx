@@ -131,7 +131,7 @@ export function BondHeader({
 				)}
 
 				<div className="mt-1 sm:mt-2">
-					<h1 className="text-2xl sm:text-3xl md:text-4xl font-black  uppercase flex items-center gap-3 drop-shadow-sm text-white">
+					<h1 className="text-2xl sm:text-3xl md:text-4xl font-black  uppercase flex items-center gap-3 drop-shadow-sm text-slate-400">
 						{title}
 					</h1>
 					<p className="text-slate-400 font-medium mt-1 text-[11px] sm:text-sm md:text-base leading-tight flex items-center gap-1.5">

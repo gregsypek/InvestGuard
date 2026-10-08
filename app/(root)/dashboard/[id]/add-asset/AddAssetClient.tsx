@@ -222,14 +222,14 @@ export default function AddAssetClient({
 
 			<div className="pt-2 w-full">
 				{activeTab === "manual" && (
-					<div className="animate-in slide-in-from-right-4 duration-300 fade-in">
+					<div className="animate-in slide-in-from-right-4 duration-300 fade-in w-full">
 						<SectionLayout
 							title="Ręczne dodawanie aktywów"
 							titleIcon={LibrarySquareIcon}
 							subtitle="Krok po kroku"
 							description="Dodaj środki do portfela podając ticker, ilość oraz cenę zakupu."
 						>
-							<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 shadow-sm">
+							<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-sm">
 								<AddAssetForm
 									portfolioId={id}
 									allowedCategories={categories}

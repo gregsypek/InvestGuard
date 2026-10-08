@@ -59,7 +59,7 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 					onClick={onClose}
 					className="flex items-center gap-3 group hover:cursor-pointer"
 				>
-					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm border border-t-border-subtle">
+					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center ">
 						<Image
 							src="/logo.svg"
 							alt="Logo"

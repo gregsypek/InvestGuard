@@ -644,7 +644,7 @@ export function PlanCard({
 													<SelectTrigger className={inputStyles}>
 														<SelectValue placeholder="Wybierz aktywo..." />
 													</SelectTrigger>
-													<SelectContent>
+													<SelectContent className="bg-t-bg-panel border border-t-border shadow-xl">
 														{targetPortfolioAssets.map((asset) => (
 															<SelectItem key={asset.id} value={asset.id}>
 																{asset.name}{" "}

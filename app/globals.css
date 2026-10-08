@@ -512,27 +512,43 @@
 }
 
 :root {
+	/* JASNY MOTYW: 
+    Czysty, "szklisty" wygląd. Delikatna poświata z lewego górnego rogu (8% koloru), 
+    gładkie przejście z czystej bieli do koloru panelu i ledwo zauważalne (3%) 
+    wniknięcie koloru motywu na samym dole.
+  */
 	--aside-gradient:
 		radial-gradient(
-			110% 30% at 40% 120%,
-			color-mix(in oklab, var(--theme-primary) 10%, transparent) 100%,
-			transparent 95%
+			120% 50% at 0% 0%,
+			color-mix(in srgb, var(--theme-primary) 8%, transparent) 0%,
+			transparent 55%
 		),
 		linear-gradient(
 			180deg,
-			color-mix(in oklab, var(--t-bg-sticky) 25%, white) 20%,
-			var(--t-bg-sticky) 55%,
-			color-mix(in oklab, var(--t-bg-sticky) 98%, var(--theme-primary)) 100%
+			#ffffff 0%,
+			var(--t-bg-panel) 60%,
+			color-mix(in srgb, var(--t-bg-panel) 97%, var(--theme-primary)) 100%
 		);
 }
+
 .dark {
+	/* CIEMNY MOTYW: 
+    W 100% dynamiczny! Reaguje na zmianę koloru motywu.
+    Na górze tło delikatnie zabarwia się kolorem głównym (np. szmaragdowym lub złotym),
+    a potem gładko schodzi w głąb najciemniejszego koloru tła (--t-bg-base).
+  */
 	--aside-gradient:
 		radial-gradient(
-			110% 45% at 0% 0%,
-			color-mix(in oklab, var(--theme-primary) 22%, transparent) 0%,
-			transparent 70%
+			110% 50% at 0% 0%,
+			color-mix(in srgb, var(--theme-primary) 15%, transparent) 0%,
+			transparent 60%
 		),
-		linear-gradient(180deg, #101c36 0%, #0b1325 55%, #070b16 100%);
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--t-bg-panel) 94%, var(--theme-primary)) 0%,
+			var(--t-bg-panel) 55%,
+			var(--t-bg-base) 100%
+		);
 }
 
 @layer components {

@@ -170,7 +170,7 @@ export function BulkMigrationTool({
 						<SelectTrigger className="w-full bg-slate-900 border-slate-700 text-slate-200 font-bold text-xs">
 							<SelectValue />
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent className="bg-t-bg-panel border border-t-border shadow-xl">
 							{categories.map((c) => (
 								<SelectItem key={c} value={c}>
 									{CATEGORY_LABELS[c as keyof typeof CATEGORY_LABELS] || c}

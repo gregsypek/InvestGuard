@@ -159,7 +159,7 @@ export default function PlannerForm({ portfolios, defaultPortfolioId }: Props) {
 												<SelectValue placeholder="Wybierz portfel" />
 											</SelectTrigger>
 										</FormControl>
-										<SelectContent>
+										<SelectContent className="bg-t-bg-panel border border-t-border shadow-xl">
 											{portfolios.map((p) => (
 												<SelectItem key={p.id} value={p.id}>
 													{p.name}

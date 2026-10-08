@@ -53,8 +53,8 @@ const THEME_OPTIONS = [
 	{ id: "lime", color: "#84cc16", label: "Limonkowy" },
 	{ id: "slate", color: "#64748b", label: "Stalowy" },
 	// EN: Newly added matching Tailwind 500 colors
-	{ id: "red", color: "#ef4444", label: "Czerwony" },
-	{ id: "rose", color: "#f43f5e", label: "Różany" },
+	// { id: "red", color: "#ef4444", label: "Czerwony" },
+	// { id: "rose", color: "#f43f5e", label: "Różany" },
 	{ id: "green", color: "#22c55e", label: "Zielony" },
 	{ id: "yellow", color: "#eab308", label: "Żółty" },
 	{ id: "zinc", color: "#71717a", label: "Cynkowy" },

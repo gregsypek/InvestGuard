@@ -161,7 +161,7 @@ export const DashboardHeader = ({
 
 				<div className="flex items-start justify-between gap-4">
 					<div className="flex-1">
-						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black  uppercase flex items-center gap-3 drop-shadow-sm text-slate-400">
+						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black capitalize  flex items-center gap-3 drop-shadow-sm text-slate-300">
 							{name}
 						</h1>
 						<p className="text-slate-400 font-medium mt-1 text-[11px] sm:text-sm md:text-base leading-tight">
@@ -183,7 +183,7 @@ export const DashboardHeader = ({
 							className={cn(
 								"group shrink-0 flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl transition-all duration-300 shadow-sm border",
 								isSettingsPage
-									? "bg-slate-800/40 hover:bg-slate-700/60 border-slate-700/50 text-slate-300 hover:text-white"
+									? "bg-slate-800/40 hover:bg-slate-700/60 border-slate-700/50 text-slate-00 hover:text-white"
 									: "bg-theme-soft hover:opacity-80 border-theme-border text-theme-primary",
 							)}
 						>

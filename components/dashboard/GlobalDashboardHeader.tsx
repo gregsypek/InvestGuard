@@ -51,7 +51,7 @@ export function GlobalDashboardHeader({
 
 			<div className="relative z-10 flex flex-col gap-2">
 				<div>
-					<h1 className="text-2xl sm:text-3xl md:text-4xl font-black  uppercase text-slate-400 drop-shadow-sm">
+					<h1 className="text-2xl sm:text-3xl md:text-4xl font-black  capitalize text-slate-300 drop-shadow-sm">
 						Przegląd Inwestycji
 					</h1>
 					<p className="text-slate-400 font-medium mt-1 text-[11px] sm:text-sm md:text-base leading-tight">

@@ -130,7 +130,7 @@ export default function SettingsClient({
 					)}
 
 					<div className="mt-1 sm:mt-2">
-						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter uppercase flex items-center gap-3 drop-shadow-sm text-slate-400">
+						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter capitalize flex items-center gap-3 drop-shadow-sm text-slate-300">
 							Ustawienia Aplikacji
 						</h1>
 						<p className="text-slate-400 font-medium mt-1 text-[11px] sm:text-sm md:text-base leading-tight">

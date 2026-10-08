@@ -4,103 +4,53 @@
 /* Custom variant for dark mode handling */
 @custom-variant dark (&:is(.dark *));
 
-@layer utilities {
-	.wrapper {
-		@apply max-w-7xl lg:mx-auto p-5 md:px-10 w-full;
-	}
-
-	.flex-start {
-		@apply flex justify-start items-center;
-	}
-	.flex-center {
-		@apply flex justify-center items-center;
-	}
-	.flex-end {
-		@apply flex justify-end items-center;
-	}
-
-	.flex-between {
-		@apply flex justify-between items-center;
-	}
-
-	/* 🚀 ZOPTYMALIZOWANE KLASY SKALOWANIA */
-	.h1-bold {
-		@apply font-bold text-3xl lg:text-4xl;
-	}
-
-	.h2-bold {
-		@apply font-bold text-2xl lg:text-3xl;
-	}
-
-	.h3-bold {
-		@apply font-bold text-xl lg:text-2xl;
-	}
-
-	/* 🚀 NOWE: Płynne (fluid) klasy dla nagłówków Hero */
-	.h1-hero {
-		@apply font-black tracking-tighter text-white drop-shadow-sm text-3xl md:text-4xl lg:text-5xl;
-	}
-
-	/* Typografia - płynne skalowanie od mobile do desktop */
-	.text-fluid-h1 {
-		/* clamp(MIN, VAL, MAX) - np. od 28px na mobile do 48px na desktopie */
-		font-size: clamp(1.75rem, 5vw, 3rem);
-		line-height: 1.1;
-		@apply font-black tracking-tighter;
-	}
-
-	.text-fluid-h2 {
-		font-size: clamp(1.5rem, 4vw, 2.25rem);
-		line-height: 1.2;
-		@apply font-bold tracking-tight;
-	}
-
-	.text-fluid-h3 {
-		font-size: clamp(1.25rem, 3vw, 1.75rem);
-		line-height: 1.3;
-		@apply font-bold;
-	}
-
-	/* Zunifikowane odstępy wewnątrz kart (Padding) */
-	.card-padding {
-		@apply p-4 md:p-6 lg:p-8;
-	}
-
-	/* Zunifikowane odstępy między sekcjami (Margin/Gap) */
-	.section-gap {
-		@apply space-y-6 md:space-y-8 lg:space-y-12;
-	}
-
-	/* Główny kontener strony */
-	.page-container {
-		@apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-	}
-	/* 1. Globalne odstępy (Padding) dla głównych sekcji */
-	.section-padding {
-		/*  Zostawiono tylko pion (py) */
-		@apply py-6 sm:py-8 lg:py-10;
-	}
-
-	/* 2. Globalny odstęp (Margin Top) oddzielający nagłówek sekcji od jej treści */
-	.content-mt {
-		@apply mt-5 md:mt-6 lg:mt-8;
-	}
-
-	/* 3. Fluid Typography dla mniejszych nagłówków (używane w SectionHeader) */
-	.text-fluid-h2 {
-		font-size: clamp(
-			1.25rem,
-			3.5vw,
-			1.75rem
-		); /* od 20px (mobile) do 28px (desktop) */
-		line-height: 1.2;
-		@apply font-black tracking-tight;
-	}
-}
-
+/* =========================================
+   TOKENY STATYCZNE (nie zależą od motywu / trybu)
+   ========================================= */
 @theme {
 	--breakpoint-xs: 420px;
-	/* Rejestracja w Tailwind, aby używać klas np. bg-t-bg-panel */
+
+	/* Moduły inwestycyjne */
+	--color-bond-orange: oklch(0.96 0.04 70);
+	--color-bond-orange-border: oklch(0.85 0.1 70);
+
+	--color-bond-blue: oklch(0.99 0.03 240);
+	--color-bond-blue-border: oklch(0.85 0.08 240);
+
+	/* Alpha Selection (Purple) */
+	--color-alpha-purple: oklch(0.92 0.06 300);
+	--color-alpha-purple-border: oklch(0.8 0.15 300);
+}
+
+/* =========================================
+   MAPOWANIE ZMIENNYCH CSS -> KLASY TAILWINDA
+   `inline` = klasa używa var(--x) bezpośrednio, więc zmiana
+   .dark lub [data-theme] działa też dla zagnieżdżonych elementów.
+   Dzięki temu NIE potrzeba już hacka ":root, [data-theme] { ... }".
+   ========================================= */
+@theme inline {
+	/* Bazowe */
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-switch-off: var(--switch-off);
+
+	/* Sidebar */
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-accent: var(--sidebar-accent);
+
+	/* Trading UI */
 	--color-t-bg-base: var(--t-bg-base);
 	--color-t-bg-panel: var(--t-bg-panel);
 	--color-t-bg-sticky: var(--t-bg-sticky);
@@ -108,12 +58,15 @@
 	--color-t-border: var(--t-border);
 	--color-t-border-subtle: var(--t-border-subtle);
 	--color-t-hover: var(--t-hover);
-
 	--color-t-text-primary: var(--t-text-primary);
 	--color-t-text-secondary: var(--t-text-secondary);
 	--color-t-text-tertiary: var(--t-text-tertiary);
 
-	/* Binding CSS variables to Tailwind classes */
+	/* Zysk / strata (np. text-gain, bg-loss/10) */
+	--color-gain: var(--gain);
+	--color-loss: var(--loss);
+
+	/* Portfel */
 	--color-portfolio-gold: var(--portfolio-gold);
 	--color-portfolio-bonds: var(--portfolio-bonds);
 	--color-portfolio-developed: var(--portfolio-developed);
@@ -122,325 +75,488 @@
 	--color-portfolio-cash: var(--portfolio-cash);
 	--color-portfolio-commodities: var(--portfolio-commodities);
 	--color-portfolio-crypto: var(--portfolio-crypto);
+	--color-portfolio-real-estate: var(--portfolio-real-estate);
+	--color-portfolio-custom: var(--portfolio-custom);
+	--color-cash: var(--cash);
 
-	/* EN: Defining custom colors using Tailwind 4 theme variables */
-	/* UI: Definicja kolorów dla modułów inwestycyjnych */
-
-	--color-bond-orange: oklch(0.96 0.04 70);
-	--color-bond-orange-border: oklch(0.85 0.1 70);
-
-	--color-bond-blue: oklch(0.99 0.03 240);
-	--color-bond-blue-border: oklch(0.85 0.08 240);
-
-	/* EN: Alpha Selection (Purple) theme */
-	--color-alpha-purple: oklch(0.92 0.06 300);
-	--color-alpha-purple-border: oklch(0.8 0.15 300);
-	/* EN: Dark mode overrides using CSS variables */
-	/* UI: Nadpisywanie kolorów dla trybu ciemnego */
-
-	--color-primary: var(--primary);
-	--color-switch-off: var(--switch-off);
-
-	--color-popover: var(--popover);
-	--color-popover-foreground: var(--popover-foreground);
-
-	--color-muted-foreground: var(--muted-foreground);
-
-	/* 🚀 1. MÓWIMY TAILWINDOWI: UŻYWAJ ZMIENNYCH CSS (nie przypisuj na sztywno!) */
+	/* Motyw portfela */
 	--color-theme-primary: var(--theme-primary);
 	--color-theme-soft: var(--theme-soft);
 	--color-theme-border: var(--theme-border);
 }
 
-/* 🚀 DODAJ TO: Wymuszamy ponowne obliczanie zmiennych Tailwinda dla zagnieżdżonych elementów! */
-:root,
-[data-theme] {
-	--color-theme-primary: var(--theme-primary);
-	--color-theme-soft: var(--theme-soft);
-	--color-theme-border: var(--theme-border);
+/* =========================================
+   UTILITIES
+   ========================================= */
+@utility wrapper {
+	@apply max-w-7xl lg:mx-auto p-5 md:px-10 w-full;
 }
-/* 
-  =========================================
-  MOTYWY KOLORYSTYCZNE PORTFELI
-  =========================================
-*/
 
-/* 🚀 WARTOŚĆ DOMYŚLNA (BLUE) */
+@utility flex-start {
+	@apply flex justify-start items-center;
+}
+@utility flex-center {
+	@apply flex justify-center items-center;
+}
+@utility flex-end {
+	@apply flex justify-end items-center;
+}
+@utility flex-between {
+	@apply flex justify-between items-center;
+}
+
+/* Nagłówki */
+@utility h1-bold {
+	@apply font-bold text-3xl lg:text-4xl;
+}
+@utility h2-bold {
+	@apply font-bold text-2xl lg:text-3xl;
+}
+@utility h3-bold {
+	@apply font-bold text-xl lg:text-2xl;
+}
+@utility h1-hero {
+	@apply font-black tracking-tighter text-white drop-shadow-sm text-3xl md:text-4xl lg:text-5xl;
+}
+
+/* Typografia płynna: clamp(MIN, VAL, MAX) */
+@utility text-fluid-h1 {
+	font-size: clamp(1.75rem, 5vw, 3rem);
+	line-height: 1.1;
+	@apply font-black tracking-tighter;
+}
+@utility text-fluid-h2 {
+	/* 20px (mobile) -> 28px (desktop); używane w SectionHeader */
+	font-size: clamp(1.25rem, 3.5vw, 1.75rem);
+	line-height: 1.2;
+	@apply font-black tracking-tight;
+}
+@utility text-fluid-h3 {
+	font-size: clamp(1.25rem, 3vw, 1.75rem);
+	line-height: 1.3;
+	@apply font-bold;
+}
+
+/* Liczby w tabelach / kursach: równa szerokość cyfr, nic nie "skacze" */
+@utility num {
+	font-variant-numeric: tabular-nums;
+	font-feature-settings:
+		"tnum" 1,
+		"lnum" 1;
+}
+
+/* Odstępy */
+@utility card-padding {
+	@apply p-4 md:p-6 lg:p-8;
+}
+@utility section-gap {
+	@apply space-y-6 md:space-y-8 lg:space-y-12;
+}
+@utility page-container {
+	@apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+@utility section-padding {
+	@apply py-6 sm:py-8 lg:py-10;
+}
+@utility content-mt {
+	@apply mt-5 md:mt-6 lg:mt-8;
+}
+
+/* ---- SIDEBAR: gradient + subtelna krawędź ---- */
+@utility bg-sidebar-gradient {
+	background-color: var(--sidebar);
+	background-image: var(--sidebar-gradient);
+	box-shadow: inset -1px 0 0 var(--sidebar-border);
+}
+
+/* ---- HEADER / HERO: gradient dopasowany do motywu portfela ---- */
+@utility bg-hero {
+	background-color: #020617;
+	background-image:
+		radial-gradient(
+			55% 140% at 100% 0%,
+			color-mix(in oklab, var(--theme-primary) 30%, transparent) 0%,
+			transparent 65%
+		),
+		linear-gradient(
+			110deg,
+			color-mix(in oklab, var(--theme-primary) 16%, #0b1220) 0%,
+			#0b1220 45%,
+			#020617 100%
+		);
+}
+
+/* Delikatna kropkowana siatka (nakładka w headerze, zanika w stronę tekstu) */
+@utility hero-dots {
+	background-image: radial-gradient(
+		rgba(255, 255, 255, 0.08) 1px,
+		transparent 1px
+	);
+	background-size: 18px 18px;
+	-webkit-mask-image: linear-gradient(to left, black 0%, transparent 70%);
+	mask-image: linear-gradient(to left, black 0%, transparent 70%);
+}
+
+/* =========================================
+   BAZA
+   ========================================= */
+@layer base {
+	:root {
+		color-scheme: light;
+	}
+	.dark {
+		color-scheme: dark;
+	}
+
+	body {
+		background-color: var(--background);
+		color: var(--foreground);
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	::selection {
+		background: color-mix(in oklab, var(--theme-primary) 35%, transparent);
+	}
+
+	/* Cienkie, dyskretne scrollbary (tabele, sidebar) */
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent)
+			transparent;
+	}
+}
+
+/* =========================================
+   MOTYWY KOLORYSTYCZNE PORTFELI
+   ========================================= */
 :root,
 [data-theme="blue"] {
 	--theme-primary: #3b82f6;
 	--theme-soft: rgba(59, 130, 246, 0.1);
 	--theme-border: rgba(59, 130, 246, 0.3);
 }
-
-/* 🚀 3. NADPISYWANIE DLA POSZCZEGÓLNYCH MOTYWÓW */
 [data-theme="indigo"] {
 	--theme-primary: #6366f1;
 	--theme-soft: rgba(99, 102, 241, 0.1);
 	--theme-border: rgba(99, 102, 241, 0.3);
 }
-
 [data-theme="violet"] {
 	--theme-primary: #8b5cf6;
 	--theme-soft: rgba(139, 92, 246, 0.1);
 	--theme-border: rgba(139, 92, 246, 0.3);
 }
-
 [data-theme="purple"] {
 	--theme-primary: #a855f7;
 	--theme-soft: rgba(168, 85, 247, 0.1);
 	--theme-border: rgba(168, 85, 247, 0.3);
 }
-
 [data-theme="fuchsia"] {
 	--theme-primary: #d946ef;
 	--theme-soft: rgba(217, 70, 239, 0.1);
 	--theme-border: rgba(217, 70, 239, 0.3);
 }
-
 [data-theme="pink"] {
 	--theme-primary: #ec4899;
 	--theme-soft: rgba(236, 72, 153, 0.1);
 	--theme-border: rgba(236, 72, 153, 0.3);
 }
-
 [data-theme="emerald"] {
 	--theme-primary: #10b981;
 	--theme-soft: rgba(16, 185, 129, 0.1);
 	--theme-border: rgba(16, 185, 129, 0.3);
 }
-
 [data-theme="teal"] {
 	--theme-primary: #14b8a6;
 	--theme-soft: rgba(20, 184, 166, 0.1);
 	--theme-border: rgba(20, 184, 166, 0.3);
 }
-
 [data-theme="cyan"] {
 	--theme-primary: #06b6d4;
 	--theme-soft: rgba(6, 182, 212, 0.1);
 	--theme-border: rgba(6, 182, 212, 0.3);
 }
-
 [data-theme="sky"] {
 	--theme-primary: #0ea5e9;
 	--theme-soft: rgba(14, 165, 233, 0.1);
 	--theme-border: rgba(14, 165, 233, 0.3);
 }
-
 [data-theme="amber"] {
 	--theme-primary: #f59e0b;
 	--theme-soft: rgba(245, 158, 11, 0.1);
 	--theme-border: rgba(245, 158, 11, 0.3);
 }
-
 [data-theme="orange"] {
 	--theme-primary: #f97316;
 	--theme-soft: rgba(249, 115, 22, 0.1);
 	--theme-border: rgba(249, 115, 22, 0.3);
 }
-
 [data-theme="lime"] {
 	--theme-primary: #84cc16;
 	--theme-soft: rgba(132, 204, 22, 0.1);
 	--theme-border: rgba(132, 204, 22, 0.3);
 }
-
 [data-theme="slate"] {
 	--theme-primary: #64748b;
 	--theme-soft: rgba(100, 116, 139, 0.1);
 	--theme-border: rgba(100, 116, 139, 0.3);
 }
-
 [data-theme="red"] {
 	--theme-primary: #ef4444;
 	--theme-soft: rgba(239, 68, 68, 0.1);
 	--theme-border: rgba(239, 68, 68, 0.3);
 }
-
 [data-theme="rose"] {
 	--theme-primary: #f43f5e;
 	--theme-soft: rgba(244, 63, 94, 0.1);
 	--theme-border: rgba(244, 63, 94, 0.3);
 }
-
 [data-theme="green"] {
 	--theme-primary: #22c55e;
 	--theme-soft: rgba(34, 197, 94, 0.1);
 	--theme-border: rgba(34, 197, 94, 0.3);
 }
-
 [data-theme="yellow"] {
 	--theme-primary: #eab308;
 	--theme-soft: rgba(234, 179, 8, 0.1);
 	--theme-border: rgba(234, 179, 8, 0.3);
 }
-
 [data-theme="zinc"] {
 	--theme-primary: #71717a;
 	--theme-soft: rgba(113, 113, 122, 0.1);
 	--theme-border: rgba(113, 113, 122, 0.3);
 }
-
 [data-theme="stone"] {
 	--theme-primary: #78716c;
 	--theme-soft: rgba(120, 113, 108, 0.1);
 	--theme-border: rgba(120, 113, 108, 0.3);
 }
 
-@theme inline {
-	/* Mapping CSS variables to Tailwind utility classes */
-	--color-background: var(--background);
-	--color-foreground: var(--foreground);
-	--color-sidebar: var(--sidebar);
-	--color-sidebar-foreground: var(--sidebar-foreground);
-	--color-border: var(--border);
-	--color-card: var(--card);
-	--color-cash: var(--cash);
-	--color-portfolio-real-estate: var(--portfolio-real-estate);
-	--color-portfolio-custom: var(--portfolio-custom);
-}
-
+/* =========================================
+   LIGHT MODE ☀️
+   ========================================= */
 :root {
-	/* Light mode settings ☀️ */
-	--background: oklch(0.99 0 00);
-	--foreground: oklch(0.12 0.03 245);
+	/* Lekko chłodne tło: mniej "sterylne" niż czysta biel */
+	--background: oklch(0.985 0.003 250);
+	--foreground: oklch(0.14 0.03 250);
 
-	/* Sidebar uses your base navy color in light mode */
-	--sidebar: oklch(0.22 0.04 250);
-	--sidebar-foreground: oklch(0.98 0 0);
-
-	--border: oklch(0.92 0 0);
 	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.14 0.03 250);
 
-	/* Softer, professional colors for light mode (lower Chroma) */
-	--portfolio-bonds: oklch(0.62 0.16 256); /* Blue */
-	--portfolio-emerging: oklch(0.63 0.19 145); /* Green */
-	--portfolio-developed: oklch(0.7 0.19 47); /* Orange */
-	--portfolio-gold: oklch(0.8 0.16 85); /* Gold/Yellow */
-	--portfolio-cash: oklch(0.85 0.1 180); /* Teal/Cyan */
-	--portfolio-crypto: oklch(0.68 0.14 195); /* Purple */
-	--portfolio-booster: oklch(0.65 0.2 30); /* Red/Pink */
-	--portfolio-commodities: oklch(0.5 0.1 50); /* Brown/Earth */
-	--portfolio-real-estate: oklch(
-		0.55 0.08 230
-	); /* Muted Indigo / Stalowy niebieski */
-	--portfolio-custom: oklch(0.65 0.15 330); /* Fuchsia / Głęboki róż */
+	--border: oklch(0.91 0.006 250);
+	--input: oklch(0.91 0.006 250);
+
+	--muted: oklch(0.96 0.005 250);
+	--muted-foreground: oklch(0.52 0.03 250);
 
 	--primary: oklch(0.6 0.18 250);
-	--switch-off: oklch(0.82 0 0);
+	--primary-foreground: oklch(0.99 0 0);
 
 	--popover: oklch(1 0 0);
 	--popover-foreground: var(--foreground);
 
-	--muted-foreground: oklch(0.55 0.03 245);
+	--switch-off: oklch(0.82 0.005 250);
 
-	/* NOWE ZMIENNE TRADING UI (Wersja Jasna) */
-	--t-bg-base: oklch(
-		0.97 0 0
-	); /* Bardzo jasny, chłodny szary jako tło pod spodem */
-	--t-bg-panel: oklch(1 0 0); /* Czysty biały dla głównych kontenerów i kart */
-	--t-bg-sticky: oklch(0.94 0 0); /* Jasnoszary dla zablokowanej kolumny */
-	--t-bg-sticky-hover: oklch(0.9 0 0); /* Nieco ciemniejszy szary przy hover */
+	/* Sidebar: granat z gradientem. Trzymamy jeden odcień (hue ~250),
+	   zmienia się tylko jasność, więc jest elegancko, a nie tęczowo. */
+	--sidebar: oklch(0.22 0.04 250);
+	--sidebar-foreground: oklch(0.96 0.01 250);
+	--sidebar-border: oklch(1 0 0 / 0.08);
+	--sidebar-accent: oklch(1 0 0 / 0.06);
+	--sidebar-gradient:
+		radial-gradient(
+			120% 55% at 0% 0%,
+			oklch(0.34 0.09 255 / 0.55) 0%,
+			transparent 60%
+		),
+		linear-gradient(
+			172deg,
+			oklch(0.27 0.05 252) 0%,
+			oklch(0.21 0.04 250) 45%,
+			oklch(0.15 0.035 258) 100%
+		);
 
-	--t-border: rgba(0, 0, 0, 0.08); /* Wyraźniejsza, ale delikatna ramka */
-	--t-border-subtle: rgba(
-		0,
-		0,
-		0,
-		0.04
-	); /* Ledwo widoczna ramka dzieląca wiersze */
-	--t-hover: rgba(0, 0, 0, 0.03); /* Subtelne przyciemnienie po najechaniu */
+	/* Zysk / strata */
+	--gain: oklch(0.6 0.17 152);
+	--loss: oklch(0.6 0.22 25);
 
-	--t-text-primary: oklch(0.15 0 0); /* Niemal czarny (odpowiednik slate-900) */
-	--t-text-secondary: oklch(0.4 0 0); /* Ciemnoszary (odpowiednik slate-600) */
-	--t-text-tertiary: oklch(0.55 0 0); /* Średnioszary (odpowiednik slate-400) */
+	/* Portfel: stonowane kolory (niska chroma) */
+	--portfolio-bonds: oklch(0.62 0.16 256); /* Blue */
+	--portfolio-emerging: oklch(0.63 0.19 145); /* Green */
+	--portfolio-developed: oklch(0.7 0.19 47); /* Orange */
+	--portfolio-gold: oklch(0.8 0.16 85); /* Gold */
+	--portfolio-cash: oklch(0.85 0.1 180); /* Teal */
+	--portfolio-crypto: oklch(
+		0.62 0.2 300
+	); /* Purple (wcześniej hue 195 = cyan, kolidował z cash) */
+	--portfolio-booster: oklch(0.65 0.2 30); /* Red */
+	--portfolio-commodities: oklch(0.5 0.1 50); /* Brown */
+	--portfolio-real-estate: oklch(0.55 0.08 230); /* Steel blue */
+	--portfolio-custom: oklch(0.65 0.15 330); /* Fuchsia */
+	--cash: var(--portfolio-cash);
+
+	/* Trading UI (jasny) */
+	--t-bg-base: oklch(0.97 0.003 250);
+	--t-bg-panel: oklch(1 0 0);
+	--t-bg-sticky: oklch(0.94 0.004 250);
+	--t-bg-sticky-hover: oklch(0.9 0.006 250);
+
+	--t-border: rgba(15, 23, 42, 0.08);
+	--t-border-subtle: rgba(15, 23, 42, 0.04);
+	--t-hover: rgba(15, 23, 42, 0.03);
+
+	--t-text-primary: oklch(0.15 0.02 250);
+	--t-text-secondary: oklch(0.4 0.02 250);
+	--t-text-tertiary: oklch(0.55 0.02 250);
 }
 
+/* =========================================
+   DARK MODE 🌙 (Premium Trading)
+   ========================================= */
 .dark {
-	/* 🌙 Premium Trading Dark Mode */
-
-	/* GŁÓWNE TŁO: Bardzo głęboki, niemal czarny grafit  */
 	--background: oklch(0.15 0.01 255);
-	--foreground: oklch(
-		0.98 0 0
-	); /* Czysta biel dla maksymalnego kontrastu tekstu */
+	--foreground: oklch(0.98 0 0);
 
-	/* SIDEBAR: Minimalnie ciemniejszy od tła (dodaje głębi) */
-	--sidebar: oklch(0.13 0.01 255);
-	--sidebar-foreground: oklch(0.75 0.02 255);
-
-	/* KARTY: Jeśli gdzieś jeszcze są, niech będą bardzo dyskretne, bez sztucznego rozjaśniania */
 	--card: oklch(0.17 0.01 255);
 	--card-foreground: oklch(0.98 0 0);
 
-	/* RAMKI (Borders): Ultra-subtelne, zgaszone, żeby nie tworzyły siatki (gridu) na ekranie */
 	--border: oklch(0.22 0.01 255);
-	--border2: oklch(0.22 0.01 255);
 	--input: oklch(0.22 0.01 255);
 
-	/* ELEMENTY WYCISZONE (Muted): Delikatne tła pod przyciski i szare teksty */
 	--muted: oklch(0.2 0.01 255);
 	--muted-foreground: oklch(0.65 0.02 255);
 
-	/* GŁÓWNY AKCENT (Primary): Skorygowany na chłodniejszy, bardziej "techniczny" niebieski */
 	--primary: oklch(0.55 0.15 255);
 	--primary-foreground: oklch(0.98 0 0);
 
-	/* POPOVERY (Menu rozwijane, Tooltipy) */
 	--popover: oklch(0.15 0.01 255);
 	--popover-foreground: oklch(0.98 0 0);
 
 	--switch-off: oklch(0.25 0.01 255);
 
-	/* NOWE ZMIENNE TRADING UI (Wersja Ciemna - Premium) */
-	--t-bg-base: #05070a; /* Najgłębsza czerń pod spodem */
-	--t-bg-panel: #0a0e17; /* Mroczny granat dla kontenerów */
-	--t-bg-sticky: #0d1526; /* Ciemny błękit dla zablokowanej kolumny */
-	/* --t-bg-sticky: #04060d; */
-	--t-bg-sticky-hover: #121d33; /* Rozjaśniony ciemny błękit przy hover */
+	/* Sidebar: głębszy od tła + jasna poświata w rogu, żeby dodać głębi */
+	--sidebar: oklch(0.13 0.01 255);
+	--sidebar-foreground: oklch(0.78 0.02 255);
+	--sidebar-border: oklch(1 0 0 / 0.06);
+	--sidebar-accent: oklch(1 0 0 / 0.05);
+	--sidebar-gradient:
+		radial-gradient(
+			120% 50% at 0% 0%,
+			oklch(0.27 0.07 255 / 0.45) 0%,
+			transparent 60%
+		),
+		linear-gradient(
+			172deg,
+			oklch(0.17 0.025 255) 0%,
+			oklch(0.13 0.015 255) 50%,
+			oklch(0.1 0.012 258) 100%
+		);
+
+	/* Zysk / strata: jaśniejsze, żeby miały kontrast na ciemnym */
+	--gain: oklch(0.75 0.18 155);
+	--loss: oklch(0.7 0.2 22);
+
+	/* Portfel: lekko rozjaśnione względem trybu jasnego */
+	--portfolio-bonds: oklch(0.68 0.15 256);
+	--portfolio-emerging: oklch(0.7 0.18 145);
+	--portfolio-developed: oklch(0.75 0.17 47);
+	--portfolio-gold: oklch(0.84 0.15 85);
+	--portfolio-cash: oklch(0.8 0.1 180);
+	--portfolio-crypto: oklch(0.7 0.18 300);
+	--portfolio-booster: oklch(0.7 0.19 30);
+	--portfolio-commodities: oklch(0.62 0.09 50);
+	--portfolio-real-estate: oklch(0.65 0.09 230);
+	--portfolio-custom: oklch(0.72 0.15 330);
+
+	/* Trading UI (ciemny) */
+	--t-bg-base: #05070a;
+	--t-bg-panel: #0a0e17;
+	--t-bg-sticky: #0d1526;
+	--t-bg-sticky-hover: #121d33;
 
 	--t-border: rgba(255, 255, 255, 0.05);
 	--t-border-subtle: rgba(255, 255, 255, 0.03);
 	--t-hover: rgba(255, 255, 255, 0.02);
 
-	--t-text-primary: #e2e8f0; /* Jasny szary (slate-200) */
-	--t-text-secondary: #94a3b8; /* Szary (slate-400) */
-	--t-text-tertiary: #64748b; /* Zgaszony szary (slate-500) */
+	--t-text-primary: #e2e8f0;
+	--t-text-secondary: #94a3b8;
+	--t-text-tertiary: #64748b;
 }
 
-/* @keyframes ticker {
-	0% {
-		transform: translateX(0);
-	}
-	100% {
-		transform: translateX(-50%);
-	}
-}
-
-.animate-ticker {
-	animation: ticker 30s linear infinite;
-}
-
-.animate-ticker:hover {
-	animation-play-state: paused;
-} */
+/* =========================================
+   TICKER
+   ========================================= */
 @keyframes ticker {
 	0% {
 		transform: translateX(0);
 	}
-	/* Przesuwamy o 1/3, bo w komponencie klonujemy tablicę 3 razy */
+	/* -33.33%, bo komponent klonuje tablicę 3 razy */
 	100% {
-		transform: translateX(-33.33%);
+		transform: translateX(-33.3333%);
 	}
 }
 
 .animate-ticker {
-	/* Zwiększamy z 40s na 120s (lub więcej, jeśli wciąż za szybko) */
 	animation: ticker 220s linear infinite;
 }
 
-/* Niezawodne zatrzymanie animacji po najechaniu myszką */
 .animate-ticker:hover {
 	animation-play-state: paused;
+}
+
+/* Szanujemy ustawienie "ogranicz ruch" w systemie */
+@media (prefers-reduced-motion: reduce) {
+	.animate-ticker {
+		animation: none;
+	}
+}
+
+:root {
+	--aside-gradient:
+		radial-gradient(
+			110% 30% at 40% 120%,
+			color-mix(in oklab, var(--theme-primary) 10%, transparent) 100%,
+			transparent 95%
+		),
+		linear-gradient(
+			180deg,
+			color-mix(in oklab, var(--t-bg-sticky) 25%, white) 20%,
+			var(--t-bg-sticky) 55%,
+			color-mix(in oklab, var(--t-bg-sticky) 98%, var(--theme-primary)) 100%
+		);
+}
+.dark {
+	--aside-gradient:
+		radial-gradient(
+			110% 45% at 0% 0%,
+			color-mix(in oklab, var(--theme-primary) 22%, transparent) 0%,
+			transparent 70%
+		),
+		linear-gradient(180deg, #101c36 0%, #0b1325 55%, #070b16 100%);
+}
+
+@layer components {
+	aside.backdrop-blur-xl {
+		position: relative;
+		isolation: isolate;
+		background-image: var(--aside-gradient);
+	}
+	/* świecąca krawędź prawa, zanikająca w środku */
+	/* aside.backdrop-blur-xl::after {
+		content: "";
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		right: -1px;
+		width: 1px;
+		z-index: -1;
+		pointer-events: none;
+		background: linear-gradient(
+			180deg,
+			color-mix(in oklab, var(--theme-primary) 70%, transparent) 0%,
+			transparent 35%,
+			transparent 75%,
+			color-mix(in oklab, var(--theme-primary) 40%, transparent) 100%
+		);
+	} */
 }

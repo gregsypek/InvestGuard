@@ -11,24 +11,25 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 export async function createPortfolio(values: PortfolioFormValues) {
+	// Pamiętaj o użyciu właściwego typu PortfolioFormValues
 	const session = await auth();
 	if (!session?.user?.id) return { success: false, error: "Błąd autoryzacji" };
 
-	// Server-side validation
 	const validatedFields = PortfolioSchema.safeParse(values);
 
 	if (!validatedFields.success) {
 		return { error: "Invalid data format" };
 	}
 
+	// 🚀 ZMIANA: Wyciągamy isDefault z obiektu danych, aby Prisma go nie dostała
+	const { isDefault, ...portfolioData } = validatedFields.data;
+
 	try {
-		// Create new portfolio using spread operator for targets
 		const newPortfolio = await db.portfolio.create({
 			data: {
-				...validatedFields.data,
-				description: validatedFields.data.description || null,
-				goal: validatedFields.data.goal ?? null,
-				// Linking to a temporary user ID
+				...portfolioData, // 🚀 Używamy odfiltrowanego obiektu
+				description: portfolioData.description || null,
+				goal: portfolioData.goal ?? null,
 				user: {
 					connect: {
 						id: session.user.id,
@@ -37,8 +38,15 @@ export async function createPortfolio(values: PortfolioFormValues) {
 			},
 		});
 
+		if (isDefault) {
+			await db.user.update({
+				where: { id: session.user.id },
+				data: { defaultPortfolioId: newPortfolio.id },
+			});
+		}
+
 		revalidatePath("/portfolios");
-		revalidatePath("/", "layout"); // <-- Dodaj to tutaj również
+		revalidatePath("/", "layout");
 
 		return {
 			success: true,
@@ -51,28 +59,35 @@ export async function createPortfolio(values: PortfolioFormValues) {
 }
 
 export async function updatePortfolio(id: string, values: PortfolioFormValues) {
-	// Server-side validation
+	const session = await auth();
 	const validatedFields = PortfolioSchema.safeParse(values);
 
 	if (!validatedFields.success) {
 		return { error: "Invalid data format" };
 	}
 
+	// 🚀 ZMIANA: Separacja isDefault od danych dla modelu Portfolio
+	const { isDefault, ...portfolioData } = validatedFields.data;
+
 	try {
-		// Update record using validated data
 		await db.portfolio.update({
 			where: { id },
 			data: {
-				...validatedFields.data,
-				description: validatedFields.data.description || null,
-				goal: validatedFields.data.goal ?? null,
+				...portfolioData, // 🚀 Używamy odfiltrowanego obiektu
+				description: portfolioData.description || null,
+				goal: portfolioData.goal ?? null,
 			},
 		});
 
-		// Refresh cache to reflect changes in UI
+		if (isDefault && session?.user?.id) {
+			await db.user.update({
+				where: { id: session.user.id },
+				data: { defaultPortfolioId: id },
+			});
+		}
+
 		revalidatePath("/portfolios");
 		revalidatePath("/dashboard");
-		// NOWE: Odświeżamy główny layout, aby Header i tło zaktualizowały kolor natychmiast!
 		revalidatePath("/", "layout");
 
 		return { success: true };
@@ -283,5 +298,32 @@ export async function inferTickersCategories(
 	} catch (error) {
 		console.error("Failed to infer categories:", error);
 		return {};
+	}
+}
+
+export async function setDefaultPortfolio(portfolioId: string) {
+	const session = await auth();
+	if (!session?.user?.id) {
+		return { success: false, error: "Brak autoryzacji" };
+	}
+
+	try {
+		await db.user.update({
+			where: { id: session.user.id },
+			data: { defaultPortfolioId: portfolioId },
+		});
+
+		// Odświeżamy cache, aby aplikacja od razu zareagowała na zmianę
+		revalidatePath("/portfolios");
+		revalidatePath("/dashboard");
+		revalidatePath("/", "layout");
+
+		return { success: true };
+	} catch (error) {
+		console.error("Set Default Portfolio Error:", error);
+		return {
+			success: false,
+			error: "Nie udało się zaktualizować portfela domyślnego.",
+		};
 	}
 }

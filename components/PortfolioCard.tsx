@@ -1,8 +1,12 @@
 "use client";
 
-import { BriefcaseBusiness, Lock, Pencil, Wallet2 } from "lucide-react";
+import { BriefcaseBusiness, Lock, Pencil, Star, Wallet2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useTransition } from "react";
+import {
+	deletePortfolio,
+	setDefaultPortfolio,
+} from "@/lib/actions/portfolio.actions";
 
 import { Asset } from "@prisma/client";
 import { Button } from "./ui/button";
@@ -12,24 +16,23 @@ import Link from "next/link";
 import { PortfolioWithAssets } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { deletePortfolio } from "@/lib/actions/portfolio.actions";
 import { formatCurrency } from "@/lib/utils/format-currency";
+import { toast } from "sonner";
 
 interface PortfolioCardProps {
 	portfolio: PortfolioWithAssets & { colorTheme?: string };
 	isDemo?: boolean;
+	defaultPortfolioId?: string | null; // 🚀 DODANO: Identyfikator portfela domyślnego
 }
 
-const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
+const PortfolioCard = ({
+	portfolio: p,
+	isDemo,
+	defaultPortfolioId,
+}: PortfolioCardProps) => {
 	const { id, name, goal, assets, colorTheme } = p;
-	console.log("🚀 ~ PortfolioCard ~ colorTheme:", colorTheme);
-	// 🚀 Pobieramy ID z ciasteczka i sprawdzamy, czy to ten portfel
-	// const isActive = Cookies.get("selectedPortfolioId") === id;
-	// const isActive = p.id === Cookies.get("selectedPortfolioId");
-	// console.log("🚀 ~ PortfolioCard ~ isActive:", isActive);
-
-	// Tryb Demo zawsze wymusza "emerald", w przeciwnym razie bierzemy kolor z bazy
 	const theme = isDemo ? "emerald" : colorTheme || "blue";
+	const [isPending, startTransition] = useTransition();
 
 	const totalValue = assets.reduce(
 		(sum: number, asset: Asset) => sum + asset.currentValue,
@@ -45,47 +48,50 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 
 	const mainHref = isDemo ? getDemoHref(id) : `/dashboard?portfolioId=${id}`;
 
-	// 1. Stan przechowuje TYLKO informację o tym, czy komponent jest już w przeglądarce
 	const [isMounted, setIsMounted] = useState(false);
 
-	// 2. Prosty efekt, bez żadnych zależności i obliczeń
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			setIsMounted(true);
 		}, 0);
-
 		return () => clearTimeout(timer);
 	}, []);
 
-	// 3. Zmienna obliczana w locie podczas renderowania
+	// 🚀 LOGIKA DOMYŚLNEGO PORTFELA
+	const isDefault = defaultPortfolioId === id;
 	const isActive = isMounted
 		? p.id === Cookies.get("selectedPortfolioId")
 		: false;
+
+	const handleSetDefault = () => {
+		if (isDemo || isDefault) return;
+
+		startTransition(async () => {
+			const result = await setDefaultPortfolio(id);
+			if (result.success) {
+				toast.success("Ustawiono jako portfel domyślny 🌟");
+			} else {
+				toast.error(result.error);
+			}
+		});
+	};
+
 	return (
 		<Card
 			key={id}
 			className={cn(
 				"relative overflow-hidden transition-all duration-300 flex flex-col h-full w-full",
 				"bg-t-bg-panel border border-t-border",
-
-				// Zastosowanie !important gwarantuje, że lewa ramka przebije się przez domyślny 'border'
 				isActive && "!border-l-[2px] !border-l-theme-primary",
-
 				"hover:border-theme-border hover:shadow-[0_8px_30px_var(--theme-soft)]",
 			)}
 		>
-			{/* Tło Gradientu */}
-			{/* <div className="absolute inset-0  via-transparent to-transparent opacity-100 dark:opacity-50 pointer-events-none transition-opacity" /> */}
-
-			{/* Znak wodny */}
 			<div className="absolute -bottom-6 -right-6 opacity-[0.04] dark:opacity-[0.02] pointer-events-none text-theme-primary">
 				<Wallet2 className="w-40 h-40" />
 			</div>
 
 			<CardHeader className="pb-2 relative z-10">
 				<CardTitle className="flex justify-between items-start gap-2">
-					{/* 🚀 DODANO data-theme TYLKO TUTAJ: Tytuł i ikona otrzymują unikalny, przypisany z bazy kolor */}
-					{/* TUTAJ DODAŁEM: data-theme={theme} */}
 					<div
 						className="flex items-center gap-2 overflow-hidden"
 						data-theme={theme}
@@ -106,6 +112,35 @@ const PortfolioCard = ({ portfolio: p, isDemo }: PortfolioCardProps) => {
 							</div>
 						) : (
 							<>
+								{/* 🚀 NOWY PRZYCISK: Ustaw Domyślny */}
+								<Button
+									variant="ghost"
+									size="icon"
+									disabled={isPending}
+									onClick={(e) => {
+										e.stopPropagation();
+										handleSetDefault();
+									}}
+									className={cn(
+										"h-8 w-8 transition-colors group",
+										isDefault
+											? "text-yellow-500 hover:text-yellow-600 hover:bg-yellow-500/10"
+											: "text-t-text-tertiary hover:bg-t-border hover:text-yellow-500",
+									)}
+									title={
+										isDefault
+											? "To jest Twój domyślny portfel"
+											: "Ustaw jako domyślny"
+									}
+								>
+									<Star
+										className={cn(
+											"h-4 w-4 transition-transform group-hover:scale-110",
+											isDefault && "fill-current",
+										)}
+									/>
+								</Button>
+
 								<Button
 									variant="ghost"
 									size="icon"

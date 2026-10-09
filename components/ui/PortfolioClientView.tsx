@@ -33,6 +33,7 @@ interface Props {
 	portfolios: PortfolioWithAssets[];
 	isDemo?: boolean;
 	portfolioId?: string;
+	defaultPortfolioId?: string | null;
 	categoryTotals: Record<string, number>;
 	snapshots?: SimulatedSnapshot[];
 	realSnapshots?: SimulatedSnapshot[];
@@ -48,6 +49,7 @@ export default function PortfoliosClientView({
 	portfolios,
 	portfolioId: initialPortfolioId,
 	isDemo = false,
+	defaultPortfolioId,
 	snapshots,
 	realSnapshots = [],
 	oldestRealSnapshotDate,
@@ -289,7 +291,11 @@ export default function PortfoliosClientView({
 									"md:min-w-0 md:w-full md:shrink",
 								)}
 							>
-								<PortfolioCard portfolio={p} isDemo={isDemo} />
+								<PortfolioCard
+									portfolio={p}
+									isDemo={isDemo}
+									defaultPortfolioId={defaultPortfolioId}
+								/>
 							</div>
 						))}
 					</div>

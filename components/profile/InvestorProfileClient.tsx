@@ -10,6 +10,7 @@ import {
 	Lock,
 	PieChart,
 	ShieldAlert,
+	Star,
 	Target,
 	TrendingUp,
 	User,
@@ -17,6 +18,10 @@ import {
 	Wallet,
 } from "lucide-react";
 import React, { useEffect, useState, useTransition } from "react";
+import {
+	setDefaultPortfolio,
+	updatePortfolioThemes,
+} from "@/lib/actions/portfolio.actions";
 import { updateUserAlerts, updateUserData } from "@/lib/actions/user.actions";
 
 import { Button } from "@/components/ui/button";
@@ -29,30 +34,27 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { runSmartAlerts } from "@/lib/actions/alerts.actions";
 import { toast } from "sonner";
-import { updatePortfolioThemes } from "@/lib/actions/portfolio.actions";
 
-const PREDEFINED_COLORS = [
-	"blue",
-	"indigo",
-	"violet",
-	"purple",
-	"fuchsia",
-	"pink",
-	"emerald",
-	"teal",
-	"cyan",
-	"sky",
-	"amber",
-	"orange",
-	"lime",
-	"slate",
-	"red",
-	"rose",
-	"green",
-	"yellow",
-	"zinc",
-	"stone",
-];
+const THEME_OPTIONS_MAP: Record<string, string> = {
+	blue: "#3b82f6",
+	indigo: "#6366f1",
+	violet: "#8b5cf6",
+	purple: "#a855f7",
+	fuchsia: "#d946ef",
+	pink: "#ec4899",
+	emerald: "#10b981",
+	teal: "#14b8a6",
+	cyan: "#06b6d4",
+	sky: "#0ea5e9",
+	amber: "#f59e0b",
+	orange: "#f97316",
+	lime: "#84cc16",
+	slate: "#64748b",
+	green: "#22c55e",
+	yellow: "#eab308",
+	zinc: "#71717a",
+	stone: "#78716c",
+};
 const TABS = [
 	{ id: "overview", label: "Przegląd Strategii" },
 	{ id: "appearance", label: "Wygląd i Konto" },
@@ -69,6 +71,7 @@ export interface UserProfileData {
 	alertBonds?: boolean;
 	alertRebalancing?: boolean;
 	alertPlans?: boolean;
+	defaultPortfolioId?: string | null; // 🚀 DODANE
 }
 
 export interface PortfolioData {
@@ -128,6 +131,25 @@ export default function InvestorProfileClient({
 		rebalancing: user.alertRebalancing ?? true,
 		plans: user.alertPlans ?? true,
 	});
+
+	const [defaultPortfolio, setDefaultPortfolioState] = useState<string | null>(
+		user.defaultPortfolioId || null,
+	);
+
+	// Nowa funkcja obsługująca zmianę
+	const handleSetDefault = (portfolioId: string) => {
+		if (portfolioId === defaultPortfolio) return;
+
+		startTransition(async () => {
+			const result = await setDefaultPortfolio(portfolioId);
+			if (result.success) {
+				setDefaultPortfolioState(portfolioId);
+				toast.success("Ustawiono jako portfel domyślny 🌟");
+			} else {
+				toast.error(result.error);
+			}
+		});
+	};
 
 	const toggleAlert = (key: keyof typeof alerts) => {
 		setAlerts((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -714,56 +736,96 @@ export default function InvestorProfileClient({
 									</div>
 								</div>
 
-								{/* MOTYWY PORTFELI */}
+								{/* MOTYWY PORTFELI I DOMYŚLNY PORTFEL */}
 								<div className="pt-8 border-t border-t-border-subtle space-y-6">
 									<div>
 										<h3 className="text-lg font-bold text-t-text-primary">
-											Kolorystyka Portfeli
+											Kolorystyka i Ustawienia Portfeli
 										</h3>
 										<p className="text-xs font-medium text-t-text-tertiary mt-1">
-											Wybierz motyw przewodni dla każdego ze swoich portfeli.
+											Wybierz motyw przewodni dla każdego ze swoich portfeli
+											oraz zdecyduj, który jest główny.
 										</p>
 									</div>
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										{portfolios.map((portfolio) => (
-											<div
-												key={portfolio.id}
-												className="p-5 border border-t-border-subtle rounded-xl bg-t-bg-base/30 dark:bg-black/20 space-y-4"
-												data-theme={portfolio.colorTheme}
-											>
-												<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
-													<div className="w-2.5 h-2.5 rounded-full bg-theme-primary" />
-													{portfolio.name}
-												</label>
-												<div className="flex flex-wrap gap-2.5">
-													{PREDEFINED_COLORS.map((themeName) => (
+										{portfolios.map((portfolio) => {
+											const isDefault = defaultPortfolio === portfolio.id;
+											return (
+												<div
+													key={portfolio.id}
+													className="p-5 border border-t-border-subtle rounded-xl bg-t-bg-base/30 dark:bg-black/20 space-y-4 relative"
+													data-theme={portfolio.colorTheme}
+												>
+													{/* NAGŁÓWEK KARTY: Tytuł i Przycisk Domyślny */}
+													<div className="flex items-center justify-between">
+														<label className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
+															<div className="w-2.5 h-2.5 rounded-full bg-theme-primary" />
+															{portfolio.name}
+														</label>
+
 														<button
-															key={themeName}
 															type="button"
-															onClick={() => {
-																setPortfolios((prev) =>
-																	prev.map((p) =>
-																		p.id === portfolio.id
-																			? { ...p, colorTheme: themeName }
-																			: p,
-																	),
-																);
-															}}
+															disabled={isPending}
+															onClick={() => handleSetDefault(portfolio.id)}
 															className={cn(
-																"w-7 h-7 rounded-full transition-all duration-200 border-2",
-																portfolio.colorTheme === themeName
-																	? "scale-110 shadow-md ring-2 ring-offset-2 ring-offset-t-bg-panel ring-t-text-primary/20 border-t-text-primary"
-																	: "border-transparent opacity-70 hover:opacity-100 hover:scale-105",
+																"p-1.5 rounded-lg transition-colors flex items-center gap-1.5",
+																isDefault
+																	? "text-yellow-500 bg-yellow-500/10 cursor-default"
+																	: "text-t-text-tertiary hover:bg-t-border hover:text-yellow-500 cursor-pointer",
 															)}
-															style={{
-																backgroundColor: `var(--color-${themeName}-500, var(--theme-primary))`,
-															}}
-															title={themeName}
-														/>
-													))}
+															title={
+																isDefault
+																	? "To jest główny portfel"
+																	: "Ustaw jako główny"
+															}
+														>
+															<Star
+																className={cn(
+																	"h-4 w-4 transition-transform",
+																	isDefault && "fill-current",
+																)}
+															/>
+															{isDefault && (
+																<span className="text-[9px] uppercase tracking-widest font-bold">
+																	Główny
+																</span>
+															)}
+														</button>
+													</div>
+
+													{/* PALETA KOLORÓW */}
+													<div className="flex flex-wrap gap-2.5">
+														{Object.entries(THEME_OPTIONS_MAP).map(
+															([themeName, hexColor]) => (
+																<button
+																	key={themeName}
+																	type="button"
+																	onClick={() => {
+																		setPortfolios((prev) =>
+																			prev.map((p) =>
+																				p.id === portfolio.id
+																					? { ...p, colorTheme: themeName }
+																					: p,
+																			),
+																		);
+																	}}
+																	className={cn(
+																		"w-7 h-7 rounded-full transition-all duration-200 border-2",
+																		portfolio.colorTheme === themeName
+																			? "scale-110 shadow-md ring-2 ring-offset-2 ring-offset-t-bg-panel ring-t-text-primary/20 border-t-text-primary"
+																			: "border-transparent opacity-70 hover:opacity-100 hover:scale-105",
+																	)}
+																	style={{
+																		backgroundColor: hexColor, // 🚀 Używamy bezpiecznych hexów ze słownika
+																	}}
+																	title={themeName}
+																/>
+															),
+														)}
+													</div>
 												</div>
-											</div>
-										))}
+											);
+										})}
 									</div>
 								</div>
 

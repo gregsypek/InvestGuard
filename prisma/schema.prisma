@@ -192,9 +192,11 @@ model User {
   deviceSessions  DeviceSession[]
 
   // 🚀 DODANE: Preferencje systemów powiadomień
-  alertBonds       Boolean @default(true)
-  alertRebalancing Boolean @default(true)
-  alertPlans       Boolean @default(true)
+  alertBonds         Boolean @default(true)
+  alertRebalancing   Boolean @default(true)
+  alertPlans         Boolean @default(true)
+  // 🚀 DODANE: ID domyślnego portfela, by pomijać ekran "Wybierz portfel"
+  defaultPortfolioId String?
 }
 
 model Account {

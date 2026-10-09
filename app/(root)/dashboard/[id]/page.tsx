@@ -86,7 +86,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 		<div className="space-y-10">
 			{/* Nagłówek jest teraz częścią głównej strony! */}
 			<DashboardHeader
-				portfolio={portfolio as any}
+				portfolio={portfolio}
 				name={name}
 				totalValue={totalValue}
 				customBreadcrumbs={<DashboardBreadcrumbs name={name} id={id} />}
@@ -97,7 +97,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 			)}
 
 			<DashboardClientView
-				portfolio={portfolio as any}
+				portfolio={portfolio}
 				portfolioStatus={portfolioStatus}
 				allPortfoliosWithCash={allPortfoliosWithCash}
 				transactions={portfolio.transactionHistories}

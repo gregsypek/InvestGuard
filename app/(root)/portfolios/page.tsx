@@ -33,6 +33,12 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 		orderBy: { createdAt: "desc" },
 	});
 
+	// Pobieramy użytkownika, żeby sprawdzić, jaki ma domyślny portfel
+	const user = await db.user.findUnique({
+		where: { id: session.user.id },
+		select: { defaultPortfolioId: true },
+	});
+
 	if (portfolios.length === 0) {
 		return <PortfolioEmptyState variant="PORTFOLIOS" />;
 	}
@@ -65,6 +71,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 					portfoliosCount,
 					assetsCount,
 				}}
+				defaultPortfolioId={user?.defaultPortfolioId}
 			/>
 		</div>
 	);

@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { db } from "@/lib/db"; // 🚀 DODANY IMPORT BAZY DANYCH
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 import { redirect } from "next/navigation";
 
@@ -9,23 +10,32 @@ export default async function DashboardRootPage({
 }) {
 	const session = await auth();
 
-	// 1. Zabezpieczenie sesji
 	if (!session?.user?.id) {
 		redirect("/sign-in");
 	}
 
-	// 2. Strażnik załatwia WSZYSTKO (sprawdza URL, ciasteczka i czy user ma portfele)
 	const { portfolioId, errorComponent } = await getGuardedPortfolio({
 		searchParams,
 		userId: session.user.id,
 	});
 
-	// 3. Jeśli brakuje portfela, strażnik wyrzuci idealny ekran (np. PORTFOLIOS)
+	// 🚀 ZMIANA: Jeśli strażnik nie znalazł portfela i chce pokazać pusty ekran (NOT_SELECTED)...
 	if (errorComponent) {
+		// Szukamy w bazie profilu użytkownika
+		const user = await db.user.findUnique({
+			where: { id: session.user.id },
+			select: { defaultPortfolioId: true },
+		});
+
+		// Jeśli ma zdefiniowany domyślny portfel, robimy ciche przekierowanie! (Użytkownik nie zobaczy pustego ekranu)
+		if (user?.defaultPortfolioId) {
+			redirect(`/dashboard/${user.defaultPortfolioId}`);
+		}
+
+		// Dopiero jeśli nie ma domyślnego, faktycznie pokazujemy pusty ekran
 		return <main className="container mx-auto">{errorComponent}</main>;
 	}
 
-	// 4. Dopiero gdy mamy PEWNOŚĆ, że ID istnieje, robimy bezpieczny redirect
 	if (portfolioId) {
 		redirect(`/dashboard/${portfolioId}`);
 	}

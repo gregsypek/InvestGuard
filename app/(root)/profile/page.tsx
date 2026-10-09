@@ -31,6 +31,7 @@ export default async function InvestorProfilePage() {
 	const userProfileData = {
 		name: userDb.name || "Inwestor",
 		email: userDb.email || "Brak email",
+		defaultPortfolioId: userDb.defaultPortfolioId || null,
 		// plan: userDb.role === "ADMIN" ? "Administrator" : "Konto Standardowe",
 		plan: userDb.role === "SUBSCRIBER" ? "Premium" : "Podstawowy",
 		joinedDate: format(new Date(userDb.createdAt), "d MMMM yyyy", {

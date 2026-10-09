@@ -52,9 +52,6 @@ const THEME_OPTIONS = [
 	{ id: "orange", color: "#f97316", label: "Pomarańczowy" },
 	{ id: "lime", color: "#84cc16", label: "Limonkowy" },
 	{ id: "slate", color: "#64748b", label: "Stalowy" },
-	// EN: Newly added matching Tailwind 500 colors
-	// { id: "red", color: "#ef4444", label: "Czerwony" },
-	// { id: "rose", color: "#f43f5e", label: "Różany" },
 	{ id: "green", color: "#22c55e", label: "Zielony" },
 	{ id: "yellow", color: "#eab308", label: "Żółty" },
 	{ id: "zinc", color: "#71717a", label: "Cynkowy" },
@@ -79,7 +76,7 @@ export default function PortfolioForm({
 			name: initialData?.name ?? "",
 			description: initialData?.description ?? "",
 			goal: initialData?.goal ?? 0,
-
+			isDefault: false,
 			// Initialize the new field
 			colorTheme: (initialData as any)?.colorTheme ?? "blue",
 
@@ -137,11 +134,11 @@ export default function PortfolioForm({
 		) as ActionResponse;
 
 		if (result.success) {
-			toast.success(isEditMode ? "Updated! ✏️" : "Created! 🚀");
+			toast.success(isEditMode ? "Zaktualizowano! ✏️" : "Utworzono! 🚀");
 			const targetId = result?.id || initialData?.id;
 
 			if (targetId) {
-				router.push(`/portfolios?portfolioId=${targetId}`);
+				router.push(`/dashboard/${targetId}`); // 🚀 ZMIANA: Skieruj bezpośrednio do portfela
 				router.refresh();
 			}
 		} else {
@@ -149,8 +146,9 @@ export default function PortfolioForm({
 		}
 	}
 
+	// 🚀 ZMIANA: `w-full` i `focus:border-theme-primary`
 	const inputStyles =
-		"h-12 bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-blue-500 rounded-xl px-4 text-sm font-medium text-t-text-primary transition-colors";
+		"h-12 w-full bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-theme-primary rounded-xl px-4 text-sm font-medium text-t-text-primary transition-colors";
 
 	const renderTargetField = (
 		name: keyof PortfolioFormValues,
@@ -184,7 +182,7 @@ export default function PortfolioForm({
 	);
 
 	return (
-		<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-6 sm:p-8 shadow-sm">
+		<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
 			<Form {...form}>
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
@@ -258,7 +256,7 @@ export default function PortfolioForm({
 						)}
 					/>
 
-					{/* NEW SECTION: COLOR THEME PICKER */}
+					{/* SEKJA KOLORÓW */}
 					<div className="pt-4 space-y-4">
 						<div className="flex items-center gap-2">
 							<Palette className="w-4 h-4 text-t-text-secondary" />
@@ -339,6 +337,36 @@ export default function PortfolioForm({
 								dokładnie 100%. Sprawdź swoje założenia.
 							</p>
 						)}
+					</div>
+					{/* 🚀 PRZEŁĄCZNIK PORTFELA DOMYŚLNEGO */}
+					<div className="pt-4 border-t border-t-border-subtle">
+						<FormField
+							control={form.control}
+							name="isDefault"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center justify-between rounded-xl border border-t-border-subtle bg-black/5 dark:bg-white/5 p-4 shadow-sm">
+									<div className="space-y-0.5 pr-4">
+										<FormLabel className="text-sm font-bold text-t-text-primary">
+											Ustaw jako Portfel Domyślny
+										</FormLabel>
+										<p className="text-[10px] uppercase tracking-widest font-bold text-t-text-tertiary">
+											Ten portfel załaduje się automatycznie po zalogowaniu
+										</p>
+									</div>
+									<FormControl>
+										<label className="relative inline-flex items-center cursor-pointer shrink-0">
+											<input
+												type="checkbox"
+												className="sr-only peer"
+												checked={field.value as boolean}
+												onChange={field.onChange}
+											/>
+											<div className="w-11 h-6 bg-t-border-subtle peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-theme-primary"></div>
+										</label>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
 					</div>
 
 					<div className="flex justify-end pt-6 border-t border-t-border-subtle">

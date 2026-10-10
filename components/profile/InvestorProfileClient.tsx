@@ -235,7 +235,7 @@ export default function InvestorProfileClient({
 
 	const handleTestEmail = async () => {
 		const toastId = toast.loading("Wysyłanie maila...");
-		const result = await runSmartAlerts();
+		const result = await runSmartAlerts(true);
 		if (result.success) {
 			toast.success("E-mail wysłany! Sprawdź skrzynkę (również SPAM).", {
 				id: toastId,

@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function runSmartAlerts() {
+export async function runSmartAlerts(forceTest: boolean = false) {
 	try {
 		const session = await auth();
 		if (!session?.user?.id) {
@@ -220,7 +220,7 @@ export async function runSmartAlerts() {
 		// 3. STRAŻNIK DYSCYPLINY (Plany Inwestycyjne)
 		// ==========================================
 		// Uruchamia się tylko, jeśli mamy końcówkę miesiąca (np. po 20. dniu)
-		if (dbUser.alertPlans && today.getDate() === 25) {
+		if ((dbUser.alertPlans && today.getDate() === 25) || forceTest) {
 			// Tworzymy string w formacie "YYYY-MM", np. "2026-09", żeby pasował do Twojej bazy
 			const currentYearMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 

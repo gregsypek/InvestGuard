@@ -111,6 +111,7 @@ export const allWeatherPortfolio: PortfolioWithAssets = {
 	description: null,
 	goal: 1000000,
 	colorTheme: "indigo",
+	lastRefreshedAt: null,
 
 	assets: [
 		createDemoAsset({
@@ -186,6 +187,7 @@ export const classicPortfolio: PortfolioWithAssets = {
 	description: null,
 	goal: 1000000,
 	colorTheme: "blue",
+	lastRefreshedAt: null,
 
 	assets: [
 		createDemoAsset({
@@ -235,6 +237,7 @@ export const yalePortfolio: PortfolioWithAssets = {
 	description: null,
 	goal: 1000000,
 	colorTheme: "emerald",
+	lastRefreshedAt: null,
 
 	assets: [
 		createDemoAsset({
@@ -308,6 +311,7 @@ const baseDemoPortfolio = {
 	targetCommodities: 0,
 	targetRealEstate: 0,
 	targetCustom: 0,
+	lastRefreshedAt: null,
 };
 
 export const demoPlans = [
@@ -335,6 +339,7 @@ export const demoPlans = [
 			targetGold: 7.5,
 			targetCommodities: 7.5,
 			colorTheme: "blue",
+			lastRefreshedAt: null,
 		},
 	},
 	{
@@ -358,6 +363,7 @@ export const demoPlans = [
 			targetBonds: 40,
 			targetDeveloped: 60,
 			colorTheme: "indigo",
+			lastRefreshedAt: null,
 		},
 	},
 ];

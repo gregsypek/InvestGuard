@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { SimulatedSnapshot, useDashboardData } from "./ui/useDashboardData";
 import { cn, getStockLogo } from "@/lib/utils";
+import { differenceInMinutes, format } from "date-fns";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
@@ -40,7 +41,6 @@ import { PremiumMarketCard } from "./home/PremiumMarketCard";
 import { SafeActionButton } from "./ui/SafeActionButton";
 import { SectionLayout } from "./shared/SectionLayout";
 import { ValueCard } from "./shared/ValueCard";
-import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 import { refreshPortfolioPrices } from "@/lib/actions/refresh-prices";
@@ -169,6 +169,18 @@ export function UserDashboard(props: UserDashboardProps) {
 		(safePortfolioPage + 1) * itemsPerPage,
 	);
 
+	// Sprawdzamy czy limit 6 godzin dla darmowego użytkownika NADAL trwa
+	const isRateLimited =
+		!isPremium && props.lastUpdated
+			? differenceInMinutes(new Date(), new Date(props.lastUpdated)) < 6 * 60
+			: false;
+
+	// 🚀 SCENARIUSZ 1, 2 i 3 dla Tooltipa (title)
+	let tooltipText = "Odśwież wyceny";
+	if (isPremium) tooltipText += " (Brak limitu)";
+	else if (isRateLimited) tooltipText += " (Dostępne za kilka godzin)";
+	else tooltipText += " (Limit: 1x na 6h)";
+
 	// 3. RENDEROWANIE WIDOKU
 	return (
 		<div className="space-y-8">
@@ -190,27 +202,28 @@ export function UserDashboard(props: UserDashboardProps) {
 				description="Zestawienie indeksów i walorów z Twojego portfela."
 				action={
 					<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 w-full sm:w-auto">
-						{/* 🚀 ZMIANA 1: Wskaźnik daty układa się ładnie nad przyciskami na mobile */}
+						{/* 🚀 ZMIANA 1: Polska data z formatem "dd MMM" (np. 10 PAŹ) */}
 						{props.lastUpdated && (
 							<span className="text-[9px] text-t-text-tertiary font-bold tracking-widest uppercase mb-1 sm:mb-0 mr-1">
-								Stan z: {format(new Date(props.lastUpdated), "HH:mm")}
+								Stan z:{" "}
+								{format(new Date(props.lastUpdated), "HH:mm, dd MMM", {
+									locale: pl,
+								})}
 							</span>
 						)}
 
-						{/* 🚀 ZMIANA 2: Kontener dostaje w-full na mobile */}
 						<div className="flex items-center gap-2 w-full sm:w-auto">
 							<button
 								onClick={handleGlobalRefresh}
-								disabled={isRefreshing}
-								title={
-									isPremium
-										? "Odśwież wyceny (Brak limitu)"
-										: "Odśwież wyceny (Limit: 1x na dobę)"
-								}
+								// 🚀 ZMIANA 2: Przycisk jest zablokowany podczas ładowania LUB gdy działa limit 6h
+								disabled={isRefreshing || isRateLimited}
+								// 🚀 ZMIANA 3: Trzy scenariusze dla tytułu
+								title={tooltipText}
 								className={cn(
-									// 🚀 ZMIANA 3: flex-1 wymusza podział 50/50 na mobile, ujednolicono też wysokość (h-9 do h-10)
 									"flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-3 h-9 sm:h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest transition-colors w-full sm:w-auto",
-									isRefreshing && "opacity-50 cursor-not-allowed",
+									// Jeśli ładuje się LUB jest limit - wyszarzamy przycisk
+									(isRefreshing || isRateLimited) &&
+										"opacity-50 cursor-not-allowed",
 								)}
 							>
 								<RefreshCw
@@ -226,7 +239,6 @@ export function UserDashboard(props: UserDashboardProps) {
 								label="Konfiguruj"
 								icon={Settings}
 								variant="outline"
-								// 🚀 ZMIANA 4: Dodane flex-1 aby dzielił się miejscem z "Odśwież"
 								className="flex-1 sm:flex-none w-full sm:w-auto border-t-border bg-t-bg-base text-t-text-secondary hover:text-t-text-primary"
 								href="/settings?from=dashboard"
 							/>
@@ -238,12 +250,6 @@ export function UserDashboard(props: UserDashboardProps) {
 					{/* MACRO INDICATORS COLUMN */}
 					{props.userIndices && props.userIndices.length > 0 && (
 						<div className="flex-1 rounded-2xl ">
-							{/* <div className="flex justify-between items-center mb-4">
-								<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
-									<Globe className="w-4 h-4 text-amber-500" /> Wskaźniki Makro
-								</h4>
-							</div> */}
-
 							<div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
 								{props.userIndices.map((indexId) => {
 									const changeValue = props.indexQuotes?.[indexId] || 0;
@@ -268,13 +274,6 @@ export function UserDashboard(props: UserDashboardProps) {
 					)}
 					{/* PORTFOLIO ASSETS COLUMN */}
 					<div className="flex-1">
-						{/* <div className="flex items-center mb-4">
-							<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary flex items-center gap-2">
-								<Briefcase className="w-4 h-4 text-blue-500" /> Z Portfela (
-								{observedAssets.length})
-							</h4>
-						</div> */}
-
 						<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
 							{observedAssets.length > 0 ? (
 								// 🚀 Paginacja: Wyświetlamy tylko określoną liczbę aktywów

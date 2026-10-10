@@ -7,14 +7,13 @@ import { formatYahooTicker } from "@/lib/market-api";
 import { getLiveExchangeRate } from "../exchange-rates";
 import { revalidatePath } from "next/cache";
 
-// ✅ 1. Uciszenie reklamy ankiety Yahoo (która powodowała fałszywy komunikat 404)
 const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 const TICKER_MAP: Record<string, string> = {
 	"SP20.NL": "IS20.DE",
 	"EIMI.UK": "EIMI.L",
 	"ALAG.UK": "ALAG.L",
-	BTC: "BTC-USD", // ✅ 2. Dodano automatyczne mapowanie kryptowalut dla Yahoo
+	BTC: "BTC-USD",
 };
 
 const GLOBAL_INDICES: Record<string, string> = {
@@ -30,44 +29,67 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 	const session = await auth();
 	if (!session?.user?.id) return { error: "Błąd autoryzacji" };
 
-	// ✅ 3. Zabezpieczenie przed pustym ID portfela z interfejsu
 	if (!portfolioId) {
-		console.error("❌ refreshPortfolioPrices wywołano z pustym portfolioId!");
 		return { error: "Nie podano ID portfela do aktualizacji." };
 	}
 
 	const role = session.user.role;
-	const now = new Date();
-	const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
 	try {
-		const assets = await db.asset.findMany({
-			where: {
-				portfolioId,
-				NOT: { category: "BONDS" }, // Obligacje są mądrze ignorowane
-			},
+		// 1. Pobieramy portfel wraz z aktywami
+		const portfolio = await db.portfolio.findUnique({
+			where: { id: portfolioId },
+			include: { assets: true },
 		});
+
+		if (!portfolio) return { error: "Portfel nie istnieje" };
+
+		// 2. WERYFIKACJA LIMITU 6H DLA DARMOWYCH KONT
+		if (role === "REGULAR" && portfolio.lastRefreshedAt) {
+			const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+			if (portfolio.lastRefreshedAt > sixHoursAgo) {
+				return {
+					error:
+						"Wykorzystano limit. Następna darmowa aktualizacja za kilka godzin.",
+				};
+			}
+		}
+
+		// 3. Zbieramy tylko te aktywa, które mają ticker i NIE są gotówką/obligacjami
+		const updatableAssets = portfolio.assets.filter(
+			(a) =>
+				a.ticker &&
+				a.ticker !== "CASH" &&
+				a.category !== "BONDS" &&
+				a.category !== "CASH",
+		);
 
 		let updatedCount = 0;
 
-		for (const asset of assets) {
-			if (asset.ticker === "CASH" || asset.category === "CASH") continue;
+		// 4. Jeśli są aktywa do zaktualizowania, robimy zoptymalizowane zapytanie
+		if (updatableAssets.length > 0) {
+			const symbolsToFetch = updatableAssets.map((asset) => {
+				const baseTicker = asset.ticker!.split("_")[0];
+				return formatYahooTicker(TICKER_MAP[baseTicker] || baseTicker);
+			});
 
-			const baseTicker = asset.ticker?.split("_")[0] || "";
-			const symbol = formatYahooTicker(TICKER_MAP[baseTicker] || baseTicker);
+			// Zapytanie paczkowe do Yahoo
+			const results = await yahooFinance.quote(
+				symbolsToFetch,
+				{},
+				{ validateResult: false },
+			);
+			const quotesArray = Array.isArray(results) ? results : [results];
 
-			try {
-				const result = await yahooFinance.quote(
-					symbol,
-					{},
-					{ validateResult: false },
+			// Przetwarzanie i zapis wyników do bazy
+			for (const asset of updatableAssets) {
+				const baseTicker = asset.ticker!.split("_")[0];
+				const searchSymbol = formatYahooTicker(
+					TICKER_MAP[baseTicker] || baseTicker,
 				);
-				const quote = Array.isArray(result) ? result[0] : result;
 
-				if (!quote || quote.regularMarketPrice == null) {
-					console.warn(`⚠️ Yahoo Finance nie zwróciło danych dla: ${symbol}`);
-					continue;
-				}
+				const quote = quotesArray.find((q) => q && q.symbol === searchSymbol);
+				if (!quote || quote.regularMarketPrice == null) continue;
 
 				const rawPrice = quote.regularMarketPrice as number;
 				const currency = quote.currency || "PLN";
@@ -76,21 +98,11 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 				if (currency !== "PLN") {
 					const searchCurrency = currency === "GBp" ? "GBP" : currency;
 					const fxData = await getLiveExchangeRate(searchCurrency);
-
-					if (!fxData) {
-						console.error(
-							`❌ Brak kursu wymiany dla ${searchCurrency}. Pomijam ${symbol}.`,
-						);
-						continue;
+					if (fxData) {
+						const multiplier = currency === "GBp" ? 0.01 : 1;
+						priceInPLN = rawPrice * multiplier * fxData.value;
 					}
-
-					const multiplier = currency === "GBp" ? 0.01 : 1;
-					priceInPLN = rawPrice * multiplier * fxData.value;
 				}
-
-				console.log(
-					`✅ [${asset.ticker}] -> ${priceInPLN.toFixed(2)} PLN (Raw: ${rawPrice} ${currency})`,
-				);
 
 				await db.asset.update({
 					where: { id: asset.id },
@@ -102,14 +114,16 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 					},
 				});
 				updatedCount++;
-			} catch (err) {
-				// Ten blok try-catch łapie błąd pojedynczego aktywa (np. jak podasz błędny ticker)
-				// i pozwala pętli iść dalej do kolejnego aktywa.
-				console.error(`❌ Błąd aktualizacji ${symbol}:`, err);
 			}
 		}
 
-		// === Pobieranie i zapis indeksów globalnych ===
+		// 5. Zapisujemy czas odświeżenia portfela
+		await db.portfolio.update({
+			where: { id: portfolioId },
+			data: { lastRefreshedAt: new Date() },
+		});
+
+		// === 6. Pobieranie i zapis indeksów globalnych (Twoja zoptymalizowana logika) ===
 		try {
 			const indexSymbols = Object.values(GLOBAL_INDICES);
 			const indexResult = await yahooFinance.quote(
@@ -153,9 +167,16 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 		}
 
 		revalidatePath("/dashboard");
-		return { success: `Zaktualizowano ${updatedCount} pozycji rynkowych!` };
+
+		if (updatedCount > 0) {
+			return { success: `Zaktualizowano ${updatedCount} pozycji rynkowych!` };
+		} else {
+			return {
+				success: `Zaktualizowano indeksy (brak aktywów na giełdzie do odświeżenia).`,
+			};
+		}
 	} catch (error) {
 		console.error("Błąd ogólny refreshPrices:", error);
-		return { error: "Błąd serwera." };
+		return { error: "Wystąpił problem z połączeniem do serwera Yahoo." };
 	}
 }

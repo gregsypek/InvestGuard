@@ -285,7 +285,7 @@ export default function Header({
 				</div>
 
 				{/* 4. KONTEKSTOWY SELEKTOR PORTFELA */}
-				<div className= " md:w-full">
+				<div className=" md:w-full">
 					{isGlobalPage ? (
 						<div className="flex items-center gap-2 px-4 h-9 md:h-11 md:w-80 bg-theme-soft/50 border border-theme-border rounded-xl shadow-sm text-theme-primary cursor-default">
 							<Globe2 className="h-4 w-4 shrink-0" />
@@ -367,13 +367,14 @@ export default function Header({
 
 			{/* PRAWA STRONA */}
 			<div className="flex items-center gap-2 md:gap-3">
-				{!isGlobalPage && (
+				{!isGlobalPage && displayValue && (
 					<RefreshButton
 						portfolioId={displayValue}
 						role={userRole}
-						lastUpdated={lastUpdated}
+						lastUpdated={lastUpdated ? new Date(lastUpdated) : null}
 					/>
 				)}
+
 				<Menu userButton={userButton} />
 			</div>
 		</header>

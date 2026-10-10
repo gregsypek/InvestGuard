@@ -1,28 +1,33 @@
-// components/RefreshButton.tsx
 "use client";
+
+import { differenceInMinutes, format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { pl } from "date-fns/locale";
 import { refreshPortfolioPrices } from "@/lib/actions/refresh-prices";
 import { toast } from "sonner";
 import { useState } from "react";
 
-// 1. Definiujemy, co przyjmuje przycisk (dodajemy lastUpdated)
 interface RefreshButtonProps {
 	portfolioId: string;
 	role: string;
-	lastUpdated?: string | null;
+	lastUpdated?: Date | null;
 }
-
 export function RefreshButton({
 	portfolioId,
 	role,
-	lastUpdated, // 2. Odbieramy nową zmienną
+	lastUpdated,
 }: RefreshButtonProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const isPremium = role === "ADMIN" || role === "SUBSCRIBER";
+
+	// Sprawdzamy blokadę czasową na frontendzie (dla bezpieczeństwa i UX)
+	const isRateLimited =
+		!isPremium && lastUpdated
+			? differenceInMinutes(new Date(), new Date(lastUpdated)) < 6 * 60
+			: false;
 
 	const handleRefresh = async () => {
 		setIsLoading(true);
@@ -30,32 +35,28 @@ export function RefreshButton({
 
 		if (result.success) {
 			toast.success(result.success);
-			if (!isPremium) {
-				toast.info(
-					"Pamiętaj: Aktualizacja na koncie darmowym działa raz na 24h.",
-				);
-			}
 		} else if (result.error) {
 			toast.error(result.error);
 		}
 		setIsLoading(false);
 	};
 
-	const tooltipText = isPremium
-		? "Odśwież wyceny (Brak limitu)"
-		: "Odśwież wyceny (Limit: 1x na dobę)";
+	let tooltipText = "Odśwież wyceny";
+	if (isPremium) tooltipText += " (Brak limitu)";
+	else if (isRateLimited) tooltipText += " (Dostępne za kilka godzin)";
+	else tooltipText += " (Limit: 1x na 6h)";
 
 	return (
 		<div className="flex flex-col items-center gap-0.5 ">
 			<Button
 				onClick={handleRefresh}
-				disabled={isLoading}
+				disabled={isLoading || isRateLimited} // Blokada jeśli trwa ładowanie ALBO limit 6h nie minął
 				variant="ghost"
 				size="sm"
 				title={tooltipText}
 				className={cn(
 					"h-9 px-2 md:w-auto md:px-3 transition-all rounded-md bg-muted/30 md:bg-transparent hover:bg-muted",
-					isLoading && "opacity-70 cursor-not-allowed",
+					(isLoading || isRateLimited) && "opacity-50 cursor-not-allowed",
 				)}
 			>
 				<RefreshCw
@@ -69,15 +70,15 @@ export function RefreshButton({
 						Odśwież
 					</span>
 					<span className="hidden md:inline text-sm">
-						{isPremium ? "Aktualizuj kursy" : "Aktualizuj (1x na dobę)"}
+						{isPremium ? "Aktualizuj kursy" : "Aktualizuj (Limit 6h)"}
 					</span>
 				</span>
 			</Button>
 
-			{/* 3. Wyświetlamy czas pod przyciskiem, jeśli zmienna istnieje */}
 			{lastUpdated && (
 				<span className="text-[8px] md:text-[10px] text-muted-foreground/60 pr-1 tracking-wider uppercase font-medium">
-					Stan z: {format(new Date(lastUpdated), "HH:mm")}
+					Stan z:{" "}
+					{format(new Date(lastUpdated), "HH:mm, dd MMM", { locale: pl })}
 				</span>
 			)}
 		</div>

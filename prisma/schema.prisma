@@ -115,7 +115,9 @@ model Portfolio {
   // portfolioSnapshots   PortfolioSnapshot[]
   snapshots            PortfolioSnapshot[]
 
-  colorTheme String @default("blue")
+  colorTheme      String    @default("blue")
+  // 🚀 Czas ostatniej aktualizacji kursów z Yahoo
+  lastRefreshedAt DateTime?
 }
 
 model InvestmentPlan {

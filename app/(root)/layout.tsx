@@ -16,22 +16,8 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }) {
 	const session = await auth();
-
-	let lastUpdated = null;
-
-	if (session?.user?.id) {
-		const latestAsset = await db.asset.findFirst({
-			where: { portfolio: { userId: session.user.id } },
-			orderBy: { updatedAt: "desc" },
-			select: { updatedAt: true },
-		});
-
-		if (latestAsset) {
-			lastUpdated = latestAsset.updatedAt.toISOString();
-		}
-	}
-
 	const cookieStore = await cookies();
+
 	const hideMarketTicker =
 		cookieStore.get("hide_market_ticker")?.value === "true";
 
@@ -45,20 +31,30 @@ export default async function RootLayout({
 
 	const userRole = session?.user?.role || "REGULAR";
 	const userId = session?.user?.id;
-
-	// 🚀 KLUCZOWA ZMIANA 1: Pobieramy colorTheme z bazy!
-	const portfolios = userId
-		? await db.portfolio.findMany({
-				where: { userId },
-				select: { id: true, name: true, colorTheme: true },
-			})
-		: [];
-
 	const selectedPortfolioId =
 		cookieStore.get("selectedPortfolioId")?.value || "";
 
-	// 🚀 KLUCZOWA ZMIANA 2: Ustalamy aktywny motyw
+	const portfolios = userId
+		? await db.portfolio.findMany({
+				where: { userId },
+				// Dodano pobieranie lastRefreshedAt, żeby przekazać je do przycisku odświeżania
+				select: {
+					id: true,
+					name: true,
+					colorTheme: true,
+					lastRefreshedAt: true,
+				},
+			})
+		: [];
+
+	// 🚀 KLUCZOWA ZMIANA 2: Ustalamy aktywny portfel i wyciągamy z niego czas aktualizacji
 	const activePortfolio = portfolios.find((p) => p.id === selectedPortfolioId);
+
+	// Data trafia prosto do Headera, a z niego do RefreshButton
+	const lastUpdated = activePortfolio?.lastRefreshedAt
+		? activePortfolio.lastRefreshedAt.toISOString()
+		: null;
+
 	let effectiveTheme = activePortfolio?.colorTheme || "blue";
 
 	// Wymuszenie koloru dla trybu demo i widoku globalnego

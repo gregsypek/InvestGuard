@@ -525,8 +525,9 @@
 		),
 		linear-gradient(
 			180deg,
-			#ffffff 0%,
-			var(--t-bg-panel) 60%,
+			var(--t-bg-base) 0%,
+			/* 🚀 ZMIANA: Zamiast #ffffff używamy systemowego tła */ var(--t-bg-panel)
+				60%,
 			color-mix(in srgb, var(--t-bg-panel) 97%, var(--theme-primary)) 100%
 		);
 }

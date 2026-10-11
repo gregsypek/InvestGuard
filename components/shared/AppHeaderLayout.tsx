@@ -60,7 +60,7 @@ export function AppHeaderLayout({
 
 				<div className="flex items-start justify-between gap-4 mt-1 sm:mt-2">
 					<div className="flex-1">
-						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black capitalize flex items-center gap-3 drop-shadow-sm text-t-text-secondary">
+						<h1 className="text-2xl sm:text-3xl md:text-4xl font-black capitalize flex items-center gap-3 drop-shadow-sm text-slate-300">
 							{title}
 						</h1>
 						{description && (

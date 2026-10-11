@@ -13,7 +13,6 @@ interface PlannerHeaderProps {
 	initialTotalPlannedValue: number;
 	initialPlannedCount: number;
 	portfolios: { id: string; name: string; colorTheme?: string }[];
-	// Typ dopasowany do zrzutu z bazy
 	plans: { portfolioId: string; value: number | string | any }[];
 	customBreadcrumbs?: React.ReactNode;
 }

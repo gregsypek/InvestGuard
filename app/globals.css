@@ -81,6 +81,27 @@
 
 	/* Motyw portfela */
 	--color-theme-primary: var(--theme-primary);
+	/* 🚀 NOWOŚĆ: Automatycznie przyciemniony kolor bazowy (wymieszany w 60% z czernią)
+	--color-theme-primary-dark: color-mix(
+		in srgb,
+		var(--theme-primary) 20%,
+		black
+	);
+	--color-theme-primary-light: color-mix(
+		in srgb,
+		var(--theme-primary) 30%,
+		black */
+	/* 🚀 LEPSZE MIESZANIE: oklab utrzymuje żywość, a #020617 (slate-950) zapobiega powstawaniu "błota" na słabych ekranach */
+	--color-theme-primary-dark: color-mix(
+		in oklab,
+		var(--theme-primary) 15%,
+		#020617
+	);
+	--color-theme-primary-light: color-mix(
+		in oklab,
+		var(--theme-primary) 30%,
+		#020617
+	);
 	--color-theme-soft: var(--theme-soft);
 	--color-theme-border: var(--theme-border);
 }
@@ -576,4 +597,15 @@
 			color-mix(in oklab, var(--theme-primary) 40%, transparent) 100%
 		);
 	} */
+}
+
+@utility header-filter-bar {
+	@apply flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 sm:mt-4 p-3 
+         bg-t-hover border border-t-border-subtle rounded-xl backdrop-blur-sm 
+         shadow-inner w-full min-w-0 overflow-x-auto 
+         [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden;
+}
+
+@utility header-main-stat {
+	@apply text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm truncate;
 }

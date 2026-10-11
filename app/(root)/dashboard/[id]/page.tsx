@@ -89,7 +89,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 				portfolio={portfolio}
 				name={name}
 				totalValue={totalValue}
-				customBreadcrumbs={<DashboardBreadcrumbs name={name} id={id} />}
+				customBreadcrumbs={
+					<DashboardBreadcrumbs name={name} key={id} id={id} />
+				}
 			/>
 
 			{goal > 0 && (

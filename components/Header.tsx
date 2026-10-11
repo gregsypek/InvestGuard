@@ -165,7 +165,7 @@ export default function Header({
 									onClick={() => setIsMobileOpen(false)}
 									className="flex items-center gap-3 group hover:cursor-pointer"
 								>
-									<div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-black shadow-sm">
+									<div className="w-10 h-10 flex items-center justify-center ">
 										<Image
 											src="/logo.svg"
 											alt="InvestGuard"

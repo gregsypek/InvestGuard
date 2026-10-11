@@ -81,17 +81,8 @@
 
 	/* Motyw portfela */
 	--color-theme-primary: var(--theme-primary);
-	/* 🚀 NOWOŚĆ: Automatycznie przyciemniony kolor bazowy (wymieszany w 60% z czernią)
-	--color-theme-primary-dark: color-mix(
-		in srgb,
-		var(--theme-primary) 20%,
-		black
-	);
-	--color-theme-primary-light: color-mix(
-		in srgb,
-		var(--theme-primary) 30%,
-		black */
-	/* 🚀 LEPSZE MIESZANIE: oklab utrzymuje żywość, a #020617 (slate-950) zapobiega powstawaniu "błota" na słabych ekranach */
+
+	/*  oklab utrzymuje żywość, a #020617 (slate-950) zapobiega powstawaniu "błota" na słabych ekranach */
 	--color-theme-primary-dark: color-mix(
 		in oklab,
 		var(--theme-primary) 15%,

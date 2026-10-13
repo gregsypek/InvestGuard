@@ -122,14 +122,14 @@ export function parseXtbRow(row: any): ParsedXtbTransaction | null {
 			// Zapasowe sprawdzenie po kwocie (minus to koszt zakupu, plus to zysk ze sprzedaży)
 			txType = amount < 0 ? TransactionType.BUY : TransactionType.SELL;
 		}
-
 		// Zapasowe szukanie tickera w komentarzu (Tylko jeśli kolumny były puste)
 		let finalTicker = ticker;
 		if (!finalTicker && comment) {
-			// Szukamy wzorca np. AAPL.US lub IGLN.UK
-			const match = comment.match(/(?:BUY|SELL|OPEN|CLOSE)\s+([0-9./]+)\s*@/i);
-			if (match)
-				finalTicker = match[1]; // Tu poprawiłem zmienną żeby nie nadpisywała regexu z wolumenu
+			// 🚀 FIX 1: Szukamy liter tickera (np. OWL.US), a nie cyfr ilości
+			const matchTicker = comment.match(
+				/(?:BUY|SELL|OPEN|CLOSE)\s+([A-Z0-9.]+)\s+/i,
+			);
+			if (matchTicker) finalTicker = matchTicker[1];
 			else finalTicker = "UNKNOWN";
 		}
 
@@ -141,17 +141,20 @@ export function parseXtbRow(row: any): ParsedXtbTransaction | null {
 				? Math.abs(rawVolume)
 				: 1;
 
-		// Szukamy ułamkowych ilości, np. 0.9526
-		const matchQty = comment.match(/(?:BUY|SELL|OPEN|CLOSE)\s+([0-9./]+)\s*@/i);
+		// 🚀 FIX 2: Dodajemy `.*?` aby ominąć ewentualnego tickera ("OWL.US") przed ilością
+		const matchQty = comment.match(
+			/(?:BUY|SELL|OPEN|CLOSE).*?\s([0-9./]+)\s*@/i,
+		);
 
 		// Jeśli Volume = 1 (domyślne), sprawdź czy w komentarzu nie ma innej ilości
 		if (!isProfit && finalQuantity === 1 && comment) {
-			const qtyMatch = comment.match(/(?:BUY|SELL)\s+(\d+(?:\.\d+)?)\s*@/i);
+			const qtyMatch = comment.match(/(?:BUY|SELL).*?\s(\d+(?:\.\d+)?)\s*@/i);
 			if (qtyMatch) {
 				finalQuantity = Number(qtyMatch[1]);
 			}
 		}
 
+		// Twoja ORYGINALNA, bezbłędna logika dla ułamków (np. 12/12.5098 -> 12)
 		if (!isProfit && matchQty) {
 			const rawValue = matchQty[1].split("/")[0];
 			finalQuantity = Number(rawValue.replace(",", "."));

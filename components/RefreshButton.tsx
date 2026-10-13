@@ -1,7 +1,7 @@
 "use client";
 
 import { differenceInMinutes, format } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { pl } from "date-fns/locale";
 import { refreshPortfolioPrices } from "@/lib/actions/refresh-prices";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation"; // 🚀 DODANO IMPORT ROUTERA
+import { useRouter } from "next/navigation";
 
 interface RefreshButtonProps {
 	portfolioId: string;
@@ -17,7 +17,6 @@ interface RefreshButtonProps {
 	lastUpdated?: Date | null;
 }
 
-// Interwał odświeżania (np. 5 minut = 300 sekund)
 const REFRESH_INTERVAL_SEC = 5 * 60;
 
 export function RefreshButton({
@@ -26,29 +25,32 @@ export function RefreshButton({
 	lastUpdated,
 }: RefreshButtonProps) {
 	const [isLoading, setIsLoading] = useState(false);
-	// 🚀 STAN DLA ODLICZANIA PASKA
-	const [timeLeft, setTimeLeft] = useState(REFRESH_INTERVAL_SEC);
+	const router = useRouter();
+
+	// 1. Jeden wspólny stan do wyświetlania paska w UI
+	const [timeLeft, setTimeLeft] = useState<number>(REFRESH_INTERVAL_SEC);
+
+	// 2. Ref do trzymania rzeczywistego czasu w tle (chroni przed błędami setState w useEffect)
+	const countdownRef = useRef<number>(REFRESH_INTERVAL_SEC);
 
 	const isPremium = role === "ADMIN" || role === "SUBSCRIBER";
-	const router = useRouter(); // 🚀 INICJALIZACJA ROUTERA
 
-	// 🚀 LOGIKA CICHEGO AUTO-ODŚWIEŻANIA I PASKA POSTĘPU
 	useEffect(() => {
 		const timer = setInterval(() => {
-			setTimeLeft((prev) => {
-				if (prev <= 1) {
-					// Kiedy czas minie: pobieramy nowe dane z NASZEJ bazy i resetujemy pasek
-					router.refresh();
-					return REFRESH_INTERVAL_SEC;
-				}
-				return prev - 1;
-			});
-		}, 1000); // Odpala co 1 sekundę, by płynnie animować pasek
+			countdownRef.current -= 1;
+
+			if (countdownRef.current <= 0) {
+				router.refresh();
+				countdownRef.current = REFRESH_INTERVAL_SEC;
+			}
+
+			// Informujemy Reacta o nowej wartości dla paska postępu
+			setTimeLeft(countdownRef.current);
+		}, 1000);
 
 		return () => clearInterval(timer);
 	}, [router]);
 
-	// Sprawdzamy blokadę czasową na frontendzie (dla bezpieczeństwa i UX)
 	const isRateLimited =
 		!isPremium && lastUpdated
 			? differenceInMinutes(new Date(), new Date(lastUpdated)) < 6 * 60
@@ -60,8 +62,10 @@ export function RefreshButton({
 
 		if (result.success) {
 			toast.success(result.success);
-			// 🚀 Wymuszamy pokazanie nowych danych natychmiast i resetujemy pasek
 			router.refresh();
+
+			// 🚀 FIX: Resetujemy ZARÓWNO referencję w tle jak i stan widoku po ręcznym kliknięciu
+			countdownRef.current = REFRESH_INTERVAL_SEC;
 			setTimeLeft(REFRESH_INTERVAL_SEC);
 		} else if (result.error) {
 			toast.error(result.error);
@@ -74,14 +78,13 @@ export function RefreshButton({
 	else if (isRateLimited) tooltipText += " (Dostępne za kilka godzin)";
 	else tooltipText += " (Limit: 1x na 6h)";
 
-	// 🚀 OBLICZANIE SZEROKOŚCI PASKA POSTĘPU (w procentach)
 	const progressPercentage = (timeLeft / REFRESH_INTERVAL_SEC) * 100;
 
 	return (
 		<div className="flex flex-col items-center gap-0.5 w-full md:w-auto">
 			<Button
 				onClick={handleRefresh}
-				disabled={isLoading || isRateLimited} // Blokada jeśli trwa ładowanie ALBO limit 6h nie minął
+				disabled={isLoading || isRateLimited}
 				variant="ghost"
 				size="sm"
 				title={tooltipText}
@@ -113,7 +116,6 @@ export function RefreshButton({
 						{format(new Date(lastUpdated), "HH:mm, dd MMM", { locale: pl })}
 					</span>
 
-					{/* 🚀 PASEK ODLICZANIA */}
 					<div
 						className="w-[80%] md:w-full max-w-[120px] h-[2px] bg-muted mt-0.5 rounded-full overflow-hidden"
 						title="Czas do automatycznego załadowania najnowszych danych z bazy"

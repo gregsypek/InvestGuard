@@ -101,7 +101,7 @@ export function MonthlyDepositsChart({
 					{/* 1. Najpierw rysujemy kolumny */}
 					<Bar
 						dataKey="amount"
-						fill="#f59e0b"
+						fill="var(--theme-primary)"
 						radius={[4, 4, 0, 0]}
 						barSize={32}
 					/>
@@ -109,13 +109,15 @@ export function MonthlyDepositsChart({
 					{/* 2. Następnie rysujemy linię (będzie na wierzchu) w kontrastowym kolorze */}
 					<ReferenceLine
 						y={averageAmount}
-						stroke="#64748b" // Uniwersalny szary (Slate 500) - czytelny w obu motywach
+						// Używamy systemowego koloru dla detali (będzie subtelny, ale widoczny w obu trybach)
+						stroke="var(--t-text-tertiary)"
 						strokeDasharray="4 4"
 						strokeOpacity={0.8}
 						label={{
 							position: "insideTopLeft",
 							value: `ŚREDNIA: ${formatCurrency(averageAmount, 0)} PLN`,
-							fill: "#64748b", // Ciemniejszy szary dla tekstu
+							// 🚀 To załatwia sprawę: var(--t-text-primary) automatycznie da czarny w Light i biały w Dark
+							fill: "var(--t-text-primary)",
 							fontSize: 10,
 							fontWeight: "bold",
 							opacity: 1,

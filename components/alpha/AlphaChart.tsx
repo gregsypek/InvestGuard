@@ -37,8 +37,16 @@ export function AlphaChart({ data }: { data: AlphaPoint[] }) {
 				>
 					<defs>
 						<linearGradient id="colorWycena" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-							<stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+							<stop
+								offset="5%"
+								stopColor="var(--theme-primary)"
+								stopOpacity={0.2}
+							/>
+							<stop
+								offset="95%"
+								stopColor="var(--theme-primary)"
+								stopOpacity={0}
+							/>
 						</linearGradient>
 					</defs>
 					<CartesianGrid
@@ -92,7 +100,7 @@ export function AlphaChart({ data }: { data: AlphaPoint[] }) {
 					<Area
 						type="monotone"
 						dataKey="wycena"
-						stroke="#10b981"
+						stroke="var(--theme-primary)"
 						fill="url(#colorWycena)"
 						strokeWidth={3}
 						isAnimationActive={false}

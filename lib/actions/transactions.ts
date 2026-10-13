@@ -2,40 +2,6 @@
 // PL: Gwarantuje, że wszystkie funkcje w tym pliku będą uruchamiane tylko na serwerze
 
 import { ParsedXtbTransaction } from "../utils/xtb-parser";
-// export async function saveXtbTransaction(
-// 	data: ParsedXtbTransaction,
-// 	portfolioId: string,
-// ) {
-// 	return await db.transactionHistory.upsert({
-// 		// where: { externalId: data.uniqueKey },
-// 		where: {
-// 			portfolioId_externalId: {
-// 				portfolioId: portfolioId,
-// 				externalId: data.uniqueKey,
-// 			},
-// 		},
-// 		update: {},
-// 		create: {
-// 			externalId: data.uniqueKey,
-// 			type: data.type,
-// 			assetName: data.assetName,
-// 			ticker: data.ticker,
-// 			quantity: data.quantity,
-// 			executedAt: data.date,
-// 			executedValue: data.amountPLN,
-// 			originalPrice: data.originalPrice,
-// 			originalCurrency: data.currency,
-// 			exchangeRate: data.exchangeRate,
-// 			category: data.category,
-// 			// EN: Use connect to link the relation properly
-// 			// PL: Używamy connect, aby poprawnie połączyć relację
-// 			portfolio: {
-// 				connect: { id: portfolioId },
-// 			},
-// 			comment: data.comment,
-// 		},
-// 	});
-// }
 import { Prisma } from "@prisma/client";
 import { db } from "../db";
 import { revalidatePath } from "next/cache";
@@ -46,33 +12,16 @@ export async function saveXtbTransaction(
 	portfolioId: string,
 ) {
 	try {
-		// Miękkie sprawdzanie duplikatów z Planera
-		const startOfDay = new Date(data.date);
-		startOfDay.setHours(0, 0, 0, 0);
-		const endOfDay = new Date(data.date);
-		endOfDay.setHours(23, 59, 59, 999);
+		// 🚀 FIX: Tworzymy precyzyjny klucz (ID Zlecenia + Typ)
+		const finalExternalId = `${data.uniqueKey}_${data.type}`;
 
-		const softDuplicate = await db.transactionHistory.findFirst({
-			where: {
-				portfolioId,
-				ticker: data.ticker,
-				executedValue: data.amountPLN,
-				executedAt: { gte: startOfDay, lte: endOfDay },
-			},
-		});
-
-		// Udajemy błąd Prisma P2002, aby Twój catch w importerze go wyłapał i pominął
-		if (softDuplicate) {
-			throw new Prisma.PrismaClientKnownRequestError("Soft duplicate found", {
-				code: "P2002",
-				clientVersion: "1.0",
-			});
-		}
+		// 🚀 FIX: Usunięto agresywny `softDuplicate`. Baza danych sama zablokuje
+		// ponowny import tego samego pliku, ale przepuści transze z tego samego dnia.
 		// EN: Perform a strict creation to enforce underlying unique constraint checks
 		// PL: Wykonujemy twarde utworzenie, aby wymusić sprawdzenie unikalności klucza
 		return await db.transactionHistory.create({
 			data: {
-				externalId: data.uniqueKey,
+				externalId: finalExternalId,
 				type: data.type,
 				assetName: data.assetName,
 				ticker: data.ticker,
@@ -96,11 +45,8 @@ export async function saveXtbTransaction(
 			error instanceof Prisma.PrismaClientKnownRequestError &&
 			error.code === "P2002"
 		) {
-			throw new Error(
-				"Wybrane aktywo z tą datą i kwotą jest już dodane w tym portfelu.",
-			);
+			throw new Error("Ta dokładna transakcja została już zaimportowana.");
 		}
-
 		// EN: Forward any other unexpected database exceptions downstream
 		// PL: Przekazujemy wszelkie inne nieoczekiwane błędy bazy danych dalej
 		throw error;
@@ -120,7 +66,7 @@ export async function addManualDeposit(formData: {
 		await db.transactionHistory.create({
 			data: {
 				portfolioId,
-				externalId: `MANUAL_${Date.now()}`, // Unikalny klucz
+				externalId: `MANUAL_${Date.now()}`,
 				type: "DEPOSIT",
 				ticker: "CASH",
 				assetName: "Wpłata gotówkowa",
@@ -134,8 +80,6 @@ export async function addManualDeposit(formData: {
 
 		// 2. Automatycznie przeliczamy aktywa (aby CASH w tabeli się zaktualizował)
 		await syncPortfolioAssets(portfolioId);
-
-		// 3. Odświeżamy widoki
 		revalidatePath(`/dashboard/${portfolioId}`);
 
 		return { success: true };

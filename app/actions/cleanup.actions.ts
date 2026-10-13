@@ -33,13 +33,11 @@ export async function revertLastTransaction(assetId: string) {
 	try {
 		return await db.$transaction(
 			async (tx) => {
-				// 1. Znajdujemy aktywo
 				const asset = await tx.asset.findUnique({
 					where: { id: assetId },
 				});
 				if (!asset) return { success: false, error: "Nie znaleziono aktywa" };
 
-				// 2. Znajdujemy OSTATNIĄ transakcję zakupu dla tego tickera i portfela
 				const lastTx = await tx.transactionHistory.findFirst({
 					where: {
 						portfolioId: asset.portfolioId,
@@ -66,25 +64,28 @@ export async function revertLastTransaction(assetId: string) {
 				const newInvested = asset.investedCapital - lastTx.executedValue;
 				const newCurrent = asset.currentValue - lastTx.executedValue;
 
-				if (newQuantity <= 0 || txCount <= 1) {
-					// Jeśli to była ostatnia transakcja, usuwamy całe aktywo i całą historię
+				// 🚀 FIX: Usuwamy wszystko TYLKO jeśli to była absolutnie jedyna operacja w historii
+				if (txCount <= 1) {
 					await tx.transactionHistory.deleteMany({
 						where: { portfolioId: asset.portfolioId, ticker: asset.ticker },
 					});
 					await tx.asset.delete({ where: { id: assetId } });
 				} else {
-					// Jeśli to była tylko jedna z wielu dawek (dokupienie), aktualizujemy aktywo
+					// 1. Jeśli są inne transakcje, usuwamy tylko TEN JEDEN OSTATNI wpis
+					await tx.transactionHistory.delete({
+						where: { id: lastTx.id },
+					});
+
+					// 2. Aktualizujemy aktywo. Jeśli ilość zjechała do 0,
+					// po prostu je "wyciszamy" (będzie widoczne jako Zamknięte)
 					await tx.asset.update({
 						where: { id: assetId },
 						data: {
-							quantity: newQuantity,
-							investedCapital: newInvested > 0 ? newInvested : 0,
-							currentValue: newCurrent > 0 ? newCurrent : 0,
+							quantity: newQuantity > 0 ? newQuantity : 0,
+							investedCapital:
+								newQuantity > 0 && newInvested > 0 ? newInvested : 0,
+							currentValue: newQuantity > 0 && newCurrent > 0 ? newCurrent : 0,
 						},
-					});
-					// Usuwamy tylko ten jeden wpis z historii
-					await tx.transactionHistory.delete({
-						where: { id: lastTx.id },
 					});
 				}
 

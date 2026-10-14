@@ -1,4 +1,3 @@
-// components/ui/XtbImporter.tsx
 "use client";
 
 import * as XLSX from "xlsx";
@@ -9,6 +8,7 @@ import React, { useState } from "react";
 
 import { Category } from "@prisma/client";
 import Image from "next/image";
+import JSZip from "jszip";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { inferTickersCategories } from "@/lib/actions/portfolio.actions";
@@ -17,6 +17,33 @@ import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+// EN: Reads workbook with 3 strategies: direct -> re-zipped via JSZip -> text fallback
+async function readWorkbookRobust(file: File): Promise<XLSX.WorkBook> {
+	const arrayBuffer = await file.arrayBuffer();
+
+	// 1) Repack ZIP first (XTB files have zero-size local headers)
+	try {
+		const zip = await JSZip.loadAsync(arrayBuffer);
+		const repacked = await zip.generateAsync({
+			type: "arraybuffer",
+			compression: "DEFLATE",
+		});
+		return XLSX.read(repacked, { type: "array", cellDates: true });
+	} catch (e) {
+		console.debug("JSZip repack failed, trying direct read...", e);
+	}
+
+	// 2) Standard read
+	try {
+		return XLSX.read(arrayBuffer, { type: "array", cellDates: true });
+	} catch (e) {
+		console.debug("Standard XLSX read failed, trying text fallback...", e);
+	}
+
+	// 3) Text fallback (CSV/HTML disguised as .xls)
+	const textData = await file.text();
+	return XLSX.read(textData, { type: "string", cellDates: true });
+}
 export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const [previewData, setPreviewData] = useState<ParsedXtbTransaction[]>([]);
 	const [isImporting, setIsImporting] = useState(false);
@@ -24,159 +51,125 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
 
-	// 1. Logika wczytywania i parowania danych
-	// Zwróć uwagę na słówko "async" dopisane do eventu:
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 		setError(null);
-		const reader = new FileReader();
 
-		// 🚀 ZMIANA 1: Zmieniamy na async, żeby móc poczekać na bazę danych
-		reader.onload = async (event: ProgressEvent<FileReader>) => {
-			try {
-				// EN: Get the raw ArrayBuffer from the reader
-				// PL: Pobieramy surowy ArrayBuffer z czytnika
-				const data = event.target?.result;
-				if (!data) return;
+		try {
+			// EN: Robust read: direct -> JSZip repack -> text fallback
+			const workbook = await readWorkbookRobust(file);
 
-				// EN: Use type: "array" for raw ArrayBuffer - most stable for browser XLSX
-				// PL: Używamy type: "array" bezpośrednio na ArrayBuffer - najstabilniejsza metoda
-				const workbook = XLSX.read(data, {
-					type: "array",
-					cellDates: true,
-				});
+			// EN: Locate the specific sheet for cash operations
+			const sheetName = workbook.SheetNames.find((n) =>
+				n.toLowerCase().startsWith("cash operat"),
+			);
 
-				// EN: Locate the specific sheet for cash operations
-				// PL: Lokalizujemy arkusz z operacjami gotówkowymi
-				const sheetName = workbook.SheetNames.find((n) =>
-					n.toLowerCase().startsWith("cash operat"),
+			if (!sheetName) {
+				setError(
+					"Nie znaleziono arkusza 'Cash Operations'! Upewnij się, że to raport XTB.",
 				);
-
-				if (!sheetName) {
-					setError(
-						"Nie znaleziono arkusza 'Cash Operations'! Upewnij się, że to raport XTB.",
-					);
-					return;
-				}
-
-				const worksheet = workbook.Sheets[sheetName];
-
-				// EN: Convert worksheet to raw rows typed safely as multidimensional unknown array
-				// PL: Konwertujemy arkusz na surowe wiersze z bezpiecznym typowaniem unknown[][]
-				const rowsRaw = XLSX.utils.sheet_to_json(worksheet, {
-					header: 1,
-				}) as unknown[][];
-
-				const headerIndex = rowsRaw.findIndex(
-					(r) => Array.isArray(r) && (r.includes("Type") || r.includes("Typ")),
-				);
-
-				if (headerIndex === -1) {
-					setError("Nie znaleziono nagłówków (Type/Typ) w arkuszu.");
-					return;
-				}
-
-				// EN: Parse actual data rows typed as native object records
-				// PL: Parsujemy dane właściwe zaczynając od headerIndex otypowane bezpiecznie
-				const rows = XLSX.utils.sheet_to_json(worksheet, {
-					range: headerIndex,
-				}) as Record<string, unknown>[];
-
-				const parsed = rows
-					.map((r) => parseXtbRow(r))
-					.filter(Boolean) as ParsedXtbTransaction[];
-
-				if (parsed.length === 0) {
-					setError("Nie znaleziono poprawnych transakcji w pliku.");
-					return;
-				}
-
-				// EN: Merge commissions and swap costs by position ID
-				// PL: Scalamy prowizje i koszty swapu po ID pozycji
-				const groupedData = parsed.reduce(
-					(acc: ParsedXtbTransaction[], current: ParsedXtbTransaction) => {
-						if (!current.positionId) {
-							acc.push(current);
-							return acc;
-						}
-
-						const existingIdx = acc.findIndex(
-							(item) => item.positionId === current.positionId,
-						);
-
-						if (existingIdx > -1) {
-							acc[existingIdx].amountPLN += current.amountPLN;
-							// EN: Ensure we don't lose the ticker during merge
-							// PL: Upewniamy się, że nie zgubimy tickera podczas scalania
-							if (!acc[existingIdx].ticker && current.ticker) {
-								acc[existingIdx].ticker = current.ticker;
-								acc[existingIdx].assetName = current.assetName;
-							}
-						} else {
-							acc.push(current);
-						}
-						return acc;
-					},
-					[],
-				);
-
-				// 🚀 ZMIANA 1.5 (NOWA): Zabezpieczenie przed rozbitymi zleceniami w ułamku sekundy
-				// PL: Gwarantuje, że "paczki" z XTB nie nadpiszą się w bazie danych
-				const keyCounts: Record<string, number> = {};
-				const deduplicatedData = groupedData.map((tx) => {
-					// Baza klucza to stary klucz + ilość + kwota
-					const baseKey = `${tx.uniqueKey}_${tx.quantity}_${tx.amountPLN}`;
-
-					if (keyCounts[baseKey]) {
-						keyCounts[baseKey]++;
-						tx.uniqueKey = `${baseKey}_${keyCounts[baseKey]}`; // np. ..._10_4900_2
-					} else {
-						keyCounts[baseKey] = 1;
-						tx.uniqueKey = baseKey; // np. ..._10_4900
-					}
-					return tx;
-				});
-
-				// 🚀 ZMIANA 2: TUTAJ WCHODZI NASZA NOWA LOGIKA UCZENIA SIĘ (używamy deduplicatedData)
-
-				// EN: Extract unique tickers from the deduplicated data
-				// PL: 1. Pobieramy unikalne tickery
-				const uniqueTickers = Array.from(
-					new Set(deduplicatedData.map((tx) => tx.ticker).filter(Boolean)),
-				) as string[];
-
-				// EN: Fetch learned categories from the database
-				// PL: 2. Pobieramy z bazy zapamiętane kategorie dla tych tickerów
-				const learnedCategories = await inferTickersCategories(
-					uniqueTickers,
-					portfolioId,
-				);
-
-				// EN: Override parsed categories with learned ones
-				// PL: 3. Nadpisujemy kategorie tymi wyciągniętymi z bazy
-				const formattedPreview = deduplicatedData.map((tx) => {
-					if (tx.ticker && learnedCategories[tx.ticker]) {
-						return { ...tx, category: learnedCategories[tx.ticker] };
-					}
-					return tx;
-				});
-
-				// 🚀 ZMIANA 3: Używamy 'formattedPreview' do wyświetlenia
-				setPreviewData(formattedPreview);
-				setSelectedIndices(formattedPreview.map((_, i) => i));
-			} catch (err: unknown) {
-				setError("Błąd podczas odczytu pliku Excel.");
-				console.error("Błąd podczas odczytu pliku Excel:", err);
-				alert(
-					"Nie udało się odczytać pliku. Spróbuj otworzyć go w Excelu i zapisać ponownie jako .xlsx",
-				);
+				return;
 			}
-		};
 
-		reader.readAsArrayBuffer(file);
+			const worksheet = workbook.Sheets[sheetName];
+
+			// EN: Convert worksheet to raw rows typed safely as multidimensional unknown array
+			const rowsRaw = XLSX.utils.sheet_to_json(worksheet, {
+				header: 1,
+			}) as unknown[][];
+
+			const headerIndex = rowsRaw.findIndex(
+				(r) => Array.isArray(r) && (r.includes("Type") || r.includes("Typ")),
+			);
+
+			if (headerIndex === -1) {
+				setError("Nie znaleziono nagłówków (Type/Typ) w arkuszu.");
+				return;
+			}
+
+			// EN: Parse actual data rows typed as native object records
+			const rows = XLSX.utils.sheet_to_json(worksheet, {
+				range: headerIndex,
+			}) as Record<string, unknown>[];
+
+			const parsed = rows
+				.map((r) => parseXtbRow(r))
+				.filter(Boolean) as ParsedXtbTransaction[];
+
+			if (parsed.length === 0) {
+				setError("Nie znaleziono poprawnych transakcji w pliku.");
+				return;
+			}
+
+			// EN: Merge commissions and swap costs by position ID
+			const groupedData = parsed.reduce(
+				(acc: ParsedXtbTransaction[], current: ParsedXtbTransaction) => {
+					if (!current.positionId) {
+						acc.push(current);
+						return acc;
+					}
+
+					const existingIdx = acc.findIndex(
+						(item) => item.positionId === current.positionId,
+					);
+
+					if (existingIdx > -1) {
+						acc[existingIdx].amountPLN += current.amountPLN;
+						// EN: Ensure we don't lose the ticker during merge
+						if (!acc[existingIdx].ticker && current.ticker) {
+							acc[existingIdx].ticker = current.ticker;
+							acc[existingIdx].assetName = current.assetName;
+						}
+					} else {
+						acc.push(current);
+					}
+					return acc;
+				},
+				[],
+			);
+
+			// EN: Generate precise unique keys to prevent duplicate collisions during rapid trades
+			const keyCounts: Record<string, number> = {};
+			const deduplicatedData = groupedData.map((tx) => {
+				const baseKey = `${tx.uniqueKey}_${tx.quantity}_${tx.amountPLN}`;
+
+				if (keyCounts[baseKey]) {
+					keyCounts[baseKey]++;
+					tx.uniqueKey = `${baseKey}_${keyCounts[baseKey]}`;
+				} else {
+					keyCounts[baseKey] = 1;
+					tx.uniqueKey = baseKey;
+				}
+				return tx;
+			});
+
+			// EN: Extract unique tickers and fetch learned categories from the database
+			const uniqueTickers = Array.from(
+				new Set(deduplicatedData.map((tx) => tx.ticker).filter(Boolean)),
+			) as string[];
+
+			const learnedCategories = await inferTickersCategories(
+				uniqueTickers,
+				portfolioId,
+			);
+
+			// EN: Override parsed categories with learned ones
+			const formattedPreview = deduplicatedData.map((tx) => {
+				if (tx.ticker && learnedCategories[tx.ticker]) {
+					return { ...tx, category: learnedCategories[tx.ticker] };
+				}
+				return tx;
+			});
+
+			setPreviewData(formattedPreview);
+			setSelectedIndices(formattedPreview.map((_, i) => i));
+		} catch (err: unknown) {
+			setError("Błąd podczas odczytu pliku Excel.");
+			console.error("XLSX Processing Error:", err);
+		}
 	};
-	// 2. Funkcje zarządzania podglądem
+
 	const handleRemoveRow = (index: number) => {
 		setPreviewData((prev) => prev.filter((_, i) => i !== index));
 		setSelectedIndices((prev) =>
@@ -198,17 +191,16 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 		setIsImporting(true);
 		setError(null);
 		let count = 0;
-		let duplicateCount = 0;
 
-		// 🚀 FILTR: Bierzemy tylko te wiersze, których indeksy są w selectedIndices
+		// EN: Array to track ignored items for detailed error reporting
+		const duplicateItems: string[] = [];
+
 		const dataToSave = previewData.filter((_, i) =>
 			selectedIndices.includes(i),
 		);
 
 		for (const tx of dataToSave) {
 			try {
-				// 🚀 EN: Inner try-catch ensures that one duplicate doesn't abort the remaining loop items
-				// 🚀 PL: Wewnętrzny try-catch sprawia, że jeden duplikat nie przerywa sprawdzania reszty listy
 				await saveXtbTransaction(tx, portfolioId);
 				count++;
 			} catch (err: unknown) {
@@ -221,7 +213,10 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 					errMsg.toLowerCase().includes("istnieje") ||
 					errMsg.toLowerCase().includes("dodane")
 				) {
-					duplicateCount++;
+					// EN: Collect skipped transactions
+					duplicateItems.push(
+						`[${tx.type}] ${tx.assetName || tx.ticker} (${formatCurrency(tx.amountPLN)} PLN)`,
+					);
 				} else {
 					setIsImporting(false);
 					toast.error("Wystąpił nieoczekiwany błąd podczas zapisywania.");
@@ -236,15 +231,14 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 				toast.success(`Sukces! Zaimportowano ${count} transakcji.`);
 			}
 
-			// 🚀 EN: Set non-blocking error view summary after the complete processing sequence finishes
-			// 🚀 PL: Ustawiamy podsumowanie błędów na dole po zakończeniu przetwarzania całej pętli
-			if (duplicateCount > 0 && count === 0) {
+			// EN: Generate detailed summary regarding duplicates
+			if (duplicateItems.length > 0 && count === 0) {
 				setError(
-					"Wybrane aktywo z tą datą i kwotą jest już dodane w tym portfelu.",
+					`Wszystkie pozycje zostały odrzucone jako duplikaty:\n${duplicateItems.join(", ")}`,
 				);
-			} else if (duplicateCount > 0) {
+			} else if (duplicateItems.length > 0) {
 				setError(
-					`Zaimportowano ${count} transakcji. Pominięto ${duplicateCount} pozycji, które były już dodane w tym portfelu.`,
+					`Zaimportowano ${count} transakcji. Pominięto ${duplicateItems.length} z powodu duplikatów: ${duplicateItems.join(", ")}`,
 				);
 			} else {
 				setError(null);
@@ -276,9 +270,7 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 
 	return (
 		<div className="flex flex-col gap-8 animate-in fade-in duration-300">
-			{/* ========================================= */}
 			{/* 1. STREFA WGRYWANIA (DROPZONE) */}
-			{/* ========================================= */}
 			<div className="relative group">
 				<input
 					type="file"
@@ -309,23 +301,53 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 				</label>
 			</div>
 
-			{/* ========================================= */}
-			{/* 2. KOMUNIKAT BŁĘDU */}
-			{/* ========================================= */}
+			{/* 2. KOMUNIKAT BŁĘDU (Szczegółowy) */}
 			{error && (
-				<div className="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 dark:text-rose-500 text-xs font-bold uppercase tracking-wider animate-in slide-in-from-top-2">
-					<AlertTriangle className="h-5 w-5 shrink-0" />
-					{error}
+				<div className="flex items-start gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 dark:text-rose-500 text-xs font-bold uppercase tracking-wider animate-in slide-in-from-top-2 whitespace-pre-wrap">
+					<AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+					<span>{error}</span>
 				</div>
 			)}
 
-			{/* ========================================= */}
 			{/* 3. TABELA PODGLĄDU I WERYFIKACJI */}
-			{/* ========================================= */}
 			{previewData.length > 0 && (
-				<div className="border border-t-border rounded-2xl bg-t-bg-panel shadow-sm overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 duration-500">
-					{/* Wrapper przewijalny dla samej tabeli */}
-					<div className="overflow-x-auto no-scrollbar">
+				<div className="border border-t-border rounded-2xl bg-t-bg-panel shadow-sm flex flex-col animate-in slide-in-from-bottom-4 duration-500 relative">
+					{/* ========================================= */}
+					{/* EN: STICKY HEADER WITH ACTION BAR */}
+					{/* ========================================= */}
+					<div className="sticky top-0 z-20 p-4 sm:p-6 bg-t-bg-panel/90 backdrop-blur-md flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-t-border shadow-sm rounded-t-2xl">
+						<div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+							<p className="text-[11px] font-black uppercase tracking-widest text-t-text-primary">
+								Wybrano:{" "}
+								<span className="text-blue-500">{selectedIndices.length}</span>{" "}
+								z {previewData.length}
+							</p>
+							<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest font-bold mt-1">
+								Zatwierdź przypisane kategorie i zignoruj zbędne pozycje.
+							</p>
+						</div>
+
+						<button
+							onClick={handleFinalImport}
+							disabled={isImporting || selectedIndices.length === 0}
+							className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white h-12 px-8 rounded-xl font-bold uppercase tracking-widest text-[10px] disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all"
+						>
+							{isImporting ? (
+								<span className="flex items-center gap-2">
+									<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+									Importowanie...
+								</span>
+							) : (
+								<>
+									<CheckCircle className="h-4 w-4" />
+									Zatwierdź Wybrane
+								</>
+							)}
+						</button>
+					</div>
+
+					{/* EN: Scrollable wrapper for the table content */}
+					<div className="overflow-x-auto overflow-y-visible no-scrollbar">
 						<table className="w-full text-sm text-left">
 							<thead className="bg-t-bg-sticky border-b border-t-border-subtle">
 								<tr>
@@ -340,7 +362,7 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 									<th className="p-4 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary whitespace-nowrap">
 										Data
 									</th>
-									<th className="p-3 text-left">Typ operacji</th>{" "}
+									<th className="p-3 text-left">Typ operacji</th>
 									<th className="p-4 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 										Aktywo
 									</th>
@@ -363,10 +385,10 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 											key={idx}
 											className={cn(
 												"border-b border-t-border-subtle transition-all",
-												!isSelected && "opacity-40 grayscale", // Wyciszenie odznaczonych
+												!isSelected && "opacity-40 grayscale",
 												isSelected &&
 													isEven &&
-													"bg-t-bg-base/30 dark:bg-black/20", // Paski zebry dla zaznaczonych
+													"bg-t-bg-base/30 dark:bg-black/20",
 												isSelected && !isEven && "hover:bg-t-hover",
 											)}
 										>
@@ -381,18 +403,6 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 											<td className="p-4 text-[11px] font-bold tracking-widest uppercase text-t-text-secondary whitespace-nowrap">
 												{new Date(tx.date).toLocaleDateString("pl-PL")}
 											</td>
-											{/* NOWA KOLUMNA Z ODPOWIEDNIM KOLOREM */}
-											{/* <td className="p-3 font-bold">
-												{tx.type === "BUY" ? (
-													<span className="text-emerald-500">Kupno</span>
-												) : tx.type === "SELL" ? (
-													<span className="text-rose-500">Sprzedaż</span>
-												) : tx.type === "DEPOSIT" ? (
-													<span className="text-blue-500">Wpłata</span>
-												) : (
-													<span className="text-slate-500">{tx.type}</span>
-												)}
-											</td> */}
 											<td className="p-3 font-bold text-xs uppercase tracking-wider">
 												{tx.type === "BUY" ? (
 													<span className="text-rose-500">Kupno</span>
@@ -457,40 +467,6 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 								})}
 							</tbody>
 						</table>
-					</div>
-
-					{/* ========================================= */}
-					{/* 4. PASEK AKCJI (FOOTER TABELI) */}
-					{/* ========================================= */}
-					<div className="p-6 bg-t-bg-base/30 dark:bg-black/20 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-t-border-subtle">
-						<div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-							<p className="text-[11px] font-black uppercase tracking-widest text-t-text-primary">
-								Wybrano:{" "}
-								<span className="text-blue-500">{selectedIndices.length}</span>{" "}
-								z {previewData.length}
-							</p>
-							<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest font-bold mt-1">
-								Tylko zaznaczone transakcje zostaną dodane do portfela.
-							</p>
-						</div>
-
-						<button
-							onClick={handleFinalImport}
-							disabled={isImporting || selectedIndices.length === 0}
-							className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white h-12 px-8 rounded-xl font-bold uppercase tracking-widest text-[10px] disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all"
-						>
-							{isImporting ? (
-								<span className="flex items-center gap-2">
-									<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-									Importowanie...
-								</span>
-							) : (
-								<>
-									<CheckCircle className="h-4 w-4" />
-									Zatwierdź Wybrane
-								</>
-							)}
-						</button>
 					</div>
 				</div>
 			)}

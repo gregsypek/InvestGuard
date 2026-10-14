@@ -14,6 +14,7 @@ const TICKER_MAP: Record<string, string> = {
 	"EIMI.UK": "EIMI.L",
 	"ALAG.UK": "ALAG.L",
 	BTC: "BTC-USD",
+	"OWL.US": "OWL",
 };
 
 const GLOBAL_INDICES: Record<string, string> = {

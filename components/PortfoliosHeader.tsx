@@ -54,7 +54,7 @@ export const PortfoliosHeader = ({
 								className={cn(
 									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
 									selectedIds.includes("ALL")
-										? "bg-blue-500 text-white border-transparent shadow-sm"
+										? "bg-theme-primary text-white border-transparent shadow-sm"
 										: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
 								)}
 							/>
@@ -89,7 +89,7 @@ export const PortfoliosHeader = ({
 			}
 			mainStatValue={formatCurrency(totalValue)}
 			secondaryStats={
-			<>
+				<>
 					{/* Liczba portfeli */}
 					<ValueCard
 						label="Liczba portfeli"

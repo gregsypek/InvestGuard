@@ -15,6 +15,13 @@ const YAHOO_SYMBOLS: Record<string, string> = {
 	BTC: "BTC-USD",
 };
 
+// EN: Live Forex pairs directly from Yahoo Finance to catch morning currency swings
+const FX_SYMBOLS: Record<string, string> = {
+	USD: "USDPLN=X",
+	EUR: "EURPLN=X",
+	GBP: "GBPPLN=X",
+};
+
 const TICKER_MAP: Record<string, string> = {
 	"SP20.NL": "IS20.DE",
 	"EIMI.UK": "EIMI.L",
@@ -42,7 +49,12 @@ export async function GET(req: Request) {
 			},
 		});
 
-		const symbolsToFetch = new Set<string>(Object.values(YAHOO_SYMBOLS));
+		// EN: Include indices AND live forex pairs in the batch request
+		const symbolsToFetch = new Set<string>([
+			...Object.values(YAHOO_SYMBOLS),
+			...Object.values(FX_SYMBOLS),
+		]);
+
 		premiumPortfolios.forEach((p) =>
 			p.assets.forEach((a) => {
 				const baseTicker = a.ticker!.split("_")[0];
@@ -60,7 +72,7 @@ export async function GET(req: Request) {
 		const quotesArray = Array.isArray(results) ? results : [results];
 		let updatedCount = 0;
 
-		// A. Aktualizacja Indeksów
+		// A. Update Market Indices
 		const today = new Date();
 		today.setUTCHours(0, 0, 0, 0);
 
@@ -94,11 +106,26 @@ export async function GET(req: Request) {
 			});
 		}
 
-		// B. Aktualizacja Portfeli Premium
-		const gbpRate = (await getLiveExchangeRate("GBP"))?.value || 5.0;
-		const usdRate = (await getLiveExchangeRate("USD"))?.value || 4.0;
-		const eurRate = (await getLiveExchangeRate("EUR"))?.value || 4.3;
+		// EN: B. Extract real-time Forex rates from Yahoo Finance results (Fallback to database if API fails)
+		const getFxRate = (symbol: string, fallback: number) => {
+			const q = quotesArray.find((item) => item && item.symbol === symbol);
+			return q?.regularMarketPrice || fallback;
+		};
 
+		const gbpRate = getFxRate(
+			FX_SYMBOLS.GBP,
+			(await getLiveExchangeRate("GBP"))?.value || 5.0,
+		);
+		const usdRate = getFxRate(
+			FX_SYMBOLS.USD,
+			(await getLiveExchangeRate("USD"))?.value || 4.0,
+		);
+		const eurRate = getFxRate(
+			FX_SYMBOLS.EUR,
+			(await getLiveExchangeRate("EUR"))?.value || 4.3,
+		);
+
+		// C. Update Premium Portfolios
 		for (const portfolio of premiumPortfolios) {
 			for (const asset of portfolio.assets) {
 				const baseTicker = asset.ticker!.split("_")[0];
@@ -124,6 +151,7 @@ export async function GET(req: Request) {
 					where: { id: asset.id },
 					data: {
 						currentValue: priceInPLN * asset.quantity,
+						// EN: Store native daily market change percentage
 						dailyChange: quote.regularMarketChangePercent || 0,
 						updatedAt: new Date(),
 					},
@@ -138,7 +166,7 @@ export async function GET(req: Request) {
 
 		return NextResponse.json({
 			success: true,
-			message: `Pobrano dane dla indeksów i ${updatedCount} aktywów Premium.`,
+			message: `Pobrano dane dla indeksów i ${updatedCount} aktywów Premium (Kurs USD: ${usdRate.toFixed(4)} PLN).`,
 		});
 	} catch (error) {
 		console.error("[CRON HOURLY] Błąd:", error);

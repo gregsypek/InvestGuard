@@ -74,3 +74,20 @@ export async function updateUserAlerts(alerts: {
 		return { success: false, error: "Nie udało się zapisać ustawień." };
 	}
 }
+export async function updateUserPreferences(
+	userId: string,
+	preferences: { mainCurrency?: string; appLanguage?: string },
+) {
+	try {
+		await db.user.update({
+			where: { id: userId },
+			data: preferences,
+		});
+
+		revalidatePath("/"); // Odświeżamy cache, aby reszta aplikacji "zauważyła" zmianę
+		return { success: true };
+	} catch (error) {
+		console.error("Błąd podczas zapisu preferencji:", error);
+		return { success: false, error: "Nie udało się zapisać ustawień." };
+	}
+}

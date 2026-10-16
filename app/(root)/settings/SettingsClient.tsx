@@ -32,9 +32,15 @@ import { ObservedMarketsManager } from "@/components/settings/ObservedMartektsMa
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { TwoFactorManager } from "@/components/settings/TwoFactorManager";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { updateUserPreferences } from "@/lib/actions/user.actions";
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
 interface SettingsClientProps {
+	userId: string;
+	initialCurrency: string;
+	initialLanguage: string;
 	assets: { name: string; isObserved: boolean; category: string }[];
 	maxLimit: number;
 	userIndices: string[];
@@ -48,6 +54,9 @@ interface SettingsClientProps {
 }
 
 export default function SettingsClient({
+	userId,
+	initialCurrency,
+	initialLanguage,
 	assets,
 	maxLimit,
 	userIndices,
@@ -68,11 +77,12 @@ export default function SettingsClient({
 		showPortfolioAssetsInRadar: true,
 	});
 
-	// EN: State for the new Preferences
+	// Pobieramy początkowe wartości z bazy danych
 	const [preferences, setPreferences] = useState({
-		currency: "PLN",
-		language: "PL",
+		currency: initialCurrency || "PLN",
+		language: initialLanguage || "PL",
 	});
+	const [isPending, startTransition] = useTransition();
 
 	const toggleSetting = (key: keyof typeof settings) => {
 		const newValue = !settings[key];
@@ -92,15 +102,6 @@ export default function SettingsClient({
 		setSettings((prev) => ({ ...prev, [key]: newValue }));
 	};
 
-	// EN: Handlers for Preference Updates
-	const handlePreferenceChange = (
-		key: keyof typeof preferences,
-		value: string,
-	) => {
-		setPreferences((prev) => ({ ...prev, [key]: value }));
-		// Future: Save to DB or robust Cookie system here
-	};
-
 	const isAdmin = userRole === "ADMIN";
 	const TABS = [
 		{ id: "dashboard", label: "Pulpit i Wygląd" },
@@ -109,6 +110,28 @@ export default function SettingsClient({
 		{ id: "security", label: "Bezpieczeństwo" },
 		...(isAdmin ? [{ id: "bonds-admin", label: "Parametry Obligacji" }] : []),
 	];
+
+	// 🚀 PREMIUM UX: Aktualizacja stanu i zapis w tle
+	const handlePreferenceChange = (
+		key: keyof typeof preferences,
+		value: string,
+	) => {
+		// 1. Zmiana w interfejsie następuje natychmiast (bez czekania na serwer)
+		setPreferences((prev) => ({ ...prev, [key]: value }));
+
+		// 2. Cichy zapis w tle
+		startTransition(async () => {
+			const result = await updateUserPreferences(userId, {
+				[key === "currency" ? "mainCurrency" : "appLanguage"]: value,
+			});
+
+			if (result.success) {
+				toast.success("Zapisano nowe preferencje!");
+			} else {
+				toast.error(result.error || "Wystąpił błąd podczas zapisu");
+			}
+		});
+	};
 
 	useEffect(() => {
 		if (activeTab === "bonds-admin" && !isAdmin) {

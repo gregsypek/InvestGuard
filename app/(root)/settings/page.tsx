@@ -32,7 +32,14 @@ export default async function SettingsPage({ searchParams }: Props) {
 	const userRole = session.user.role || "REGULAR";
 	const dbUser = await db.user.findUnique({
 		where: { id: session.user.id },
-		select: { observedIndices: true, password: true, isTwoFactorEnabled: true },
+		select: {
+			id: true,
+			observedIndices: true,
+			password: true,
+			isTwoFactorEnabled: true,
+			mainCurrency: true,
+			appLanguage: true,
+		},
 	});
 
 	const hasPassword = !!dbUser?.password;
@@ -67,6 +74,9 @@ export default async function SettingsPage({ searchParams }: Props) {
 
 	return (
 		<SettingsClient
+			userId={dbUser?.id || session.user.id}
+			initialCurrency={dbUser?.mainCurrency || "PLN"}
+			initialLanguage={dbUser?.appLanguage || "PL"}
 			assets={uniqueAssets}
 			maxLimit={maxLimit}
 			userIndices={userIndices}

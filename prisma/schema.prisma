@@ -199,6 +199,9 @@ model User {
   alertPlans         Boolean @default(true)
   // 🚀 DODANE: ID domyślnego portfela, by pomijać ekran "Wybierz portfel"
   defaultPortfolioId String?
+  // 🚀 DODANE: Preferencje regionalne i walutowe (Premium UX)
+  mainCurrency       String  @default("PLN") // Obsługiwane: "PLN", "USD", "EUR"
+  appLanguage        String  @default("PL") // Obsługiwane: "PL", "EN"
 }
 
 model Account {

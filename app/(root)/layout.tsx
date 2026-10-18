@@ -9,6 +9,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { getStockLogo } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
 export default async function RootLayout({
 	children,
@@ -67,6 +68,7 @@ export default async function RootLayout({
 	const userControl = session ? <UserButton /> : <LoginButton />;
 
 	const fxRates = await db.exchangeRate.findMany();
+	console.log("🚀 ~ RootLayout ~ fxRates:", fxRates);
 	const marketAssets = await db.asset.findMany({
 		where: {
 			portfolioId: selectedPortfolioId,
@@ -115,6 +117,30 @@ export default async function RootLayout({
 			};
 		}),
 	];
+	// if (!session?.user?.id) redirect("/sign-in");
+
+	// 🚀 2. BEZPIECZNIE POBIERZ WALUTĘ (Wykona się tylko dla zalogowanego użytkownika)
+	let initialCurrency = "PLN";
+
+	if (session?.user?.id) {
+		const dbUser = await db.user.findUnique({
+			where: { id: session.user.id },
+			select: { mainCurrency: true },
+		});
+
+		if (dbUser?.mainCurrency) {
+			initialCurrency = dbUser.mainCurrency;
+		}
+	}
+
+	const dbExchangeRates = await db.exchangeRate.findMany();
+	const ratesMap: Record<string, number> = { PLN: 1.0 };
+
+	dbExchangeRates.forEach((rate) => {
+		const currencyCode = rate.code.replace("PLN", ""); // np. USDPLN -> USD
+		ratesMap[currencyCode] = rate.value;
+	});
+
 	return (
 		// 🚀 KLUCZOWA ZMIANA 3: Wstrzyknięcie atrybutu data-theme={effectiveTheme}
 		<div
@@ -122,7 +148,7 @@ export default async function RootLayout({
 			className="flex h-screen overflow-hidden bg-background"
 			data-theme={effectiveTheme}
 		>
-			<ChartProvider>
+			<ChartProvider initialCurrency={initialCurrency} exchangeRates={ratesMap}>
 				<Aside />
 				<div className="flex flex-col flex-1 min-w-0">
 					<Header

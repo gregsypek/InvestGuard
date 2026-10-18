@@ -1,24 +1,29 @@
 "use client";
 
-import { Filter, History, Wallet2 } from "lucide-react";
+import { History, Wallet2 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { AppHeaderLayout } from "./shared/AppHeaderLayout";
 import { FilterBadge } from "./shared/FilterBadge";
+import { PortfolioWithAssets } from "@/lib/types";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
+import { convertFromPLN } from "@/lib/utils/convert-currency";
 import { useChartContext } from "./providers/ChartProvider";
 
 interface ActivityHeaderProps {
 	totalTransactions: number; // Kept for backwards compatibility
 	hasActiveFilters: boolean;
-	portfolios: any[];
+	portfolios: PortfolioWithAssets[];
 }
 
 export function ActivityHeader({
 	hasActiveFilters,
 	portfolios,
 }: ActivityHeaderProps) {
-	const { selectedIds, togglePortfolio } = useChartContext();
+	const { selectedIds, togglePortfolio, currency, convertPLN } =
+		useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
 
 	const dynamicName = selectedIds.includes("ALL")
 		? "Wszystkie Portfele"
@@ -33,7 +38,7 @@ export function ActivityHeader({
 			(sum, p) =>
 				sum +
 				p.assets.reduce(
-					(assetSum: number, a: any) => assetSum + Number(a.currentValue),
+					(assetSum: number, a) => assetSum + Number(a.currentValue),
 					0,
 				),
 			0,
@@ -106,17 +111,16 @@ export function ActivityHeader({
 					<span>Wszystkie Zarejestrowane</span>
 				</>
 			}
-			mainStatValue={dynamicTotalTransactions}
+			mainStatValue={convertFromPLN(dynamicTotalTransactions)}
+			// mainStatSuffix={currencySymbol}
 			mainStatSuffix="szt."
 			secondaryStats={
 				<ValueCard label="Bieżąca Wycena" icon={Wallet2} className="text-white">
 					<div className="flex items-baseline gap-1.5 font-mono">
 						<span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
-							{new Intl.NumberFormat("pl-PL", {
-								style: "currency",
-								currency: "PLN",
-								maximumFractionDigits: 0,
-							}).format(dynamicTotalValue)}
+							{/* 🚀 FIX: Używamy globalnego przelicznika, 0 miejsc po przecinku i dynamicznego symbolu */}
+							{formatCurrency(convertPLN(dynamicTotalValue), 0)}{" "}
+							{currencySymbol}
 						</span>
 					</div>
 				</ValueCard>

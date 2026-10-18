@@ -8,8 +8,8 @@ export function usePortfoliosComparison(
 	snapshots: SimulatedSnapshot[] = [],
 	realSnapshots: SimulatedSnapshot[] = [],
 ) {
-	const { chartMode, dataMode } = useChartContext();
-
+	// 🚀 Pobieramy funkcję przeliczającą
+	const { chartMode, dataMode, convertPLN } = useChartContext();
 	const portfoliosComparisonData = useMemo(() => {
 		// Jeśli użytkownik wybrał "REAL", ale baza snapshotów jest pusta,
 		// fallbackujemy do symulacji (lub transakcji), żeby wykres nie był pusty.
@@ -29,12 +29,15 @@ export function usePortfoliosComparison(
 			if (!dataByDate[dateStr]) {
 				dataByDate[dateStr] = { date: snapshot.date };
 			}
+			// 🚀 Przeliczamy zainwestowany kapitał i wartość na nową walutę
+			const convertedTotal = convertPLN(snapshot.totalValue);
+			const convertedInvested = convertPLN(snapshot.investedValue);
 
-			const pnlValue = snapshot.totalValue - snapshot.investedValue;
+			const pnlValue = convertedTotal - convertedInvested;
+
+			// 🚀 Procent zysku jest matematycznie identyczny niezależnie od waluty, więc liczymy go z przeliczonych danych (dla konsekwencji)
 			const pnlPercentage =
-				snapshot.investedValue > 0
-					? (pnlValue / snapshot.investedValue) * 100
-					: 0;
+				convertedInvested > 0 ? (pnlValue / convertedInvested) * 100 : 0;
 
 			dataByDate[dateStr][snapshot.portfolioId] =
 				chartMode === "PERCENTAGE"
@@ -45,7 +48,8 @@ export function usePortfoliosComparison(
 		return (Object.values(dataByDate) as CompareDataPoint[]).sort(
 			(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 		);
-	}, [snapshots, realSnapshots, chartMode, dataMode]);
+	}, [snapshots, realSnapshots, chartMode, dataMode, convertPLN]);
 
 	return { portfoliosComparisonData };
 }
+

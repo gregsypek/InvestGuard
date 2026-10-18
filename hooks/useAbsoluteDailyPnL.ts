@@ -7,7 +7,8 @@ export function useAbsoluteDailyPnL(
 	snapshots: SimulatedSnapshot[] = [],
 	realSnapshots: SimulatedSnapshot[] = [],
 ) {
-	const { dataMode } = useChartContext();
+	// 🚀 Pobieramy funkcję przeliczającą z kontekstu
+	const { dataMode, convertPLN } = useChartContext();
 
 	const absoluteChartData = useMemo(() => {
 		// Wybór źródła danych na podstawie filtra
@@ -52,15 +53,15 @@ export function useAbsoluteDailyPnL(
 
 			finalAbsoluteData.push({
 				date: dateStr,
-				exactChangePLN: Number(dayExactChangePLN.toFixed(2)),
-				totalPortfolioValue: Number(snap.totalValue.toFixed(2)),
-				netCashFlow: Number(dayNetCashFlow.toFixed(2)),
+				exactChangePLN: Number(convertPLN(dayExactChangePLN).toFixed(2)),
+				totalPortfolioValue: Number(convertPLN(snap.totalValue).toFixed(2)),
+				netCashFlow: Number(convertPLN(dayNetCashFlow).toFixed(2)),
 				isLive: snap.id === "LIVE",
 			});
 		});
 
 		return finalAbsoluteData;
-	}, [snapshots, realSnapshots, dataMode]);
+	}, [snapshots, realSnapshots, dataMode, convertPLN]);
 
 	return { absoluteChartData };
 }

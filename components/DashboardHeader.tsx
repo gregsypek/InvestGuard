@@ -8,32 +8,21 @@ import {
 	Wallet2,
 	Wrench,
 } from "lucide-react";
+// 🚀 1. Dodajemy importy typów prosto z Prisma!
+import { Asset, Category } from "@prisma/client";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useCallback, useMemo, useState } from "react";
 
-import { AppHeaderLayout } from "./shared/AppHeaderLayout"; // Nasz nowy Wrapper
+import { AppHeaderLayout } from "./shared/AppHeaderLayout";
+import { CATEGORY_LABELS } from "@/lib/constants";
 import { FilterBadge } from "./shared/FilterBadge";
 import Link from "next/link";
 import { PortfolioWithAssets } from "@/lib/types";
 import { ValueCard } from "./shared/ValueCard";
 import { calculateAssetPL } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 import { usePathname } from "next/navigation";
-
-// Słownik kategorii zgodny z Prisma Schema 'enum Category'
-const ASSET_TYPE_MAP: Record<string, string> = {
-	BONDS: "Obligacje",
-	DEVELOPED: "Rynki Rozwinięte",
-	EMERGING: "Rynki Wschodzące",
-	GOLD: "Złoto",
-	BOOSTER: "Booster",
-	CASH: "Gotówka",
-	CRYPTO: "Kryptowaluty",
-	COMMODITIES: "Surowce",
-	REAL_ESTATE: "Nieruchomości",
-	CUSTOM: "Aktywa Alternatywne",
-	UNKNOWN: "Inne",
-};
 
 type Props = {
 	portfolio: PortfolioWithAssets;
@@ -50,16 +39,17 @@ export const DashboardHeader = ({
 	customBreadcrumbs,
 	hideStats = false,
 }: Props) => {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
 	const pathname = usePathname();
 	const isAddAssetPage = pathname.endsWith("/add-asset");
 	const isSettingsPage = pathname.endsWith("/settings");
 
-	// Stabilna referencja do aktywów (rozwiązuje błąd React Compiler)
-	const assets = useMemo(() => {
+	// Wymuszamy, by assets zawsze były tablicą typu Asset[]
+	const assets = useMemo<Asset[]>(() => {
 		return portfolio && Array.isArray(portfolio.assets) ? portfolio.assets : [];
 	}, [portfolio]);
 
-	// --- STAN I LOGIKA FILTRÓW KATEGORII ---
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([
 		"ALL",
 	]);
@@ -76,40 +66,46 @@ export const DashboardHeader = ({
 		});
 	}, []);
 
-	// Unikalne kategorie obecne w tym portfelu
+	// 🚀 2. Usuwamy "any" - opieramy się tylko na a.category z modelu Asset
 	const availableCategories = useMemo(() => {
 		if (assets.length === 0) return [];
-		const types = new Set(
-			assets.map((a: any) => a.category || a.type || a.assetType),
-		);
-		return Array.from(types).filter(Boolean) as string[];
+		const types = new Set(assets.map((a) => a.category));
+		// Wymuszamy typ Category z Prisma dla bezpieczeństwa
+		return Array.from(types).filter(Boolean) as Category[];
 	}, [assets]);
 
-	// Filtrowanie aktywów w locie
+	// 🚀 3. Usuwamy "any" przy filtrowaniu
 	const filteredAssets = useMemo(() => {
 		if (assets.length === 0) return [];
 		if (selectedCategories.includes("ALL")) return assets;
-		return assets.filter((asset: any) => {
-			const cat = asset.category || asset.type || asset.assetType;
-			return selectedCategories.includes(cat);
+		return assets.filter((asset) => {
+			return selectedCategories.includes(asset.category);
 		});
 	}, [assets, selectedCategories]);
 
-	// Przeliczanie statystyk
 	const assetsWithPL = useMemo(() => {
 		return filteredAssets.map((asset) => {
-			const { profitAmount, profitPercent } = calculateAssetPL(asset);
+			// calculateAssetPL oczekuje obiektu, który ma investedCapital i currentValue
+			const { profitAmount, profitPercent } = calculateAssetPL({
+				investedCapital: asset.investedCapital || 0,
+				currentValue: asset.currentValue || 0,
+			});
 			return { ...asset, profitAmount, profitPercent };
 		});
 	}, [filteredAssets]);
 
 	const totalPortfolioValue = useMemo(
-		() => filteredAssets.reduce((sum, asset) => sum + asset.currentValue, 0),
+		() =>
+			filteredAssets.reduce((sum, asset) => sum + (asset.currentValue || 0), 0),
 		[filteredAssets],
 	);
 
 	const totalInvestedCapital = useMemo(
-		() => assetsWithPL.reduce((sum, asset) => sum + asset.investedCapital, 0),
+		() =>
+			assetsWithPL.reduce(
+				(sum, asset) => sum + (asset.investedCapital || 0),
+				0,
+			),
 		[assetsWithPL],
 	);
 
@@ -209,7 +205,11 @@ export const DashboardHeader = ({
 									<FilterBadge
 										key={type}
 										id={type}
-										label={ASSET_TYPE_MAP[type] || type}
+										// 🚀 4. Kluczowy fix: Mówimy TS-owi, że type na 100% należy do kluczy z CATEGORY_LABELS
+										label={
+											CATEGORY_LABELS[type as keyof typeof CATEGORY_LABELS] ||
+											type
+										}
 										isSelected={isSelected}
 										onToggle={toggleCategory}
 										className={cn(
@@ -235,16 +235,18 @@ export const DashboardHeader = ({
 					</span>
 				</>
 			}
-			mainStatValue={formatCurrency(totalPortfolioValue)}
+			mainStatValue={formatCurrency(convertPLN(totalPortfolioValue))}
+			mainStatSuffix={currencySymbol} // 🚀 FIX: Przekazujemy tu znaczek ($ / € / PLN) z Kontekstu!
 			secondaryStats={
 				!hideStats && (
 					<>
 						<ValueCard
 							label="Zainwestowany kapitał"
 							icon={Container}
-							value={totalInvestedCapital}
+							// 🚀 5. FIX: Dodano convertPLN() dla zainwestowanego kapitału!
+							value={convertPLN(totalInvestedCapital)}
 							formatString
-							suffix="PLN"
+							suffix={currencySymbol}
 						/>
 						<ValueCard label="Całkowity Wynik (P&L)">
 							<div className="flex items-center gap-2 font-mono">
@@ -259,7 +261,7 @@ export const DashboardHeader = ({
 									)}
 								>
 									{totalProfitAmount > 0 ? "+" : ""}
-									{formatCurrency(totalProfitAmount)}
+									{formatCurrency(convertPLN(totalProfitAmount))}
 								</span>
 								<span
 									className={cn(

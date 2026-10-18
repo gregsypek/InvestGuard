@@ -1,7 +1,6 @@
 import Aside from "@/components/Aside";
 import { ChartProvider } from "@/components/providers/ChartProvider";
 import Header from "@/components/Header";
-import { LoginButton } from "@/components/shared/header/LoginButton";
 import { MarketTicker } from "@/components/MarketTicker";
 import UserButton from "@/components/shared/header/UserButton";
 import { auth } from "@/auth";
@@ -9,7 +8,6 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { getStockLogo } from "@/lib/utils";
-import { redirect } from "next/navigation";
 
 export default async function RootLayout({
 	children,
@@ -17,80 +15,103 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }) {
 	const session = await auth();
-	const cookieStore = await cookies();
 
-	const hideMarketTicker =
-		cookieStore.get("hide_market_ticker")?.value === "true";
-
-	let tickerIndices: { symbol: string; price: number; dailyChange: number }[] =
-		[];
-	if (!hideMarketTicker) {
-		tickerIndices = await db.marketIndex.findMany({
-			select: { symbol: true, price: true, dailyChange: true },
-		});
+	// =========================================================================
+	// 🚀 TARCZA OCHRONNA (EARLY RETURN) - Blokuje "spalanie" bazy danych
+	// Jeśli nie ma sesji, renderujemy tylko szkielet potrzebny do ekranu logowania
+	// i NIE wykonujemy ŻADNEGO zapytania do bazy danych poniżej.
+	// =========================================================================
+	if (!session?.user?.id) {
+		return (
+			<div
+				id="app-wrapper"
+				className="flex h-screen overflow-hidden bg-background"
+			>
+				<main className="flex-1 overflow-y-auto page-container section-gap pb-10">
+					{children}
+				</main>
+			</div>
+		);
 	}
 
-	const userRole = session?.user?.role || "REGULAR";
-	const userId = session?.user?.id;
+	// =========================================================================
+	// SEKCJA DLA ZALOGOWANYCH UŻYTKOWNIKÓW (Odpytywanie bazy)
+	// =========================================================================
+	const cookieStore = await cookies();
+	const hideMarketTicker =
+		cookieStore.get("hide_market_ticker")?.value === "true";
 	const selectedPortfolioId =
 		cookieStore.get("selectedPortfolioId")?.value || "";
 
-	const portfolios = userId
-		? await db.portfolio.findMany({
+	const userId = session.user.id;
+	const userRole = session.user.role || "REGULAR";
+
+	// 1. Równoległe pobranie podstawowych danych zoptymalizowane pod wydajność
+	const [dbUser, portfolios, fxRates, tickerIndices, marketAssets] =
+		await Promise.all([
+			db.user.findUnique({
+				where: { id: userId },
+				select: { mainCurrency: true },
+			}),
+			db.portfolio.findMany({
 				where: { userId },
-				// Dodano pobieranie lastRefreshedAt, żeby przekazać je do przycisku odświeżania
 				select: {
 					id: true,
 					name: true,
 					colorTheme: true,
 					lastRefreshedAt: true,
 				},
-			})
-		: [];
+			}),
+			db.exchangeRate.findMany(),
+			hideMarketTicker
+				? Promise.resolve([])
+				: db.marketIndex.findMany({
+						select: { symbol: true, price: true, dailyChange: true },
+					}),
+			db.asset.findMany({
+				where: {
+					portfolioId: selectedPortfolioId,
+					category: { notIn: ["BONDS", "CASH"] },
+				},
+			}),
+		]);
 
-	// 🚀 KLUCZOWA ZMIANA 2: Ustalamy aktywny portfel i wyciągamy z niego czas aktualizacji
+	// --- GLOBALNA WALUTA ---
+	const initialCurrency = dbUser?.mainCurrency || "PLN";
+	const ratesMap: Record<string, number> = { PLN: 1.0 };
+
+	fxRates.forEach((rate) => {
+		const currencyCode = rate.code.replace("PLN", ""); // np. USDPLN -> USD
+		ratesMap[currencyCode] = rate.value;
+	});
+
+	// --- LOGIKA PORTFELI I MOTYWU ---
 	const activePortfolio = portfolios.find((p) => p.id === selectedPortfolioId);
-
-	// Data trafia prosto do Headera, a z niego do RefreshButton
 	const lastUpdated = activePortfolio?.lastRefreshedAt
 		? activePortfolio.lastRefreshedAt.toISOString()
 		: null;
 
 	let effectiveTheme = activePortfolio?.colorTheme || "blue";
-
-	// Wymuszenie koloru dla trybu demo i widoku globalnego
 	if (selectedPortfolioId.startsWith("demo-")) {
 		effectiveTheme = "emerald";
 	} else if (selectedPortfolioId === "ALL") {
 		effectiveTheme = "indigo";
 	}
 
-	const userControl = session ? <UserButton /> : <LoginButton />;
+	const userControl = <UserButton />;
 
-	const fxRates = await db.exchangeRate.findMany();
-	console.log("🚀 ~ RootLayout ~ fxRates:", fxRates);
-	const marketAssets = await db.asset.findMany({
-		where: {
-			portfolioId: selectedPortfolioId,
-			category: {
-				notIn: ["BONDS", "CASH"],
-			},
-		},
-	});
-
+	// --- MARKET TICKER ---
 	const tickerData = [
 		...fxRates.map((fx) => ({
 			label: fx.code.replace("PLN", "/PLN"),
 			value: fx.value.toFixed(4) + " PLN",
 			change: (fx.change >= 0 ? "+" : "") + fx.change.toFixed(2) + "%",
-			// Zmiana na Google API dla lepszej wykrywalności logo
 			logo: `https://www.google.com/s2/favicons?domain=${fx.code.substring(0, 3).toLowerCase()}.com&sz=128`,
 		})),
 		...marketAssets.map((asset) => {
 			const currentPrice =
 				asset.quantity > 0 ? asset.currentValue / asset.quantity : 0;
 			const displayChange = asset.dailyChange || 0;
-
 			return {
 				label: (asset.name || asset.ticker || "").slice(0, 25),
 				value: formatCurrency(currentPrice) + " PLN",
@@ -118,30 +139,7 @@ export default async function RootLayout({
 		}),
 	];
 
-	// 🚀 2. BEZPIECZNIE POBIERZ WALUTĘ (Wykona się tylko dla zalogowanego użytkownika)
-	let initialCurrency = "PLN";
-
-	if (session?.user?.id) {
-		const dbUser = await db.user.findUnique({
-			where: { id: session.user.id },
-			select: { mainCurrency: true },
-		});
-
-		if (dbUser?.mainCurrency) {
-			initialCurrency = dbUser.mainCurrency;
-		}
-	}
-
-	const dbExchangeRates = await db.exchangeRate.findMany();
-	const ratesMap: Record<string, number> = { PLN: 1.0 };
-
-	dbExchangeRates.forEach((rate) => {
-		const currencyCode = rate.code.replace("PLN", ""); // np. USDPLN -> USD
-		ratesMap[currencyCode] = rate.value;
-	});
-
 	return (
-		// 🚀 KLUCZOWA ZMIANA 3: Wstrzyknięcie atrybutu data-theme={effectiveTheme}
 		<div
 			id="app-wrapper"
 			className="flex h-screen overflow-hidden bg-background"
@@ -161,13 +159,8 @@ export default async function RootLayout({
 						{!hideMarketTicker && tickerData.length > 0 && (
 							<MarketTicker data={tickerData} />
 						)}
-
-						{/* 1. Główny wrapper rozciągnięty na pełny ekran z tłem systemowym */}
 						<div className="w-full min-h-screen bg-t-bg-base transition-colors duration-300">
-							{/* 🚀 ZMIANA: Zastosowanie globalnych klas zamiast ręcznych Tailwindów */}
-							<div className="page-container section-gap pb-10 ">
-								{children}
-							</div>
+							<div className="page-container section-gap pb-10">{children}</div>
 						</div>
 					</main>
 				</div>
@@ -175,9 +168,3 @@ export default async function RootLayout({
 		</div>
 	);
 }
-
-//NOTE: Baza Danych jako Buffer Layout (Odświeżenie strony): Kiedy user wchodzi na stronę lub ją odświerza, kod w layout.tsx wykonuje zapytania db.exchangeRate.findMany() oraz db.asset.findMany(). Są to bardzo szybkie operacje czytania z  bazy danych. Na tym etapie nie następuje połączenie z Yahoo Finance. User widzi to, co zostało zapisane podczas ostatniej aktualizacji.
-
-//HandleRefresh (Przycisk): Dopiero kliknięcie przycisku uruchamia funkcję refreshPortfolioPrices. To ona jest "silnikiem", który łączy się z zewnętrznym API, pobiera świeże kursy i nadpisuje dane w  bazie.
-
-//Dzięki temu strona główna ładuje się błyskawicznie (w milisekundach), a limity Yahoo zuzywane są tylko wtedy, gdy faktycznie user wywoła zapytanie.

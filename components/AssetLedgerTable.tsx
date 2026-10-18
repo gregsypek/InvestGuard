@@ -56,7 +56,9 @@ import { calculateAssetPL } from "@/lib/calculations";
 import { cn } from "@/lib/utils";
 import { deleteAsset } from "@/lib/actions/portfolio.actions";
 import { formatCurrency } from "@/lib/utils/format-currency";
+import { getCurrencySymbol } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
+import { useChartContext } from "@/components/providers/ChartProvider";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useSortedAssets } from "@/lib/hooks/useSortedAssets";
@@ -124,6 +126,10 @@ const AssetLedgerTable = ({
 	isDemo,
 }: Props) => {
 	const router = useRouter();
+
+	// 🚀 POBIERAMY GLOBALNĄ WALUTĘ I PRZELICZNIK
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
 	const { assets } = portfolio;
 	const searchParams = useSearchParams();
 	const highlightedId = searchParams.get("newAssetId");
@@ -320,7 +326,7 @@ const AssetLedgerTable = ({
 						onSortChange={setSortBy}
 						sortOptions={[
 							{ id: "ACTIVITY", label: "Ostatnia aktywność" },
-							{ id: "PROFIT", label: "Zysk PLN" },
+							{ id: "PROFIT", label: "Zysk" },
 							{ id: "PROFIT_PCT", label: "Zysk %" },
 							{ id: "CATEGORY", label: "Kategoria" },
 							{ id: "ALPHA", label: "A-Z" },
@@ -438,8 +444,8 @@ const AssetLedgerTable = ({
 											if (isAggregatedBond) {
 												valueToAdd =
 													tx.type === "SELL"
-														? -Math.abs(tx.executedValue)
-														: Math.abs(tx.executedValue);
+														? -Math.abs(convertPLN(tx.executedValue)) // 🚀 FIX
+														: Math.abs(convertPLN(tx.executedValue)); // 🚀 FIX
 											} else {
 												const isNegative = tx.type === "SELL";
 												valueToAdd = isNegative
@@ -525,13 +531,6 @@ const AssetLedgerTable = ({
 														/>
 
 														<div className="flex flex-col justify-center min-w-0">
-															{/* <div
-																className="font-bold text-xs md:text-sm text-t-text-primary truncate max-w-[120px] md:max-w-[160px] xl:max-w-[220px] tracking-tight flex items-center gap-1.5"
-																title={asset.cleanName}
-															>
-																{asset.cleanName}
-															</div> */}
-															{/* 🚀 FIX: Zwiększone limity max-w dla dużych ekranów (lg, xl), aby w pełni wykorzystać nowe miejsce */}
 															<div
 																className="font-bold text-xs md:text-sm text-t-text-primary truncate max-w-[140px] sm:max-w-[180px] md:max-w-[240px] lg:max-w-[320px] xl:max-w-[400px] tracking-tight flex items-center gap-1.5"
 																title={asset.cleanName}
@@ -539,7 +538,6 @@ const AssetLedgerTable = ({
 																{asset.cleanName}
 															</div>
 															<div className="flex items-center gap-1.5 md:mt-0.5 truncate">
-																{/* 🚀 FIX: Kropka zawsze widoczna (usunięto klasę ukrywającą) */}
 																<div
 																	className="w-1.5 h-1.5 rounded-full opacity-80 shrink-0"
 																	style={{ backgroundColor: categoryColor }}
@@ -561,20 +559,6 @@ const AssetLedgerTable = ({
 													</div>
 												</TableCell>
 
-												{/* <TableCell className="border-none hidden md:table-cell">
-													<div className="flex items-center gap-2 text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest">
-														<div
-															className="w-1.5 h-1.5 rounded-full opacity-80 shrink-0"
-															style={{ backgroundColor: categoryColor }}
-														/>
-														<span className="truncate max-w-[100px]">
-															{asset.category
-																? CATEGORY_LABELS[asset.category]
-																: ""}
-														</span>
-													</div>
-												</TableCell> */}
-
 												<TableCell className="border-none hidden lg:table-cell">
 													{isAggregatedBond || asset.category === "CASH" ? (
 														<span className="text-sm text-t-text-tertiary font-bold text-center block">
@@ -585,25 +569,29 @@ const AssetLedgerTable = ({
 															<span className="text-[10px] text-t-text-tertiary font-mono tracking-tight flex justify-center gap-3">
 																<span>Śr:</span>
 																<span className="text-t-text-secondary">
-																	{formatCurrency(asset.avgPrice as number, 2)}{" "}
-																	PLN
+																	{/* 🚀 FIX: Przepuszczenie średniej ceny przez convertPLN */}
+																	{formatCurrency(
+																		convertPLN(asset.avgPrice as number),
+																		2,
+																	)}
+																	{currencySymbol}
 																</span>
 															</span>
 															<span className="text-[11px] text-t-text-primary font-mono font-bold flex  justify-center border-t border-t-border-subtle pt-0.5 mt-0.5 gap-3">
 																<span>Akt:</span>
 																<span className="text-blue-500 dark:text-blue-400">
+																	{/* 🚀 FIX: Przepuszczenie aktualnej ceny przez convertPLN */}
 																	{formatCurrency(
-																		asset.currentPrice as number,
+																		convertPLN(asset.currentPrice as number),
 																		2,
-																	)}{" "}
-																	PLN
+																	)}
+																	{currencySymbol}
 																</span>
 															</span>
 														</div>
 													)}
 												</TableCell>
 
-												{/* 🚀 NOWA KOLUMNA: 24h Daily Change */}
 												<TableCell className="border-none hidden sm:table-cell text-center">
 													{isAggregatedBond || asset.category === "CASH" ? (
 														<span className="text-sm text-t-text-tertiary font-bold">
@@ -681,7 +669,8 @@ const AssetLedgerTable = ({
 														>
 															<div>
 																{asset.profitAmount > 0 ? "+" : ""}
-																{formatCurrency(asset.profitAmount)}
+																{/* 🚀 FIX: Przepuszczenie zysku/straty przez convertPLN */}
+																{formatCurrency(convertPLN(asset.profitAmount))}
 															</div>
 															<div className="text-[9px] md:text-[10px] opacity-80 mt-0.5">
 																{asset.profitPercent > 0 ? "+" : ""}
@@ -692,14 +681,16 @@ const AssetLedgerTable = ({
 												</TableCell>
 
 												<TableCell className="text-right font-mono tabular-nums border-none pr-2">
-													<div className="flex flex-col items-end justify-center">
-														<span className="text-xs md:text-sm font-bold text-t-text-primary">
+													<div className="flex  items-end justify-center">
+														<span className="text-xs md:text-sm font-bold text-t-text-primary ">
+															{/* 🚀 FIX: Przepuszczenie całkowitej wyceny rynkowej przez convertPLN */}
 															{asset.currentValue
-																? formatCurrency(asset.currentValue)
+																? formatCurrency(convertPLN(asset.currentValue))
 																: 0}
 														</span>
-														<span className="text-[9px] font-bold text-t-text-tertiary uppercase tracking-widest mt-0.5">
-															PLN
+														<span className="text-xs font-bold text-t-text-tertiary uppercase tracking-widest mt-0.5">
+															{" "}
+															{currencySymbol}
 														</span>
 													</div>
 												</TableCell>
@@ -987,41 +978,50 @@ const AssetLedgerTable = ({
 																													? "+"
 																													: "-"
 																												: "-"}
+																									{/* 🚀 FIX: Zoptymalizowane przeliczanie kwoty w historii transakcji */}
 																									{formatCurrency(
-																										Math.abs(t.executedValue),
-																									)}{" "}
-																									PLN
+																										convertPLN(
+																											Math.abs(t.executedValue),
+																										),
+																									)}
+																									{currencySymbol}
 																								</span>
+
 																								{!isCorrection &&
 																									!isInterest && (
 																										<span className="text-[9px] text-t-text-tertiary font-medium tracking-tighter mt-0.5 block">
-																											@{" "}
+																											{/* 🚀 FIX: Cena wejściowa przeliczona w locie */}
+																											@
 																											{formatCurrency(
-																												t.originalPrice ?? 0,
+																												convertPLN(
+																													t.quantity !== 0
+																														? Math.abs(
+																																t.executedValue /
+																																	t.quantity,
+																															)
+																														: 0,
+																												),
 																												4,
-																											)}{" "}
-																											{t.originalCurrency ||
-																												"PLN"}{" "}
-																											/ szt.
+																											)}
+																											{currencySymbol} / szt.
 																											{t.originalCurrency &&
 																												t.originalCurrency !==
-																													"PLN" &&
-																												t.exchangeRate &&
-																												t.exchangeRate !==
-																													1 && (
-																													<span className="ml-1 text-blue-500/90 dark:text-blue-400/70 font-semibold">
-																														(Kurs:{" "}
+																													"PLN" && (
+																													<span className="ml-1 text-blue-500/90 dark:text-blue-400/70 font-semibold opacity-80">
+																														(Giełda:
 																														{formatCurrency(
-																															t.exchangeRate ??
-																																1,
+																															t.originalPrice ??
+																																0,
 																															4,
-																														)}{" "}
-																														PLN)
+																														)}
+																														{t.originalCurrency}
+																														)
 																													</span>
 																												)}
 																										</span>
 																									)}
 																							</div>
+
 																							{!isInterest && (
 																								<span className="min-w-[70px] font-bold text-t-text-secondary text-xs">
 																									{isCorrection
@@ -1029,7 +1029,7 @@ const AssetLedgerTable = ({
 																										: (isBuy ? "+" : "-") +
 																											Math.abs(
 																												t.quantity,
-																											).toFixed(4)}{" "}
+																											).toFixed(4)}
 																									<span className="text-[9px] text-t-text-tertiary ml-1">
 																										szt.
 																									</span>
@@ -1169,7 +1169,6 @@ const AssetLedgerTable = ({
 											"opacity-60 grayscale",
 									)}
 									onClick={() => {
-										// EN: Minimalist expansion for cards - toggle main history view
 										if (asset.category !== "BONDS") {
 											setExpandedAssetId(
 												expandedAssetId === asset.id
@@ -1206,7 +1205,6 @@ const AssetLedgerTable = ({
 											</div>
 										</div>
 
-										{/* EN: Dropdown Actions inside card */}
 										<div onClick={(e) => e.stopPropagation()}>
 											{!isAggregatedBond && (
 												<DropdownMenu>
@@ -1307,13 +1305,21 @@ const AssetLedgerTable = ({
 													<span className="text-[10px] text-t-text-tertiary font-mono tracking-tight flex items-center gap-1">
 														Śr:{" "}
 														<span className="text-t-text-secondary">
-															{formatCurrency(asset.avgPrice as number)}
+															{/* 🚀 FIX: Karty mobilne - średnia cena */}
+															{formatCurrency(
+																convertPLN(asset.avgPrice as number),
+															)}
+															{currencySymbol}
 														</span>
 													</span>
 													<span className="text-[11px] text-blue-500 dark:text-blue-400 font-mono font-bold flex items-center gap-1">
 														Akt:{" "}
 														<span>
-															{formatCurrency(asset.currentPrice as number)} PLN
+															{/* 🚀 FIX: Karty mobilne - aktualna cena */}
+															{formatCurrency(
+																convertPLN(asset.currentPrice as number),
+															)}
+															{currencySymbol}
 														</span>
 													</span>
 												</div>
@@ -1354,7 +1360,7 @@ const AssetLedgerTable = ({
 																	: "bg-black/5 text-t-text-secondary",
 														)}
 													>
-														24H:{" "}
+														24H:
 														{(asset.dailyChangePct as number) > 0 ? "+" : ""}
 														{(asset.dailyChangePct as number).toFixed(2)}%
 													</span>
@@ -1377,7 +1383,9 @@ const AssetLedgerTable = ({
 													)}
 												>
 													{asset.profitAmount > 0 ? "+" : ""}
-													{formatCurrency(asset.profitAmount)} PLN
+													{/* 🚀 FIX: Karty mobilne - zysk */}
+													{formatCurrency(convertPLN(asset.profitAmount))}
+													{currencySymbol}
 													<span className="text-[9px] opacity-80 ml-1">
 														({asset.profitPercent > 0 ? "+" : ""}
 														{asset.profitPercent.toFixed(2)}%)
@@ -1391,9 +1399,10 @@ const AssetLedgerTable = ({
 												Wartość
 											</span>
 											<span className="text-base font-black text-t-text-primary font-mono tracking-tight">
-												{formatCurrency(asset.currentValue ?? 0)}{" "}
+												{/* 🚀 FIX: Karty mobilne - wycena */}
+												{formatCurrency(convertPLN(asset.currentValue ?? 0))}
 												<span className="text-[10px] text-t-text-tertiary ml-0.5">
-													PLN
+													{currencySymbol}
 												</span>
 											</span>
 										</div>

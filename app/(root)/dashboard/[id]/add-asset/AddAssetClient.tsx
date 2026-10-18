@@ -1,5 +1,6 @@
 "use client";
 
+import { Asset, Category } from "@prisma/client";
 import {
 	Briefcase,
 	CalendarPlus,
@@ -11,6 +12,7 @@ import {
 	Settings2,
 	ShieldCheck,
 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useMemo, useState } from "react";
 
 import AddAssetForm from "@/components/ui/assets/AddAssetForm";
@@ -23,13 +25,13 @@ import { SectionLayout } from "@/components/shared/SectionLayout";
 import { ValueCard } from "@/components/shared/ValueCard";
 import { XtbImporter } from "@/components/ui/XtbImporter";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "@/components/providers/ChartProvider";
 
 interface AddAssetClientProps {
 	id: string;
 	portfolioName: string;
-	categories: any[];
-	assets: any[];
+	categories: Category[];
+	assets: Asset[];
 	userRole: "ADMIN" | "SUBSCRIBER" | "REGULAR";
 	source?: string;
 	initialView?: string;
@@ -50,7 +52,10 @@ export default function AddAssetClient({
 	portfolioInvested,
 	allUserPortfolios,
 }: AddAssetClientProps) {
+	// 🚀 POBIERAMY GLOBALNĄ WALUTĘ I PRZELICZNIK
+	const { currency, convertPLN } = useChartContext();
 	// Domyślna zakładka na podstawie źródła
+	const currencySymbol = getCurrencySymbol(currency);
 	// 🚀 NAPRAWA: Formularz w końcu sprawdza, czy przyszliśmy z planera!
 	const defaultTab =
 		source === "planner" || initialView === "planner"
@@ -190,10 +195,10 @@ export default function AddAssetClient({
 						</div>
 						<div className="flex items-baseline gap-1.5 sm:gap-2">
 							<h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter text-white drop-shadow-sm truncate">
-								{formatCurrency(portfolioTotalValue)}
+								{formatCurrency(convertPLN(portfolioTotalValue))}
 							</h2>
 							<span className="text-lg sm:text-xl md:text-2xl text-slate-500 font-bold uppercase">
-								PLN
+								{currencySymbol}
 							</span>
 						</div>
 					</div>
@@ -205,10 +210,10 @@ export default function AddAssetClient({
 						>
 							<div className="flex items-baseline gap-1.5 font-mono">
 								<span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-200">
-									{formatCurrency(portfolioInvested)}
+									{formatCurrency(convertPLN(portfolioInvested))}
 								</span>
 								<span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-									PLN
+									{currencySymbol}
 								</span>
 							</div>
 						</ValueCard>

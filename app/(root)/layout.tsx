@@ -117,7 +117,6 @@ export default async function RootLayout({
 			};
 		}),
 	];
-	// if (!session?.user?.id) redirect("/sign-in");
 
 	// 🚀 2. BEZPIECZNIE POBIERZ WALUTĘ (Wykona się tylko dla zalogowanego użytkownika)
 	let initialCurrency = "PLN";

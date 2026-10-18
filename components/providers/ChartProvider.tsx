@@ -11,6 +11,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
 import { DateRange } from "react-day-picker";
+import { convertFromPLN } from "@/lib/utils/convert-currency";
 import { format } from "date-fns";
 
 // Define the shape of our global chart context
@@ -27,11 +28,23 @@ interface ChartContextType {
 	handleRangeChange: (range: string) => void;
 	handleDateRangeSelect: (range: DateRange | undefined) => void;
 	isPending: boolean;
+
+	// 🚀 NOWE POLA DLA WIELOWALUTOWOŚCI
+	currency: string;
+	convertPLN: (amount: number) => number;
 }
 
 const ChartContext = createContext<ChartContextType | null>(null);
 
-export function ChartProvider({ children }: { children: React.ReactNode }) {
+export function ChartProvider({
+	children,
+	initialCurrency = "PLN", // 🚀 Pobierane z bazy dla zalogowanego użytkownika
+	exchangeRates = {}, // 🚀 Pobierane z bazy (tabela ExchangeRate)
+}: {
+	children: React.ReactNode;
+	initialCurrency?: string;
+	exchangeRates?: Record<string, number>;
+}) {
 	const searchParams = useSearchParams();
 	const portfolioParam = searchParams.get("portfolio");
 	const [isPending, startTransition] = useTransition();
@@ -85,6 +98,11 @@ export function ChartProvider({ children }: { children: React.ReactNode }) {
 	// 	});
 	// };
 
+	// 🚀 Gotowa funkcja wstrzykiwana do całego drzewa komponentów
+	const convertPLN = (amount: number) => {
+		return convertFromPLN(amount, initialCurrency, exchangeRates);
+	};
+
 	// Update URL when predefined range changes
 	const handleRangeChange = (range: string) => {
 		startTransition(() => {
@@ -130,6 +148,9 @@ export function ChartProvider({ children }: { children: React.ReactNode }) {
 				handleRangeChange,
 				handleDateRangeSelect,
 				isPending,
+				// 🚀 Przekazujemy w dół walutę i funkcję przeliczającą
+				currency: initialCurrency,
+				convertPLN,
 			}}
 		>
 			{children}

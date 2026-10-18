@@ -124,6 +124,20 @@ export async function GET(req: Request) {
 			FX_SYMBOLS.EUR,
 			(await getLiveExchangeRate("EUR"))?.value || 4.3,
 		);
+		// 🚀 ZAPISZ KURSY DO BAZY DANYCH DLA FRONTENDU (Wymagane dla wielowalutowości)
+		const ratesToUpdate = [
+			{ code: "USDPLN", value: usdRate },
+			{ code: "EURPLN", value: eurRate },
+			{ code: "GBPPLN", value: gbpRate },
+		];
+
+		for (const rate of ratesToUpdate) {
+			await db.exchangeRate.upsert({
+				where: { code: rate.code },
+				update: { value: rate.value, updatedAt: new Date() },
+				create: { code: rate.code, value: rate.value, change: 0 },
+			});
+		}
 
 		// C. Update Premium Portfolios
 		for (const portfolio of premiumPortfolios) {

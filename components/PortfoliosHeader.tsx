@@ -1,10 +1,11 @@
 import { Briefcase, LayoutGrid, Wallet2 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { AppHeaderLayout } from "./shared/AppHeaderLayout";
 import { FilterBadge } from "./shared/FilterBadge";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 
 interface PortfoliosHeaderProps {
 	title: string;
@@ -27,6 +28,8 @@ export const PortfoliosHeader = ({
 	selectedIds,
 	togglePortfolio,
 }: PortfoliosHeaderProps) => {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
 	return (
 		<AppHeaderLayout
 			title={title}
@@ -87,7 +90,8 @@ export const PortfoliosHeader = ({
 					<span>Wartość portfeli</span>
 				</>
 			}
-			mainStatValue={formatCurrency(totalValue)}
+			mainStatValue={formatCurrency(convertPLN(totalValue))}
+			mainStatSuffix={currencySymbol}
 			secondaryStats={
 				<>
 					{/* Liczba portfeli */}

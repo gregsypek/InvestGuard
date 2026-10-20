@@ -1,3 +1,5 @@
+"use client";
+
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
@@ -53,7 +55,7 @@ export default function AssetCard({
 			)}
 
 			<div className="flex flex-col gap-2 flex-1 min-w-0 pr-4">
-				<p className="font-bold text-sm text-t-text-primary tracking-tight truncate max-w-[160px]">
+				<p className="font-bold text-sm text-t-text-primary tracking-tight truncate max-w-40">
 					{asset.name}
 				</p>
 				<div className="flex items-center gap-2">

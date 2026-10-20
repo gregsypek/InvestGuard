@@ -9,13 +9,14 @@ import {
 	TrendingUp,
 	Trophy,
 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useMemo, useState } from "react";
 
 import { AppHeaderLayout } from "./shared/AppHeaderLayout";
 import { FilterBadge } from "./shared/FilterBadge";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 
 interface AlphaHeaderProps {
 	assets: any[];
@@ -26,6 +27,9 @@ export function AlphaHeader({
 	assets = [],
 	globalTotalValue = 0,
 }: AlphaHeaderProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [filterMode, setFilterMode] = useState<"ALL" | "STOCKS" | "CRYPTO">(
 		"ALL",
 	);
@@ -160,8 +164,8 @@ export function AlphaHeader({
 					</span>
 				</>
 			}
-			mainStatValue={formatCurrency(alphaTotalValue)}
-			mainStatSuffix="PLN"
+			mainStatValue={formatCurrency(convertPLN(alphaTotalValue))}
+			mainStatSuffix={currencySymbol}
 			secondaryStats={
 				<>
 					<ValueCard
@@ -171,10 +175,10 @@ export function AlphaHeader({
 					>
 						<div className="flex items-baseline gap-1.5 font-mono">
 							<span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-200">
-								{formatCurrency(globalTotalValue, 0)}
+								{formatCurrency(convertPLN(globalTotalValue), 0)}
 							</span>
-							<span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-								PLN
+							<span className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+								{currencySymbol}
 							</span>
 						</div>
 					</ValueCard>

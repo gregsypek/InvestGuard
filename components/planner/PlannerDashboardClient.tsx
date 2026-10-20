@@ -18,6 +18,7 @@ import {
 	Target,
 	TrendingUp,
 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useMemo, useState } from "react";
 
 import { GoalProjectionChart } from "./GoalProjectionChart";
@@ -25,7 +26,7 @@ import { PlannerClientList } from "./PlannerClientList";
 import { SafeActionButton } from "../ui/SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "../providers/ChartProvider";
 
 type PlanWithPortfolio = InvestmentPlan & {
 	portfolio?: Portfolio | null;
@@ -64,6 +65,9 @@ export function PlannerDashboardClient({
 	currentMonthTransactions = [],
 	defaultPortfolioId = "ALL",
 }: PlannerDashboardClientProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [listPortfolioId, setListPortfolioId] = useState(defaultPortfolioId);
 	const [projPortfolioId, setProjPortfolioId] = useState(defaultPortfolioId);
 	const [monthPortfolioId, setMonthPortfolioId] = useState(defaultPortfolioId);
@@ -322,13 +326,15 @@ export function PlannerDashboardClient({
 						</div>
 						<div className="text-right">
 							<span className="text-sm font-black text-t-text-primary">
-								{formatCurrency(displayMonthlyInvested)} PLN
+								{formatCurrency(convertPLN(displayMonthlyInvested))}{" "}
+								{currencySymbol}
 							</span>
 							<span
 								className="text-[10px] font-bold text-t-text-tertiary ml-1 cursor-help underline decoration-dotted decoration-t-text-tertiary"
 								title="Całkowity cel na ten miesiąc: Suma zaksięgowanych inwestycji + oczekujące plany (bez filtrów)."
 							>
-								/ {formatCurrency(totalMonthlyGoal)} PLN
+								/ {formatCurrency(convertPLN(totalMonthlyGoal))}{" "}
+								{currencySymbol}
 							</span>
 						</div>
 					</div>
@@ -362,12 +368,14 @@ export function PlannerDashboardClient({
 										<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500">
 											Suma:{" "}
 											{formatCurrency(
-												filteredMonthTransactions.reduce(
-													(sum, tx) => sum + tx.executedValue,
-													0,
+												convertPLN(
+													filteredMonthTransactions.reduce(
+														(sum, tx) => sum + tx.executedValue,
+														0,
+													),
 												),
 											)}{" "}
-											PLN
+											{currencySymbol}
 										</span>
 										<button
 											onClick={() => setIsCurrentMonthOpen(!isCurrentMonthOpen)}
@@ -391,7 +399,9 @@ export function PlannerDashboardClient({
 													Struktura kapitału
 												</span>
 												<span className="text-[9px] font-bold text-t-text-tertiary">
-													100% = {formatCurrency(displayMonthlyInvested)} PLN
+													100% ={" "}
+													{formatCurrency(convertPLN(displayMonthlyInvested))}{" "}
+													{currencySymbol}
 												</span>
 											</div>
 
@@ -486,11 +496,14 @@ export function PlannerDashboardClient({
 																	: "text-emerald-600 dark:text-emerald-400",
 															)}
 														>
-															+{formatCurrency(tx.executedValue)} PLN
+															+{formatCurrency(convertPLN(tx.executedValue))}{" "}
+															{currencySymbol}
 														</span>
+
 														{tx.originalPrice !== null &&
 															tx.originalPrice > 0 &&
-															tx.originalCurrency !== "PLN" && (
+															tx.originalCurrency &&
+															tx.originalCurrency !== currency && (
 																<span className="text-[9px] font-mono text-t-text-tertiary">
 																	{tx.quantity.toFixed(4)} szt @{" "}
 																	{tx.originalPrice.toFixed(2)}{" "}
@@ -507,7 +520,8 @@ export function PlannerDashboardClient({
 												<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-4 py-2.5 rounded-xl shadow-sm">
 													<Calculator className="w-4 h-4 text-blue-600 dark:text-blue-400" />
 													<span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-														Suma: {formatCurrency(selectedSum)} PLN
+														Suma: {formatCurrency(convertPLN(selectedSum))}{" "}
+														{currencySymbol}
 													</span>
 												</div>
 											</div>
@@ -528,7 +542,8 @@ export function PlannerDashboardClient({
 
 								<div className="flex items-center gap-4">
 									<span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
-										Suma: {formatCurrency(nextMonthTotal)} PLN
+										Suma: {formatCurrency(convertPLN(nextMonthTotal))}{" "}
+										{currencySymbol}
 									</span>
 									<button
 										onClick={() => setIsNextMonthOpen(!isNextMonthOpen)}
@@ -571,7 +586,8 @@ export function PlannerDashboardClient({
 											</div>
 											<div className="text-right shrink-0">
 												<span className="text-xs font-black text-t-text-secondary">
-													{formatCurrency(plan.value)} PLN
+													{formatCurrency(convertPLN(plan.value))}{" "}
+													{currencySymbol}
 												</span>
 											</div>
 										</div>
@@ -591,7 +607,8 @@ export function PlannerDashboardClient({
 					<div className="flex flex-row justify-end items-center gap-3">
 						<div className="flex items-center gap-2  border border-blue-500/20 px-3 py-1.5 rounded-lg">
 							<span className="text-[10px] font-black uppercase tracking-widest text-theme-primary">
-								Zostało: {formatCurrency(listTotalValue)} PLN
+								Zostało: {formatCurrency(convertPLN(listTotalValue))}{" "}
+								{currencySymbol}
 							</span>
 						</div>
 						{renderInlinePortfolioSelector(listPortfolioId, setListPortfolioId)}

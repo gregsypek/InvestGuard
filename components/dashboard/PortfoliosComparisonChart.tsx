@@ -18,12 +18,13 @@ import {
 	Minimize2,
 	WalletCards,
 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
+import { useChartContext } from "../providers/ChartProvider";
 
 interface PortfolioDataPoint {
 	date: string | Date;
@@ -350,6 +351,9 @@ function ComparisonTooltip({
 	hiddenLines,
 	chartMode,
 }: ComparisonTooltipProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	if (active && payload && payload.length) {
 		const sortedPayload = [...payload]
 			.filter((entry) => !(hiddenLines && hiddenLines[entry.dataKey]))
@@ -384,7 +388,7 @@ function ComparisonTooltip({
 								>
 									{chartMode === "PERCENTAGE"
 										? `${isPositive ? "+" : ""}${Number(entry.value).toFixed(2)}%`
-										: `${formatCurrency(entry.value, 0)} PLN`}
+										: `${formatCurrency(convertPLN(entry.value), 0)} ${currencySymbol}`}
 								</span>
 							</div>
 						);

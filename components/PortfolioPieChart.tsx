@@ -3,11 +3,12 @@
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { CheckCircle2, Circle, PieChart as PieChartIcon } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { CategoryStatus } from "@/lib/types";
 import { ChartContainer } from "./shared/ChartContainer";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 import { useState } from "react";
 
 interface PortfolioPieChartProps {
@@ -21,6 +22,9 @@ export default function PortfolioPieChart({
 	dataKey,
 	data,
 }: PortfolioPieChartProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	// 🚀 STATE: Ukryte kategorie (do wyłączania z legendy)
 	const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(
 		new Set(),
@@ -183,8 +187,8 @@ export default function PortfolioPieChart({
 									</span>
 									<span className="text-xl font-black text-t-text-primary leading-tight mt-0.5">
 										{dataKey === "actualPercentage"
-											? `${formatCurrency(activeItem.actualAmount, 0)} PLN`
-											: `${formatCurrency(totalVisibleAmount * (activeItem.weight / 100), 0)} PLN`}
+											? `${formatCurrency(convertPLN(activeItem.actualAmount), 0)} ${currencySymbol}`
+											: `${formatCurrency(convertPLN(totalVisibleAmount * (activeItem.weight / 100)), 0)} ${currencySymbol}`}
 									</span>
 									<span className="text-[10px] font-bold text-t-text-tertiary mt-1 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
 										{dataKey === "actualPercentage"
@@ -198,7 +202,8 @@ export default function PortfolioPieChart({
 										{dataKey === "actualPercentage" ? "WARTOŚĆ" : "CEL (RAZEM)"}
 									</span>
 									<span className="text-lg font-black text-t-text-primary leading-tight mt-0.5">
-										{formatCurrency(totalVisibleAmount, 0)} PLN
+										{formatCurrency(convertPLN(totalVisibleAmount), 0)}{" "}
+										{currencySymbol}
 									</span>
 									{dataKey === "weight" && (
 										<span className="text-[9px] font-bold text-t-text-tertiary mt-1 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">

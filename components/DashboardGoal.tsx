@@ -1,6 +1,10 @@
+"use client";
+
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
+
 import { Target } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 
 type Props = {
 	progress: number;
@@ -9,6 +13,9 @@ type Props = {
 };
 
 const DashboardGoal = ({ progress, remaining, goal }: Props) => {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	// Sprawdzamy, czy cel został osiągnięty, aby zmienić kolor na zielony
 	const isCompleted = progress >= 100;
 
@@ -39,8 +46,10 @@ const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 						Cel Finansowy
 					</span>
 					<p className="text-lg font-semibold text-t-text-primary">
-						{formatCurrency(goal)}{" "}
-						<span className="text-sm font-bold text-t-text-tertiary">PLN</span>
+						{formatCurrency(convertPLN(goal))}{" "}
+						<span className="text-sm font-bold text-t-text-tertiary">
+							{currencySymbol}
+						</span>
 					</p>
 				</div>
 			</div>
@@ -69,7 +78,7 @@ const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 					)}
 				>
 					{remaining > 0
-						? `Brakuje: ${formatCurrency(remaining)} PLN`
+						? `Brakuje: ${formatCurrency(convertPLN(remaining))} ${currencySymbol}`
 						: "Cel zrealizowany! 🚀"}
 				</p>
 			</div>

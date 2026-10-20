@@ -10,9 +10,10 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { ChartContainer } from "../shared/ChartContainer";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "../providers/ChartProvider";
 
 interface MonthlyDepositProps {
 	month: string;
@@ -24,6 +25,9 @@ export function MonthlyDepositsChart({
 }: {
 	data: MonthlyDepositProps[];
 }) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	if (!data || data.length === 0) {
 		return (
 			<div className="flex h-full items-center justify-center text-xs text-muted-foreground italic ">
@@ -93,7 +97,10 @@ export function MonthlyDepositsChart({
 						formatter={(value) => {
 							const num =
 								typeof value === "number" ? value : Number(value ?? 0);
-							return [`${formatCurrency(num)} PLN`, "Wpłata"];
+							return [
+								`${formatCurrency(convertPLN(num))} ${currencySymbol}`,
+								"Wpłata",
+							];
 						}}
 					/>
 
@@ -115,7 +122,7 @@ export function MonthlyDepositsChart({
 						strokeOpacity={0.8}
 						label={{
 							position: "insideTopLeft",
-							value: `ŚREDNIA: ${formatCurrency(averageAmount, 0)} PLN`,
+							value: `ŚREDNIA: ${formatCurrency(convertPLN(averageAmount), 0)} ${currencySymbol}`,
 							// 🚀 To załatwia sprawę: var(--t-text-primary) automatycznie da czarny w Light i biały w Dark
 							fill: "var(--t-text-primary)",
 							fontSize: 10,

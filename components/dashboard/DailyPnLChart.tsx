@@ -10,11 +10,12 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
+import { useChartContext } from "../providers/ChartProvider";
 
 interface PnLDataPoint {
 	date: string;
@@ -96,6 +97,9 @@ interface CustomTooltipProps {
 }
 
 function CustomPnLTooltip({ active, payload, label }: CustomTooltipProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	if (active && payload && payload.length) {
 		const value = payload[0].value;
 		const isPositive = value >= 0;
@@ -110,7 +114,7 @@ function CustomPnLTooltip({ active, payload, label }: CustomTooltipProps) {
 					className={`text-lg font-black ${isPositive ? "text-emerald-500" : "text-rose-500"}`}
 				>
 					{isPositive ? "+" : ""}
-					{formatCurrency(value, 2)} PLN
+					{formatCurrency(convertPLN(value), 2)} {currencySymbol}
 				</p>
 			</div>
 		);

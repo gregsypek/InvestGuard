@@ -47,17 +47,17 @@ import {
 	executePlan,
 } from "@/lib/actions/planner.actions";
 import { cn, generateBondName } from "@/lib/utils";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import PremiumDeleteModal from "../shared/PremiumDeleteModal";
 import { SimpleSwitch } from "../ui/SimpleSwitchProps";
 import { Slider } from "../ui/slider";
 import { fetchMagicFillData } from "@/lib/actions/magic-actions";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
+import { useChartContext } from "../providers/ChartProvider";
 import { useRouter } from "next/navigation";
 
 // EN: Extend the Plan type to include the related Portfolio name
@@ -90,6 +90,9 @@ export function PlanCard({
 	isDemo,
 	currentMonthTransactions = [],
 }: PlanCardProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	// console.log("🚀 ~ PlanCard ~ plan:", plan);
 	const router = useRouter();
 	const [isOpen, setIsOpen] = useState(false);
@@ -113,7 +116,6 @@ export function PlanCard({
 	const [exchangeRate, setExchangeRate] = useState(1);
 	const [volume, setVolume] = useState<number | "">("");
 	const [conviction, setConviction] = useState(plan.conviction || 50);
-	const [rationale, setRationale] = useState(plan.rationale || "");
 
 	// 3. 🚀 Dynamiczna aktualizacja kwoty w formularzu
 	const [finalValue, setFinalValue] = useState<number | string>(plan.value);
@@ -480,9 +482,9 @@ export function PlanCard({
 							Planowana kwota
 						</p>
 						<p className="text-sm sm:text-base font-black tracking-tight text-t-text-primary truncate">
-							{formatCurrency(plan.value)}
+							{formatCurrency(convertPLN(plan.value))}
 							<span className="text-[9px] sm:text-[10px] font-bold text-t-text-tertiary ml-1 uppercase">
-								PLN
+								{currencySymbol}
 							</span>
 						</p>
 					</div>
@@ -507,7 +509,7 @@ export function PlanCard({
 								</span>
 							</div>
 							<span className="text-[11px] sm:text-xs font-black text-emerald-600 dark:text-emerald-400">
-								{formatCurrency(alreadyInvested)} PLN
+								{formatCurrency(convertPLN(alreadyInvested))} {currencySymbol}
 							</span>
 						</div>
 					) : alreadyInvested > 0 ? (
@@ -518,7 +520,7 @@ export function PlanCard({
 								</span>
 							</div>
 							<span className="text-[11px] sm:text-xs font-black text-amber-600 dark:text-amber-500">
-								{formatCurrency(alreadyInvested)} PLN
+								{formatCurrency(convertPLN(alreadyInvested))} {currencySymbol}
 							</span>
 						</div>
 					) : null}
@@ -811,7 +813,8 @@ export function PlanCard({
 											<span className="text-xs text-t-text-secondary mt-0.5 font-medium">
 												Wykryto historyczne wpłaty na kwotę{" "}
 												<b className="text-t-text-primary">
-													{formatCurrency(alreadyInvested)} PLN
+													{formatCurrency(convertPLN(alreadyInvested))}{" "}
+													{currencySymbol}
 												</b>
 												. Możesz zamknąć ten plan bez ponownego księgowania.
 											</span>
@@ -827,7 +830,8 @@ export function PlanCard({
 											<span className="text-xs text-t-text-secondary mt-0.5 font-medium">
 												Ten walor był już kupowany na kwotę{" "}
 												<b className="text-t-text-primary">
-													{formatCurrency(alreadyInvested)} PLN
+													{formatCurrency(convertPLN(alreadyInvested))}{" "}
+													{currencySymbol}
 												</b>
 												. Upewnij się, jakiej kwoty dokładnie brakuje.
 											</span>

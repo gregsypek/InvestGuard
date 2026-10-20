@@ -119,7 +119,7 @@ export function ActivityHeader({
 					<div className="flex items-baseline gap-1.5 font-mono">
 						<span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
 							{/* 🚀 FIX: Używamy globalnego przelicznika, 0 miejsc po przecinku i dynamicznego symbolu */}
-							{formatCurrency(convertPLN(dynamicTotalValue), 0)}{" "}
+							{formatCurrency(convertPLN(dynamicTotalValue), 0)}
 							{currencySymbol}
 						</span>
 					</div>

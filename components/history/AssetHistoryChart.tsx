@@ -11,13 +11,14 @@ import {
 	YAxis,
 } from "recharts";
 import { Loader2, Maximize2, Minimize2 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { getCachedHistoricalPrices } from "@/lib/actions/yahoo.actions";
 import { pl } from "date-fns/locale";
+import { useChartContext } from "../providers/ChartProvider";
 
 export interface TransactionPoint {
 	date: string;
@@ -198,6 +199,9 @@ interface CustomTooltipProps {
 }
 
 function CustomTxTooltip({ active, payload, label }: CustomTooltipProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	if (active && payload && payload.length) {
 		const data = payload[0].payload;
 		const dateStr = format(new Date(label as string), "dd MMMM yyyy", {
@@ -218,7 +222,8 @@ function CustomTxTooltip({ active, payload, label }: CustomTooltipProps) {
 						<p className="text-xs font-bold text-slate-300">
 							Twój kurs (baza):{" "}
 							<span className="text-white">
-								{formatCurrency(data.actualTxPricePln)} PLN
+								{formatCurrency(convertPLN(data.actualTxPricePln))}{" "}
+								{currencySymbol}
 							</span>
 						</p>
 						{data.buyPoint && (

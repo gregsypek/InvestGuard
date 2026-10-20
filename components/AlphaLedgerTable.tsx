@@ -10,11 +10,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { BoosterActionsClient } from "./alpha/BoosterActionsClient";
 import { Progress } from "./ui/progress";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 
 interface AlphaLedgerTableProps {
 	activeBoosterAssets: any[];
@@ -23,6 +24,9 @@ interface AlphaLedgerTableProps {
 export default function AlphaLedgerTable({
 	activeBoosterAssets = [],
 }: AlphaLedgerTableProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [search, setSearch] = useState("");
 	const [sortBy, setSortBy] = useState("value_desc");
 
@@ -238,13 +242,14 @@ export default function AlphaLedgerTable({
 										</TableCell>
 										<TableCell className="text-right py-4 border-none">
 											<div className="text-sm font-bold font-mono text-t-text-primary whitespace-nowrap">
-												{formatCurrency(asset.currentValue)}
+												{formatCurrency(convertPLN(asset.currentValue))}
 												<span className="text-[10px] text-t-text-tertiary ml-1">
-													PLN
+													{currencySymbol}
 												</span>
 											</div>
 											<div className="text-[9px] text-t-text-tertiary font-bold uppercase tracking-widest mt-0.5 whitespace-nowrap">
-												Wkład: {formatCurrency(asset.investedCapital, 0)}
+												Wkład:{" "}
+												{formatCurrency(convertPLN(asset.investedCapital), 0)}
 											</div>
 										</TableCell>
 										<TableCell
@@ -314,7 +319,8 @@ export default function AlphaLedgerTable({
 										Wycena / Wkład
 									</span>
 									<span className="text-sm font-black text-t-text-primary">
-										{formatCurrency(asset.currentValue, 0)} PLN
+										{formatCurrency(convertPLN(asset.currentValue), 0)}{" "}
+										{currencySymbol}
 									</span>
 								</div>
 								<div className="flex flex-col items-end">

@@ -9,12 +9,13 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useMemo, useState } from "react";
 
 import { LayoutGrid } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 
 export interface CategoryStat {
 	category: string;
@@ -29,6 +30,9 @@ interface CategoryTableProps {
 }
 
 export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [sortBy, setSortBy] = useState<"VALUE" | "PROFIT" | "PROFIT_PCT">(
 		"VALUE",
 	);
@@ -90,7 +94,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 							Wartość
 						</option>
 						<option value="PROFIT" className="bg-t-bg-panel">
-							Zysk PLN
+							Zysk {currencySymbol}
 						</option>
 						<option value="PROFIT_PCT" className="bg-t-bg-panel">
 							Zysk %
@@ -109,10 +113,10 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 								Kategoria
 							</TableHead>
 							<TableHead className="text-right text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none px-3 sm:px-4 py-3">
-								Wartość (PLN)
+								Wartość {currencySymbol}
 							</TableHead>
 							<TableHead className="text-right text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none px-3 sm:px-4 py-3">
-								Zysk
+								Zysk {currencySymbol}
 							</TableHead>
 							<TableHead className="text-right text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary border-none pr-3 sm:pr-6 py-3 w-[25%] sm:w-[30%]">
 								Udział
@@ -158,7 +162,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 									</TableCell>
 
 									<TableCell className="text-right font-mono text-[11px] sm:text-sm font-semibold text-t-text-primary border-none px-3 sm:px-4 py-3 sm:py-4">
-										{formatCurrency(stat.value, 0)}
+										{formatCurrency(convertPLN(stat.value), 0)}
 									</TableCell>
 
 									<TableCell
@@ -170,7 +174,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 											<div className="flex flex-col items-end">
 												<span>
 													{sign}
-													{formatCurrency(stat.profitPLN, 0)}
+													{formatCurrency(convertPLN(stat.profitPLN), 0)}
 												</span>
 												<span className="text-[9px] sm:text-[10px] opacity-80">
 													({sign}
@@ -205,7 +209,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 							</TableCell>
 
 							<TableCell className="text-right font-mono text-[11px] sm:text-sm font-black text-t-text-primary border-none px-3 sm:px-4 py-3 sm:py-4">
-								{formatCurrency(totalValue, 0)}
+								{formatCurrency(convertPLN(totalValue), 0)}
 							</TableCell>
 
 							<TableCell
@@ -214,7 +218,7 @@ export const CategoryTable = ({ data, totalValue }: CategoryTableProps) => {
 								<div className="flex flex-col items-end">
 									<span>
 										{totalSign}
-										{formatCurrency(totalProfitPLN, 0)}
+										{formatCurrency(convertPLN(totalProfitPLN), 0)}
 									</span>
 									<span className="text-[9px] sm:text-[10px] opacity-80">
 										({totalSign}

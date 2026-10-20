@@ -7,6 +7,7 @@ import {
 	deletePortfolio,
 	setDefaultPortfolio,
 } from "@/lib/actions/portfolio.actions";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { Asset } from "@prisma/client";
 import { Button } from "./ui/button";
@@ -16,8 +17,8 @@ import Link from "next/link";
 import { PortfolioWithAssets } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
+import { useChartContext } from "./providers/ChartProvider";
 
 interface PortfolioCardProps {
 	portfolio: PortfolioWithAssets & { colorTheme?: string };
@@ -30,6 +31,9 @@ const PortfolioCard = ({
 	isDemo,
 	defaultPortfolioId,
 }: PortfolioCardProps) => {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const { id, name, goal, assets, colorTheme } = p;
 	const theme = isDemo ? "emerald" : colorTheme || "blue";
 	const [isPending, startTransition] = useTransition();
@@ -171,11 +175,11 @@ const PortfolioCard = ({
 						</p>
 						<p
 							className="text-2xl font-black text-t-text-primary tracking-tighter truncate"
-							title={`${formatCurrency(totalValue)} PLN`}
+							title={`${formatCurrency(convertPLN(totalValue))} ${currencySymbol}`}
 						>
-							{formatCurrency(totalValue)}
+							{formatCurrency(convertPLN(totalValue))}
 							<span className="text-[10px] font-bold text-t-text-tertiary tracking-normal ml-1">
-								PLN
+								{currencySymbol}
 							</span>
 						</p>
 					</div>
@@ -188,7 +192,7 @@ const PortfolioCard = ({
 					<div className="space-y-2 mt-auto">
 						<div className="flex justify-between text-[10px] uppercase tracking-wide font-bold">
 							<span className="text-t-text-tertiary">
-								Cel: {formatCurrency(goal)} PLN
+								Cel: {formatCurrency(convertPLN(goal))} {currencySymbol}
 							</span>
 							<span className="text-theme-primary">{progress.toFixed(1)}%</span>
 						</div>

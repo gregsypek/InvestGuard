@@ -12,9 +12,10 @@ import {
 	YAxis,
 } from "recharts";
 import React, { useMemo } from "react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { ChartContainer } from "../shared/ChartContainer";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "../providers/ChartProvider";
 
 const CHART_COLORS = [
 	"#3b82f6",
@@ -125,6 +126,9 @@ const CustomTooltip = ({
 	label,
 	isMulti,
 }: CustomTooltipProps) => {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	if (active && payload && payload.length) {
 		return (
 			<div className="bg-t-bg-panel border border-t-border rounded-xl p-3 shadow-xl min-w-[200px]">
@@ -154,7 +158,7 @@ const CustomTooltip = ({
 									{entry.name}
 								</div>
 								<span className="font-mono text-t-text-primary">
-									{formatCurrency(entry.value)} PLN
+									{formatCurrency(convertPLN(entry.value))} {currencySymbol}
 								</span>
 							</div>
 						);
@@ -163,7 +167,8 @@ const CustomTooltip = ({
 						<div className="pt-2 mt-2 border-t border-t-border-subtle flex justify-between items-center gap-4 text-xs font-black">
 							<span className="text-t-text-primary">Suma Wartości</span>
 							<span className="font-mono text-blue-500">
-								{formatCurrency(payload[0].payload.totalValue)} PLN
+								{formatCurrency(convertPLN(payload[0].payload.totalValue))}{" "}
+								{currencySymbol}
 							</span>
 						</div>
 					)}

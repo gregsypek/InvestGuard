@@ -20,6 +20,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "./ui/table";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import {
 	handleDeleteBond,
 	sellBondAction,
@@ -36,8 +37,15 @@ import { Progress } from "@/components/ui/progress";
 import QuickAdjustCell from "@/components/QuickAdjustCell";
 import { SellAssetModal } from "./SellAssetModal";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
+import { useChartContext } from "./providers/ChartProvider";
+
+// import {
+// 	handleDeleteBond,
+// 	sellBondAction,
+// 	updateBondInterestRate,
+// 	updateBondValue,
+// } from "@/lib/actions/bond-actions";
 
 interface ExtendedBond extends Bond {
 	currentPeriodRate?: number;
@@ -54,6 +62,9 @@ export default function BondLedgerTable({
 	portfolioId,
 	allPortfolios,
 }: Props) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [openGroups, setOpenGroups] = useState<string[]>([]);
 	const [assetToSell, setAssetToSell] = useState<Asset | null>(null);
 	const [isPending, startTransition] = useTransition();
@@ -358,9 +369,9 @@ export default function BondLedgerTable({
 												</TableCell>
 
 												<TableCell className="py-4 px-4 border-none font-mono font-bold text-t-text-primary text-[11px] sm:text-sm whitespace-nowrap">
-													{formatCurrency(totalVal)}
-													<span className="text-[9px] sm:text-[10px] text-t-text-tertiary ml-1">
-														PLN
+													{formatCurrency(convertPLN(totalVal))}
+													<span className="text-xs text-t-text-tertiary ml-1">
+														{currencySymbol}
 													</span>
 												</TableCell>
 												<TableCell className="py-4 border-none" />
@@ -476,14 +487,17 @@ export default function BondLedgerTable({
 																<div className="flex flex-col items-start gap-1 sm:gap-1.5">
 																	<span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center gap-1 whitespace-nowrap">
 																		Wkład:{" "}
-																		{formatCurrency(bond.investedCapital)} PLN
+																		{formatCurrency(
+																			convertPLN(bond.investedCapital),
+																		)}
+																		{currencySymbol}
 																	</span>
 
 																	<QuickAdjustCell
 																		currentValue={bond.currentValue || 0}
 																		assetId={bond.id}
 																		onUpdate={updateBondValue}
-																		label={`${formatCurrency(bond.currentValue || 0)} PLN`}
+																		label={`${formatCurrency(convertPLN(bond.currentValue || 0))} ${currencySymbol}`}
 																	/>
 
 																	{bond.currentValue &&
@@ -492,10 +506,12 @@ export default function BondLedgerTable({
 																		<span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded mt-0.5 whitespace-nowrap">
 																			+
 																			{formatCurrency(
-																				bond.currentValue -
-																					bond.investedCapital,
-																			)}{" "}
-																			PLN
+																				convertPLN(
+																					bond.currentValue -
+																						bond.investedCapital,
+																				),
+																			)}
+																			{currencySymbol}
 																		</span>
 																	) : null}
 																</div>
@@ -589,11 +605,13 @@ export default function BondLedgerTable({
 								</div>
 								<div className="text-right font-mono text-sm sm:text-base font-bold text-t-text-primary">
 									{formatCurrency(
-										transzes.reduce((s, t) => s + (t.currentValue || 0), 0),
+										convertPLN(
+											transzes.reduce((s, t) => s + (t.currentValue || 0), 0),
+										),
 										0,
-									)}{" "}
-									<span className="text-[10px] text-t-text-tertiary ml-0.5">
-										PLN
+									)}
+									<span className="text-[10px] text-t-text-tertiary ">
+										{currencySymbol}
 									</span>
 								</div>
 							</div>
@@ -726,13 +744,13 @@ export default function BondLedgerTable({
 
 												<div className="flex flex-col items-end gap-1.5 shrink-0 text-right">
 													<span className="text-[9px] font-bold text-t-text-tertiary uppercase tracking-widest">
-														Wycena PLN
+														Wycena {currencySymbol}
 													</span>
 													<QuickAdjustCell
 														currentValue={bond.currentValue || 0}
 														assetId={bond.id}
 														onUpdate={updateBondValue}
-														label={`${formatCurrency(bond.currentValue || 0)}`}
+														label={`${formatCurrency(convertPLN(bond.currentValue || 0))}`}
 													/>
 												</div>
 											</div>

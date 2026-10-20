@@ -12,12 +12,13 @@ import {
 } from "recharts";
 import { Maximize2, Minimize2 } from "lucide-react";
 import React, { useMemo, useState } from "react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { ChartLegend } from "./ChartLegend";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
+import { useChartContext } from "../providers/ChartProvider";
 
 interface ExpandableMainChartProps {
 	data: any[];
@@ -218,6 +219,9 @@ function CustomChartTooltip({
 	label,
 	chartMode,
 }: CustomTooltipProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	if (active && payload && payload.length) {
 		const data = payload[0].payload;
 		const dateStr = format(new Date(label as string), "dd MMMM yyyy", {
@@ -226,7 +230,7 @@ function CustomChartTooltip({
 		const valueStr =
 			chartMode === "PERCENTAGE"
 				? `${data.value.toFixed(2)}%`
-				: `${formatCurrency(data.value)} PLN`;
+				: `${formatCurrency(convertPLN(data.value))} ${currencySymbol}`;
 
 		return (
 			<div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-xl p-4 shadow-xl z-50 min-w-[200px]">
@@ -257,7 +261,10 @@ function CustomChartTooltip({
 											{isBuy ? "KUPNO" : "SPRZEDAŻ"} {tx.ticker || tx.assetName}
 										</span>
 										<span className="text-slate-300 font-mono">
-											{formatCurrency(Math.abs(tx.executedValue || 0))} PLN
+											{formatCurrency(
+												convertPLN(Math.abs(tx.executedValue || 0)),
+											)}
+											{currencySymbol}
 										</span>
 									</div>
 									<span className="text-[9px] text-slate-500 mt-0.5">

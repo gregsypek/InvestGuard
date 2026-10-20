@@ -1,12 +1,13 @@
 "use client";
 
 import { Container, Wallet2 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { AppHeaderLayout } from "../shared/AppHeaderLayout";
 import { FilterBadge } from "../shared/FilterBadge";
 import { ValueCard } from "../shared/ValueCard";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "../providers/ChartProvider";
 
 type MinimalPortfolio = {
 	id: string;
@@ -33,6 +34,9 @@ export function GlobalDashboardHeader({
 	totalPnL,
 	totalPnLPct,
 }: GlobalDashboardHeaderProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	return (
 		<AppHeaderLayout
 			title="Przegląd Inwestycji"
@@ -90,16 +94,17 @@ export function GlobalDashboardHeader({
 					</span>
 				</>
 			}
-			mainStatValue={formatCurrency(totalCurrent)}
+			mainStatValue={formatCurrency(convertPLN(totalCurrent))}
+			mainStatSuffix={currencySymbol}
 			secondaryStats={
 				<>
 					{/* Karta 1: Zainwestowany kapitał */}
 					<ValueCard
 						label="Zainwestowany kapitał"
 						icon={Container}
-						value={totalInvested}
+						value={convertPLN(totalInvested)}
 						formatString
-						suffix="PLN"
+						suffix={currencySymbol}
 					/>
 
 					{/* Karta 2: P&L */}
@@ -116,7 +121,7 @@ export function GlobalDashboardHeader({
 								)}
 							>
 								{totalPnL > 0 ? "+" : ""}
-								{formatCurrency(totalPnL)}
+								{formatCurrency(convertPLN(totalPnL))}
 							</span>
 							<span
 								className={cn(

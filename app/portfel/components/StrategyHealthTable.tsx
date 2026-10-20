@@ -7,16 +7,20 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { CategoryStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "@/components/providers/ChartProvider";
 
 interface Props {
 	data: CategoryStatus[];
 }
 
 export default function StrategyHealthTable({ data }: Props) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const filteredData = data.filter((x) => x.weight > 0);
 
 	return (
@@ -100,7 +104,8 @@ export default function StrategyHealthTable({ data }: Props) {
 													Dokup
 												</span>
 												<span className="text-[11px] sm:text-sm font-black whitespace-nowrap">
-													{formatCurrency(item.differencePLN, 0)}
+													{formatCurrency(convertPLN(item.differencePLN), 0)}{" "}
+													<span className="text-xs">{currencySymbol}</span>
 												</span>
 											</div>
 											<ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -113,7 +118,11 @@ export default function StrategyHealthTable({ data }: Props) {
 													Zredukuj
 												</span>
 												<span className="text-[11px] sm:text-sm font-black whitespace-nowrap">
-													{formatCurrency(Math.abs(item.differencePLN), 0)}
+													{formatCurrency(
+														convertPLN(Math.abs(item.differencePLN)),
+														0,
+													)}{" "}
+													<span className="text-xs">{currencySymbol}</span>
 												</span>
 											</div>
 											<ArrowDownRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />

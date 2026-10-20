@@ -1,10 +1,11 @@
 "use client";
 
 import { Loader2, X } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 import { useState } from "react";
 
 interface SellAssetModalProps {
@@ -29,6 +30,9 @@ export function SellAssetModal({
 	onClose,
 	isLoading,
 }: SellAssetModalProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const isCash = asset.category === "CASH";
 
 	const [quantity, setQuantity] = useState<number>(0);
@@ -95,7 +99,7 @@ export function SellAssetModal({
 								value={quantity || ""}
 							/>
 							<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-								PLN
+								{currencySymbol}
 							</span>
 						</div>
 						<button
@@ -103,7 +107,8 @@ export function SellAssetModal({
 							onClick={() => setQuantity(Number(asset.quantity.toFixed(2)))}
 							className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest text-left w-full transition-colors mt-1"
 						>
-							Wstaw MAX: {formatCurrency(asset.quantity)} PLN
+							Wstaw MAX: {formatCurrency(convertPLN(asset.quantity))}{" "}
+							{currencySymbol}
 						</button>
 					</div>
 				) : (
@@ -130,7 +135,8 @@ export function SellAssetModal({
 								onClick={() => setQuantity(Number(asset.quantity.toFixed(4)))}
 								className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest text-left w-full transition-colors mt-1"
 							>
-								Wstaw MAX: {formatCurrency(asset.quantity, 4)}
+								Wstaw MAX: {formatCurrency(convertPLN(asset.quantity), 4)}{" "}
+								{currencySymbol}
 							</button>
 						</div>
 
@@ -146,7 +152,7 @@ export function SellAssetModal({
 									onChange={(e) => setUnitPrice(Number(e.target.value))}
 								/>
 								<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-									PLN
+									{currencySymbol}
 								</span>
 							</div>
 						</div>
@@ -175,7 +181,7 @@ export function SellAssetModal({
 						{/* OPCJA 2: Obecny portfel (Pokazujemy TYLKO gdy sprzedajemy aktywo) */}
 						{!isCash && (
 							<option value={currentPortfolioId}>
-								🏦 Zostaw w tym portfelu (Wolna Gotówka PLN)
+								{`🏦 Zostaw w tym portfelu (Wolna Gotówka ${currencySymbol})`}
 							</option>
 						)}
 
@@ -222,7 +228,7 @@ export function SellAssetModal({
 								Otrzymasz łącznie:
 							</span>
 							<span className="font-mono text-sm font-black text-t-text-primary">
-								{formatCurrency(totalValue)} PLN
+								{formatCurrency(convertPLN(totalValue), 2)} {currencySymbol}
 							</span>
 						</div>
 						<div className="flex justify-between items-center">
@@ -238,7 +244,8 @@ export function SellAssetModal({
 								)}
 							>
 								{isLoss ? "" : "+"}
-								{estimatedProfit.toFixed(2)} PLN
+								{convertPLN(Number(estimatedProfit)).toFixed(2)}{" "}
+								{currencySymbol}
 							</span>
 						</div>
 					</div>

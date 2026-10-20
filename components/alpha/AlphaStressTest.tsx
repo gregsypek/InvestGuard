@@ -1,10 +1,11 @@
 "use client";
 
 import { Activity, TrendingDown, TrendingUp } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "../providers/ChartProvider";
 
 export interface StressTestAsset {
 	category: string;
@@ -18,6 +19,9 @@ interface AlphaStressTestProps {
 }
 
 export function AlphaStressTest({ assets }: AlphaStressTestProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [cryptoShock, setCryptoShock] = useState(0);
 	const [stocksShock, setStocksShock] = useState(0);
 
@@ -166,9 +170,9 @@ export function AlphaStressTest({ assets }: AlphaStressTestProps) {
 								Nowa Wycena
 							</span>
 							<span className="text-xl sm:text-2xl font-black text-t-text-primary">
-								{formatCurrency(metrics.totalSimulated, 0)}{" "}
+								{formatCurrency(convertPLN(metrics.totalSimulated), 0)}
 								<span className="text-xs sm:text-sm text-t-text-tertiary uppercase tracking-widest ml-0.5">
-									PLN
+									{currencySymbol}
 								</span>
 							</span>
 						</div>
@@ -211,9 +215,9 @@ export function AlphaStressTest({ assets }: AlphaStressTestProps) {
 								) : null}
 								<span>
 									{metrics.impactPLN > 0 ? "+" : ""}
-									{formatCurrency(metrics.impactPLN, 0)}{" "}
+									{formatCurrency(convertPLN(metrics.impactPLN), 0)}
 									<span className="text-[10px] sm:text-xs text-current opacity-70 uppercase tracking-widest ml-0.5">
-										PLN
+										{currencySymbol}
 									</span>
 								</span>
 							</div>

@@ -14,11 +14,12 @@ import {
 } from "recharts";
 import { Maximize2, Minimize2, Wallet2 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
+import { useChartContext } from "../providers/ChartProvider";
 
 // --- INPUT DATA TYPES ---
 export interface ChartDataPoint {
@@ -375,6 +376,9 @@ interface CustomTooltipProps {
 }
 
 function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	if (active && payload && payload.length && label) {
 		const dataObj = payload[0].payload;
 		const value = payload.find((p) => p.dataKey === "value")?.value || 0;
@@ -383,7 +387,7 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 		const formatVal = (val: number) => {
 			if (mode === "PERCENTAGE")
 				return `${val > 0 ? "+" : ""}${val.toFixed(2)}%`;
-			return `${formatCurrency(val)} PLN`;
+			return `${formatCurrency(convertPLN(val))} ${currencySymbol}`;
 		};
 
 		const isProfit = mode === "PERCENTAGE" ? value >= 0 : value >= invested;
@@ -469,7 +473,10 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 											{tx.ticker || tx.assetName || ""}
 										</span>
 										<span className="text-t-text-secondary font-mono text-right">
-											{formatCurrency(Math.abs(tx.executedValue || 0))} PLN
+											{formatCurrency(
+												convertPLN(Math.abs(tx.executedValue || 0)),
+											)}{" "}
+											{currencySymbol}
 										</span>
 									</div>
 								</div>

@@ -3,34 +3,29 @@
 import {
 	Activity,
 	Banknote,
-	Briefcase,
 	Calendar,
 	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
-	Container,
 	Globe,
 	LineChart,
 	Loader2,
 	Maximize2,
 	Minimize2,
-	Plus,
 	RefreshCw,
 	Settings,
-	Wallet2,
 	WalletCards,
 } from "lucide-react";
 import { SimulatedSnapshot, useDashboardData } from "./ui/useDashboardData";
 import { cn, getStockLogo } from "@/lib/utils";
 import { differenceInMinutes, format } from "date-fns";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
+import { useEffect, useMemo, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
 import { DatePickerWithRange } from "./shared/DatePickerWithRange";
 import { FilterBadge } from "./shared/FilterBadge";
 import { GlobalDashboardHeader } from "./dashboard/GlobalDashboardHeader";
-import Link from "next/link";
-import { MarketRow } from "./home/MarketRow";
 import { PortfolioBenchmarkChart } from "./dashboard/PortfolioBenchmarkChart";
 // Komponenty UI
 import { PortfolioChart } from "./dashboard/PortfolioCharts";
@@ -40,11 +35,10 @@ import { PortfoliosComparisonChart } from "./dashboard/PortfoliosComparisonChart
 import { PremiumMarketCard } from "./home/PremiumMarketCard";
 import { SafeActionButton } from "./ui/SafeActionButton";
 import { SectionLayout } from "./shared/SectionLayout";
-import { ValueCard } from "./shared/ValueCard";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 import { refreshPortfolioPrices } from "@/lib/actions/refresh-prices";
 import { toast } from "sonner";
+import { useChartContext } from "./providers/ChartProvider";
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
 const GLOBAL_INDICES_MAP: Record<string, string> = {
@@ -70,6 +64,9 @@ interface UserDashboardProps {
 }
 
 export function UserDashboard(props: UserDashboardProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	// 1. ZACIĄGAMY CAŁĄ LOGIKĘ Z HOOKA
 	const {
 		isPending,
@@ -349,10 +346,10 @@ export function UserDashboard(props: UserDashboardProps) {
 								</span>
 								<div className="flex items-baseline gap-0.5 sm:gap-1">
 									<span className="text-xs sm:text-sm font-black text-t-text-primary tracking-tight">
-										{formatCurrency(totalCurrent)}
+										{formatCurrency(convertPLN(totalCurrent))}
 									</span>
 									<span className="text-[8px] sm:text-[9px] text-t-text-secondary font-bold hidden xs:inline-block">
-										PLN
+										{currencySymbol}
 									</span>
 								</div>
 								<div
@@ -429,11 +426,11 @@ export function UserDashboard(props: UserDashboardProps) {
 						{/* LEWA STRONA: Filtry */}
 						{/* 🚀 ZMIANA: w-full znika od 'sm' (sm:w-auto), pozwalając prawej stronie wejść do tego samego rzędu */}
 						<div className="flex flex-row items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto shrink-0">
-							{/* Grupa PLN / % */}
+							{/* Grupa Waluta / % */}
 							<div className="flex items-center gap-1.5 flex-1 sm:flex-none">
 								<FilterBadge
 									id="VALUE"
-									label="PLN"
+									label={currencySymbol}
 									isSelected={chartMode === "VALUE"}
 									onToggle={() => setChartMode("VALUE")}
 									className={cn(
@@ -611,7 +608,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					title="Analiza Wykresowa"
 					titleIcon={LineChart}
 					subtitle="Sprawdź wyniki swoich inwestycji w czasie"
-					description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
+					description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym ), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
 				>
 					<div className="h-[400px] w-full mt-6">
 						<PortfolioChart
@@ -626,7 +623,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					title="Nominalny Wynik Dzienny"
 					titleIcon={Banknote}
 					subtitle="Faktyczna kwota wypracowana na rynku"
-					description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
+					description="Wykres przedstawia dokładną kwotę w walucie, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
 				>
 					<div className="h-96 mt-6">
 						<AbsoluteDailyPnLChart key={chartMode} data={absoluteChartData} />
@@ -637,7 +634,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					title="Wyścig Portfeli"
 					titleIcon={WalletCards}
 					subtitle="Porównanie Strategii"
-					description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w PLN.`}
+					description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w ${currencySymbol}.`}
 				>
 					<div className="h-96 mt-6">
 						<PortfoliosComparisonChart

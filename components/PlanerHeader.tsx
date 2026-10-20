@@ -1,13 +1,14 @@
 "use client";
 
 import { CalendarClock, TrendingUp, Wallet2 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useCallback, useMemo, useState } from "react";
 
 import { AppHeaderLayout } from "./shared/AppHeaderLayout";
 import { FilterBadge } from "./shared/FilterBadge";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 
 interface PlannerHeaderProps {
 	initialTotalPlannedValue: number;
@@ -24,6 +25,9 @@ export function PlannerHeader({
 	plans,
 	customBreadcrumbs,
 }: PlannerHeaderProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	// --- LOKALNY STAN DO "SUWAKA PODGLĄDU" ---
 	const [selectedIds, setSelectedIds] = useState<string[]>(["ALL"]);
 
@@ -114,7 +118,8 @@ export function PlannerHeader({
 					<span>Planowana wartość na kolejny miesiąc</span>
 				</>
 			}
-			mainStatValue={formatCurrency(dynamicStats.value)}
+			mainStatValue={formatCurrency(convertPLN(dynamicStats.value))}
+			mainStatSuffix={currencySymbol}
 			secondaryStats={
 				<ValueCard
 					label="Zaplanowane aktywa"

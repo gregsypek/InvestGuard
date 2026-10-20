@@ -77,7 +77,9 @@ export async function getBondsData(portfolioId: string) {
 
 	const configMap = rawConfigs.reduce(
 		(acc, item) => {
-			acc[item.seriesCode] = {
+			// 🚀 Wymuszamy wielkie litery i usuwamy niewidzialne spacje z bazy
+			const safeCode = item.seriesCode.trim().toUpperCase();
+			acc[safeCode] = {
 				firstYearRate: item.firstYearRate,
 				margin: item.margin,
 			};
@@ -86,12 +88,13 @@ export async function getBondsData(portfolioId: string) {
 		{} as Record<string, { firstYearRate: number; margin: number | null }>,
 	);
 
-	// 🚀 ZAMEK BEZPIECZEŃSTWA NA EKRANIE:
-	// Sprawdzamy, czy w ogóle mamy słowniki, żeby kalkulator miał prawo działać
 	const hasDictionaries = Object.keys(inflationMap).length > 0;
 
 	const bonds: Bond[] = rawBonds.map((b) => {
-		const cleanTicker = b.ticker ? b.ticker.split("_")[0] : "NIEZNANY";
+		// 🚀 Upewniamy się, że ticker z portfela jest tak samo czysty
+		const cleanTicker = b.ticker
+			? b.ticker.split("_")[0].trim().toUpperCase()
+			: "NIEZNANY";
 
 		let effectiveInterestRate = configMap[cleanTicker]
 			? configMap[cleanTicker].firstYearRate

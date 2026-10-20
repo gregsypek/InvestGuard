@@ -31,6 +31,7 @@ interface ChartContextType {
 
 	// 🚀 NOWE POLA DLA WIELOWALUTOWOŚCI
 	currency: string;
+	setCurrency: (currency: string) => void;
 	convertPLN: (amount: number) => number;
 }
 
@@ -54,6 +55,8 @@ export function ChartProvider({
 	// Local state for UI toggles
 	const [chartMode, setChartMode] = useState<"VALUE" | "PERCENTAGE">("VALUE");
 	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("SIMULATED");
+	// Zamiast czytać bezpośrednio initialCurrency, dodaj useState:
+	const [currency, setCurrency] = useState(initialCurrency);
 
 	// 1. STAN WYPROWADZANY Z URL / CIASTECZKA (Brak useState dla selectedIds!)
 	// 1. Inicjalizacja z URL lub Ciasteczka (tylko na start)
@@ -98,9 +101,9 @@ export function ChartProvider({
 	// 	});
 	// };
 
-	// 🚀 Gotowa funkcja wstrzykiwana do całego drzewa komponentów
+	// Zaktualizuj convertPLN, aby używało dynamicznej `currency`:
 	const convertPLN = (amount: number) => {
-		return convertFromPLN(amount, initialCurrency, exchangeRates);
+		return convertFromPLN(amount, currency, exchangeRates);
 	};
 
 	// Update URL when predefined range changes
@@ -149,7 +152,8 @@ export function ChartProvider({
 				handleDateRangeSelect,
 				isPending,
 				// 🚀 Przekazujemy w dół walutę i funkcję przeliczającą
-				currency: initialCurrency,
+				currency,
+				setCurrency,
 				convertPLN,
 			}}
 		>

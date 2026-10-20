@@ -3,6 +3,7 @@
 import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
 import {
 	AlertCircle,
+	Coins,
 	Globe2,
 	GraduationCap,
 	Menu as HamburgerIcon,
@@ -36,6 +37,7 @@ import Menu from "./shared/DesktopNav";
 import ModeToggle from "./shared/header/ModeToggle";
 import { RefreshButton } from "./RefreshButton";
 import { cn } from "@/lib/utils";
+import { useChartContext } from "@/components/providers/ChartProvider"; // EN: Import context for global currency management
 
 interface HeaderProps {
 	portfolios: { id: string; name: string; colorTheme?: string }[];
@@ -57,6 +59,9 @@ export default function Header({
 	const searchParams = useSearchParams();
 	const isDemoMode = pathname.startsWith("/demo");
 	const router = useRouter();
+
+	// EN: Consume currency state and setter from global ChartContext
+	const { currency, setCurrency } = useChartContext();
 
 	const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -242,7 +247,7 @@ export default function Header({
 								})}
 							</div>
 
-							{/* DOLNA SEKCJA - NARZĘDZIA I USTAWIENIA */}
+							{/* DOLNA SEKCJA - NARZĘDZIA I USTAWIENIA MOBILNE */}
 							<div className="p-5 border-t border-t-border-subtle flex flex-col gap-2 bg-black/5 dark:bg-white/5">
 								{rawId && !isDemoMode && (
 									<Link
@@ -266,14 +271,38 @@ export default function Header({
 
 								<div className="w-full h-px bg-t-border-subtle my-2"></div>
 
-								{/* Profil / Opcje Użytkownika */}
+								{/* Profil oraz Przełącznik Motywu / Waluty w wersji mobilnej */}
 								<div className="flex items-center justify-between mt-1">
-									<div className="flex items-center gap-3">
+									<div className="flex items-center gap-2">
 										<ModeToggle />
-										{/* 🚀 PROFIL INWESTORA - owinięty w div, który nasłuchuje kliknięcia i wymusza zamknięcie szuflady! */}
+
+										{/* EN: Mobile currency selector */}
+										<Select
+											value={currency}
+											onValueChange={(val) => setCurrency(val)}
+										>
+											<SelectTrigger className="w-20 h-9 rounded-xl font-bold text-xs bg-black/5 dark:bg-white/5 border-t-border-subtle focus:ring-0">
+												<SelectValue placeholder="PLN" />
+											</SelectTrigger>
+											<SelectContent className="rounded-xl border border-theme-border bg-t-bg-panel shadow-xl">
+												<SelectItem value="PLN" className="text-xs font-bold">
+													PLN
+												</SelectItem>
+												<SelectItem value="USD" className="text-xs font-bold">
+													USD
+												</SelectItem>
+												<SelectItem value="EUR" className="text-xs font-bold">
+													EUR
+												</SelectItem>
+												<SelectItem value="GBP" className="text-xs font-bold">
+													GBP
+												</SelectItem>
+											</SelectContent>
+										</Select>
+
 										<div
 											onClick={() => setIsMobileOpen(false)}
-											className="hover:cursor-pointer flex items-center"
+											className="hover:cursor-pointer flex items-center ml-1"
 										>
 											{userButton}
 										</div>
@@ -284,10 +313,10 @@ export default function Header({
 					</Sheet>
 				</div>
 
-				{/* 4. KONTEKSTOWY SELEKTOR PORTFELA */}
+				{/* KONTEKSTOWY SELEKTOR PORTFELA */}
 				<div className=" md:w-full">
 					{isGlobalPage ? (
-						<div className="flex items-center gap-2 px-4 h-9 md:h-11 md:w-80 bg-theme-soft/50 border border-theme-border rounded-xl shadow-sm text-slate-400  cursor-default">
+						<div className="flex items-center gap-2 px-4 h-9 md:h-11 md:w-80 bg-theme-soft/50 border border-theme-border rounded-xl shadow-sm text-slate-400 cursor-default">
 							<Globe2 className="h-4 w-4 shrink-0" />
 							<span className="font-black text-[10px] md:text-[11px] uppercase tracking-widest mt-0.5 truncate">
 								Widok Skonsolidowany
@@ -365,8 +394,67 @@ export default function Header({
 				</div>
 			</div>
 
-			{/* PRAWA STRONA */}
-			<div className="flex items-center gap-2 md:gap-3">
+			{/* PRAWA STRONA (DESKTOP) - ukryte na najmniejszych telefonach (hidden sm:flex) */}
+			<div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+				<Select value={currency} onValueChange={(val) => setCurrency(val)}>
+					<SelectTrigger className="hidden sm:flex w-16 sm:w-20 md:w-24 h-9 md:h-11 px-2 rounded-xl font-bold text-xs bg-black/5 dark:bg-white/5 border-t-border-subtle focus:ring-0">
+						<div className="flex items-center gap-1">
+							<Coins className="h-3.5 w-3.5 text-theme-primary shrink-0 hidden md:block" />
+							<SelectValue placeholder="PLN" />
+						</div>
+					</SelectTrigger>
+					<SelectContent className="rounded-xl border border-theme-border bg-t-bg-panel shadow-xl">
+						<SelectItem
+							value="PLN"
+							className="text-xs font-bold cursor-pointer"
+						>
+							{/* 🚀 Układ poziomy z małym odstępem */}
+							<div className="flex items-center gap-1.5">
+								<span>PLN</span>
+								<span className="text-[10px] text-t-text-tertiary font-normal">
+									(zł)
+								</span>
+							</div>
+						</SelectItem>
+
+						<SelectItem
+							value="USD"
+							className="text-xs font-bold cursor-pointer"
+						>
+							<div className="flex items-center gap-1.5">
+								<span>USD</span>
+								<span className="text-[10px] text-t-text-tertiary font-normal">
+									($)
+								</span>
+							</div>
+						</SelectItem>
+
+						<SelectItem
+							value="EUR"
+							className="text-xs font-bold cursor-pointer"
+						>
+							<div className="flex items-center gap-1.5">
+								<span>EUR</span>
+								<span className="text-[10px] text-t-text-tertiary font-normal">
+									(€)
+								</span>
+							</div>
+						</SelectItem>
+
+						<SelectItem
+							value="GBP"
+							className="text-xs font-bold cursor-pointer"
+						>
+							<div className="flex items-center gap-1.5">
+								<span>GBP</span>
+								<span className="text-[10px] text-t-text-tertiary font-normal">
+									(£)
+								</span>
+							</div>
+						</SelectItem>
+					</SelectContent>
+				</Select>
+
 				{!isGlobalPage && displayValue && (
 					<RefreshButton
 						portfolioId={displayValue}

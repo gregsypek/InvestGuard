@@ -34,6 +34,7 @@ import { TwoFactorManager } from "@/components/settings/TwoFactorManager";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { updateUserPreferences } from "@/lib/actions/user.actions";
+import { useChartContext } from "@/components/providers/ChartProvider";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
@@ -68,6 +69,7 @@ export default function SettingsClient({
 	fromDashboard,
 	email,
 }: SettingsClientProps) {
+	const { setCurrency } = useChartContext();
 	const router = useRouter();
 	const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -111,15 +113,20 @@ export default function SettingsClient({
 		...(isAdmin ? [{ id: "bonds-admin", label: "Parametry Obligacji" }] : []),
 	];
 
-	// 🚀 PREMIUM UX: Aktualizacja stanu i zapis w tle
+	// 🚀 PREMIUM UX: Aktualizacja stanu, kontekstu na żywo i zapis w tle
 	const handlePreferenceChange = (
 		key: keyof typeof preferences,
 		value: string,
 	) => {
-		// 1. Zmiana w interfejsie następuje natychmiast (bez czekania na serwer)
+		// 1. Zmiana w interfejsie ustawień następuje natychmiast
 		setPreferences((prev) => ({ ...prev, [key]: value }));
 
-		// 2. Cichy zapis w tle
+		// 🚀 1.5 NOWOŚĆ: Błyskawiczna zmiana waluty w CAŁEJ aplikacji (wykresy, tabele)
+		if (key === "currency") {
+			setCurrency(value);
+		}
+
+		// 2. Cichy zapis w tle do bazy danych (żeby zapamiętać na zawsze)
 		startTransition(async () => {
 			const result = await updateUserPreferences(userId, {
 				[key === "currency" ? "mainCurrency" : "appLanguage"]: value,
@@ -133,11 +140,11 @@ export default function SettingsClient({
 		});
 	};
 
-	useEffect(() => {
-		if (activeTab === "bonds-admin" && !isAdmin) {
-			setActiveTab("dashboard");
-		}
-	}, [isAdmin, activeTab]);
+	// useEffect(() => {
+	// 	if (activeTab === "bonds-admin" && !isAdmin) {
+	// 		setActiveTab("dashboard");
+	// 	}
+	// }, [isAdmin, activeTab, setActiveTab]);
 
 	return (
 		<div className="max-w-7xl mx-auto w-full space-y-6 animate-in fade-in duration-500 pb-24">
@@ -305,6 +312,7 @@ export default function SettingsClient({
 													{preferences.currency === "PLN" && "PLN (Złoty)"}
 													{preferences.currency === "USD" && "USD (Dolar)"}
 													{preferences.currency === "EUR" && "EUR (Euro)"}
+													{preferences.currency === "GBP" && "GBP (Funt)"}
 												</span>
 												<ChevronDown className="w-4 h-4 opacity-50" />
 											</button>
@@ -345,6 +353,18 @@ export default function SettingsClient({
 												}
 											>
 												EUR (Euro)
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												className={cn(
+													"cursor-pointer font-medium hover:bg-t-hover focus:bg-t-hover",
+													preferences.currency === "GBP" &&
+														"bg-t-hover text-blue-500",
+												)}
+												onClick={() =>
+													handlePreferenceChange("currency", "GBP")
+												}
+											>
+												GBP (Funt Brytyjski)
 											</DropdownMenuItem>
 										</DropdownMenuContent>
 									</DropdownMenu>

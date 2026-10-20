@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SubmitButton } from "../SubmitButton";
-// import { addBond } from "@/lib/actions/bond-actions";
+import { addBond } from "@/lib/actions/bond-actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useChartContext } from "@/components/providers/ChartProvider";

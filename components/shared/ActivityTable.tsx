@@ -11,11 +11,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AssetHistoryChart } from "@/components/history/AssetHistoryChart";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "../providers/ChartProvider";
 
 export interface ActivityTransaction {
 	id: string;
@@ -40,6 +41,9 @@ interface ActivityTableProps {
 }
 
 const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -255,7 +259,9 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 			!!t.ticker && t.category !== "BONDS" && t.category !== "CASH";
 		const isExpanded = expandedTxId === t.id;
 		const sign = isNegative ? "-" : "+";
-		const valueFormatted = formatCurrency(Math.abs(t.executedValue));
+		const valueFormatted = formatCurrency(
+			convertPLN(Math.abs(t.executedValue)),
+		);
 
 		return {
 			isCashWithdrawal,
@@ -674,7 +680,7 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 												</div>
 												{t.rationale && (
 													<span className="text-[10px] italic text-t-text-tertiary truncate max-w-[150px]">
-														"{t.rationale}"
+														&quot;{t.rationale}&quot;
 													</span>
 												)}
 											</div>
@@ -847,7 +853,8 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 													</TableCell>
 													<TableCell className="text-right py-4 border-none">
 														<span className="text-sm font-black tracking-tight text-blue-500">
-															{formatCurrency(group.totalInvested)} PLN
+															{formatCurrency(convertPLN(group.totalInvested))}{" "}
+															{currencySymbol}
 														</span>
 													</TableCell>
 													<TableCell className="text-right pr-6 py-4 border-none">
@@ -860,7 +867,7 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 															)}
 														>
 															{group.totalDividends > 0
-																? `${formatCurrency(group.totalDividends)} PLN`
+																? `${formatCurrency(convertPLN(group.totalDividends))} ${currencySymbol}`
 																: "Brak"}
 														</span>
 													</TableCell>
@@ -978,11 +985,13 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 											</div>
 											<div className="flex flex-col items-end gap-0.5">
 												<span className="text-sm font-black text-blue-500">
-													{formatCurrency(group.totalInvested)}
+													{formatCurrency(convertPLN(group.totalInvested))}{" "}
+													{currencySymbol}
 												</span>
 												{group.totalDividends > 0 && (
 													<span className="text-[10px] font-bold text-purple-500 uppercase tracking-widest">
-														+ {formatCurrency(group.totalDividends)} dywidend
+														+ {formatCurrency(convertPLN(group.totalDividends))}{" "}
+														dywidend
 													</span>
 												)}
 											</div>

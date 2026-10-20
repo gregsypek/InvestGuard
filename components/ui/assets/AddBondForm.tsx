@@ -2,20 +2,24 @@
 
 import { BOND_CONFIG, BOND_TEMPLATES } from "@/lib/constants";
 import { Calculator, Calendar, Info, Landmark, Percent } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SubmitButton } from "../SubmitButton";
-import { addBond } from "@/lib/actions/bond-actions";
+// import { addBond } from "@/lib/actions/bond-actions";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { toast } from "sonner";
+import { useChartContext } from "@/components/providers/ChartProvider";
 import { useRouter } from "next/navigation";
 
 // 1. Define the type based on the config object
 export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	// console.log("🚀 ~ AddBondForm ~ portfolioId:", portfolioId);
 
 	const router = useRouter();
@@ -251,7 +255,7 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 									className={cn(inputStyles, "pl-11 pr-12 font-mono")}
 								/>
 								<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-									PLN
+									{currencySymbol}
 								</span>
 							</div>
 							<p className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary">
@@ -323,8 +327,10 @@ export default function AddBondForm({ portfolioId }: { portfolioId: string }) {
 									Łączny koszt zakupu:
 								</span>
 								<span className="font-mono text-3xl font-black text-blue-600 dark:text-blue-400">
-									{formatCurrency(investedCapital)}
-									<span className="text-sm font-bold ml-2">PLN</span>
+									{formatCurrency(convertPLN(investedCapital))}
+									<span className="text-sm font-bold ml-2">
+										{currencySymbol}
+									</span>
 								</span>
 							</div>
 						</div>

@@ -2,7 +2,6 @@
 
 import {
 	Activity,
-	Calendar,
 	CalendarClock,
 	Camera,
 	Edit3,
@@ -18,6 +17,7 @@ import {
 	Wallet,
 } from "lucide-react";
 import React, { useEffect, useState, useTransition } from "react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import {
 	setDefaultPortfolio,
 	updatePortfolioThemes,
@@ -31,9 +31,9 @@ import Image from "next/image";
 import { SafeActionButton } from "@/components/ui/SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { runSmartAlerts } from "@/lib/actions/alerts.actions";
 import { toast } from "sonner";
+import { useChartContext } from "../providers/ChartProvider";
 
 const THEME_OPTIONS_MAP: Record<string, string> = {
 	blue: "#3b82f6",
@@ -114,6 +114,9 @@ export default function InvestorProfileClient({
 	allocations,
 	summary,
 }: InvestorProfileClientProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [activeTab, setActiveTab] = useState<string>("overview");
 	const [isAnimated, setIsAnimated] = useState(false);
 	const [portfolios, setPortfolios] =
@@ -389,8 +392,10 @@ export default function InvestorProfileClient({
 											Obecna Wycena
 										</p>
 										<p className="text-2xl font-black text-t-text-primary tracking-tighter">
-											{formatCurrency(summary.currentValue)}{" "}
-											<span className="text-sm text-t-text-tertiary">PLN</span>
+											{formatCurrency(convertPLN(summary.currentValue))}{" "}
+											<span className="text-sm text-t-text-tertiary">
+												{currencySymbol}
+											</span>
 										</p>
 									</div>
 									<div className="h-px w-full bg-t-border-subtle" />
@@ -399,10 +404,8 @@ export default function InvestorProfileClient({
 											Zainwestowano:
 										</span>
 										<span className="text-t-text-primary">
-											{summary.totalInvested.toLocaleString("pl-PL", {
-												minimumFractionDigits: 2,
-											})}{" "}
-											PLN
+											{formatCurrency(convertPLN(summary.totalInvested))}{" "}
+											{currencySymbol}
 										</span>
 									</div>
 									<div className="flex justify-between items-center text-sm font-bold">
@@ -415,10 +418,7 @@ export default function InvestorProfileClient({
 											)}
 										>
 											{profit > 0 ? "+" : ""}
-											{profit.toLocaleString("pl-PL", {
-												minimumFractionDigits: 2,
-											})}{" "}
-											PLN
+											{formatCurrency(convertPLN(profit))} {currencySymbol}
 										</span>
 									</div>
 									<div className="flex justify-between items-center text-sm font-bold">
@@ -488,9 +488,9 @@ export default function InvestorProfileClient({
 												</p>
 											</div>
 											<span className="font-black text-sm text-t-text-primary">
-												{p.currentValue.toLocaleString("pl-PL")}{" "}
+												{formatCurrency(convertPLN(p.currentValue))}{" "}
 												<span className="text-[10px] text-t-text-tertiary">
-													PLN
+													{currencySymbol}
 												</span>
 											</span>
 										</div>
@@ -527,7 +527,8 @@ export default function InvestorProfileClient({
 												/>
 											</div>
 											<p className="text-[10px] text-t-text-tertiary text-right mt-1.5 font-bold uppercase tracking-widest">
-												{summary.totalGoal.toLocaleString("pl-PL")} PLN
+												{formatCurrency(convertPLN(summary.totalGoal))}{" "}
+												{currencySymbol}
 											</p>
 										</div>
 									) : (

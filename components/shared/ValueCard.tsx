@@ -1,6 +1,8 @@
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
+
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "../providers/ChartProvider";
 
 interface ValueCardProps {
 	label: string;
@@ -21,6 +23,16 @@ export function ValueCard({
 	formatString = false,
 	children,
 }: ValueCardProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
+	// 🚀 TARCZA: Sprawdzamy, czy karta ma wyświetlać walutę, czy coś innego (np. "%", "szt.")
+	const isCurrencyMode = suffix === "PLN" || suffix === "zł";
+
+	// Przeliczamy wartość TYLKO, jeśli to waluta (i chronimy przed błędem, gdy value to tekst)
+	const displayValue =
+		isCurrencyMode && typeof value === "number" ? convertPLN(value) : value;
+
 	return (
 		<div className={cn("flex flex-col gap-1 shrink-0", className)}>
 			{/* Mała, techniczna etykieta */}
@@ -35,11 +47,13 @@ export function ValueCard({
 					children
 				) : (
 					<span className="font-mono text-lg font-semibold tracking-tight">
-						{/* FIX: Bezpieczna obsługa undefined dla value */}
-						{formatString ? formatCurrency(value) : value}
+						{formatString
+							? formatCurrency(displayValue as number)
+							: displayValue}
 						{suffix && (
 							<span className="ml-1.5 text-[11px] font-bold text-slate-500">
-								{suffix}
+								{/* 🚀 Zmiana: Zastępujemy twarde "PLN" na dynamiczny symbol, resztę zostawiamy */}
+								{isCurrencyMode ? currencySymbol : suffix}
 							</span>
 						)}
 					</span>

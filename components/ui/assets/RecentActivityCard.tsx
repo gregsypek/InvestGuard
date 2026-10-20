@@ -1,9 +1,10 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { Asset } from "@/lib/types";
 import { COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "@/components/providers/ChartProvider";
 
 interface Props {
 	asset: Asset;
@@ -18,6 +19,9 @@ export default function AssetCard({
 	isDemo,
 	activityDate,
 }: Props) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	// 🚀 ZMIANA 1: Obliczenia finansowe w locie
 	const invested = asset.investedCapital || 0;
 	const current = asset.currentValue || 0;
@@ -91,10 +95,10 @@ export default function AssetCard({
 				<div className="flex flex-col items-end gap-1">
 					<div className="flex items-baseline gap-1">
 						<p className="font-mono text-sm font-bold text-t-text-primary">
-							{formatCurrency(current)}
+							{formatCurrency(convertPLN(current))}
 						</p>
-						<p className="text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary">
-							PLN
+						<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
+							{currencySymbol}
 						</p>
 					</div>
 
@@ -113,7 +117,7 @@ export default function AssetCard({
 							)}
 							<span>
 								{isPositive ? "+" : ""}
-								{formatCurrency(profitAmount)}
+								{formatCurrency(convertPLN(profitAmount))}
 							</span>
 							<span className="opacity-80">
 								({isPositive ? "+" : ""}

@@ -15,11 +15,13 @@ import {
 	YAxis,
 } from "recharts";
 import { Maximize2, Minimize2, TrendingUp } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useState } from "react";
 
 import { ChartContainer } from "../shared/ChartContainer";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
+import { useChartContext } from "../providers/ChartProvider";
 
 export interface AbsolutePnLDataPoint {
 	date: string;
@@ -34,6 +36,9 @@ interface AbsoluteDailyPnLChartProps {
 }
 
 export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
 
@@ -111,12 +116,10 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						isPeriodPositive ? "text-emerald-500" : "text-rose-500"
 					}`}
 				>
-					(
-					{new Intl.NumberFormat("pl-PL", {
-						style: "currency",
-						currency: "PLN",
-						maximumFractionDigits: 0,
-					}).format(totalPnL)}
+					({formatCurrency(convertPLN(totalPnL), 0)}
+					<span className="text-[8px] font-medium ml-0.5">
+						{currencySymbol}
+					</span>
 					)
 				</span>
 			</div>
@@ -279,7 +282,8 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 							fontWeight: 500,
 						}}
 						tickFormatter={(val) =>
-							`${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(val)}\u00A0zł`
+							// 🚀 ZMIANA: convertPLN(val) oraz dynamiczny currencySymbol
+							`${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(convertPLN(val))}\u00A0${currencySymbol}`
 						}
 						width={isMobile ? 42 : 58}
 						domain={[-pnlDomain, pnlDomain]}
@@ -298,7 +302,8 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						tickFormatter={(val) =>
 							val === 0
 								? ""
-								: `${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(val)}\u00A0zł`
+								: // 🚀 ZMIANA: convertPLN(val) oraz dynamiczny currencySymbol
+									`${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(convertPLN(val))}\u00A0${currencySymbol}`
 						}
 						width={isMobile ? 45 : 65}
 						domain={[-cashDomain, cashDomain]}
@@ -475,6 +480,9 @@ interface CustomTooltipProps {
 }
 
 function AbsolutePnLTooltip({ active, payload, label }: CustomTooltipProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	if (active && payload && payload.length && label) {
 		const changeValue =
 			payload.find((p) => p.dataKey === "exactChangePLN")?.value || 0;
@@ -510,12 +518,11 @@ function AbsolutePnLTooltip({ active, payload, label }: CustomTooltipProps) {
 						className={`text-xl font-black tracking-tight ${isPositive ? "text-emerald-500" : "text-rose-500"}`}
 					>
 						{isPositive ? "+" : ""}
-						{new Intl.NumberFormat("pl-PL", {
-							style: "currency",
-							currency: "PLN",
-						}).format(changeValue)}
+						{formatCurrency(convertPLN(changeValue))}
+						<span className="text-xs font-bold ml-1">{currencySymbol}</span>
 					</p>
 				</div>
+
 				{netCashFlow !== 0 && (
 					<div className="mb-3 pt-2 border-t border-t-border-subtle flex justify-between items-center bg-(--theme-soft) -mx-1 px-2 py-1.5 rounded-lg">
 						<span className="text-[9px] text-[var(--theme-primary)] uppercase tracking-widest font-bold">
@@ -523,11 +530,10 @@ function AbsolutePnLTooltip({ active, payload, label }: CustomTooltipProps) {
 						</span>
 						<span className="text-[11px] text-[var(--theme-primary)] font-bold">
 							{netCashFlow > 0 ? "+" : ""}
-							{new Intl.NumberFormat("pl-PL", {
-								style: "currency",
-								currency: "PLN",
-								maximumFractionDigits: 0,
-							}).format(netCashFlow)}
+							{formatCurrency(convertPLN(netCashFlow), 0)}
+							<span className="text-[9px] font-semibold ml-0.5">
+								{currencySymbol}
+							</span>
 						</span>
 					</div>
 				)}
@@ -536,11 +542,10 @@ function AbsolutePnLTooltip({ active, payload, label }: CustomTooltipProps) {
 						Suma aktywów
 					</span>
 					<span className="text-[10px] text-t-text-primary font-bold">
-						{new Intl.NumberFormat("pl-PL", {
-							style: "currency",
-							currency: "PLN",
-							maximumFractionDigits: 0,
-						}).format(totalValue)}
+						{formatCurrency(convertPLN(totalValue), 0)}
+						<span className="text-[9px] font-semibold ml-0.5">
+							{currencySymbol}
+						</span>
 					</span>
 				</div>
 			</div>

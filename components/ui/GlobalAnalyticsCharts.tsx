@@ -14,10 +14,11 @@ import {
 import { CATEGORY_LABELS, COLORS } from "@/lib/constants";
 import { Maximize2, X } from "lucide-react";
 import React, { useMemo, useState } from "react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { Asset } from "@prisma/client";
 import { ChartContainer } from "../shared/ChartContainer";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "../providers/ChartProvider";
 
 // --- 1. DEFINICJE TYPÓW ---
 interface GlobalAnalyticsChartsProps {
@@ -62,6 +63,9 @@ export default function GlobalAnalyticsCharts({
 	filterCategory,
 	sortBy,
 }: GlobalAnalyticsChartsProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [isFullscreen, setIsFullscreen] = useState(false);
 
 	const { pieData, barDataTop10, allBarData } = useMemo(() => {
@@ -186,13 +190,16 @@ export default function GlobalAnalyticsCharts({
 
 		if (sortBy === "PROFIT" && item.name !== "Pozostałe") {
 			const sign = item.profitPLN > 0 ? "+" : "";
-			extra = ` (Zysk: ${sign}${formatCurrency(item.profitPLN, 0)} PLN)`;
+			extra = ` (Zysk: ${sign}${formatCurrency(convertPLN(item.profitPLN), 0)} ${currencySymbol})`;
 		} else if (sortBy === "PROFIT_PCT" && item.name !== "Pozostałe") {
 			const sign = item.profitPct > 0 ? "+" : "";
 			extra = ` (Zysk: ${sign}${item.profitPct.toFixed(2)}%)`;
 		}
 
-		return [`${formatCurrency(numValue, 0)} PLN${extra}`, "Wartość"];
+		return [
+			`${formatCurrency(convertPLN(numValue), 0)} ${currencySymbol}${extra}`,
+			"Wartość",
+		];
 	};
 
 	const renderPieLabel = ({
@@ -241,7 +248,7 @@ export default function GlobalAnalyticsCharts({
 
 		if (sortBy === "PROFIT" && item.name !== "Pozostałe") {
 			const sign = item.profitPLN > 0 ? "+" : "";
-			extraText = `(${sign}${formatCurrency(item.profitPLN, 0)} PLN)`;
+			extraText = `(${sign}${formatCurrency(convertPLN(item.profitPLN), 0)} ${currencySymbol})`;
 			extraFill = item.profitPLN >= 0 ? "#10b981" : "#ef4444";
 		} else if (sortBy === "PROFIT_PCT" && item.name !== "Pozostałe") {
 			const sign = item.profitPct > 0 ? "+" : "";
@@ -260,7 +267,7 @@ export default function GlobalAnalyticsCharts({
 				dominantBaseline="central"
 				className="text-[10px] font-bold font-mono tracking-tighter"
 			>
-				{formatCurrency(item.value, 0)} PLN{" "}
+				{formatCurrency(convertPLN(item.value), 0)} {currencySymbol}
 				<tspan fill={extraFill}>{extraText}</tspan>
 			</text>
 		);
@@ -298,7 +305,7 @@ export default function GlobalAnalyticsCharts({
 									</Pie>
 									<Tooltip
 										formatter={(value: unknown) => [
-											`${formatCurrency(value as number | string, 0)} PLN`,
+											`${formatCurrency(convertPLN(Number(value as string | number)), 0)} ${currencySymbol}`,
 											"Wartość",
 										]}
 										contentStyle={tooltipStyle}
@@ -323,7 +330,8 @@ export default function GlobalAnalyticsCharts({
 								<span className="text-[10px] font-bold text-t-text-secondary uppercase tracking-widest">
 									{entry.labelName}
 									<span className="text-t-text-tertiary ml-1">
-										{formatCurrency(entry.value, 0)} PLN
+										{formatCurrency(convertPLN(entry.value), 0)}{" "}
+										{currencySymbol}
 									</span>
 									<span className="text-t-text-tertiary ml-1">
 										({entry.percentage.toFixed(1)}%)

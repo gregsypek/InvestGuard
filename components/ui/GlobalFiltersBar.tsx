@@ -1,13 +1,13 @@
 "use client";
 
 import { Maximize2, Minimize2 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useRef, useState } from "react";
 
 import { DatePickerWithRange } from "../shared/DatePickerWithRange";
 import { FilterBadge } from "../shared/FilterBadge";
 import { PortfolioWithAssets } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { useChartContext } from "../providers/ChartProvider"; // Dopasuj ścieżkę
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
@@ -27,6 +27,9 @@ export function GlobalFiltersBar({
 	disabledRanges = [],
 	isSticky = true,
 }: GlobalFiltersBarProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	// 1. Fetching states and actions from the global context
 	const {
 		chartMode,
@@ -79,10 +82,10 @@ export function GlobalFiltersBar({
 								</span>
 								<div className="flex items-baseline gap-1">
 									<span className="text-sm md:text-base font-black text-white tracking-tight">
-										{formatCurrency(totalCurrent)}
+										{formatCurrency(convertPLN(totalCurrent))}
 									</span>
 									<span className="text-[9px] text-slate-400 font-bold">
-										PLN
+										{currencySymbol}
 									</span>
 								</div>
 							</div>

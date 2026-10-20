@@ -5,16 +5,17 @@ import * as XLSX from "xlsx";
 import { AlertTriangle, CheckCircle, Trash2 } from "lucide-react";
 import { ParsedXtbTransaction, parseXtbRow } from "@/lib/utils/xtb-parser";
 import React, { useState } from "react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { Category } from "@prisma/client";
 import Image from "next/image";
 import JSZip from "jszip";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { inferTickersCategories } from "@/lib/actions/portfolio.actions";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
+import { useChartContext } from "../providers/ChartProvider";
 import { useRouter } from "next/navigation";
 
 // EN: Reads workbook with 3 strategies: direct -> re-zipped via JSZip -> text fallback
@@ -46,6 +47,9 @@ async function readWorkbookRobust(file: File): Promise<XLSX.WorkBook> {
 }
 
 export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [previewData, setPreviewData] = useState<ParsedXtbTransaction[]>([]);
 	const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 	const router = useRouter();
@@ -236,7 +240,7 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 				) {
 					currentDuplicates++;
 					duplicateItems.push(
-						`[${tx.type}] ${tx.assetName || tx.ticker} (${formatCurrency(tx.amountPLN)} PLN)`,
+						`[${tx.type}] ${tx.assetName || tx.ticker} (${formatCurrency(convertPLN(tx.amountPLN))} ${currencySymbol})`,
 					);
 				} else {
 					// EN: PREMIUM FIX - Non-blocking error handling.
@@ -541,9 +545,9 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 											</td>
 											<td className="p-4 text-right">
 												<div className="font-mono font-bold text-sm text-t-text-primary whitespace-nowrap">
-													{formatCurrency(tx.amountPLN)}
+													{formatCurrency(convertPLN(tx.amountPLN))}
 													<span className="text-[10px] text-t-text-tertiary ml-1">
-														PLN
+														{currencySymbol}
 													</span>
 												</div>
 											</td>

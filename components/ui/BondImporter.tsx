@@ -6,15 +6,16 @@ import * as XLSX from "xlsx";
 import { AlertTriangle, CheckCircle, Trash2 } from "lucide-react";
 import { ParsedBond, parseBondRow } from "@/lib/utils/bond-parser";
 import React, { ChangeEvent, useState } from "react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { BOND_DURATIONS } from "@/lib/constants";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
 import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
 import { updateImportedBondSpecs } from "@/lib/actions/bond-actions";
+import { useChartContext } from "../providers/ChartProvider";
 import { useRouter } from "next/navigation";
 
 interface ExtendedParsedBond extends ParsedBond {
@@ -23,6 +24,9 @@ interface ExtendedParsedBond extends ParsedBond {
 }
 
 export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const router = useRouter();
 	const [preview, setPreview] = useState<ExtendedParsedBond[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -379,17 +383,17 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 											</td>
 											<td className="p-4 text-right">
 												<div className="font-mono text-sm text-t-text-secondary whitespace-nowrap">
-													{formatCurrency(b.investedValue)}
+													{formatCurrency(convertPLN(b.investedValue))}
 													<span className="text-[10px] text-t-text-tertiary ml-1">
-														PLN
+														{currencySymbol}
 													</span>
 												</div>
 											</td>
 											<td className="p-4 text-right">
 												<div className="font-mono font-bold text-sm text-blue-600 dark:text-blue-400 whitespace-nowrap">
-													{formatCurrency(b.currentValue)}
+													{formatCurrency(convertPLN(b.currentValue))}
 													<span className="text-[10px] text-blue-600/50 dark:text-blue-400/50 ml-1">
-														PLN
+														{currencySymbol}
 													</span>
 												</div>
 											</td>
@@ -420,9 +424,9 @@ export const BondImporter = ({ portfolioId }: { portfolioId: string }) => {
 									</td>
 									<td className="p-4 text-right border-t border-t-border-subtle">
 										<div className="font-mono font-black text-sm text-blue-600 dark:text-blue-400 whitespace-nowrap">
-											{formatCurrency(previewTotal)}
+											{formatCurrency(convertPLN(previewTotal))}
 											<span className="text-[10px] text-blue-600/50 dark:text-blue-400/50 ml-1">
-												PLN
+												{currencySymbol}
 											</span>
 										</div>
 									</td>

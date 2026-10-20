@@ -5,7 +5,6 @@ import {
 	calculateLiveBondValue,
 	getBondDictionaries,
 } from "../bond-calculations";
-import { syncPortfolioAssets, updateAssetValues } from "./asset-actions";
 
 import { BOND_TEMPLATES } from "../constants";
 import { auth } from "@/auth";
@@ -14,6 +13,7 @@ import { formatCurrency } from "@/lib/utils/format-currency";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { saveXtbTransaction } from "./transactions";
+import { syncPortfolioAssets } from "./asset-actions";
 
 export async function getBonds(portfolioId?: string) {
 	const session = await auth();

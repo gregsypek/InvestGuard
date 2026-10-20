@@ -8,6 +8,7 @@ import {
 	ShieldCheck,
 	TrendingUp,
 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useCallback, useMemo, useState } from "react";
 
 import { AppHeaderLayout } from "./shared/AppHeaderLayout";
@@ -15,7 +16,7 @@ import { FilterBadge } from "./shared/FilterBadge";
 import Link from "next/link";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/format-currency";
+import { useChartContext } from "./providers/ChartProvider";
 
 export interface BondHeaderStats {
 	totalInvested: string;
@@ -47,6 +48,9 @@ export function BondHeader({
 	backHref,
 	bonds = [],
 }: BondHeaderProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	const [selectedTypes, setSelectedTypes] = useState<string[]>(["ALL"]);
 
 	const availableTypes = useMemo(() => {
@@ -179,8 +183,8 @@ export function BondHeader({
 					</span>
 				</>
 			}
-			mainStatValue={formatCurrency(dynamicStats.currentValue)}
-			mainStatSuffix="PLN"
+			mainStatValue={formatCurrency(convertPLN(dynamicStats.currentValue))}
+			mainStatSuffix={currencySymbol}
 			secondaryStats={
 				<>
 					<ValueCard
@@ -190,10 +194,10 @@ export function BondHeader({
 					>
 						<div className="flex items-baseline gap-1.5 font-mono">
 							<span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-200">
-								{formatCurrency(dynamicStats.totalInvested)}
+								{formatCurrency(convertPLN(dynamicStats.totalInvested))}
 							</span>
 							<span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-								PLN
+								{currencySymbol}
 							</span>
 						</div>
 					</ValueCard>
@@ -205,10 +209,10 @@ export function BondHeader({
 					>
 						<div className="flex items-baseline gap-1.5 font-mono">
 							<span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
-								+{formatCurrency(dynamicStats.profit)}
+								+{formatCurrency(convertPLN(dynamicStats.profit))}
 							</span>
 							<span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-								PLN
+								{currencySymbol}
 							</span>
 						</div>
 					</ValueCard>

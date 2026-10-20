@@ -1,3 +1,5 @@
+"use client";
+
 import { Briefcase, LayoutGrid, Wallet2 } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 

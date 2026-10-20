@@ -9,31 +9,28 @@ import { syncPortfolioAssets, updateAssetValues } from "./asset-actions";
 
 import { BOND_TEMPLATES } from "../constants";
 import { auth } from "@/auth";
-import { db } from "@/lib/db"; // EN: Your prisma instance
+import { db } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { saveXtbTransaction } from "./transactions";
 
 export async function getBonds(portfolioId?: string) {
-	// 1. Zabezpieczenie sesji
 	const session = await auth();
 	if (!session?.user?.id) {
 		throw new Error("Unauthorized");
 	}
 
-	// 2. Jeśli nie przekazano portfolioId, nie mamy czego szukać
 	if (!portfolioId) {
 		return [];
 	}
 
-	// 3. Pobieranie z bazy DANYCH TYLKO DLA TEGO PORTFELA I TEGO UŻYTKOWNIKA
 	const bonds = await db.asset.findMany({
 		where: {
 			category: "BONDS",
-			portfolioId: portfolioId, // Filtrowanie po ID portfela
+			portfolioId: portfolioId,
 			portfolio: {
-				userId: session.user.id, // OSTATECZNE ZABEZPIECZENIE: Upewniamy się, że portfel należy do zalogowanego usera
+				userId: session.user.id,
 			},
 			OR: [
 				{ ticker: { contains: "EDO" } },
@@ -58,20 +55,18 @@ export async function getBondsData(portfolioId: string) {
 	const session = await auth();
 	if (!session?.user?.id) return null;
 
-	// 🚀 ZMIANA: Pobieramy dane portfela, obligacji oraz słowniki z nowych tabel JEDNOCZEŚNIE
 	const [portfolio, rawBonds, rawInflation, rawConfigs] = await Promise.all([
 		db.portfolio.findUnique({
 			where: { id: portfolioId, userId: session.user.id },
 			select: { name: true },
 		}),
 		getBonds(portfolioId),
-		db.inflationRate.findMany(), // Pobiera wszystkie odczyty GUS
-		db.bondSeriesConfig.findMany(), // Pobiera konfiguracje serii (marże i proc. 1-szy rok)
+		db.inflationRate.findMany(),
+		db.bondSeriesConfig.findMany(),
 	]);
 
 	if (!portfolio) notFound();
 
-	// 🚀 ZMIANA: Mapujemy tablice bazy danych na obiekty słownikowe (dla błyskawicznego odczytu O(1) w pętli)
 	const inflationMap = rawInflation.reduce(
 		(acc, item) => {
 			acc[item.yearMonth] = item.value;
@@ -91,18 +86,55 @@ export async function getBondsData(portfolioId: string) {
 		{} as Record<string, { firstYearRate: number; margin: number | null }>,
 	);
 
-	const bonds: Bond[] = rawBonds.map((b) => {
-		const cleanTicker = b.ticker ? b.ticker.split("_")[0] : "NIEZNANY"; // np. EDO0836
+	// 🚀 ZAMEK BEZPIECZEŃSTWA NA EKRANIE:
+	// Sprawdzamy, czy w ogóle mamy słowniki, żeby kalkulator miał prawo działać
+	const hasDictionaries = Object.keys(inflationMap).length > 0;
 
-		// 🚀 ZMIANA: Odbieramy obiekt z wyceną i stawką z silnika
+	const bonds: Bond[] = rawBonds.map((b) => {
+		const cleanTicker = b.ticker ? b.ticker.split("_")[0] : "NIEZNANY";
+
+		let effectiveInterestRate = configMap[cleanTicker]
+			? configMap[cleanTicker].firstYearRate
+			: (b.interestRate ?? 0);
+
+		if (
+			effectiveInterestRate === 0 &&
+			Number(b.investedCapital) > 0 &&
+			Number(b.currentValue) > Number(b.investedCapital)
+		) {
+			const now = new Date();
+			const pDate = b.purchaseDate ? new Date(b.purchaseDate) : null;
+			if (pDate) {
+				const diffYears = Math.max(
+					0.1,
+					(now.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25),
+				);
+				effectiveInterestRate = Number(
+					(
+						((Number(b.currentValue) - Number(b.investedCapital)) /
+							Number(b.investedCapital) /
+							diffYears) *
+						100
+					).toFixed(2),
+				);
+			}
+		}
+
 		const calculated = calculateLiveBondValue(
 			Number(b.investedCapital),
-			b.interestRate ?? 0,
+			effectiveInterestRate,
 			b.purchaseDate,
 			cleanTicker,
 			inflationMap,
 			configMap,
 		);
+
+		// 🚀 KLUCZOWA ZMIANA:
+		// Jeśli nie mamy słowników, kalkulator kłamie. Sztywno używamy wyceny z raportu!
+		let finalValue = Number(b.currentValue);
+		if (hasDictionaries && calculated.value > Number(b.investedCapital)) {
+			finalValue = calculated.value;
+		}
 
 		return {
 			id: b.id,
@@ -119,15 +151,13 @@ export async function getBondsData(portfolioId: string) {
 				: null,
 			investedCapital: Number(b.investedCapital) ?? 0,
 
-			currentValue: calculated.value, // Wycena PLN
-			interestRate: configMap[cleanTicker]
-				? configMap[cleanTicker].firstYearRate
-				: (b.interestRate ?? 0),
+			currentValue: finalValue, //
+			interestRate: effectiveInterestRate,
 			quantity: b.quantity ?? 0,
-
-			// 🚀 NOWOŚĆ: Wstrzykujemy stawkę do wyrenderowania w nowym okienku
-			currentPeriodRate: calculated.currentRate,
-			// 🚀 NOWOŚĆ: Flaga informująca frontend, że tą obligacją steruje Panel Admina
+			currentPeriodRate:
+				hasDictionaries && calculated.currentRate
+					? calculated.currentRate
+					: effectiveInterestRate,
 			hasGlobalConfig: !!configMap[cleanTicker],
 		} as Bond & { currentPeriodRate?: number; hasGlobalConfig?: boolean };
 	});
@@ -157,11 +187,8 @@ export async function getBondsData(portfolioId: string) {
 	};
 }
 
-// EN: Ensure the function always returns a valid ActionResponse
-
 export async function deleteBond(id: string) {
 	try {
-		// 1. Fetch asset details before performing deletion
 		const bond = await db.asset.findUnique({
 			where: { id },
 		});
@@ -175,22 +202,20 @@ export async function deleteBond(id: string) {
 					portfolioId: bond.portfolioId,
 					assetName: bond.name || (bond.ticker ?? "NIE PODANO"),
 					ticker: bond.ticker,
-					type: "SELL", // 🚀 FIX: Explicitly set to SELL so it renders as SPRZEDAŻ instead of KUPNO
+					type: "SELL",
 					quantity: Math.abs(bond.quantity), // 🚀 FIX: Use absolute positive value to prevent "+-" UI layout bugs
 					executedValue: Math.abs(bond.currentValue), // 🚀 FIX: Positive volume since SELL type natively handles negative balance shifts
 					executedAt: new Date(),
 					category: "BONDS",
 					rationale: "[ZAMKNIĘCIE POZYCJI] Usunięcie transzy z portfela",
-					comment: "[ZAMKNIĘCIE POZYCJI] Usunięcie transzy z portfela", // 🚀 FIX: Supplied both for legacy table view support
+					comment: "[ZAMKNIĘCIE POZYCJI] Usunięcie transzy z portfela",
 				},
 			}),
-			// 3. Delete the asset record itself
 			db.asset.delete({
 				where: { id },
 			}),
 		]);
 
-		// 4. Revalidate all paths where this data occurs
 		revalidatePath("/bond-reports");
 		revalidatePath("/dashboard");
 
@@ -207,8 +232,6 @@ export async function deleteBond(id: string) {
 export const handleDeleteBond = async (id: string): Promise<ActionResponse> => {
 	try {
 		await deleteBond(id);
-
-		// EN: Important - you must return a success object here!
 		return {
 			success: true,
 			id: id,
@@ -222,7 +245,6 @@ export const handleDeleteBond = async (id: string): Promise<ActionResponse> => {
 	}
 };
 
-// Logika mapowania tickerów na typ oprocentowania
 function getRateTypeByTicker(ticker: string): "VARIABLE" | "FIXED" {
 	const cleanTicker = ticker
 		.toUpperCase()
@@ -255,7 +277,7 @@ export async function getBondMaturityDate(
 
 export async function addBond(formData: FormData, portfolioId: string) {
 	try {
-		const rawTicker = formData.get("ticker") as string; // np. "EDO"
+		const rawTicker = formData.get("ticker") as string;
 		const purchaseDate = new Date(formData.get("purchaseDate") as string);
 		const quantity = Number(formData.get("quantity")) || 1;
 		const investedCapital = Number(formData.get("investedCapital"));
@@ -283,11 +305,10 @@ export async function addBond(formData: FormData, portfolioId: string) {
 		// ==========================================
 		// 2. KLUCZE DEDUPLIKACJI (Zgodne z Importerem)
 		// ==========================================
-		const dateStr = purchaseDate.toISOString().split("T")[0]; // np. 2026-08-10
-		const dbTicker = `${prettyTicker}_${dateStr}`; // np. EDO0836_2026-08-10
-		// 🚀 POPRAWKA: Usunięto kwotę. Teraz klucz to sztywno: BOND_EDO0836_2026-08-10
+		const dateStr = purchaseDate.toISOString().split("T")[0];
+		const dbTicker = `${prettyTicker}_${dateStr}`;
 		const uniqueExternalId = `BOND_${prettyTicker}_${dateStr}`;
-		// POCZĄTKOWA WYCENA
+
 		let startingCurrentValue = investedCapital;
 
 		if (manualCurrentValueRaw) {
@@ -310,9 +331,7 @@ export async function addBond(formData: FormData, portfolioId: string) {
 
 		startingCurrentValue = Number(startingCurrentValue.toFixed(2));
 
-		// TRANSAKCJA BAZY DANYCH
 		await db.$transaction(async (tx) => {
-			// Zapis Aktywa
 			await tx.asset.upsert({
 				where: {
 					portfolioId_ticker: { portfolioId, ticker: dbTicker },
@@ -337,7 +356,6 @@ export async function addBond(formData: FormData, portfolioId: string) {
 				},
 			});
 
-			// Zapis Historii (Zabezpieczone unikalnym ID zewnętrznym)
 			const existingTx = await tx.transactionHistory.findUnique({
 				where: {
 					portfolioId_externalId: { portfolioId, externalId: uniqueExternalId },
@@ -389,7 +407,6 @@ export async function updateBondValue(id: string, newValue: number) {
 		const bond = await db.asset.findUnique({ where: { id } });
 		if (!bond) throw new Error("Bond not found");
 
-		// RÓŻNICA DO HISTORII TRANSAKCJI
 		const valueDelta = newValue - bond.currentValue;
 
 		await db.$transaction([
@@ -404,7 +421,7 @@ export async function updateBondValue(id: string, newValue: number) {
 					assetName: bond.name,
 					ticker: bond.ticker,
 					quantity: 0,
-					executedValue: valueDelta, // Różnica
+					executedValue: valueDelta,
 					category: "BONDS",
 					rationale: `Ręczna korekta wyceny: ${newValue} PLN`,
 				},
@@ -451,7 +468,6 @@ export async function updateBondInterestRate(id: string, newRate: number) {
 		const finalValue =
 			newRate === 0 ? bond.currentValue : Number(simulatedValue.toFixed(2));
 
-		// 🆕 RÓŻNICA DO HISTORII TRANSAKCJI (Delta zysku/straty)
 		const valueDelta = finalValue - bond.currentValue;
 
 		await db.$transaction([
@@ -480,7 +496,7 @@ export async function updateBondInterestRate(id: string, newRate: number) {
 		revalidatePath("/dashboard");
 		return { success: true };
 	} catch (error) {
-		console.error("🔥 Błąd TypeScript w updateBondInterestRate:", error);
+		console.error("🔥 Błąd w updateBondInterestRate:", error);
 		return { success: false, error: "Błąd aktualizacji stopy procentowej." };
 	}
 }
@@ -489,10 +505,8 @@ export async function sellBondAction(formData: FormData) {
 	// 1. Pobieranie danych (Używamy klucza 'bondId', bo tak wysyła BondLedgerTable)
 	const bondId = formData.get("bondId") as string;
 	const quantityToSell = Number(formData.get("quantity"));
-
 	// ZMIANA: Pobieramy gotową kwotę całkowitą (np. 300), NIE mnożymy jej ponownie przez ilość
 	const totalSellValue = Number(formData.get("sellPrice"));
-
 	const targetPortfolioId = formData.get("targetPortfolioId") as string;
 	const note = (formData.get("note") as string) || "";
 	const executedAt =
@@ -532,7 +546,7 @@ export async function sellBondAction(formData: FormData) {
 			await tx.transactionHistory.create({
 				data: {
 					type: "SELL",
-					portfolioId: bond.portfolioId, // Historia tam, gdzie było aktywo
+					portfolioId: bond.portfolioId,
 					assetName: bond.name,
 					ticker: bond.ticker,
 					quantity: -quantityToSell,
@@ -611,21 +625,18 @@ export async function importBondsAction(
 			const bond = aggregatedBonds[key];
 			const expiryDate = new Date(bond.expiryDate);
 
-			// Obliczanie daty zakupu (inferred)
-			const prefix = bond.ticker.match(/^[A-Z]+/)?.[0] || "EDO";
-			const duration = 10; // Możesz tu zaimportować BOND_DURATIONS
+			const duration = 10;
 			const purchaseDate = new Date(expiryDate);
 			purchaseDate.setFullYear(expiryDate.getFullYear() - duration);
 
 			const uniqueTicker = `${bond.ticker}_${expiryDate.toISOString().split("T")[0]}`;
 
-			// 1. Zapisujemy NOMINAŁ do historii transakcji
 			await saveXtbTransaction(
 				{
 					date: purchaseDate,
 					ticker: uniqueTicker,
 					assetName: bond.assetName,
-					amountPLN: bond.investedValue, // Koszt zakupu
+					amountPLN: bond.investedValue,
 					quantity: bond.quantity,
 					category: "BONDS",
 					type: "UPDATE",
@@ -637,21 +648,53 @@ export async function importBondsAction(
 			);
 		}
 
-		// 2. Synchronizacja (ustawi investedCapital na nominał)
 		await syncPortfolioAssets(portfolioId);
 
-		// 3. Aktualizacja WYCENY AKTUALNEJ w tabeli Asset
 		for (const key in aggregatedBonds) {
 			const bond = aggregatedBonds[key];
 			const uniqueTicker = `${bond.ticker}_${new Date(bond.expiryDate).toISOString().split("T")[0]}`;
+			const cleanTicker = bond.ticker ? bond.ticker.split("_")[0] : "";
 
 			const asset = await db.asset.findFirst({
-				where: { portfolioId, ticker: uniqueTicker },
+				where: {
+					portfolioId,
+					OR: [{ ticker: uniqueTicker }, { ticker: { contains: cleanTicker } }],
+				},
 			});
 
 			if (asset) {
-				// Ustawiamy realną wycenę z raportu
-				await updateAssetValues(asset.id, bond.currentValue);
+				let rate = Number(bond.interestRate) || 0;
+				if (
+					!rate &&
+					bond.currentValue &&
+					bond.investedValue &&
+					bond.currentValue > bond.investedValue
+				) {
+					const now = new Date();
+					const pDate = asset.purchaseDate
+						? new Date(asset.purchaseDate)
+						: new Date();
+					const diffYears = Math.max(
+						0.1,
+						(now.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25),
+					);
+					rate = Number(
+						(
+							((bond.currentValue - bond.investedValue) /
+								bond.investedValue /
+								diffYears) *
+							100
+						).toFixed(2),
+					);
+				}
+
+				await db.asset.update({
+					where: { id: asset.id },
+					data: {
+						currentValue: bond.currentValue || asset.currentValue,
+						interestRate: rate > 0 ? rate : asset.interestRate,
+					},
+				});
 			}
 		}
 
@@ -663,6 +706,7 @@ export async function importBondsAction(
 	}
 }
 
+// 🚀 ROZWIĄZANIE P2025 ORAZ AUTOMATYCZNEGO PRZELICZANIA PRZY IMPORCIE
 export async function updateImportedBondSpecs(
 	portfolioId: string,
 	ticker: string,
@@ -670,19 +714,57 @@ export async function updateImportedBondSpecs(
 	interestRate: number,
 ) {
 	try {
-		// EN: Direct update on asset table to supply current live valuation and interest rates
-		await db.asset.update({
+		const cleanTicker = ticker.split("_")[0];
+
+		const existingAsset = await db.asset.findFirst({
 			where: {
-				portfolioId_ticker: {
-					portfolioId,
-					ticker,
-				},
-			},
-			data: {
-				currentValue,
-				interestRate,
+				portfolioId,
+				OR: [{ ticker: ticker }, { ticker: { startsWith: cleanTicker } }],
 			},
 		});
+
+		let calculatedRate = interestRate;
+
+		// Jeśli w raporcie nie podano stopy %, obliczamy ją z różnicy wyceny i czasu
+		if ((!calculatedRate || calculatedRate === 0) && existingAsset) {
+			const capital = Number(existingAsset.investedCapital) || 0;
+			const pDate = existingAsset.purchaseDate
+				? new Date(existingAsset.purchaseDate)
+				: null;
+			if (capital > 0 && currentValue > capital && pDate) {
+				const now = new Date();
+				const diffYears = Math.max(
+					0.1,
+					(now.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25),
+				);
+				const totalGainPct = (currentValue - capital) / capital;
+				calculatedRate = Number(((totalGainPct / diffYears) * 100).toFixed(2));
+			}
+		}
+
+		if (existingAsset) {
+			await db.asset.update({
+				where: { id: existingAsset.id },
+				data: {
+					currentValue:
+						currentValue > 0 ? currentValue : existingAsset.currentValue,
+					interestRate:
+						calculatedRate > 0 ? calculatedRate : existingAsset.interestRate,
+				},
+			});
+		} else {
+			await db.asset.updateMany({
+				where: {
+					portfolioId,
+					ticker: { contains: cleanTicker },
+				},
+				data: {
+					currentValue,
+					interestRate: calculatedRate,
+				},
+			});
+		}
+
 		return { success: true };
 	} catch (error) {
 		console.error("Failed to update imported bond specs:", error);
@@ -690,10 +772,19 @@ export async function updateImportedBondSpecs(
 	}
 }
 
-// EN: Intelligent background scanner to synchronize bond valuations
 export async function syncBondsWithMarket(portfolioId: string) {
 	try {
 		const { inflationMap, configMap } = await getBondDictionaries();
+
+		// 🚀 ZAMEK BEZPIECZEŃSTWA (RAPORT JEST KRÓLEM)
+		// Jeśli baza słowników jest pusta, nasza matematyka będzie zgadywanką.
+		// Przerywamy synchronizację, aby NIE NADPISAĆ dokładnych danych z importu!
+		if (Object.keys(inflationMap).length === 0) {
+			console.warn(
+				"Brak słowników inflacji GUS. Pomijam sztuczne przeliczanie wycen.",
+			);
+			return;
+		}
 
 		const bonds = await db.asset.findMany({
 			where: { portfolioId, category: "BONDS" },
@@ -713,7 +804,6 @@ export async function syncBondsWithMarket(portfolioId: string) {
 
 			const valueDelta = calculated.value - Number(bond.currentValue);
 
-			// Zostawiamy tylko aktualizację kapitału w tle (bez spamu w historii transakcji)
 			if (valueDelta > 0.01 || valueDelta < -0.01) {
 				await db.asset.update({
 					where: { id: bond.id },

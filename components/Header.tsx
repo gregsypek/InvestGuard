@@ -397,7 +397,7 @@ export default function Header({
 			{/* PRAWA STRONA (DESKTOP) - ukryte na najmniejszych telefonach (hidden sm:flex) */}
 			<div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
 				<Select value={currency} onValueChange={(val) => setCurrency(val)}>
-					<SelectTrigger className="hidden sm:flex w-16 sm:w-20 md:w-24 h-9 md:h-11 px-2 rounded-xl font-bold text-xs bg-black/5 dark:bg-white/5 border-t-border-subtle focus:ring-0">
+					<SelectTrigger className="hidden sm:flex w-16 sm:w-20 md:w-26 h-8 md:h-11 px-3 py-0 rounded-xl font-bold text-xs bg-black/5 dark:bg-white/5 border-t-border-subtle focus:ring-0 shrink-0 self-center">
 						<div className="flex items-center gap-1">
 							<Coins className="h-3.5 w-3.5 text-theme-primary shrink-0 hidden md:block" />
 							<SelectValue placeholder="PLN" />
@@ -408,7 +408,6 @@ export default function Header({
 							value="PLN"
 							className="text-xs font-bold cursor-pointer"
 						>
-							{/* 🚀 Układ poziomy z małym odstępem */}
 							<div className="flex items-center gap-1.5">
 								<span>PLN</span>
 								<span className="text-[10px] text-t-text-tertiary font-normal">
@@ -454,7 +453,6 @@ export default function Header({
 						</SelectItem>
 					</SelectContent>
 				</Select>
-
 				{!isGlobalPage && displayValue && (
 					<RefreshButton
 						portfolioId={displayValue}

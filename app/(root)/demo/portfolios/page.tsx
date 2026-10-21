@@ -37,12 +37,12 @@ export default async function DemoPortfoliosPage({
 
 	return (
 		<div className="flex flex-col min-h-screen">
-			<HeaderDemo
+			{/* <HeaderDemo
 				selectedPortfolioId={strategy.data.id}
 				portfolios={demoPortfolios.map((p) => ({ id: p.id, name: p.name }))}
-			/>
+			/> */}
 			<div className="container mx-auto space-y-10 pb-20 py-2 px-8">
-				<PortfoliosHeader
+				{/* <PortfoliosHeader
 					title="Portfele Demo"
 					totalValue={totalValue}
 					portfoliosCount={portfoliosCount}
@@ -53,7 +53,7 @@ export default async function DemoPortfoliosPage({
 							<span className="text-primary font-medium ">Wszystkie</span>
 						</nav>
 					}
-				/>
+				/> */}
 
 				<PortfoliosClientView
 					portfolios={demoPortfolios}

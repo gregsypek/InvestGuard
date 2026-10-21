@@ -21,7 +21,7 @@ async function main() {
 	});
 	console.log("🚀 Rozpoczynam generowanie Pokazowego Portfela (Demo)...");
 
-	const hashedPassword = await bcrypt.hash("demo123", 10);
+	const hashedPassword = await bcrypt.hash("demoInvestGuard123!", 10);
 	const user = await prisma.user.upsert({
 		where: { email: "demo@example.com" },
 		update: {},

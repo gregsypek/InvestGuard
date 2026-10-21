@@ -62,6 +62,7 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 		if (idx.updatedAt > latestUpdate) latestUpdate = idx.updatedAt;
 	});
 
+	// A. Sprawdzamy daty z aktywów w portfelu
 	allAssets.forEach((asset) => {
 		if (asset.updatedAt > latestUpdate) latestUpdate = asset.updatedAt;
 	});
@@ -74,7 +75,7 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 		where: {
 			symbol: { in: userIndices },
 			date: {
-				gte: startDate, // Zwrócone z Twojej funkcji!
+				gte: startDate,
 				lte: endDate,
 			},
 		},
@@ -87,6 +88,7 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 	});
 
 	rawIndexHistory.forEach((record) => {
+		// Wycinamy samą datę YYYY-MM-DD, aby pasowała do kluczy na frontendzie
 		const dateStr = record.date.toISOString().split("T")[0];
 		if (indexQuotesHistory[record.symbol]) {
 			indexQuotesHistory[record.symbol][dateStr] = record.closePrice;
@@ -103,7 +105,7 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 			indexQuotesHistory={indexQuotesHistory}
 			lastUpdated={lastUpdated}
 			currentRange={searchParams.range || "1M"}
-			role={session.user.role} // 🚀 Upewnij się, że rola (np. "ADMIN") trafia do widoku do odblokowania Refresh!
+			role={session.user.role} //  Upewnij się, że rola (np. "ADMIN") trafia do widoku do odblokowania Refresh!
 		/>
 	);
 }

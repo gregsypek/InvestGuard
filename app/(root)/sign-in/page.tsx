@@ -49,7 +49,7 @@ export default function SignInPage() {
 
 			<div className="w-full max-w-md rounded-3xl bg-t-bg-panel border border-t-border-subtle p-8 md:p-10 shadow-2xl animate-in fade-in zoom-in-95 duration-500 mt-10">
 				<div className="text-center flex flex-col items-center mb-8">
-					<div className="w-16 h-16 rounded-2xl bg-white dark:bg-black border border-t-border-subtle flex items-center justify-center mb-6 shadow-sm overflow-hidden relative">
+					<div className="w-16 h-16  flex items-center justify-center mb-6  relative">
 						{/* 1. Ciemne logo (logo.svg) - WIDOCZNE w jasnym motywie, UKRYTE w ciemnym */}
 						<Image
 							src="/logo.svg"

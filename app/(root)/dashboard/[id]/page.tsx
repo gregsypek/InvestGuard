@@ -1,17 +1,17 @@
-import { calculateGapAnalysis, getPortfolioStats } from "@/lib/calculations"; // 🚀 DODANO getPortfolioStats
+import { calculateGapAnalysis, getPortfolioStats } from "@/lib/calculations";
 import {
 	calculateLiveBondValue,
 	getBondDictionaries,
 } from "@/lib/bond-calculations";
 
-import { DashboardBreadcrumbs } from "@/components/DashboardBreadcrumbs"; // 🚀 DODANY IMPORT
+import { DashboardBreadcrumbs } from "@/components/DashboardBreadcrumbs";
 import DashboardClientView from "@/components/ui/DashboardClientView";
-import DashboardGoal from "@/components/DashboardGoal"; // 🚀 DODANY IMPORT
-import { DashboardHeader } from "@/components/DashboardHeader"; // 🚀 DODANY IMPORT
+import DashboardGoal from "@/components/DashboardGoal";
+import { DashboardHeader } from "@/components/DashboardHeader";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
-import { getPortfolioSnapshotsHistory } from "@/lib/services/history-engine";
+import { getPortfolioSnapshotsHistory } from "@/lib/history-engine";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";

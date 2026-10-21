@@ -1,6 +1,6 @@
 import { addDays, startOfDay } from "date-fns";
 
-import { generatePortfolioHistory } from "@/app/lib/history-engine";
+import { generatePortfolioHistory } from "@/lib/history-engine";
 
 describe("Silnik Kalkulacji PnL (history-engine)", () => {
 	it("poprawnie wylicza rozkład zysku w czasie i odrzuca wpłaty kapitału z PnL", () => {

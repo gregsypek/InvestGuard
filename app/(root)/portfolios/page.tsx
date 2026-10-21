@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getActivePortfolioId } from "@/lib/session";
 import { getGlobalStats } from "@/lib/calculations";
-import { getPortfolioSnapshotsHistory } from "@/lib/services/history-engine";
+import { getPortfolioSnapshotsHistory } from "@/lib/history-engine";
 import { redirect } from "next/navigation";
 
 // 1. Rozszerzony interfejs Props o parametry dla zakresów dat

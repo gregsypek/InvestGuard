@@ -17,7 +17,7 @@ import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import { getPortfolioSnapshotsHistory } from "@/lib/services/history-engine";
+import { getPortfolioSnapshotsHistory } from "@/lib/history-engine";
 import { getTransactionHistory } from "@/lib/actions/history.actions";
 import { redirect } from "next/navigation";
 

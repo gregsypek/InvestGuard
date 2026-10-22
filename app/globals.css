@@ -101,7 +101,7 @@
    UTILITIES
    ========================================= */
 @utility wrapper {
-	@apply max-w-7xl lg:mx-auto p-5 md:px-10 w-full;
+	@apply max-w-360 lg:mx-auto p-5 md:px-10 w-full;
 }
 
 @utility flex-start {
@@ -165,7 +165,7 @@
 	@apply space-y-6 md:space-y-8 lg:space-y-12;
 }
 @utility page-container {
-	@apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+	@apply w-full max-w-360 mx-auto px-4 sm:px-6 lg:px-8;
 }
 @utility section-padding {
 	@apply py-6 sm:py-8 lg:py-10;

@@ -605,6 +605,17 @@ export function UserDashboard(props: UserDashboardProps) {
 				)}
 
 				<SectionLayout
+					title="Nominalny Wynik Dzienny"
+					titleIcon={Banknote}
+					subtitle="Faktyczna kwota wypracowana na rynku"
+					description="Wykres przedstawia dokładną kwotę w walucie, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
+				>
+					<div className="h-96 mt-6">
+						<AbsoluteDailyPnLChart key={chartMode} data={absoluteChartData} />
+					</div>
+				</SectionLayout>
+
+				<SectionLayout
 					title="Analiza Wykresowa"
 					titleIcon={LineChart}
 					subtitle="Sprawdź wyniki swoich inwestycji w czasie"
@@ -616,17 +627,6 @@ export function UserDashboard(props: UserDashboardProps) {
 							transactions={filteredTransactions}
 							mode={chartMode}
 						/>
-					</div>
-				</SectionLayout>
-
-				<SectionLayout
-					title="Nominalny Wynik Dzienny"
-					titleIcon={Banknote}
-					subtitle="Faktyczna kwota wypracowana na rynku"
-					description="Wykres przedstawia dokładną kwotę w walucie, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
-				>
-					<div className="h-96 mt-6">
-						<AbsoluteDailyPnLChart key={chartMode} data={absoluteChartData} />
 					</div>
 				</SectionLayout>
 

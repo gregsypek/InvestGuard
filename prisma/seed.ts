@@ -279,7 +279,7 @@ async function main() {
 					executedValue: tx.val,
 					executedAt: getPastDate(tx.daysAgo),
 					assetName: tx.asset || "Gotówka",
-					category: (tx.cat as keyof typeof CATEGORY_ASSETS) || "CASH",
+					category: (tx.cat || "CASH") as any,
 				},
 			});
 

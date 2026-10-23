@@ -27,9 +27,7 @@ import { DatePickerWithRange } from "./shared/DatePickerWithRange";
 import { FilterBadge } from "./shared/FilterBadge";
 import { GlobalDashboardHeader } from "./dashboard/GlobalDashboardHeader";
 import { PortfolioBenchmarkChart } from "./dashboard/PortfolioBenchmarkChart";
-// Komponenty UI
 import { PortfolioChart } from "./dashboard/PortfolioCharts";
-// IMPORT HOOKA LOGIKI
 import { PortfolioWithAssets } from "@/lib/types";
 import { PortfoliosComparisonChart } from "./dashboard/PortfoliosComparisonChart";
 import { PremiumMarketCard } from "./home/PremiumMarketCard";
@@ -50,7 +48,6 @@ const GLOBAL_INDICES_MAP: Record<string, string> = {
 	BTC: "Bitcoin",
 };
 
-// 🚀 ZAKTUALIZUJ INTERFEJS (Dodano 'role')
 interface UserDashboardProps {
 	portfolios: PortfolioWithAssets[];
 	snapshots: SimulatedSnapshot[];
@@ -60,14 +57,13 @@ interface UserDashboardProps {
 	lastUpdated?: string | null;
 	currentRange?: string;
 	indexQuotesHistory?: Record<string, Record<string, number>>;
-	role?: string; // <-- DODANE
+	role?: string;
 }
 
 export function UserDashboard(props: UserDashboardProps) {
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
-	// 1. ZACIĄGAMY CAŁĄ LOGIKĘ Z HOOKA
 	const {
 		isPending,
 		dataMode,
@@ -83,7 +79,6 @@ export function UserDashboard(props: UserDashboardProps) {
 		handleDateRangeSelect,
 		isRangeDisabled,
 		filteredTransactions,
-		activePortfolios,
 		totalInvested,
 		totalCurrent,
 		totalPnL,
@@ -96,26 +91,21 @@ export function UserDashboard(props: UserDashboardProps) {
 	} = useDashboardData(props);
 
 	const [showAdvancedToolbar, setShowAdvancedToolbar] = useState(true);
-
-	// 🚀 NOWE: Paginacja portfeli (Responsywna: 3 na mobile, 6 na PC)
 	const [portfolioPage, setPortfolioPage] = useState(0);
-	const [itemsPerPage, setItemsPerPage] = useState(3); // Domyślnie 3 dla SSR/Mobile
-	// 🚀 NOWE: Logika globalnego odświeżania kursów
+	const [itemsPerPage, setItemsPerPage] = useState(3);
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const isPremium = props.role === "ADMIN" || props.role === "SUBSCRIBER";
 	const [isMobileTimeOpen, setIsMobileTimeOpen] = useState(false);
 	const [visibleAssetsCount, setVisibleAssetsCount] = useState(6);
+
 	const handleGlobalRefresh = async () => {
 		setIsRefreshing(true);
 		let successCount = 0;
-
 		try {
-			// Aktualizujemy wszystkie portfele po kolei
 			for (const portfolio of props.portfolios) {
 				const result = await refreshPortfolioPrices(portfolio.id);
 				if (result.success) successCount++;
 			}
-
 			if (successCount > 0) {
 				toast.success("Zaktualizowano kursy dla wszystkich portfeli.");
 				if (!isPremium) {
@@ -132,22 +122,16 @@ export function UserDashboard(props: UserDashboardProps) {
 			setIsRefreshing(false);
 		}
 	};
-	// Śledzimy rozmiar okna, by dostosować liczbę pigułek
+
 	useEffect(() => {
 		const handleResize = () => {
-			// Jeśli ekran ma min. 1028px (Tailwind 'md'), pokazujemy 6 portfeli. Inaczej 3.
 			setItemsPerPage(window.innerWidth >= 1028 ? 6 : 3);
 		};
-
-		// Wywołaj od razu po załadowaniu
 		handleResize();
-
-		// Nasłuchuj zmian rozmiaru okna (np. obrót telefonu)
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
-	// Łączymy "Wszystkie" z resztą portfeli w jedną listę
 	const allPortfolioOptions = useMemo(() => {
 		return [
 			{ id: "ALL", name: "Wszystkie" },
@@ -156,32 +140,25 @@ export function UserDashboard(props: UserDashboardProps) {
 	}, [props.portfolios]);
 
 	const totalPages = Math.ceil(allPortfolioOptions.length / itemsPerPage);
-	// Jeśli portfolioPage wykracza poza zakres, React po prostu użyje poprawnej wartości.
 	const safePortfolioPage =
 		totalPages > 0 ? Math.min(portfolioPage, totalPages - 1) : 0;
-
-	// Wycinamy odpowiednią ilość sztuk dla aktualnej (bezpiecznej) strony
 	const visiblePortfolios = allPortfolioOptions.slice(
 		safePortfolioPage * itemsPerPage,
 		(safePortfolioPage + 1) * itemsPerPage,
 	);
 
-	// Sprawdzamy czy limit 6 godzin dla darmowego użytkownika NADAL trwa
 	const isRateLimited =
 		!isPremium && props.lastUpdated
 			? differenceInMinutes(new Date(), new Date(props.lastUpdated)) < 6 * 60
 			: false;
 
-	// 🚀 SCENARIUSZ 1, 2 i 3 dla Tooltipa (title)
 	let tooltipText = "Odśwież wyceny";
 	if (isPremium) tooltipText += " (Brak limitu)";
 	else if (isRateLimited) tooltipText += " (Dostępne za kilka godzin)";
 	else tooltipText += " (Limit: 1x na 6h)";
 
-	// 3. RENDEROWANIE WIDOKU
 	return (
 		<div className="space-y-8">
-			{/* HEADER */}
 			<GlobalDashboardHeader
 				portfolios={props.portfolios}
 				selectedIds={selectedIds}
@@ -191,7 +168,7 @@ export function UserDashboard(props: UserDashboardProps) {
 				totalPnL={totalPnL}
 				totalPnLPct={totalPnLPct}
 			/>
-			{/* RADAR RYNKOWY */}
+
 			<SectionLayout
 				title="Radar Rynkowy"
 				titleIcon={Activity}
@@ -199,7 +176,6 @@ export function UserDashboard(props: UserDashboardProps) {
 				description="Zestawienie indeksów i walorów z Twojego portfela."
 				action={
 					<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 w-full sm:w-auto">
-						{/* 🚀 ZMIANA 1: Polska data z formatem "dd MMM" (np. 10 PAŹ) */}
 						{props.lastUpdated && (
 							<span className="text-[9px] text-t-text-tertiary font-bold tracking-widest uppercase mb-1 sm:mb-0 mr-1">
 								Stan z:{" "}
@@ -212,13 +188,10 @@ export function UserDashboard(props: UserDashboardProps) {
 						<div className="flex items-center gap-2 w-full sm:w-auto">
 							<button
 								onClick={handleGlobalRefresh}
-								// 🚀 ZMIANA 2: Przycisk jest zablokowany podczas ładowania LUB gdy działa limit 6h
 								disabled={isRefreshing || isRateLimited}
-								// 🚀 ZMIANA 3: Trzy scenariusze dla tytułu
 								title={tooltipText}
 								className={cn(
 									"flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-3 h-9 sm:h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest transition-colors w-full sm:w-auto",
-									// Jeśli ładuje się LUB jest limit - wyszarzamy przycisk
 									(isRefreshing || isRateLimited) &&
 										"opacity-50 cursor-not-allowed",
 								)}
@@ -244,7 +217,6 @@ export function UserDashboard(props: UserDashboardProps) {
 				}
 			>
 				<div className="flex flex-col gap-4 lg:gap-6">
-					{/* MACRO INDICATORS COLUMN */}
 					{props.userIndices && props.userIndices.length > 0 && (
 						<div className="flex-1 rounded-2xl ">
 							<div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
@@ -269,11 +241,9 @@ export function UserDashboard(props: UserDashboardProps) {
 							</div>
 						</div>
 					)}
-					{/* PORTFOLIO ASSETS COLUMN */}
 					<div className="flex-1">
 						<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
 							{observedAssets.length > 0 ? (
-								// 🚀 Paginacja: Wyświetlamy tylko określoną liczbę aktywów
 								observedAssets
 									.slice(0, visibleAssetsCount)
 									.map((asset) => (
@@ -304,7 +274,6 @@ export function UserDashboard(props: UserDashboardProps) {
 							)}
 						</div>
 
-						{/* 🚀 Przycisk "Pokaż więcej / Pokaż mniej" */}
 						{observedAssets.length > 6 && (
 							<div className="flex justify-center mt-4 pt-3 border-t border-t-border-subtle">
 								{visibleAssetsCount < observedAssets.length ? (
@@ -328,18 +297,11 @@ export function UserDashboard(props: UserDashboardProps) {
 					</div>
 				</div>
 			</SectionLayout>
-			{/* =========================================
-            ZAAWANSOWANY PASEK NARZĘDZI (STICKY)        
-        ========================================= */}
-			{/* 🚀 ZMIANA 1: Używamy ujemnych marginesów (-mx-4 sm:-mx-6 lg:-mx-8) aby "wybić" tło poza padding rodzica,
-             zamiast psującego stronę 'w-screen'. Dajemy mu z-40 żeby był nad wykresem, ale pod głównym Headerem strony. */}
+
 			<div className="sticky top-0 z-40 -mx-3 md:-mx-10 px-3 md:px-10 py-2 md:py-3 bg-t-bg-base/90 backdrop-blur-md border-y border-t-border shadow-sm transition-all rounded-b-2xl duration-300">
-				{/* 🚀 ZMIANA 2: Ten kontener ogranicza zawartość paska do linii 7xl, tak jak cała reszta strony */}
 				<div className="flex flex-col gap-1.5 max-w-7xl mx-auto w-full">
-					{/* 1. ZWIJANY PANEL ZAAWANSOWANY (Teraz ZAWSZE w 1 linii na mobile) */}
 					{showAdvancedToolbar && (
 						<div className="flex flex-row items-center justify-between gap-1 w-full animate-in fade-in slide-in-from-top-1  mb-2">
-							{/* Kwota i PnL */}
 							<div className="flex flex-col xs:flex-row items-center gap-1.5 shrink-0">
 								<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest hidden sm:block">
 									Zaznaczone:
@@ -367,7 +329,6 @@ export function UserDashboard(props: UserDashboardProps) {
 								</div>
 							</div>
 
-							{/* Wybór portfeli (Paginacja) */}
 							<div className="flex items-center justify-end min-w-0">
 								{totalPages > 1 && (
 									<button
@@ -420,13 +381,8 @@ export function UserDashboard(props: UserDashboardProps) {
 						</div>
 					)}
 
-					{/* 2. GŁÓWNY PASEK NARZĘDZI */}
-					{/* 🚀 ZMIANA: flex-wrap dla mobile, ale od 'md' (768px) wymuszamy jedną linię (md:flex-nowrap) */}
 					<div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 w-full">
-						{/* LEWA STRONA: Filtry */}
-						{/* 🚀 ZMIANA: w-full znika od 'sm' (sm:w-auto), pozwalając prawej stronie wejść do tego samego rzędu */}
 						<div className="flex flex-row items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto shrink-0">
-							{/* Grupa Waluta / % */}
 							<div className="flex items-center gap-1.5 flex-1 sm:flex-none">
 								<FilterBadge
 									id="VALUE"
@@ -453,11 +409,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									)}
 								/>
 							</div>
-
-							{/* Separator widoczny od 'sm' */}
 							<div className="w-px h-5 bg-t-border mx-1 hidden sm:block" />
-
-							{/* Grupa Real / Sym */}
 							<div className="flex items-center gap-1.5 flex-1 sm:flex-none">
 								<FilterBadge
 									id="REAL"
@@ -486,12 +438,8 @@ export function UserDashboard(props: UserDashboardProps) {
 							</div>
 						</div>
 
-						{/* PRAWA STRONA: Czas, Data, Zwijanie */}
-						{/* 🚀 ZMIANA: Od 'sm' element zajmuje tylko potrzebną szerokość i dokleja się do lewej strony w jednym rzędzie */}
 						<div className="flex items-center justify-end gap-2 w-full sm:w-auto shrink-0">
-							{/* Kontener czasu */}
 							<div className="relative shrink-0">
-								{/* Pełny pasek czasu pokazujemy dopiero od 'lg' (1024px), bo inaczej zabrakłoby miejsca na kalendarz obok filtrów */}
 								<div className="hidden lg:flex items-center gap-1.5">
 									{TIME_RANGES.map((range) => (
 										<button
@@ -513,13 +461,10 @@ export function UserDashboard(props: UserDashboardProps) {
 										</button>
 									))}
 								</div>
-
-								{/* Kompaktowy przycisk dla telefonów i tabletów (do 'lg') */}
 								<div className="lg:hidden">
 									<button
 										onClick={() => setIsMobileTimeOpen(!isMobileTimeOpen)}
-										className="flex items-center gap-1.5 px-2 py-1
-										 rounded-lg border border-t-border text-[10px] font-bold uppercase tracking-widest text-t-text-primary shadow-sm hover:border-t-border-subtle bg-t-bg-base"
+										className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-t-border text-[10px] font-bold uppercase tracking-widest text-t-text-primary shadow-sm hover:border-t-border-subtle bg-t-bg-base"
 									>
 										<Calendar className="w-3.5 h-3.5 text-blue-500" />
 										<span>{activeRange}</span>
@@ -530,7 +475,6 @@ export function UserDashboard(props: UserDashboardProps) {
 											)}
 										/>
 									</button>
-
 									{isMobileTimeOpen && (
 										<div className="absolute left-0 lg:right-0 top-full mt-1.5 z-50 flex flex-col bg-t-bg-panel border border-t-border rounded-xl shadow-xl p-1.5 min-w-[90px] animate-in fade-in zoom-in-95 duration-200">
 											{TIME_RANGES.map((range) => (
@@ -560,7 +504,6 @@ export function UserDashboard(props: UserDashboardProps) {
 								</div>
 							</div>
 
-							{/* Wybór daty */}
 							<div className="flex-1 sm:flex-none min-w-0">
 								<DatePickerWithRange
 									from={fromDate}
@@ -569,7 +512,6 @@ export function UserDashboard(props: UserDashboardProps) {
 								/>
 							</div>
 
-							{/* Zwijanie panelu */}
 							<button
 								onClick={() => setShowAdvancedToolbar(!showAdvancedToolbar)}
 								className="px-2 py-1 rounded-lg border border-t-border text-t-text-secondary hover:text-t-text-primary transition-all shrink-0  shadow-sm bg-t-bg-base"
@@ -589,7 +531,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					</div>
 				</div>
 			</div>
-			{/* WYKRESY */}
+
 			<div className="relative space-y-8">
 				{isPending && (
 					<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-3xl transition-all duration-300">
@@ -619,7 +561,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					title="Analiza Wykresowa"
 					titleIcon={LineChart}
 					subtitle="Sprawdź wyniki swoich inwestycji w czasie"
-					description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym ), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
+					description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym, a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
 				>
 					<div className="h-[400px] w-full mt-6">
 						<PortfolioChart

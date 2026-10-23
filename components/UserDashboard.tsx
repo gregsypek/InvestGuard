@@ -27,7 +27,7 @@ import { DatePickerWithRange } from "./shared/DatePickerWithRange";
 import { FilterBadge } from "./shared/FilterBadge";
 import { GlobalDashboardHeader } from "./dashboard/GlobalDashboardHeader";
 import { PortfolioBenchmarkChart } from "./dashboard/PortfolioBenchmarkChart";
-import { PortfolioChart } from "./dashboard/PortfolioCharts";
+import { PortfolioChart } from "./dashboard/PortfolioChart";
 import { PortfolioWithAssets } from "@/lib/types";
 import { PortfoliosComparisonChart } from "./dashboard/PortfoliosComparisonChart";
 import { PremiumMarketCard } from "./home/PremiumMarketCard";

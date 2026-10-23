@@ -4,7 +4,7 @@ import { PortfolioWithAssets, Transaction } from "@/lib/types";
 
 import { InlineChartFilters } from "@/components/ui/InlineChartFilters";
 import { Loader2 } from "lucide-react";
-import { PortfolioChart } from "../dashboard/PortfolioCharts";
+import { PortfolioChart } from "../dashboard/PortfolioChart";
 import { SimulatedSnapshot } from "@/components/ui/useDashboardData";
 import { prepareChartAnalytics } from "@/lib/chart-helpers";
 import { useChartContext } from "@/components/providers/ChartProvider";

@@ -5,7 +5,7 @@ interface Props {
 	data: CategoryStatus[];
 }
 
-export default function PortfolioCharts({ data }: Props) {
+export default function PortfolioPieCharts({ data }: Props) {
 	// 1. Zbiór dla "Docelowej Strategii" - pokazuje tylko to, co zaplanowaliśmy (weight > 0)
 	const targetData = data.filter((x) => x.weight > 0);
 

@@ -22,7 +22,7 @@ import AssetLedger from "../AssetLedgerTable";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { InlineChartFilters } from "./InlineChartFilters";
 import { InteractiveChartSection } from "../InteractiveChartSection";
-import PortfolioCharts from "../PortfolioCharts";
+import PortfolioCharts from "../PortfolioPieCharts";
 import RecentActivityCard from "./assets/RecentActivityCard";
 import { SafeActionButton } from "./SafeActionButton";
 import { SectionLayout } from "../shared/SectionLayout";

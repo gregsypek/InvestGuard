@@ -8,7 +8,7 @@ import {
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { ChartDataPoint } from "../dashboard/PortfolioCharts";
+import { ChartDataPoint } from "../dashboard/PortfolioChart";
 import { DateRange } from "react-day-picker";
 import { PortfolioWithAssets } from "@/lib/types";
 

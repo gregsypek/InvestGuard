@@ -51,8 +51,14 @@ export function useDashboardData({
 	const activeRange = searchParams.get("range") || "1M";
 	const currentFrom = searchParams.get("from") || "";
 	const currentTo = searchParams.get("to") || "";
-	const fromDate = currentFrom ? new Date(currentFrom) : undefined;
-	const toDate = currentTo ? new Date(currentTo) : undefined;
+	const fromDate = useMemo(
+		() => (currentFrom ? new Date(currentFrom) : undefined),
+		[currentFrom],
+	);
+	const toDate = useMemo(
+		() => (currentTo ? new Date(currentTo) : undefined),
+		[currentTo],
+	);
 
 	const allTransactions = useMemo(() => {
 		return portfolios.flatMap((p) => p.transactionHistories || []);
@@ -101,7 +107,6 @@ export function useDashboardData({
 		router.push(`${pathname}?${params.toString()}`, { scroll: false });
 	};
 
-	// 1. Zaznaczone portfele
 	const selectedPortfolios = selectedIds.includes("ALL")
 		? portfolios
 		: portfolios.filter((p) => selectedIds.includes(p.id));
@@ -111,7 +116,6 @@ export function useDashboardData({
 		name: p.name,
 	}));
 
-	// 2. Podsumowanie finansowe (PLN)
 	const totalInvested = selectedPortfolios.reduce(
 		(sum, p) =>
 			sum +
@@ -127,7 +131,6 @@ export function useDashboardData({
 	const totalPnL = totalCurrent - totalInvested;
 	const totalPnLPct = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
 
-	// 3. Obserwowane aktywa
 	const observedAssets = useMemo(() => {
 		if (!portfolios || portfolios.length === 0) return [];
 		const allAssets = portfolios.flatMap((p) => p.assets || []);
@@ -149,7 +152,6 @@ export function useDashboardData({
 		return uniqueAssets;
 	}, [portfolios]);
 
-	// 4. Kalkulacje dostępności zakresów czasowych (isRangeDisabled)
 	const oldestRealSnapshotDate = useMemo(() => {
 		if (!realSnapshots || realSnapshots.length === 0) return new Date();
 		const oldestTime = realSnapshots.reduce((min, s) => {
@@ -181,292 +183,83 @@ export function useDashboardData({
 		}
 	};
 
-	// 5. Złożone generowanie wykresów (Downsampling + Główny silnik, Benchmark, PnL)
-	const {
-		portfolioChartData,
-		pnlChartData,
-		absoluteChartData,
-		benchmarkChartData,
-	} = useMemo(() => {
-		const activeSnapshots =
-			dataMode === "SIMULATED" ? snapshots : realSnapshots;
+	// --- 🚀 NEW PIPELINE ARCHITECTURE ---
 
-		const getDateStr = (d: string | Date) => {
-			const dateObj = new Date(d);
-			return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
-		};
+	// STEP 1: Time Filtering (Cutoff Data outside of activeRange)
+	const timeFilteredSnapshots = useMemo(() => {
+		const activeSnaps = dataMode === "SIMULATED" ? snapshots : realSnapshots;
+		if (activeSnaps.length === 0) return [];
 
-		// 🚀 KROK 0: Logika Downsamplingu
-		const groupData = (dataToGroup: SimulatedSnapshot[]) => {
-			if (dataToGroup.length === 0) return [];
+		const now = new Date();
+		now.setUTCHours(0, 0, 0, 0);
+		let cutoff = new Date(0); // Default to MAX
 
-			// Szacujemy rozpiętość czasową w dniach z filtrowanych danych
-			const dates = dataToGroup.map((s) => new Date(s.date).getTime());
-			const minDate = Math.min(...dates);
-			const maxDate = Math.max(...dates);
-			const daysDiff = differenceInDays(new Date(maxDate), new Date(minDate));
+		switch (activeRange) {
+			case "1W":
+				cutoff = new Date(now.setDate(now.getDate() - 7));
+				break;
+			case "1M":
+				cutoff = new Date(now.setMonth(now.getMonth() - 1));
+				break;
+			case "3M":
+				cutoff = new Date(now.setMonth(now.getMonth() - 3));
+				break;
+			case "6M":
+				cutoff = new Date(now.setMonth(now.getMonth() - 6));
+				break;
+			case "YTD":
+				cutoff = startOfYear(new Date());
+				break;
+			case "1Y":
+				cutoff = new Date(now.setFullYear(now.getFullYear() - 1));
+				break;
+			case "3Y":
+				cutoff = new Date(now.setFullYear(now.getFullYear() - 3));
+				break;
+			case "5Y":
+				cutoff = new Date(now.setFullYear(now.getFullYear() - 5));
+				break;
+			case "CUSTOM":
+				cutoff = fromDate ? new Date(fromDate) : new Date(0);
+				break;
+		}
 
-			// Jeśli okres jest krótki (<90 dni), pokazujemy pełne dane dzienne
-			if (daysDiff < 90) return dataToGroup;
-
-			const groupedByPeriod: Record<string, SimulatedSnapshot[]> = {};
-
-			dataToGroup.forEach((snap) => {
-				const dateObj = new Date(snap.date);
-				let periodKey = "";
-
-				if (daysDiff >= 90 && daysDiff <= 730) {
-					// 90 dni - 2 lata => Agregacja do tygodni
-					periodKey = format(
-						endOfWeek(dateObj, { weekStartsOn: 1 }),
-						"yyyy-MM-dd",
-					);
-				} else {
-					// Powyżej 2 lat => Agregacja do miesięcy
-					periodKey = format(endOfMonth(dateObj), "yyyy-MM-dd");
-				}
-
-				if (!groupedByPeriod[periodKey]) {
-					groupedByPeriod[periodKey] = [];
-				}
-				groupedByPeriod[periodKey].push(snap);
-			});
-
-			// Z każdego okresu wybieramy ostatni dostępny punkt (żeby nie psuć kapitału przed transakcją)
-			const downsampledSnapshots: SimulatedSnapshot[] = [];
-
-			Object.values(groupedByPeriod).forEach((periodSnaps) => {
-				// Grupujemy po portfolio, żeby z każdego okresu wziąć najnowszą wycenę dla KAŻDEGO portfela
-				const portfolioSnaps: Record<string, SimulatedSnapshot> = {};
-
-				periodSnaps.sort(
-					(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-				);
-
-				periodSnaps.forEach((snap) => {
-					portfolioSnaps[snap.portfolioId] = snap; // Nadpisuje starsze z tego samego okresu
-
-					// 🚀 UWAGA: Zabezpieczamy PnL, sumując codzienne zmiany do tej "ostatniej" świecy,
-					// inaczej zgubilibyśmy zysk/stratę wypracowaną na przestrzeni tego tygodnia/miesiąca!
-					if (portfolioSnaps[snap.portfolioId].id !== snap.id) {
-						portfolioSnaps[snap.portfolioId].dailyChange += snap.dailyChange;
-					}
-				});
-
-				downsampledSnapshots.push(...Object.values(portfolioSnaps));
-			});
-
-			return downsampledSnapshots;
-		};
-
-		// 🚀 Użycie naszego kompresora ZANIM wejdzie w kosztowną pętlę
-		const compressedSnapshots = groupData([...activeSnapshots]);
-		const sortedSnapshots = compressedSnapshots.sort(
-			(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+		let filtered = activeSnaps.filter(
+			(s) => new Date(s.date).getTime() >= cutoff.getTime(),
 		);
-
-		const allDates = Array.from(
-			new Set(sortedSnapshots.map((s) => getDateStr(s.date))),
-		);
-		const activePortfolioIds = selectedIds.includes("ALL")
-			? Array.from(new Set(activeSnapshots.map((s) => s.portfolioId)))
-			: selectedIds;
-
-		const lastKnownState: Record<string, { value: number; invested: number }> =
-			{};
-		const seenPortfolios = new Set();
-		const baseData: any[] = [];
-		const finalAbsoluteData: any[] = [];
-
-		// KROK 1: Budujemy bazowe dane (baseData) z już skompresowanych dat
-		allDates.forEach((dateStr) => {
-			const snapsToday = sortedSnapshots.filter(
-				(s) =>
-					getDateStr(s.date) === dateStr &&
-					activePortfolioIds.includes(s.portfolioId),
+		if (activeRange === "CUSTOM" && toDate) {
+			filtered = filtered.filter(
+				(s) => new Date(s.date).getTime() <= new Date(toDate).getTime(),
 			);
-
-			let dayTotalValue = 0,
-				dayInvestedValue = 0,
-				dayDailyChangeFromDB = 0;
-			let dayNetCashFlow = 0,
-				dayExactChangePLN = 0;
-
-			snapsToday.forEach((snap) => {
-				dayDailyChangeFromDB += snap.dailyChange;
-				if (!seenPortfolios.has(snap.portfolioId)) {
-					seenPortfolios.add(snap.portfolioId);
-					dayExactChangePLN += snap.dailyChange || 0;
-				} else {
-					const prevState = lastKnownState[snap.portfolioId];
-					const portfolioCashFlow = snap.investedValue - prevState.invested;
-					const portfolioExactChange =
-						snap.totalValue - prevState.value - portfolioCashFlow;
-					dayNetCashFlow += portfolioCashFlow;
-					dayExactChangePLN += portfolioExactChange;
-				}
-				lastKnownState[snap.portfolioId] = {
-					value: snap.totalValue,
-					invested: snap.investedValue,
-				};
-			});
-
-			activePortfolioIds.forEach((pId) => {
-				if (lastKnownState[pId]) {
-					dayTotalValue += lastKnownState[pId].value;
-					dayInvestedValue += lastKnownState[pId].invested;
-				}
-			});
-
-			baseData.push({
-				date: dateStr,
-				value: Number(dayTotalValue.toFixed(2)),
-				invested: Number(dayInvestedValue.toFixed(2)),
-				change: Number(dayDailyChangeFromDB.toFixed(2)),
-				isPositive: dayDailyChangeFromDB >= 0,
-			});
-
-			finalAbsoluteData.push({
-				date: dateStr,
-				exactChangePLN: Number(dayExactChangePLN.toFixed(2)),
-				totalPortfolioValue: Number(dayTotalValue.toFixed(2)),
-				netCashFlow: Number(dayNetCashFlow.toFixed(2)),
-			});
-		});
-
-		// KROK 2: Benchmark - Dopasowujemy go również do tych skompresowanych dat
-		const mockIndexHistory: Record<string, Record<string, number>> = {};
-		userIndices.forEach((idx, i) => {
-			mockIndexHistory[idx] = {};
-			if (dataMode === "SIMULATED") {
-				let fakeBasePrice = 1000;
-				allDates.forEach((dateStr, index) => {
-					fakeBasePrice += Math.sin(index + i * 2) * 15 + i * 1.5;
-					mockIndexHistory[idx][dateStr] = fakeBasePrice;
-				});
-			} else {
-				const normalizedHistory: Record<string, number> = {};
-				if (indexQuotesHistory[idx]) {
-					Object.keys(indexQuotesHistory[idx]).forEach((fullDate) => {
-						normalizedHistory[getDateStr(fullDate)] =
-							indexQuotesHistory[idx][fullDate];
-					});
-				}
-				let lastKnownPrice = 100;
-				const availableDates = Object.keys(normalizedHistory).sort();
-				if (availableDates.length > 0)
-					lastKnownPrice = normalizedHistory[availableDates[0]];
-				allDates.forEach((dateStr) => {
-					if (normalizedHistory[dateStr] !== undefined)
-						lastKnownPrice = normalizedHistory[dateStr];
-					mockIndexHistory[idx][dateStr] = lastKnownPrice;
-				});
-			}
-		});
-
-		const finalBenchmarkData: any[] = [];
-		const firstDay = baseData[0];
-		const initialPortfolioValue = firstDay ? firstDay.value : 0;
-		const initialPortfolioInvested = firstDay ? firstDay.invested : 0;
-		const basePortfolioPct =
-			initialPortfolioInvested > 0
-				? ((initialPortfolioValue - initialPortfolioInvested) /
-						initialPortfolioInvested) *
-					100
-				: 0;
-
-		const baseIndexValues: Record<string, number> = {};
-		userIndices.forEach((idx) => {
-			baseIndexValues[idx] =
-				firstDay && mockIndexHistory[idx][firstDay.date]
-					? mockIndexHistory[idx][firstDay.date]
-					: 0;
-		});
-
-		for (let i = 0; i < baseData.length; i++) {
-			const today = baseData[i];
-			let currentPortfolioPct = 0;
-			if (today.invested > 0) {
-				currentPortfolioPct =
-					((today.value - today.invested) / today.invested) * 100 -
-					basePortfolioPct;
-			}
-			const dataPoint: any = {
-				date: today.date,
-				portfolioPct: Number(currentPortfolioPct.toFixed(2)),
-			};
-			userIndices.forEach((idx) => {
-				let idxPct = 0;
-				const todayValue = mockIndexHistory[idx][today.date];
-				const baseValue = baseIndexValues[idx];
-				if (baseValue > 0)
-					idxPct = ((todayValue - baseValue) / baseValue) * 100;
-				dataPoint[idx] = Number(idxPct.toFixed(2));
-			});
-			finalBenchmarkData.push(dataPoint);
 		}
+		return filtered;
+	}, [snapshots, realSnapshots, dataMode, activeRange, fromDate, toDate]);
 
-		let finalChartData: ChartDataPoint[] = [];
-		if (chartMode === "PERCENTAGE") {
-			finalChartData = baseData.map((point) => {
-				const pct =
-					point.invested > 0
-						? ((point.value - point.invested) / point.invested) * 100
-						: 0;
-				return { date: point.date, value: Number(pct.toFixed(2)), invested: 0 };
-			});
-		} else {
-			finalChartData = baseData.map((point) => ({
-				date: point.date,
-				value: point.value,
-				invested: point.invested,
-			}));
-		}
+	// STEP 2: Downsampling Compressor
+	const compressedSnapshots = useMemo(() => {
+		if (timeFilteredSnapshots.length === 0) return [];
 
-		const finalPnlData = baseData.map((point) => ({
-			date: point.date,
-			change: point.change,
-			isPositive: point.isPositive,
-		}));
-
-		return {
-			portfolioChartData: finalChartData,
-			pnlChartData: finalPnlData,
-			absoluteChartData: finalAbsoluteData,
-			benchmarkChartData: finalBenchmarkData,
-		};
-	}, [
-		snapshots,
-		realSnapshots,
-		selectedIds,
-		chartMode,
-		dataMode,
-		userIndices,
-		indexQuotesHistory,
-	]);
-
-	// 6. Generator Danych dla Wyścigu Portfeli (Portfolios Comparison) - On też potrzebuje tej samej kompresji!
-	const portfoliosComparisonData = useMemo(() => {
-		if (!realSnapshots || realSnapshots.length === 0) return [];
-
-		// Klonujemy logikę downsamplingu tutaj dla pewności
-		const dates = realSnapshots.map((s) => new Date(s.date).getTime());
+		const dates = timeFilteredSnapshots.map((s) => new Date(s.date).getTime());
 		const minDate = Math.min(...dates);
 		const maxDate = Math.max(...dates);
 		const daysDiff = differenceInDays(new Date(maxDate), new Date(minDate));
 
+		// If viewing less than 90 days, return daily raw data
+		if (daysDiff < 90) return timeFilteredSnapshots;
+
 		const groupedByPeriod: Record<string, SimulatedSnapshot[]> = {};
-
-		realSnapshots.forEach((snap) => {
+		timeFilteredSnapshots.forEach((snap) => {
 			const dateObj = new Date(snap.date);
-			let periodKey = format(dateObj, "yyyy-MM-dd");
+			let periodKey = "";
 
+			// 90 days to 2 years => Weekly Candles
 			if (daysDiff >= 90 && daysDiff <= 730) {
 				periodKey = format(
 					endOfWeek(dateObj, { weekStartsOn: 1 }),
 					"yyyy-MM-dd",
 				);
-			} else if (daysDiff > 730) {
+			} else {
+				// > 2 years => Monthly Candles
 				periodKey = format(endOfMonth(dateObj), "yyyy-MM-dd");
 			}
 
@@ -477,42 +270,253 @@ export function useDashboardData({
 		const downsampledSnapshots: SimulatedSnapshot[] = [];
 		Object.values(groupedByPeriod).forEach((periodSnaps) => {
 			const portfolioSnaps: Record<string, SimulatedSnapshot> = {};
+
+			// Sort chronologically inside the period
 			periodSnaps.sort(
 				(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 			);
-			periodSnaps.forEach((snap) => (portfolioSnaps[snap.portfolioId] = snap));
+
+			periodSnaps.forEach((snap) => {
+				const prevSnap = portfolioSnaps[snap.portfolioId];
+				// Clone snapshot to prevent mutating database objects
+				portfolioSnaps[snap.portfolioId] = { ...snap };
+
+				// Accumulate daily PnL for the bar chart so we don't lose intra-week/month profits
+				if (prevSnap) {
+					portfolioSnaps[snap.portfolioId].dailyChange += prevSnap.dailyChange;
+				}
+			});
 			downsampledSnapshots.push(...Object.values(portfolioSnaps));
 		});
 
-		type CompareDataPoint = { date: string | Date; [key: string]: any };
+		return downsampledSnapshots;
+	}, [timeFilteredSnapshots]);
+
+	// STEP 3: Generate ALL Chart Data arrays using highly optimized data
+	const { portfolioChartData, absoluteChartData, benchmarkChartData } =
+		useMemo(() => {
+			if (compressedSnapshots.length === 0) {
+				return {
+					portfolioChartData: [],
+					absoluteChartData: [],
+					benchmarkChartData: [],
+				};
+			}
+
+			const getDateStr = (d: string | Date) => {
+				const dateObj = new Date(d);
+				return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
+			};
+
+			const sortedSnapshots = [...compressedSnapshots].sort(
+				(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+			);
+
+			const allDates = Array.from(
+				new Set(sortedSnapshots.map((s) => getDateStr(s.date))),
+			);
+			const activePortfolioIds = selectedIds.includes("ALL")
+				? Array.from(new Set(compressedSnapshots.map((s) => s.portfolioId)))
+				: selectedIds;
+
+			const lastKnownState: Record<
+				string,
+				{ value: number; invested: number }
+			> = {};
+			const seenPortfolios = new Set();
+			const baseData: any[] = [];
+			const finalAbsoluteData: any[] = [];
+
+			// Build base arrays for charts
+			allDates.forEach((dateStr) => {
+				const snapsToday = sortedSnapshots.filter(
+					(s) =>
+						getDateStr(s.date) === dateStr &&
+						activePortfolioIds.includes(s.portfolioId),
+				);
+
+				let dayTotalValue = 0,
+					dayInvestedValue = 0,
+					dayDailyChangeFromDB = 0;
+				let dayNetCashFlow = 0,
+					dayExactChangePLN = 0;
+
+				snapsToday.forEach((snap) => {
+					dayDailyChangeFromDB += snap.dailyChange;
+					if (!seenPortfolios.has(snap.portfolioId)) {
+						seenPortfolios.add(snap.portfolioId);
+						dayExactChangePLN += snap.dailyChange || 0;
+					} else {
+						const prevState = lastKnownState[snap.portfolioId];
+						const portfolioCashFlow = snap.investedValue - prevState.invested;
+						const portfolioExactChange =
+							snap.totalValue - prevState.value - portfolioCashFlow;
+						dayNetCashFlow += portfolioCashFlow;
+						dayExactChangePLN += portfolioExactChange;
+					}
+					lastKnownState[snap.portfolioId] = {
+						value: snap.totalValue,
+						invested: snap.investedValue,
+					};
+				});
+
+				activePortfolioIds.forEach((pId) => {
+					if (lastKnownState[pId]) {
+						dayTotalValue += lastKnownState[pId].value;
+						dayInvestedValue += lastKnownState[pId].invested;
+					}
+				});
+
+				baseData.push({
+					date: dateStr,
+					value: Number(dayTotalValue.toFixed(2)),
+					invested: Number(dayInvestedValue.toFixed(2)),
+					change: Number(dayDailyChangeFromDB.toFixed(2)),
+					isPositive: dayDailyChangeFromDB >= 0,
+				});
+
+				finalAbsoluteData.push({
+					date: dateStr,
+					exactChangePLN: Number(dayExactChangePLN.toFixed(2)),
+					totalPortfolioValue: Number(dayTotalValue.toFixed(2)),
+					netCashFlow: Number(dayNetCashFlow.toFixed(2)),
+				});
+			});
+
+			// Build Benchmark arrays
+			const mockIndexHistory: Record<string, Record<string, number>> = {};
+			userIndices.forEach((idx, i) => {
+				mockIndexHistory[idx] = {};
+				if (dataMode === "SIMULATED") {
+					let fakeBasePrice = 1000;
+					allDates.forEach((dateStr, index) => {
+						fakeBasePrice += Math.sin(index + i * 2) * 15 + i * 1.5;
+						mockIndexHistory[idx][dateStr] = fakeBasePrice;
+					});
+				} else {
+					const normalizedHistory: Record<string, number> = {};
+					if (indexQuotesHistory[idx]) {
+						Object.keys(indexQuotesHistory[idx]).forEach((fullDate) => {
+							normalizedHistory[getDateStr(fullDate)] =
+								indexQuotesHistory[idx][fullDate];
+						});
+					}
+					let lastKnownPrice = 100;
+					const availableDates = Object.keys(normalizedHistory).sort();
+					if (availableDates.length > 0)
+						lastKnownPrice = normalizedHistory[availableDates[0]];
+					allDates.forEach((dateStr) => {
+						if (normalizedHistory[dateStr] !== undefined)
+							lastKnownPrice = normalizedHistory[dateStr];
+						mockIndexHistory[idx][dateStr] = lastKnownPrice;
+					});
+				}
+			});
+
+			const finalBenchmarkData: any[] = [];
+			const firstDay = baseData[0];
+			const initialPortfolioValue = firstDay ? firstDay.value : 0;
+			const initialPortfolioInvested = firstDay ? firstDay.invested : 0;
+			const basePortfolioPct =
+				initialPortfolioInvested > 0
+					? ((initialPortfolioValue - initialPortfolioInvested) /
+							initialPortfolioInvested) *
+						100
+					: 0;
+
+			const baseIndexValues: Record<string, number> = {};
+			userIndices.forEach((idx) => {
+				baseIndexValues[idx] =
+					firstDay && mockIndexHistory[idx][firstDay.date]
+						? mockIndexHistory[idx][firstDay.date]
+						: 0;
+			});
+
+			for (let i = 0; i < baseData.length; i++) {
+				const today = baseData[i];
+				let currentPortfolioPct = 0;
+				if (today.invested > 0) {
+					currentPortfolioPct =
+						((today.value - today.invested) / today.invested) * 100 -
+						basePortfolioPct;
+				}
+				const dataPoint: any = {
+					date: today.date,
+					portfolioPct: Number(currentPortfolioPct.toFixed(2)),
+				};
+				userIndices.forEach((idx) => {
+					let idxPct = 0;
+					const todayValue = mockIndexHistory[idx][today.date];
+					const baseValue = baseIndexValues[idx];
+					if (baseValue > 0)
+						idxPct = ((todayValue - baseValue) / baseValue) * 100;
+					dataPoint[idx] = Number(idxPct.toFixed(2));
+				});
+				finalBenchmarkData.push(dataPoint);
+			}
+
+			let finalChartData: ChartDataPoint[] = [];
+			if (chartMode === "PERCENTAGE") {
+				finalChartData = baseData.map((point) => {
+					const pct =
+						point.invested > 0
+							? ((point.value - point.invested) / point.invested) * 100
+							: 0;
+					return {
+						date: point.date,
+						value: Number(pct.toFixed(2)),
+						invested: 0,
+					};
+				});
+			} else {
+				finalChartData = baseData.map((point) => ({
+					date: point.date,
+					value: point.value,
+					invested: point.invested,
+				}));
+			}
+
+			return {
+				portfolioChartData: finalChartData,
+				absoluteChartData: finalAbsoluteData,
+				benchmarkChartData: finalBenchmarkData,
+			};
+		}, [
+			compressedSnapshots,
+			selectedIds,
+			chartMode,
+			dataMode,
+			userIndices,
+			indexQuotesHistory,
+		]);
+
+	// STEP 4: Comparison Chart Data (uses same compressed snapshots)
+	const portfoliosComparisonData = useMemo(() => {
+		if (compressedSnapshots.length === 0) return [];
 		const dataByDate: Record<string, any> = {};
 
-		downsampledSnapshots.forEach((snapshot) => {
+		compressedSnapshots.forEach((snapshot) => {
 			const dateStr = new Date(snapshot.date).toISOString().split("T")[0];
-
-			if (!dataByDate[dateStr]) {
-				dataByDate[dateStr] = { date: snapshot.date };
-			}
+			if (!dataByDate[dateStr]) dataByDate[dateStr] = { date: snapshot.date };
 
 			const pnlValue = snapshot.totalValue - snapshot.investedValue;
 			const pnlPercentage =
 				snapshot.investedValue > 0
 					? (pnlValue / snapshot.investedValue) * 100
 					: 0;
+
 			dataByDate[dateStr][snapshot.portfolioId] =
 				chartMode === "PERCENTAGE"
 					? Number(pnlPercentage.toFixed(2))
 					: Number(pnlValue.toFixed(2));
 		});
 
-		return (Object.values(dataByDate) as CompareDataPoint[]).sort(
+		return (Object.values(dataByDate) as any[]).sort(
 			(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 		);
-	}, [realSnapshots, chartMode]);
+	}, [compressedSnapshots, chartMode]);
 
-	// Zwracamy wszystko, co będzie potrzebne w widoku
 	return {
-		// Stany wyciągnięte z hooków
 		isPending,
 		dataMode,
 		setDataMode,
@@ -522,12 +526,10 @@ export function useDashboardData({
 		activeRange,
 		fromDate,
 		toDate,
-		// Akcje (Funkcje)
 		togglePortfolio,
 		handleRangeChange,
 		handleDateRangeSelect,
 		isRangeDisabled,
-		// Obliczone dane
 		filteredTransactions,
 		activePortfolios,
 		totalInvested,
@@ -535,9 +537,7 @@ export function useDashboardData({
 		totalPnL,
 		totalPnLPct,
 		observedAssets,
-		// Dane do wykresów
 		portfolioChartData,
-		pnlChartData,
 		absoluteChartData,
 		benchmarkChartData,
 		portfoliosComparisonData,

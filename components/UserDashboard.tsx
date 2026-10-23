@@ -217,6 +217,7 @@ export function UserDashboard(props: UserDashboardProps) {
 				}
 			>
 				<div className="flex flex-col gap-4 lg:gap-6">
+					{/* MACRO INDICATORS COLUMN */}
 					{props.userIndices && props.userIndices.length > 0 && (
 						<div className="flex-1 rounded-2xl ">
 							<div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
@@ -241,6 +242,7 @@ export function UserDashboard(props: UserDashboardProps) {
 							</div>
 						</div>
 					)}
+					{/* PORTFOLIO ASSETS COLUMN */}
 					<div className="flex-1">
 						<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
 							{observedAssets.length > 0 ? (
@@ -274,6 +276,7 @@ export function UserDashboard(props: UserDashboardProps) {
 							)}
 						</div>
 
+						{/* 🚀 Przycisk "Pokaż więcej / Pokaż mniej" */}
 						{observedAssets.length > 6 && (
 							<div className="flex justify-center mt-4 pt-3 border-t border-t-border-subtle">
 								{visibleAssetsCount < observedAssets.length ? (
@@ -298,6 +301,9 @@ export function UserDashboard(props: UserDashboardProps) {
 				</div>
 			</SectionLayout>
 
+			{/* =========================================
+            ZAAWANSOWANY PASEK NARZĘDZI (STICKY)        
+        ========================================= */}
 			<div className="sticky top-0 z-40 -mx-3 md:-mx-10 px-3 md:px-10 py-2 md:py-3 bg-t-bg-base/90 backdrop-blur-md border-y border-t-border shadow-sm transition-all rounded-b-2xl duration-300">
 				<div className="flex flex-col gap-1.5 max-w-7xl mx-auto w-full">
 					{showAdvancedToolbar && (
@@ -381,7 +387,9 @@ export function UserDashboard(props: UserDashboardProps) {
 						</div>
 					)}
 
+					{/* 2. GŁÓWNY PASEK NARZĘDZI */}
 					<div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 w-full">
+						{/* LEWA STRONA: Filtry */}
 						<div className="flex flex-row items-center justify-between sm:justify-start gap-1.5 w-full sm:w-auto shrink-0">
 							<div className="flex items-center gap-1.5 flex-1 sm:flex-none">
 								<FilterBadge
@@ -410,6 +418,7 @@ export function UserDashboard(props: UserDashboardProps) {
 								/>
 							</div>
 							<div className="w-px h-5 bg-t-border mx-1 hidden sm:block" />
+							{/* Grupa Real / Sym */}
 							<div className="flex items-center gap-1.5 flex-1 sm:flex-none">
 								<FilterBadge
 									id="REAL"
@@ -437,7 +446,7 @@ export function UserDashboard(props: UserDashboardProps) {
 								/>
 							</div>
 						</div>
-
+						{/* PRAWA STRONA: Czas, Data, Zwijanie */}
 						<div className="flex items-center justify-end gap-2 w-full sm:w-auto shrink-0">
 							<div className="relative shrink-0">
 								<div className="hidden lg:flex items-center gap-1.5">
@@ -461,6 +470,7 @@ export function UserDashboard(props: UserDashboardProps) {
 										</button>
 									))}
 								</div>
+								{/* Kompaktowy przycisk dla telefonów i tabletów (do 'lg') */}
 								<div className="lg:hidden">
 									<button
 										onClick={() => setIsMobileTimeOpen(!isMobileTimeOpen)}
@@ -531,7 +541,9 @@ export function UserDashboard(props: UserDashboardProps) {
 					</div>
 				</div>
 			</div>
-
+			{/* =========================================
+            WYKRESY       
+        ========================================= */}
 			<div className="relative space-y-8">
 				{isPending && (
 					<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-3xl transition-all duration-300">

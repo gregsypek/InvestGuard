@@ -1,4 +1,10 @@
-import { differenceInDays, format, startOfYear } from "date-fns";
+import {
+	differenceInDays,
+	endOfMonth,
+	endOfWeek,
+	format,
+	startOfYear,
+} from "date-fns";
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -175,7 +181,7 @@ export function useDashboardData({
 		}
 	};
 
-	// 5. Złożone generowanie wykresów (Główny silnik, Benchmark, PnL)
+	// 5. Złożone generowanie wykresów (Downsampling + Główny silnik, Benchmark, PnL)
 	const {
 		portfolioChartData,
 		pnlChartData,
@@ -184,12 +190,78 @@ export function useDashboardData({
 	} = useMemo(() => {
 		const activeSnapshots =
 			dataMode === "SIMULATED" ? snapshots : realSnapshots;
+
 		const getDateStr = (d: string | Date) => {
 			const dateObj = new Date(d);
 			return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
 		};
 
-		const sortedSnapshots = [...activeSnapshots].sort(
+		// 🚀 KROK 0: Logika Downsamplingu
+		const groupData = (dataToGroup: SimulatedSnapshot[]) => {
+			if (dataToGroup.length === 0) return [];
+
+			// Szacujemy rozpiętość czasową w dniach z filtrowanych danych
+			const dates = dataToGroup.map((s) => new Date(s.date).getTime());
+			const minDate = Math.min(...dates);
+			const maxDate = Math.max(...dates);
+			const daysDiff = differenceInDays(new Date(maxDate), new Date(minDate));
+
+			// Jeśli okres jest krótki (<90 dni), pokazujemy pełne dane dzienne
+			if (daysDiff < 90) return dataToGroup;
+
+			const groupedByPeriod: Record<string, SimulatedSnapshot[]> = {};
+
+			dataToGroup.forEach((snap) => {
+				const dateObj = new Date(snap.date);
+				let periodKey = "";
+
+				if (daysDiff >= 90 && daysDiff <= 730) {
+					// 90 dni - 2 lata => Agregacja do tygodni
+					periodKey = format(
+						endOfWeek(dateObj, { weekStartsOn: 1 }),
+						"yyyy-MM-dd",
+					);
+				} else {
+					// Powyżej 2 lat => Agregacja do miesięcy
+					periodKey = format(endOfMonth(dateObj), "yyyy-MM-dd");
+				}
+
+				if (!groupedByPeriod[periodKey]) {
+					groupedByPeriod[periodKey] = [];
+				}
+				groupedByPeriod[periodKey].push(snap);
+			});
+
+			// Z każdego okresu wybieramy ostatni dostępny punkt (żeby nie psuć kapitału przed transakcją)
+			const downsampledSnapshots: SimulatedSnapshot[] = [];
+
+			Object.values(groupedByPeriod).forEach((periodSnaps) => {
+				// Grupujemy po portfolio, żeby z każdego okresu wziąć najnowszą wycenę dla KAŻDEGO portfela
+				const portfolioSnaps: Record<string, SimulatedSnapshot> = {};
+
+				periodSnaps.sort(
+					(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+				);
+
+				periodSnaps.forEach((snap) => {
+					portfolioSnaps[snap.portfolioId] = snap; // Nadpisuje starsze z tego samego okresu
+
+					// 🚀 UWAGA: Zabezpieczamy PnL, sumując codzienne zmiany do tej "ostatniej" świecy,
+					// inaczej zgubilibyśmy zysk/stratę wypracowaną na przestrzeni tego tygodnia/miesiąca!
+					if (portfolioSnaps[snap.portfolioId].id !== snap.id) {
+						portfolioSnaps[snap.portfolioId].dailyChange += snap.dailyChange;
+					}
+				});
+
+				downsampledSnapshots.push(...Object.values(portfolioSnaps));
+			});
+
+			return downsampledSnapshots;
+		};
+
+		// 🚀 Użycie naszego kompresora ZANIM wejdzie w kosztowną pętlę
+		const compressedSnapshots = groupData([...activeSnapshots]);
+		const sortedSnapshots = compressedSnapshots.sort(
 			(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 		);
 
@@ -206,7 +278,7 @@ export function useDashboardData({
 		const baseData: any[] = [];
 		const finalAbsoluteData: any[] = [];
 
-		// KROK 1: Budujemy bazowe dane (baseData)
+		// KROK 1: Budujemy bazowe dane (baseData) z już skompresowanych dat
 		allDates.forEach((dateStr) => {
 			const snapsToday = sortedSnapshots.filter(
 				(s) =>
@@ -262,7 +334,7 @@ export function useDashboardData({
 			});
 		});
 
-		// KROK 2: Benchmark
+		// KROK 2: Benchmark - Dopasowujemy go również do tych skompresowanych dat
 		const mockIndexHistory: Record<string, Record<string, number>> = {};
 		userIndices.forEach((idx, i) => {
 			mockIndexHistory[idx] = {};
@@ -373,15 +445,49 @@ export function useDashboardData({
 		indexQuotesHistory,
 	]);
 
-	// 6. Generator Danych dla Wyścigu Portfeli (Portfolios Comparison)
+	// 6. Generator Danych dla Wyścigu Portfeli (Portfolios Comparison) - On też potrzebuje tej samej kompresji!
 	const portfoliosComparisonData = useMemo(() => {
 		if (!realSnapshots || realSnapshots.length === 0) return [];
+
+		// Klonujemy logikę downsamplingu tutaj dla pewności
+		const dates = realSnapshots.map((s) => new Date(s.date).getTime());
+		const minDate = Math.min(...dates);
+		const maxDate = Math.max(...dates);
+		const daysDiff = differenceInDays(new Date(maxDate), new Date(minDate));
+
+		const groupedByPeriod: Record<string, SimulatedSnapshot[]> = {};
+
+		realSnapshots.forEach((snap) => {
+			const dateObj = new Date(snap.date);
+			let periodKey = format(dateObj, "yyyy-MM-dd");
+
+			if (daysDiff >= 90 && daysDiff <= 730) {
+				periodKey = format(
+					endOfWeek(dateObj, { weekStartsOn: 1 }),
+					"yyyy-MM-dd",
+				);
+			} else if (daysDiff > 730) {
+				periodKey = format(endOfMonth(dateObj), "yyyy-MM-dd");
+			}
+
+			if (!groupedByPeriod[periodKey]) groupedByPeriod[periodKey] = [];
+			groupedByPeriod[periodKey].push(snap);
+		});
+
+		const downsampledSnapshots: SimulatedSnapshot[] = [];
+		Object.values(groupedByPeriod).forEach((periodSnaps) => {
+			const portfolioSnaps: Record<string, SimulatedSnapshot> = {};
+			periodSnaps.sort(
+				(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+			);
+			periodSnaps.forEach((snap) => (portfolioSnaps[snap.portfolioId] = snap));
+			downsampledSnapshots.push(...Object.values(portfolioSnaps));
+		});
 
 		type CompareDataPoint = { date: string | Date; [key: string]: any };
 		const dataByDate: Record<string, any> = {};
 
-		realSnapshots.forEach((snapshot) => {
-			// 🚀 USUNIĘTO FILTROWANIE - teraz generujemy punkty dla każdego portfela!
+		downsampledSnapshots.forEach((snapshot) => {
 			const dateStr = new Date(snapshot.date).toISOString().split("T")[0];
 
 			if (!dataByDate[dateStr]) {

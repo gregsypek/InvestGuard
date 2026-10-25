@@ -21,6 +21,7 @@ import {
 	Maximize2,
 	Minimize2,
 	Wallet2,
+	X,
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
@@ -98,6 +99,8 @@ export function PortfolioChart({
 }: PortfolioChartProps) {
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
+	const [clickedData, setClickedData] = useState<MergedDataPoint | null>(null);
+	const [txPage, setTxPage] = useState(0);
 	const chartRef = useRef<HTMLDivElement>(null);
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
@@ -109,7 +112,6 @@ export function PortfolioChart({
 		return () => window.removeEventListener("resize", checkMobile);
 	}, []);
 
-	// NOWOŚĆ: html-to-image rozwiązuje problem z kolorami lab()
 	const handleDownload = async () => {
 		if (!chartRef.current) return;
 		const toastId = toast.loading("Generowanie zrzutu ekranu...");
@@ -122,7 +124,6 @@ export function PortfolioChart({
 				backgroundColor: bgColor,
 				pixelRatio: 2,
 				filter: (node) => {
-					// Ukryj brusha na screenie
 					if (node?.classList?.contains("recharts-brush")) return false;
 					return true;
 				},
@@ -155,7 +156,7 @@ export function PortfolioChart({
 
 		return data.map((point, index) => {
 			const currentPointTime = getEndOfDayTime(point.date);
-			let prevPointTime =
+			const prevPointTime =
 				index > 0
 					? getEndOfDayTime(data[index - 1].date)
 					: new Date(
@@ -179,7 +180,6 @@ export function PortfolioChart({
 				!isMulti &&
 				periodTxs.some((t) => t.type === "SELL" || t.type === "WITHDRAWAL");
 
-			// Kalkulacja Drawdown (Obsunięcia)
 			if (point.value > maxPeak) maxPeak = point.value;
 			const drawdown =
 				maxPeak > 0 ? ((point.value - maxPeak) / maxPeak) * 100 : 0;
@@ -188,7 +188,7 @@ export function PortfolioChart({
 				...point,
 				buyEvent: hasBuy ? point.value : null,
 				sellEvent: hasSell ? point.value : null,
-				multiEvent: isMulti ? point.value : null, // Wiele transakcji
+				multiEvent: isMulti ? point.value : null,
 				txDetails: periodTxs.length > 0 ? periodTxs : null,
 				lastValue: index === data.length - 1 ? point.value : null,
 				drawdown,
@@ -256,7 +256,7 @@ export function PortfolioChart({
 					</div>
 					<div className="flex items-center gap-1.5">
 						<span className="w-4 h-4 flex items-center justify-center rounded-full bg-[#9333ea] border-white border-2 text-[9px] font-bold text-white">
-							M
+							W
 						</span>{" "}
 						Wiele transakcji
 					</div>
@@ -266,29 +266,51 @@ export function PortfolioChart({
 	);
 
 	const EventLabel = (props: any) => {
-		const { cx, cy, type } = props;
+		const { cx, cy, type, payload } = props;
 		if (!cx || !cy) return null;
-		let color =
+		const color =
 			type === "BUY" ? "#10b981" : type === "SELL" ? "#ef4444" : "#9333ea";
-		let letter = type === "BUY" ? "K" : type === "SELL" ? "S" : "M";
+		const letter = type === "BUY" ? "K" : type === "SELL" ? "S" : "W";
+
 		return (
-			<g style={{ outline: "none" }} className="cursor-pointer">
+			<g
+				style={{ outline: "none" }}
+				className="cursor-pointer hover:opacity-80 transition-opacity"
+				onClick={(e) => {
+					e.stopPropagation();
+					if (payload && payload.txDetails && payload.txDetails.length > 0) {
+						setClickedData(payload);
+						setTxPage(0);
+					}
+				}}
+			>
+				{/* 🚀 POTĘŻNY HITBOX - "pointerEvents: all" wymusza klikalność całej powierzchni */}
 				<circle
 					cx={cx}
 					cy={cy}
-					r={7}
+					r={24}
+					fill="rgba(255, 255, 255, 0)"
+					pointerEvents="all"
+				/>
+
+				<circle
+					cx={cx}
+					cy={cy}
+					r={10}
 					fill={color}
 					stroke="var(--t-bg-panel)"
-					strokeWidth={1.5}
+					strokeWidth={2}
+					pointerEvents="none"
 				/>
 				<text
 					x={cx}
 					y={cy}
-					dy={3}
+					dy={3.5}
 					textAnchor="middle"
 					fill="#fff"
-					fontSize={9}
+					fontSize={10}
 					fontWeight="bold"
+					pointerEvents="none"
 				>
 					{letter}
 				</text>
@@ -362,36 +384,38 @@ export function PortfolioChart({
 					)}
 				</div>
 			)}
-			<div className="absolute bottom-1 right-2 pointer-events-none z-0 opacity-15 dark:opacity-10">
+
+			<div className="absolute -bottom-18 right-2 pointer-events-none z-0 opacity-15 dark:opacity-10">
 				<div className="flex items-center gap-2 grayscale">
-					<div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center">
+					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center">
 						<Image
 							src="/logo.svg"
 							alt="Logo"
-							width={24}
-							height={24}
+							width={32}
+							height={32}
 							className="block dark:hidden object-contain"
 							style={{ width: "auto", height: "auto" }}
 						/>
 						<Image
 							src="/logo-light.svg"
 							alt="Logo"
-							width={24}
-							height={24}
+							width={32}
+							height={32}
 							className="hidden dark:block object-contain"
 							style={{ width: "auto", height: "auto" }}
 						/>
 					</div>
-					<span className="text-lg font-black tracking-tighter hidden sm:inline-block transition-colors text-t-text-primary">
+					<span className="text-xl font-black tracking-tighter hidden lg:inline-block transition-colors text-t-text-primary">
 						{APP_NAME}.
 					</span>
 				</div>
 			</div>
 
 			<div className="relative z-10 h-full w-full [&_*:focus]:outline-none flex flex-col">
-				{/* GŁÓWNY WYKRES (70% wysokości) */}
-				<div className="w-full h-[70%] border-b border-t-border-subtle pb-2">
+				{/* 🚀 flex-1 sprawia, że główny wykres zawsze zajmuje całą resztę dostępnej wysokości */}
+				<div className="w-full flex-1 min-h-0 border-b border-t-border-subtle pb-2 relative">
 					<ResponsiveContainer width="100%" height="100%">
+						{/* 🚀 Usunąłem błędy generujące akcje po pustym kliknięciu w wykres */}
 						<ComposedChart
 							data={mergedData}
 							syncId="portfolioSync"
@@ -418,9 +442,9 @@ export function PortfolioChart({
 								</filter>
 							</defs>
 							<CartesianGrid
-								strokeDasharray="2 6"
+								strokeDasharray="4 4"
 								vertical={false}
-								stroke="var(--t-border-subtle)"
+								stroke="var(--t-border)"
 							/>
 							<XAxis dataKey="date" hide={true} />
 							<YAxis
@@ -443,16 +467,19 @@ export function PortfolioChart({
 							{mode === "PERCENTAGE" && (
 								<ReferenceLine y={0} stroke="var(--t-border)" strokeWidth={1} />
 							)}
-							{/* pointerEvents: 'auto' pozwala na klikanie w Tooltip! */}
+
+							{/* 🚀 Rozwiązanie UCIEKANIA Tooltipa - zmiana pointerEvents na 'none' */}
 							<Tooltip
 								content={<CustomTooltip mode={mode} />}
+								offset={15}
 								cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
 								wrapperStyle={{
 									zIndex: 1000,
 									outline: "none",
-									pointerEvents: "auto",
+									pointerEvents: "none",
 								}}
 							/>
+
 							<Area
 								type="monotone"
 								dataKey="value"
@@ -505,10 +532,128 @@ export function PortfolioChart({
 							/>
 						</ComposedChart>
 					</ResponsiveContainer>
+
+					{/* 🚀 ZABLOKOWANY MODAL - BEZ ROZMYCIA TŁA */}
+					{clickedData && (
+						<div
+							className="absolute inset-0 z-[2000] flex items-center justify-center pointer-events-auto bg-t-bg-base/70 rounded-lg"
+							onClick={() => setClickedData(null)}
+						>
+							<div
+								className="bg-t-bg-panel border border-t-border shadow-2xl rounded-2xl p-5 w-full max-w-[320px] animate-in zoom-in-95 fade-in duration-200"
+								onClick={(e) => e.stopPropagation()}
+							>
+								<div className="flex justify-between items-center mb-4 border-b border-t-border pb-3">
+									<div className="flex items-center gap-2">
+										{clickedData.txDetails &&
+										clickedData.txDetails.length > 1 ? (
+											<>
+												<button
+													onClick={() => setTxPage(Math.max(0, txPage - 1))}
+													disabled={txPage === 0}
+													className="hover:text-t-text-primary disabled:opacity-30 p-1.5 bg-t-bg-base rounded-md border border-t-border-subtle transition-colors"
+												>
+													<ChevronLeft className="w-4 h-4" />
+												</button>
+												<span className="text-xs font-bold w-12 text-center">
+													{txPage + 1} / {clickedData.txDetails.length}
+												</span>
+												<button
+													onClick={() =>
+														setTxPage(
+															Math.min(
+																(clickedData.txDetails?.length || 1) - 1,
+																txPage + 1,
+															),
+														)
+													}
+													disabled={
+														txPage === (clickedData.txDetails?.length || 1) - 1
+													}
+													className="hover:text-t-text-primary disabled:opacity-30 p-1.5 bg-t-bg-base rounded-md border border-t-border-subtle transition-colors"
+												>
+													<ChevronRight className="w-4 h-4" />
+												</button>
+											</>
+										) : (
+											<span className="text-[11px] font-bold text-t-text-secondary uppercase tracking-wider">
+												Szczegóły zdarzenia
+											</span>
+										)}
+									</div>
+									<button
+										onClick={() => setClickedData(null)}
+										className="text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 font-bold w-7 h-7 flex items-center justify-center rounded-full transition-colors"
+									>
+										<X className="w-4 h-4" />
+									</button>
+								</div>
+
+								{clickedData.txDetails && clickedData.txDetails[txPage] && (
+									<div className="space-y-3">
+										<div className="flex justify-between items-center text-sm border-b border-t-border-subtle pb-2">
+											<span className="text-t-text-tertiary text-xs">Data</span>
+											<span className="font-bold">
+												{format(new Date(clickedData.date), "dd.MM.yyyy")}
+											</span>
+										</div>
+										<div className="flex justify-between items-center text-sm border-b border-t-border-subtle pb-2">
+											<span className="text-t-text-tertiary text-xs">Typ</span>
+											<span
+												className={
+													clickedData.txDetails[txPage].type === "BUY" ||
+													clickedData.txDetails[txPage].type === "DEPOSIT"
+														? "text-emerald-500 font-bold"
+														: "text-rose-500 font-bold"
+												}
+											>
+												{clickedData.txDetails[txPage].type === "BUY" ||
+												clickedData.txDetails[txPage].type === "DEPOSIT"
+													? "Wpłata / Kupno"
+													: "Wypłata / Sprzedaż"}
+											</span>
+										</div>
+										<div className="flex justify-between items-center text-sm border-b border-t-border-subtle pb-2">
+											<span className="text-t-text-tertiary text-xs">
+												Walor
+											</span>
+											<span
+												className="font-medium truncate max-w-[150px] text-right"
+												title={
+													clickedData.txDetails[txPage].assetName ||
+													clickedData.txDetails[txPage].ticker ||
+													""
+												}
+											>
+												{clickedData.txDetails[txPage].assetName ||
+													clickedData.txDetails[txPage].ticker ||
+													"-"}
+											</span>
+										</div>
+										<div className="flex justify-between items-center text-sm">
+											<span className="text-t-text-tertiary text-xs">
+												Kwota
+											</span>
+											<span className="font-mono font-bold text-base">
+												{formatCurrency(
+													convertPLN(
+														Math.abs(
+															clickedData.txDetails[txPage].executedValue || 0,
+														),
+													),
+												)}{" "}
+												{currencySymbol}
+											</span>
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
+					)}
 				</div>
 
-				{/* WYKRES OBSUNIĘCIA KAPITAŁU (30% wysokości) */}
-				<div className="w-full h-[30%] pt-2">
+				{/* 🚀 Sztywna wysokość dla wykresu obsunięcia - reszta idzie dla głównego */}
+				<div className="w-full h-[120px] shrink-0 pt-2">
 					<ResponsiveContainer width="100%" height="100%">
 						<AreaChart
 							data={mergedData}
@@ -521,9 +666,9 @@ export function PortfolioChart({
 							}}
 						>
 							<CartesianGrid
-								strokeDasharray="2 6"
+								strokeDasharray="4 4"
 								vertical={false}
-								stroke="var(--t-border-subtle)"
+								stroke="var(--t-border)"
 							/>
 							<XAxis
 								dataKey="date"
@@ -572,7 +717,7 @@ export function PortfolioChart({
 									dataKey="date"
 									height={24}
 									stroke="var(--t-text-tertiary)"
-									fill="var(--t-bg-base)"
+									fill="var(--theme-border)" // here
 									tickFormatter={(val) =>
 										new Date(val).toLocaleDateString("pl-PL", {
 											month: "short",
@@ -583,7 +728,7 @@ export function PortfolioChart({
 							)}
 						</AreaChart>
 					</ResponsiveContainer>
-					<div className="absolute bottom-[28%] left-8 text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary opacity-70">
+					<div className="absolute bottom-[22%] left-8 text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary opacity-70">
 						Obsunięcie kapitału (%)
 					</div>
 				</div>
@@ -683,11 +828,12 @@ export function PortfolioChart({
 					</div>
 					{renderControls()}
 				</div>
-				<div className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-xl flex flex-col">
-					<div
-						ref={chartRef}
-						className="flex-1 w-full bg-t-bg-panel rounded-lg pb-2 pt-2 relative"
-					>
+				{/* 🚀 Przeniesiony chartRef wyżej */}
+				<div
+					ref={chartRef}
+					className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-xl flex flex-col"
+				>
+					<div className="flex-1 w-full bg-t-bg-panel rounded-lg pb-2 pt-2 relative">
 						{chartContent}
 					</div>
 					{onRangeChange && (
@@ -715,12 +861,12 @@ export function PortfolioChart({
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group">
+		<div
+			ref={chartRef}
+			className="relative w-full h-full flex flex-col group bg-t-bg-panel p-2 rounded-xl"
+		>
 			{renderControls()}
-			<div
-				ref={chartRef}
-				className="flex-1 w-full min-h-0 relative z-10 bg-t-bg-panel rounded-lg pt-2 pb-2 pr-2"
-			>
+			<div className="flex-1 w-full min-h-0 relative z-10 bg-t-bg-panel rounded-lg pt-2 pb-2 pr-2">
 				{chartContent}
 			</div>
 			{onRangeChange && (
@@ -747,7 +893,7 @@ export function PortfolioChart({
 }
 
 // ----------------------------------------------------------------------
-// INTERAKTYWNY TOOLTIP Z PAGINACJĄ
+// CZYSTY TOOLTIP (BEZ MOŻLIWOŚCI KLIKANIA I ZNIESZCZENIA EKRANU)
 // ----------------------------------------------------------------------
 interface TooltipPayloadItem {
 	dataKey: string;
@@ -765,14 +911,6 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
-	// Stan stronnicowania Tooltipa
-	const [txPage, setTxPage] = useState(0);
-
-	// Reset strony gdy najeżdżamy na nową datę
-	useEffect(() => {
-		setTxPage(0);
-	}, [label]);
-
 	if (active && payload && payload.length && label) {
 		const dataObj = payload[0].payload;
 
@@ -784,7 +922,7 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 					</p>
 					<div className="flex items-center gap-2">
 						<span className="text-xs text-t-text-secondary">
-							Obsunięcie (MaxDD):
+							Obsunięcie od szczytu:
 						</span>
 						<span className="text-sm font-bold text-rose-500">
 							{dataObj.drawdown.toFixed(2)}%
@@ -807,7 +945,7 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 		const totalTxs = txs.length;
 
 		return (
-			<div className="bg-t-bg-panel/95 backdrop-blur-md border border-t-border rounded-xl p-4 shadow-xl max-w-[280px] pointer-events-auto">
+			<div className="bg-t-bg-panel/95 backdrop-blur-md border border-t-border rounded-xl p-4 shadow-xl min-w-[260px] relative overflow-hidden">
 				<div
 					className={`absolute top-0 left-0 right-0 h-[2px] ${isProfit ? "bg-gradient-to-r from-emerald-400 to-emerald-600" : "bg-gradient-to-r from-rose-400 to-rose-600"}`}
 				/>
@@ -860,81 +998,60 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 					)}
 				</div>
 
-				{/* 🚀 ZMIANA: Paginowany Tooltip dla transakcji wzorowany na Atlas ETF */}
-				{totalTxs > 0 && (
-					<div className="mt-3 pt-3 border-t border-t-border border-dashed">
-						<div className="flex items-center justify-between mb-2">
-							<p className="text-[9px] font-black text-t-text-tertiary uppercase tracking-widest">
-								{totalTxs > 1 ? "Wiele zdarzeń" : "Zdarzenie"}
-							</p>
-							{totalTxs > 1 && (
-								<div className="flex items-center gap-1.5 text-xs text-t-text-secondary">
-									<button
-										onClick={(e) => {
-											e.stopPropagation();
-											setTxPage(Math.max(0, txPage - 1));
-										}}
-										disabled={txPage === 0}
-										className="hover:text-t-text-primary disabled:opacity-30 p-0.5"
-									>
-										<ChevronLeft className="w-3.5 h-3.5" />
-									</button>
-									<span className="text-[10px] font-mono">
-										{txPage + 1} / {totalTxs}
-									</span>
-									<button
-										onClick={(e) => {
-											e.stopPropagation();
-											setTxPage(Math.min(totalTxs - 1, txPage + 1));
-										}}
-										disabled={txPage === totalTxs - 1}
-										className="hover:text-t-text-primary disabled:opacity-30 p-0.5"
-									>
-										<ChevronRight className="w-3.5 h-3.5" />
-									</button>
-								</div>
-							)}
+				{/* 🚀 Logika dla zdarzeń (1 od razu szczegóły, >1 zachęta do kliknięcia) */}
+				{totalTxs === 1 && (
+					<div className="mt-3 pt-3 border-t border-t-border-subtle flex flex-col gap-1.5">
+						<span className="text-[9px] font-black text-t-text-tertiary uppercase tracking-widest mb-1">
+							Zdarzenie (Szczegóły)
+						</span>
+						<div className="flex justify-between items-center text-xs">
+							<span className="text-t-text-tertiary">Typ</span>
+							<span
+								className={
+									txs[0].type === "BUY" || txs[0].type === "DEPOSIT"
+										? "text-emerald-500 font-bold"
+										: "text-rose-500 font-bold"
+								}
+							>
+								{txs[0].type === "BUY" || txs[0].type === "DEPOSIT"
+									? "Wpłata / Kupno"
+									: "Wypłata / Sprzedaż"}
+							</span>
 						</div>
+						<div className="flex justify-between items-center text-xs">
+							<span className="text-t-text-tertiary">Walor</span>
+							<span
+								className="font-medium truncate max-w-[120px]"
+								title={txs[0].assetName || txs[0].ticker || ""}
+							>
+								{txs[0].assetName || txs[0].ticker || "-"}
+							</span>
+						</div>
+						<div className="flex justify-between items-center text-xs">
+							<span className="text-t-text-tertiary">Kwota</span>
+							<span className="font-mono font-bold text-t-text-primary">
+								{formatCurrency(
+									convertPLN(Math.abs(txs[0].executedValue || 0)),
+								)}{" "}
+								{currencySymbol}
+							</span>
+						</div>
+					</div>
+				)}
 
-						{/* Pokaż tylko jedną (aktywną) transakcję */}
-						{(() => {
-							const tx = txs[txPage];
-							const isBuy = tx.type === "BUY" || tx.type === "DEPOSIT";
-							return (
-								<div className="flex flex-col gap-1.5 bg-t-bg-base/50 p-2 rounded-lg border border-t-border-subtle">
-									<div className="flex justify-between items-center text-xs">
-										<span className="text-t-text-tertiary">Typ</span>
-										<span
-											className={
-												isBuy
-													? "text-emerald-500 font-bold"
-													: "text-rose-500 font-bold"
-											}
-										>
-											{isBuy ? "Wpłata / Kupno" : "Wypłata / Sprzedaż"}
-										</span>
-									</div>
-									<div className="flex justify-between items-center text-xs">
-										<span className="text-t-text-tertiary">Walor</span>
-										<span
-											className="font-medium text-t-text-primary max-w-[120px] truncate"
-											title={tx.assetName || tx.ticker || ""}
-										>
-											{tx.assetName || tx.ticker || "-"}
-										</span>
-									</div>
-									<div className="flex justify-between items-center text-xs">
-										<span className="text-t-text-tertiary">Kwota</span>
-										<span className="font-mono text-t-text-primary">
-											{formatCurrency(
-												convertPLN(Math.abs(tx.executedValue || 0)),
-											)}{" "}
-											{currencySymbol}
-										</span>
-									</div>
-								</div>
-							);
-						})()}
+				{totalTxs > 1 && (
+					<div className="mt-3 pt-3 border-t border-t-border-subtle flex items-center justify-between mb-2">
+						<span className="text-xs font-bold text-t-text-secondary">
+							Wiele zdarzeń
+						</span>
+						<span className="text-[10px] font-bold bg-t-bg-base border border-t-border px-1.5 py-0.5 rounded">
+							{totalTxs} ×
+						</span>
+					</div>
+				)}
+				{totalTxs > 1 && (
+					<div className="text-center text-[9px] text-t-text-tertiary uppercase tracking-widest bg-t-bg-base/50 py-1.5 rounded font-bold">
+						Kliknij w kółko W na wykresie, aby rozwinąć
 					</div>
 				)}
 			</div>

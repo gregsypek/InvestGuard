@@ -32,7 +32,7 @@ export function SubHeader({
 
 			{description && (
 				// DODANO: leading-relaxed dla lepszej czytelności oraz max-w-3xl aby tekst nie rozciągał się w nieskończoność na monitorach 4K
-				<p className="text-xs md:text-sm font-medium text-t-text-tertiary mt-1.5 leading-relaxed max-w-3xl">
+				<p className="text-xs md:text-sm font-medium text-t-text-tertiary mt-1.5 3xl:leading-relaxed max-w-3xl">
 					{description}
 				</p>
 			)}

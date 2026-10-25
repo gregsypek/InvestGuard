@@ -288,7 +288,8 @@ export function PortfolioChart({
 				<circle
 					cx={cx}
 					cy={cy}
-					r={24}
+					r={14}
+					// fill={color}
 					fill="rgba(255, 255, 255, 0)"
 					pointerEvents="all"
 				/>
@@ -325,7 +326,11 @@ export function PortfolioChart({
 		const displayValue = isPercentage
 			? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
 			: `${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(convertPLN(value))} ${currencySymbol}`;
-		const rectWidth = isPercentage ? 50 : 65;
+		// 🚀 ZMIANA: Dynamiczna szerokość dopasowana do ilości znaków w tekście + margines bezpieczeństwa
+		const rectWidth = Math.max(
+			isPercentage ? 60 : 80,
+			displayValue.length * 7 + 16,
+		);
 		const rectHeight = 22;
 		return (
 			<g style={{ outline: "none" }}>
@@ -371,7 +376,7 @@ export function PortfolioChart({
 	const chartContent = (
 		<ChartContainer className="h-full min-h-0 w-full flex-1 relative flex flex-col">
 			{(titleInside || subtitleInside) && (
-				<div className="absolute top-2 left-2 z-20 pointer-events-none max-w-md bg-t-bg-panel/50 backdrop-blur-sm p-2 rounded-lg">
+				<div className="absolute top-2 left-2 z-20 pointer-events-none max-w-md bg-t-bg-panel/50  p-2 rounded-lg">
 					{titleInside && (
 						<h3 className="text-sm font-bold text-t-text-primary">
 							{titleInside}
@@ -488,6 +493,7 @@ export function PortfolioChart({
 								fillOpacity={1}
 								fill="transparent"
 								filter="url(#glowBlue)"
+								pointerEvents="none" /* 🚀 TO ROZWIĄZUJE PROBLEM: linia przepuszcza kliknięcia na wylot */
 								activeDot={{
 									r: 6,
 									fill: "var(--theme-primary)",
@@ -505,6 +511,7 @@ export function PortfolioChart({
 									dot={false}
 									activeDot={false}
 									opacity={0.6}
+									pointerEvents="none" /* 🚀 Dodane również tutaj dla pewności */
 								/>
 							)}
 							{transactions.length > 0 && (

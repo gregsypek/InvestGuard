@@ -407,30 +407,30 @@ export function PortfolioChart({
 	const chartContent = (
 		<ChartContainer className="h-full min-h-0 w-full flex-1 relative flex flex-col ">
 			<div className="flex">
-				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 lg:top-[-8px] lg:left-5 lg:translate-x-0 lg:translate-y-0 w-auto lg:w-full pointer-events-none z-0 opacity-15 dark:opacity-10">
-					<div className="flex items-center justify-center lg:justify-start gap-2 grayscale">
-						<div className="w-24 h-24 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center">
+				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 xl:top-[-8px] xl:left-5 xl:translate-x-0 xl:translate-y-0 w-auto xl:w-full pointer-events-none z-0 opacity-15 dark:opacity-10">
+					<div className="flex items-center justify-center xl:justify-start gap-2 grayscale">
+						<div className="w-24 h-24 xl:w-12 xl:h-12 rounded-xl flex items-center justify-center">
 							<Image
 								src="/logo-static.svg"
 								alt="Logo"
 								width={96}
 								height={96}
-								className="block dark:hidden object-contain w-24 h-24 lg:w-8 lg:h-8"
+								className="block dark:hidden object-contain w-24 h-24 xl:w-8 xl:h-8"
 							/>
 							<Image
 								src="/logo-light-static.svg"
 								alt="Logo"
 								width={96}
 								height={96}
-								className="hidden dark:block object-contain w-24 h-24 lg:w-8 lg:h-8"
+								className="hidden dark:block object-contain w-24 h-24 xl:w-8 xl:h-8"
 							/>
 						</div>
-						<span className="text-xl font-black tracking-tighter hidden lg:inline-block transition-colors text-t-text-primary">
+						<span className="text-xl font-black tracking-tighter hidden xl:inline-block transition-colors text-t-text-primary">
 							{APP_NAME}.
 						</span>
 					</div>
 				</div>
-				<div className="justify-end flex flex-wrap w-full gap-2">
+				<div className="md:justify-end justify-center flex flex-wrap w-full gap-2">
 					{portfolios?.map((p) => {
 						// 🚀 Sprawdzamy czy dany portfel (lub 'ALL') jest w tablicy aktywnych ID
 						const isActive =
@@ -449,7 +449,7 @@ export function PortfolioChart({
 				</div>
 			</div>
 			<div className="relative z-10 h-full w-full [&_*:focus]:outline-none flex flex-col">
-				<div className="w-full flex-1 min-h-0 border-b border-t-border-subtle pb-2 relative">
+				<div className="w-full flex-1 min-h-0 border-b border-t-border-subtle pb-2 relative h-full">
 					<ResponsiveContainer width="100%" height="100%">
 						<ComposedChart
 							data={mergedData}
@@ -817,7 +817,7 @@ export function PortfolioChart({
 		<div className="flex flex-col  px-6 z-20 mb-2 sm:mb-4 w-full gap-3">
 			<div className="flex flex-col items-center md:flex-row justify-between w-full">
 				{(titleInside || subtitleInside) && (
-					<div className="  flex justify-between flex-col md:items-start items-center pb-2  pointer-events-none bg-transparent rounded-lg">
+					<div className="  flex justify-between  flex-col md:items-start items-center pb-2 mx-auto pointer-events-none bg-transparent rounded-lg">
 						{!isExpanded && titleInside && (
 							<h3 className="text-md font-bold text-t-text-primary">
 								{titleInside}
@@ -826,7 +826,7 @@ export function PortfolioChart({
 						{subtitleInside && (
 							<p
 								className={cn(
-									"text-xs flex-1 self-end font-semibold text-t-text-tertiary mt-1 leading-tight",
+									"text-xs flex-1 self-center sm:self-end font-semibold text-t-text-tertiary mt-1 leading-tight",
 									!isExpanded && "whitespace-pre-wrap, text-[10px]",
 								)}
 							>
@@ -922,31 +922,32 @@ export function PortfolioChart({
 					className="relative flex flex-col flex-1 min-h-0 w-full rounded-2xl p-2 md:p-4 bg-t-bg-base/30"
 				>
 					{/* HEADER */}
-					<div className="relative flex justify-between items-start mb-6">
-						<div className="flex items-start gap-3 flex-col sm:flex-row">
-							<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 hidden sm:block">
-								<Wallet2 className="w-5 h-5 text-blue-500" />
-							</div>
-							<div>
-								<h3 className="text-xl sm:text-2xl font-bold text-t-text-primary tracking-tight">
+					<div className="relative flex flex-col items-center  justify-between sm:flex-row sm:items-start mb-6 ">
+						<div className="flex items-start gap-3 flex-col">
+							<div className="flex">
+								<div className="p-2 rounded-xl h-full bg-blue-500/10  border-blue-500/20 hidden sm:block">
+									<Wallet2 className="w-5 h-5 text-blue-500" />
+								</div>
+
+								<h3 className="lg:text-xl flex-1 self-center text-md font-bold text-t-text-primary tracking-tight">
 									Szczegóły Inwestycji
 								</h3>
-								<p className="text-xs sm:text-sm text-t-text-secondary">
-									Dokładna analiza wartości kapitału w czasie i historia
-									transakcji
-								</p>
 							</div>
+							<p className="text-xs flex-1 sm:text-sm text-t-text-secondary hidden sm:block">
+								Dokładna analiza wartości kapitału w czasie i historia
+								transakcji
+							</p>
 						</div>
 						{renderControls()}
 					</div>
 
 					{/* WYKRES */}
 					<div className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-xl flex flex-col">
-						<div className="flex-1 w-full bg-t-bg-panel rounded-lg pb-2 pt-2 relative">
+						<div className="flex-1 w-full bg-t-bg-panel rounded-lg pb-2 pt-2 relative ">
 							{chartContent}
 						</div>
 						{onRangeChange && (
-							<div className="flex items-center justify-center sm:justify-start gap-1.5 mt-3 pt-3 border-t border-t-border overflow-x-auto pb-1">
+							<div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-3 pt-3 border-t border-t-border overflow-x-auto pb-1">
 								{TIME_RANGES.map((range) => (
 									<div
 										key={range}

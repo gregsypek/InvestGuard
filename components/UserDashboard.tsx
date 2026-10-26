@@ -86,6 +86,7 @@ export function UserDashboard(props: UserDashboardProps) {
 		absoluteChartData,
 		benchmarkChartData,
 		portfoliosComparisonData,
+		portfolios,
 	} = useDashboardData(props);
 
 	const [portfolioPage, setPortfolioPage] = useState(0);
@@ -374,6 +375,9 @@ export function UserDashboard(props: UserDashboardProps) {
 								showBrush={true}
 								titleInside="Porównanie strategii"
 								subtitleInside={chartSubtitle}
+								portfolios={portfolios}
+								onPortfolioToggle={togglePortfolio}
+								activeIds={selectedIds}
 							/>
 						</div>
 					</SectionLayout>

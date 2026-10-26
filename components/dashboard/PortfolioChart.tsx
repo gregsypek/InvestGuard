@@ -30,6 +30,7 @@ import { APP_NAME } from "@/lib/constants";
 import { ChartContainer } from "../shared/ChartContainer";
 import { FilterBadge } from "../shared/FilterBadge";
 import Image from "next/image";
+import { PortfolioWithAssets } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
@@ -74,6 +75,9 @@ interface PortfolioChartProps {
 	showBrush?: boolean;
 	titleInside?: string;
 	subtitleInside?: string;
+	portfolios: PortfolioWithAssets[];
+	onPortfolioToggle?: (id: string) => void;
+	activeIds?: string[];
 }
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
@@ -95,7 +99,11 @@ export function PortfolioChart({
 	showBrush = true,
 	titleInside,
 	subtitleInside,
+	portfolios,
+	onPortfolioToggle,
+	activeIds = [],
 }: PortfolioChartProps) {
+	console.log("🚀 ~ PortfolioChart ~ portfolios:", portfolios);
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
 	const [clickedData, setClickedData] = useState<MergedDataPoint | null>(null);
@@ -239,10 +247,10 @@ export function PortfolioChart({
 	}
 
 	const trendBadge = (
-		<div className="flex flex-wrap items-center gap-3">
+		<div className="flex flex-wrap  justify-center md:justify-start items-center gap-2 md:gap-3">
 			<div
 				className={cn(
-					"flex items-center gap-1.5 rounded-full border px-2.5 py-1",
+					"flex items-center gap-1.5 rounded-full border px-1.5 sm:px-2.5 sm:py-1",
 					isPositive
 						? "bg-emerald-500/10 border-emerald-500/20"
 						: "bg-rose-500/10 border-rose-500/20",
@@ -276,7 +284,7 @@ export function PortfolioChart({
 						<span className="w-4 h-4 flex items-center justify-center rounded-full bg-[#9333ea] border-white border-2 text-[9px] font-bold text-white">
 							W
 						</span>{" "}
-						Wiele transakcji
+						Wiele <span className="hidden lg:inline">transakcji</span>
 					</div>
 				</div>
 			)}
@@ -398,32 +406,48 @@ export function PortfolioChart({
 
 	const chartContent = (
 		<ChartContainer className="h-full min-h-0 w-full flex-1 relative flex flex-col ">
-			<div className="absolute -top-2 w-full  left-5 pointer-events-none z-0 opacity-15 dark:opacity-10">
-				<div className="flex items-center gap-2 grayscale">
-					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center">
-						<Image
-							src="/logo-static.svg"
-							alt="Logo"
-							width={32}
-							height={32}
-							className="block dark:hidden object-contain"
-							style={{ width: "auto", height: "auto" }}
-						/>
-						<Image
-							src="/logo-light-static.svg"
-							alt="Logo"
-							width={32}
-							height={32}
-							className="hidden dark:block object-contain"
-							style={{ width: "auto", height: "auto" }}
-						/>
+			<div className="flex">
+				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 lg:top-[-8px] lg:left-5 lg:translate-x-0 lg:translate-y-0 w-auto lg:w-full pointer-events-none z-0 opacity-15 dark:opacity-10">
+					<div className="flex items-center justify-center lg:justify-start gap-2 grayscale">
+						<div className="w-24 h-24 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center">
+							<Image
+								src="/logo-static.svg"
+								alt="Logo"
+								width={96}
+								height={96}
+								className="block dark:hidden object-contain w-24 h-24 lg:w-8 lg:h-8"
+							/>
+							<Image
+								src="/logo-light-static.svg"
+								alt="Logo"
+								width={96}
+								height={96}
+								className="hidden dark:block object-contain w-24 h-24 lg:w-8 lg:h-8"
+							/>
+						</div>
+						<span className="text-xl font-black tracking-tighter hidden lg:inline-block transition-colors text-t-text-primary">
+							{APP_NAME}.
+						</span>
 					</div>
-					<span className="text-xl font-black tracking-tighter hidden lg:inline-block transition-colors text-t-text-primary">
-						{APP_NAME}.
-					</span>
+				</div>
+				<div className="justify-end flex flex-wrap w-full gap-2">
+					{portfolios?.map((p) => {
+						// 🚀 Sprawdzamy czy dany portfel (lub 'ALL') jest w tablicy aktywnych ID
+						const isActive =
+							activeIds.includes("ALL") || activeIds.includes(p.id);
+
+						return (
+							<FilterBadge
+								key={p.id}
+								id={p.id}
+								label={p.name}
+								isSelected={isActive}
+								onToggle={() => onPortfolioToggle?.(p.id)}
+							/>
+						);
+					})}
 				</div>
 			</div>
-
 			<div className="relative z-10 h-full w-full [&_*:focus]:outline-none flex flex-col">
 				<div className="w-full flex-1 min-h-0 border-b border-t-border-subtle pb-2 relative">
 					<ResponsiveContainer width="100%" height="100%">
@@ -434,8 +458,8 @@ export function PortfolioChart({
 							margin={{
 								top: 40,
 								// right: isMobile ? 85 : 100,
-								right: isMobile ? 30 : 50,
-								left: 25,
+								right: isMobile ? 30 : 40,
+								left: 20,
 								bottom: 0,
 							}}
 						>
@@ -672,8 +696,8 @@ export function PortfolioChart({
 							// 🚀 MARGINES RIGHT: Zsynchronizowany z górnym dla perfekcyjnej lini.
 							margin={{
 								top: 10,
-								right: isMobile ? 20 : 40,
-								left: 25,
+								right: isMobile ? 30 : 40,
+								left: 20,
 								bottom: 35,
 							}}
 						>
@@ -795,7 +819,7 @@ export function PortfolioChart({
 				{(titleInside || subtitleInside) && (
 					<div className="  flex justify-between flex-col md:items-start items-center pb-2  pointer-events-none bg-transparent rounded-lg">
 						{!isExpanded && titleInside && (
-							<h3 className="text-sm font-bold text-t-text-primary">
+							<h3 className="text-md font-bold text-t-text-primary">
 								{titleInside}
 							</h3>
 						)}
@@ -811,7 +835,12 @@ export function PortfolioChart({
 						)}
 					</div>
 				)}
-				<div className="flex flex-wrap items-center gap-2  justify-end ">
+				<div
+					className={cn(
+						"flex flex-wrap items-center gap-2 w-full  md:justify-end",
+						isExpanded ? "justify-end" : "justify-center ",
+					)}
+				>
 					{setMode && (
 						<div className="flex items-center gap-1">
 							<FilterBadge
@@ -886,54 +915,61 @@ export function PortfolioChart({
 							"radial-gradient(circle at 15% 10%, var(--theme-soft), transparent 45%)",
 					}}
 				/>
-				<div className="relative flex justify-between items-center mb-6">
-					<div className="flex items-start gap-3 flex-col sm:flex-row">
-						<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 hidden sm:block">
-							<Wallet2 className="w-5 h-5 text-blue-500" />
-						</div>
-						<div>
-							<h3 className="text-xl sm:text-2xl font-bold text-t-text-primary tracking-tight">
-								Szczegóły Inwestycji
-							</h3>
-							<p className="text-xs sm:text-sm text-t-text-secondary">
-								Dokładna analiza wartości kapitału w czasie i historia
-								transakcji
-							</p>
-						</div>
-					</div>
-					{renderControls()}
-				</div>
+
+				{/* 🚀 NAPRAWA: Ten div teraz otacza CAŁOŚĆ - i Header, i Wykres */}
 				<div
 					ref={chartRef}
-					className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-xl flex flex-col"
+					className="relative flex flex-col flex-1 min-h-0 w-full rounded-2xl p-2 md:p-4 bg-t-bg-base/30"
 				>
-					<div className="flex-1 w-full bg-t-bg-panel rounded-lg pb-2 pt-2 relative">
-						{chartContent}
-					</div>
-					{onRangeChange && (
-						<div className="flex items-center justify-center sm:justify-start gap-1.5 mt-3 pt-3 border-t border-t-border overflow-x-auto pb-1">
-							{TIME_RANGES.map((range) => (
-								<div
-									key={range}
-									className={cn(
-										!activeRange && "opacity-40 grayscale pointer-events-none",
-									)}
-								>
-									<FilterBadge
-										id={range}
-										label={range}
-										isSelected={activeRange === range}
-										onToggle={onRangeChange}
-									/>
-								</div>
-							))}
+					{/* HEADER */}
+					<div className="relative flex justify-between items-start mb-6">
+						<div className="flex items-start gap-3 flex-col sm:flex-row">
+							<div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 hidden sm:block">
+								<Wallet2 className="w-5 h-5 text-blue-500" />
+							</div>
+							<div>
+								<h3 className="text-xl sm:text-2xl font-bold text-t-text-primary tracking-tight">
+									Szczegóły Inwestycji
+								</h3>
+								<p className="text-xs sm:text-sm text-t-text-secondary">
+									Dokładna analiza wartości kapitału w czasie i historia
+									transakcji
+								</p>
+							</div>
 						</div>
-					)}
+						{renderControls()}
+					</div>
+
+					{/* WYKRES */}
+					<div className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-xl flex flex-col">
+						<div className="flex-1 w-full bg-t-bg-panel rounded-lg pb-2 pt-2 relative">
+							{chartContent}
+						</div>
+						{onRangeChange && (
+							<div className="flex items-center justify-center sm:justify-start gap-1.5 mt-3 pt-3 border-t border-t-border overflow-x-auto pb-1">
+								{TIME_RANGES.map((range) => (
+									<div
+										key={range}
+										className={cn(
+											!activeRange &&
+												"opacity-40 grayscale pointer-events-none",
+										)}
+									>
+										<FilterBadge
+											id={range}
+											label={range}
+											isSelected={activeRange === range}
+											onToggle={onRangeChange}
+										/>
+									</div>
+								))}
+							</div>
+						)}
+					</div>
 				</div>
 			</div>
 		);
 	}
-
 	return (
 		<div
 			ref={chartRef}

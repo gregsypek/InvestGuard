@@ -39,6 +39,7 @@ export function useDashboardData({
 	indexQuotes = {},
 	indexQuotesHistory = {},
 }: UseDashboardDataProps) {
+	console.log("🚀 ~ useDashboardData ~ portfolios:", portfolios);
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -541,5 +542,6 @@ export function useDashboardData({
 		absoluteChartData,
 		benchmarkChartData,
 		portfoliosComparisonData,
+		portfolios,
 	};
 }

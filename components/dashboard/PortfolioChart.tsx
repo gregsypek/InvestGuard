@@ -59,7 +59,6 @@ export interface MergedDataPoint extends ChartDataPoint {
 	sellEvent: number | null;
 	multiEvent: number | null;
 	txDetails: TransactionData[] | null;
-	lastValue: number | null;
 	drawdown: number;
 }
 
@@ -104,6 +103,26 @@ export function PortfolioChart({
 	const chartRef = useRef<HTMLDivElement>(null);
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
+
+	// 🚀 ZARZĄDZANIE STANEM BRUSHA - Inicjalizacja bezpośrednia
+	const [brushIndex, setBrushIndex] = useState({
+		start: 0,
+		end: data && data.length > 0 ? data.length - 1 : 0,
+	});
+
+	// Tworzymy unikalny klucz dla obecnego zestawu danych (ilość elementów + pierwsza data)
+	const currentDataKey =
+		data && data.length > 0 ? `${data.length}-${data[0].date}` : "empty";
+	const [prevDataKey, setPrevDataKey] = useState(currentDataKey);
+
+	// 🚀 Zgodnie z wytycznymi React: Aktualizacja stanu podczas renderowania (zamiast w useEffect)
+	if (currentDataKey !== prevDataKey) {
+		setPrevDataKey(currentDataKey);
+		setBrushIndex({
+			start: 0,
+			end: data && data.length > 0 ? data.length - 1 : 0,
+		});
+	}
 
 	useEffect(() => {
 		const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -190,7 +209,6 @@ export function PortfolioChart({
 				sellEvent: hasSell ? point.value : null,
 				multiEvent: isMulti ? point.value : null,
 				txDetails: periodTxs.length > 0 ? periodTxs : null,
-				lastValue: index === data.length - 1 ? point.value : null,
 				drawdown,
 			};
 		});
@@ -284,12 +302,10 @@ export function PortfolioChart({
 					}
 				}}
 			>
-				{/* 🚀 POTĘŻNY HITBOX - "pointerEvents: all" wymusza klikalność całej powierzchni */}
 				<circle
 					cx={cx}
 					cy={cy}
 					r={14}
-					// fill={color}
 					fill="rgba(255, 255, 255, 0)"
 					pointerEvents="all"
 				/>
@@ -319,41 +335,48 @@ export function PortfolioChart({
 		);
 	};
 
+	// 🚀 INTELIGENTNA PLAKIETKA (Rysowana po prawej stronie osi)
 	const LastValuePill = (props: any) => {
-		const { cx, cy, value } = props;
-		if (!cx || !cy || value == null) return null;
+		const { x, y, value, index } = props;
+
+		// Renderuj pigułkę tylko dla absolutnie ostatniego punktu objętego przez aktualny Brush!
+		if (index !== brushIndex.end || x == null || y == null || value == null)
+			return null;
+
 		const isPercentage = mode === "PERCENTAGE";
 		const displayValue = isPercentage
 			? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
 			: `${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(convertPLN(value))} ${currencySymbol}`;
-		// 🚀 ZMIANA: Dynamiczna szerokość dopasowana do ilości znaków w tekście + margines bezpieczeństwa
+
 		const rectWidth = Math.max(
-			isPercentage ? 60 : 80,
+			isPercentage ? 60 : 70,
 			displayValue.length * 7 + 16,
 		);
 		const rectHeight = 22;
+
 		return (
 			<g style={{ outline: "none" }}>
+				{/* Linia narysowana w PRAWĄ stronę, poza granicą wykresu (w marginesie) */}
 				<line
-					x1={cx}
-					y1={cy}
-					x2={cx - 12}
-					y2={cy}
+					x1={x}
+					y1={y}
+					x2={x + 12}
+					y2={y}
 					stroke="var(--theme-primary)"
 					strokeWidth={1.5}
 					strokeDasharray="2 2"
 				/>
 				<rect
-					x={cx - 12 - rectWidth}
-					y={cy - rectHeight / 2}
+					x={x + 12}
+					y={y - rectHeight / 2}
 					width={rectWidth}
 					height={rectHeight}
 					rx={6}
 					fill="var(--theme-primary)"
 				/>
 				<text
-					x={cx - 12 - rectWidth / 2}
-					y={cy + 3.5}
+					x={x + 12 + rectWidth / 2}
+					y={y + 3.5}
 					textAnchor="middle"
 					fill="#fff"
 					fontSize={10}
@@ -362,8 +385,8 @@ export function PortfolioChart({
 					{displayValue}
 				</text>
 				<circle
-					cx={cx}
-					cy={cy}
+					cx={x}
+					cy={y}
 					r={4}
 					fill="var(--theme-primary)"
 					stroke="var(--t-bg-panel)"
@@ -379,7 +402,7 @@ export function PortfolioChart({
 				<div className="flex items-center gap-2 grayscale">
 					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center">
 						<Image
-							src="/logo.svg"
+							src="/logo-static.svg"
 							alt="Logo"
 							width={32}
 							height={32}
@@ -387,7 +410,7 @@ export function PortfolioChart({
 							style={{ width: "auto", height: "auto" }}
 						/>
 						<Image
-							src="/logo-light.svg"
+							src="/logo-light-static.svg"
 							alt="Logo"
 							width={32}
 							height={32}
@@ -402,16 +425,16 @@ export function PortfolioChart({
 			</div>
 
 			<div className="relative z-10 h-full w-full [&_*:focus]:outline-none flex flex-col">
-				{/* 🚀 flex-1 sprawia, że główny wykres zawsze zajmuje całą resztę dostępnej wysokości */}
 				<div className="w-full flex-1 min-h-0 border-b border-t-border-subtle pb-2 relative">
 					<ResponsiveContainer width="100%" height="100%">
-						{/* 🚀 Usunąłem błędy generujące akcje po pustym kliknięciu w wykres */}
 						<ComposedChart
 							data={mergedData}
 							syncId="portfolioSync"
+							// 🚀 WIEKSZY PRAWY MARGINES - Otwiera miejsce dla plakietki by nie ucinała jej krawędź
 							margin={{
 								top: 40,
-								right: isMobile ? 10 : 20,
+								// right: isMobile ? 85 : 100,
+								right: isMobile ? 30 : 50,
 								left: 25,
 								bottom: 0,
 							}}
@@ -458,7 +481,6 @@ export function PortfolioChart({
 								<ReferenceLine y={0} stroke="var(--t-border)" strokeWidth={1} />
 							)}
 
-							{/* 🚀 Rozwiązanie UCIEKANIA Tooltipa - zmiana pointerEvents na 'none' */}
 							<Tooltip
 								content={<CustomTooltip mode={mode} />}
 								offset={15}
@@ -478,13 +500,16 @@ export function PortfolioChart({
 								fillOpacity={1}
 								fill="transparent"
 								filter="url(#glowBlue)"
-								pointerEvents="none" /* 🚀 TO ROZWIĄZUJE PROBLEM: linia przepuszcza kliknięcia na wylot */
+								pointerEvents="none"
 								activeDot={{
 									r: 6,
 									fill: "var(--theme-primary)",
 									stroke: "var(--t-bg-panel)",
 									strokeWidth: 2,
+									pointerEvents:
+										"none" /* 🚀 MAGIA: Kółko wraca, ale przepuszcza Twoje kliknięcia do spodu! */,
 								}}
+								label={(props: any) => <LastValuePill {...props} />}
 							/>
 							{mode === "VALUE" && (
 								<Line
@@ -496,7 +521,7 @@ export function PortfolioChart({
 									dot={false}
 									activeDot={false}
 									opacity={0.6}
-									pointerEvents="none" /* 🚀 Dodane również tutaj dla pewności */
+									pointerEvents="none"
 								/>
 							)}
 							{transactions.length > 0 && (
@@ -517,15 +542,9 @@ export function PortfolioChart({
 									shape={(props: any) => <EventLabel {...props} type="MULTI" />}
 								/>
 							)}
-							<Scatter
-								dataKey="lastValue"
-								shape={(props: any) => <LastValuePill {...props} />}
-								isAnimationActive={false}
-							/>
 						</ComposedChart>
 					</ResponsiveContainer>
 
-					{/* 🚀 ZABLOKOWANY MODAL - BEZ ROZMYCIA TŁA */}
 					{clickedData && (
 						<div
 							className="absolute inset-0 z-[2000] flex items-center justify-center pointer-events-auto bg-t-bg-base/70 rounded-lg"
@@ -644,17 +663,18 @@ export function PortfolioChart({
 					)}
 				</div>
 
-				{/* 🚀 Sztywna wysokość dla wykresu obsunięcia - reszta idzie dla głównego */}
 				<div className="w-full h-[120px] shrink-0 pt-2">
 					<ResponsiveContainer width="100%" height="100%">
 						<AreaChart
 							data={mergedData}
 							syncId="portfolioSync"
+							// 🚀 MARGINES BOTTOM: 35 tworzy świetną przerwę dla Brusha poniżej wykresu!
+							// 🚀 MARGINES RIGHT: Zsynchronizowany z górnym dla perfekcyjnej lini.
 							margin={{
 								top: 10,
-								right: isMobile ? 10 : 20,
+								right: isMobile ? 20 : 40,
 								left: 25,
-								bottom: 20,
+								bottom: 35,
 							}}
 						>
 							<CartesianGrid
@@ -709,14 +729,54 @@ export function PortfolioChart({
 									dataKey="date"
 									height={24}
 									stroke="var(--t-text-tertiary)"
-									fill="var(--theme-border)" // here
+									fill="transparent"
+									// 🚀 AKTUALIZACJA STANU PRZY ZOOMOWANIU
+									onChange={(e) => {
+										if (
+											e &&
+											typeof e.startIndex === "number" &&
+											typeof e.endIndex === "number"
+										) {
+											setBrushIndex({ start: e.startIndex, end: e.endIndex });
+										}
+									}}
 									tickFormatter={(val) =>
 										new Date(val).toLocaleDateString("pl-PL", {
 											month: "short",
 											year: "2-digit",
 										})
 									}
-									className="mt-2" // doesn't work
+									// 🚀 CUSTOMOWY UI DLA UCHWYTÓW (Z zaokrągleniami)
+									traveller={(props: any) => {
+										const { x, y, width, height } = props;
+										return (
+											<g
+												transform={`translate(${x}, ${y})`}
+												className="cursor-ew-resize"
+											>
+												<rect
+													x={0}
+													y={0}
+													width={width}
+													height={height}
+													rx={4}
+													fill="var(--t-text-tertiary)"
+													// fill="var(--t-bg-base)"
+													strokeLinecap="round"
+												/>
+												<line
+													x1={width / 2}
+													y1={height * 0.25}
+													x2={width / 2}
+													y2={height * 0.75}
+													stroke="var(--t-bg-base)"
+													// stroke="var(--t-text-tertiary)"
+													strokeWidth={2}
+													// strokeLinecap="round"
+												/>
+											</g>
+										);
+									}}
 								/>
 							)}
 						</AreaChart>
@@ -733,12 +793,6 @@ export function PortfolioChart({
 		<div className="flex flex-col  px-6 z-20 mb-2 sm:mb-4 w-full gap-3">
 			<div className="flex flex-col items-center md:flex-row justify-between w-full">
 				{(titleInside || subtitleInside) && (
-					// <div
-					// 	className={cn(
-					// 		"flex justify-between  md:items-start items-center   pointer-events-none bg-transparent  p-2 rounded-lg",
-					// 		isExpanded && "md:flex-row flex-1",
-					// 	)}
-					// >
 					<div className="  flex justify-between flex-col md:items-start items-center pb-2  pointer-events-none bg-transparent rounded-lg">
 						{!isExpanded && titleInside && (
 							<h3 className="text-sm font-bold text-t-text-primary">
@@ -759,7 +813,7 @@ export function PortfolioChart({
 				)}
 				<div className="flex flex-wrap items-center gap-2  justify-end ">
 					{setMode && (
-						<div className="flex items-center gap-1 border border-t-border rounded-lg p-1 shadow-sm">
+						<div className="flex items-center gap-1">
 							<FilterBadge
 								id={currencySymbol}
 								label={currencySymbol}
@@ -775,7 +829,7 @@ export function PortfolioChart({
 						</div>
 					)}
 					{setDataMode && (
-						<div className="flex items-center gap-1 border border-t-border rounded-lg p-1 shadow-sm">
+						<div className="flex items-center gap-1  ">
 							<FilterBadge
 								id={currencySymbol}
 								label="Real"
@@ -849,7 +903,6 @@ export function PortfolioChart({
 					</div>
 					{renderControls()}
 				</div>
-				{/* 🚀 Przeniesiony chartRef wyżej */}
 				<div
 					ref={chartRef}
 					className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-xl flex flex-col"
@@ -913,9 +966,6 @@ export function PortfolioChart({
 	);
 }
 
-// ----------------------------------------------------------------------
-// CZYSTY TOOLTIP (BEZ MOŻLIWOŚCI KLIKANIA I ZNIESZCZENIA EKRANU)
-// ----------------------------------------------------------------------
 interface TooltipPayloadItem {
 	dataKey: string;
 	value: number;
@@ -1019,7 +1069,6 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 					)}
 				</div>
 
-				{/* 🚀 Logika dla zdarzeń (1 od razu szczegóły, >1 zachęta do kliknięcia) */}
 				{totalTxs === 1 && (
 					<div className="mt-3 pt-3 border-t border-t-border-subtle flex flex-col gap-1.5">
 						<span className="text-[9px] font-black text-t-text-tertiary uppercase tracking-widest mb-1">

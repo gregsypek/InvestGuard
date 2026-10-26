@@ -3,13 +3,8 @@
 import {
 	Activity,
 	Banknote,
-	Calendar,
-	ChevronDown,
-	ChevronLeft,
-	ChevronRight,
 	Globe,
 	LineChart,
-	Loader2,
 	RefreshCw,
 	Settings,
 	WalletCards,
@@ -17,12 +12,9 @@ import {
 import { SimulatedSnapshot, useDashboardData } from "./ui/useDashboardData";
 import { cn, getStockLogo } from "@/lib/utils";
 import { differenceInMinutes, format } from "date-fns";
-import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useMemo, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
-import { DatePickerWithRange } from "./shared/DatePickerWithRange";
-import { FilterBadge } from "./shared/FilterBadge";
 import { GlobalDashboardHeader } from "./dashboard/GlobalDashboardHeader";
 import { PortfolioBenchmarkChart } from "./dashboard/PortfolioBenchmarkChart";
 import { PortfolioChart } from "./dashboard/PortfolioChart";
@@ -31,12 +23,12 @@ import { PortfoliosComparisonChart } from "./dashboard/PortfoliosComparisonChart
 import { PremiumMarketCard } from "./home/PremiumMarketCard";
 import { SafeActionButton } from "./ui/SafeActionButton";
 import { SectionLayout } from "./shared/SectionLayout";
+import { getCurrencySymbol } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 import { refreshPortfolioPrices } from "@/lib/actions/refresh-prices";
 import { toast } from "sonner";
 import { useChartContext } from "./providers/ChartProvider";
 
-const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
 const GLOBAL_INDICES_MAP: Record<string, string> = {
 	SP500: "S&P 500",
 	NASDAQ: "NASDAQ 100",
@@ -59,23 +51,18 @@ interface UserDashboardProps {
 }
 
 export function UserDashboard(props: UserDashboardProps) {
-	const { currency, convertPLN } = useChartContext();
+	const { currency } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
 	const {
-		isPending,
 		dataMode,
 		setDataMode,
 		chartMode,
 		setChartMode,
 		selectedIds,
 		activeRange,
-		fromDate,
-		toDate,
 		togglePortfolio,
 		handleRangeChange,
-		handleDateRangeSelect,
-		isRangeDisabled,
 		filteredTransactions,
 		totalInvested,
 		totalCurrent,
@@ -86,15 +73,24 @@ export function UserDashboard(props: UserDashboardProps) {
 		absoluteChartData,
 		benchmarkChartData,
 		portfoliosComparisonData,
-		portfolios,
 	} = useDashboardData(props);
 
-	const [portfolioPage, setPortfolioPage] = useState(0);
 	const [itemsPerPage, setItemsPerPage] = useState(3);
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const isPremium = props.role === "ADMIN" || props.role === "SUBSCRIBER";
-	const [isMobileTimeOpen, setIsMobileTimeOpen] = useState(false);
 	const [visibleAssetsCount, setVisibleAssetsCount] = useState(6);
+
+	// Taby analityczne
+	const [activeChartTab, setActiveChartTab] = useState<
+		"PORTFOLIO" | "DAILY_PNL" | "COMPARISON" | "BENCHMARK"
+	>("PORTFOLIO");
+
+	const CHART_TABS = [
+		{ id: "PORTFOLIO", icon: LineChart, label: "Wartość Kapitału" },
+		{ id: "DAILY_PNL", icon: Banknote, label: "Wynik Dzienny" },
+		{ id: "COMPARISON", icon: WalletCards, label: "Strategie" },
+		{ id: "BENCHMARK", icon: Globe, label: "Rynek" },
+	] as const;
 
 	const handleGlobalRefresh = async () => {
 		setIsRefreshing(true);
@@ -129,21 +125,6 @@ export function UserDashboard(props: UserDashboardProps) {
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
-	const allPortfolioOptions = useMemo(() => {
-		return [
-			{ id: "ALL", name: "Wszystkie" },
-			...props.portfolios.map((p) => ({ id: p.id, name: p.name })),
-		];
-	}, [props.portfolios]);
-
-	const totalPages = Math.ceil(allPortfolioOptions.length / itemsPerPage);
-	const safePortfolioPage =
-		totalPages > 0 ? Math.min(portfolioPage, totalPages - 1) : 0;
-	const visiblePortfolios = allPortfolioOptions.slice(
-		safePortfolioPage * itemsPerPage,
-		(safePortfolioPage + 1) * itemsPerPage,
-	);
-
 	const isRateLimited =
 		!isPremium && props.lastUpdated
 			? differenceInMinutes(new Date(), new Date(props.lastUpdated)) < 6 * 60
@@ -159,7 +140,6 @@ export function UserDashboard(props: UserDashboardProps) {
 	}, [selectedIds, props.portfolios]);
 
 	const chartSubtitle = `Zakres: ${activeRange} • ${selectedPortfolioNames} • Oś Y przedstawia wynik w ${currencySymbol}`;
-	// const chartSubtitle = `Zakres: ${activeRange} • ${selectedPortfolioNames}\nOś Y przedstawia wynik w ${currencySymbol}`;
 
 	let tooltipText = "Odśwież wyceny";
 	if (isPremium) tooltipText += " (Brak limitu)";
@@ -179,13 +159,13 @@ export function UserDashboard(props: UserDashboardProps) {
 			/>
 
 			{/* =========================================
-                 RADAR RYNKOWY (Utrzymujemy stary design bo ma ikony itd)       
+                 RADAR RYNKOWY (Z KARTAMI KLIKALNYMI)       
             ========================================= */}
 			<SectionLayout
 				title="Radar Rynkowy"
 				titleIcon={Activity}
 				subtitle="Śledź kluczowe wskaźniki"
-				description="Zestawienie indeksów i walorów z Twojego portfela."
+				description="Zestawienie indeksów i walorów z Twojego portfela. Kliknij w wybraną kartę, aby otworzyć szczegółowy wykres."
 				action={
 					<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 w-full sm:w-auto">
 						{props.lastUpdated && (
@@ -238,13 +218,20 @@ export function UserDashboard(props: UserDashboardProps) {
 										.sort()
 										.map((dateKey) => historyObject[dateKey]);
 									return (
-										<PremiumMarketCard
+										<div
 											key={indexId}
-											name={GLOBAL_INDICES_MAP[indexId] || indexId}
-											change={changeValue}
-											historyData={historyArray}
-											logo={getStockLogo(indexId)}
-										/>
+											onClick={() =>
+												toast.info(`Ładowanie wykresu dla ${indexId}...`)
+											}
+											className="cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95"
+										>
+											<PremiumMarketCard
+												name={GLOBAL_INDICES_MAP[indexId] || indexId}
+												change={changeValue}
+												historyData={historyArray}
+												logo={getStockLogo(indexId)}
+											/>
+										</div>
 									);
 								})}
 							</div>
@@ -253,17 +240,22 @@ export function UserDashboard(props: UserDashboardProps) {
 					<div className="flex-1">
 						<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
 							{observedAssets.length > 0 ? (
-								observedAssets
-									.slice(0, visibleAssetsCount)
-									.map((asset) => (
+								observedAssets.slice(0, visibleAssetsCount).map((asset) => (
+									<div
+										key={asset.id}
+										onClick={() =>
+											toast.info(`Ładowanie wykresu dla ${asset.ticker}...`)
+										}
+										className="cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95"
+									>
 										<PremiumMarketCard
-											key={asset.id}
 											name={asset.name}
 											ticker={asset.ticker}
 											change={asset.dailyChange || 0}
 											logo={getStockLogo(asset.ticker ?? "")}
 										/>
-									))
+									</div>
+								))
 							) : (
 								<div className="col-span-full flex flex-col items-center justify-center py-8 px-4 text-center border border-dashed rounded-xl border-t-border bg-t-bg-base/50">
 									<p className="text-xs font-bold text-t-text-secondary mb-1">
@@ -307,138 +299,121 @@ export function UserDashboard(props: UserDashboardProps) {
 			</SectionLayout>
 
 			{/* =========================================
-                 PIĘKNE KARTY WYKRESÓW      
-            ========================================= */}
-			<div className="relative space-y-8 mt-8 ">
-				{/* <SectionLayout
-					title="Analiza Wykresowa"
+				CENTRUM ANALIZY (TAB VIEW)      
+			========================================= */}
+			<div className="relative space-y-8 mt-12">
+				<SectionLayout
+					title="Centrum Analizy"
 					titleIcon={LineChart}
-					subtitle="Sprawdź wyniki swoich inwestycji w czasie"
-					description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym, a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
+					subtitle="Szczegółowe dane o Twoich inwestycjach"
+					description="Przełączaj się między modułami analitycznymi za pomocą poniższych ikon, aby zbadać różne aspekty swojego portfela."
 				>
-					<div className="h-[450px] w-full mt-6 flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-sm gap-4">
-						<PortfolioChart
-							data={portfolioChartData}
-							transactions={filteredTransactions}
-							mode={chartMode}
-							setMode={setChartMode}
-							dataMode={dataMode}
-							setDataMode={setDataMode}
-							activeRange={activeRange}
-							onRangeChange={handleRangeChange}
-						/>
-				{/* =========================================
-            WYKRESY       
-        ========================================= */}
-				<div className="relative space-y-8">
-					{/* {isPending && (
-						<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-3xl transition-all duration-300">
-							<div className="sticky top-[40vh] flex items-center justify-center">
-								<div className="flex flex-col items-center gap-3 bg-slate-900/90 border border-slate-700/50 p-4 rounded-2xl shadow-2xl">
-									<Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-									<span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-										Przeliczanie...
-									</span>
-								</div>
+					{/* NAWIGACJA Z IKONAMI POŁĄCZONYMI LINIĄ */}
+					<div className="relative w-full max-w-3xl mx-auto my-8 md:my-10 px-4 sm:px-12">
+						{/* Pozioma linia łącząca (tło) */}
+						<div className="absolute top-[24px] left-[10%] right-[10%] h-[2px] bg-t-border-subtle z-0" />
+
+						<div className="relative z-10 flex justify-between items-start">
+							{CHART_TABS.map((tab) => {
+								const isActive = activeChartTab === tab.id;
+								return (
+									<button
+										key={tab.id}
+										onClick={() => setActiveChartTab(tab.id)}
+										className="group flex flex-col items-center gap-3 w-1/4 outline-none"
+									>
+										{/* Okrągła ikona */}
+										<div
+											className={cn(
+												"w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300",
+												isActive
+													? "bg-blue-500 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]"
+													: "bg-t-bg-panel border-t-border text-t-text-tertiary group-hover:border-blue-500/50 group-hover:text-blue-400",
+											)}
+										>
+											<tab.icon className="w-5 h-5" />
+										</div>
+										{/* Etykieta */}
+										<div className="flex flex-col items-center text-center">
+											<span
+												className={cn(
+													"text-[11px] sm:text-xs font-bold transition-colors uppercase tracking-wider",
+													isActive
+														? "text-t-text-primary"
+														: "text-t-text-tertiary group-hover:text-t-text-secondary",
+												)}
+											>
+												{tab.label}
+											</span>
+										</div>
+									</button>
+								);
+							})}
+						</div>
+					</div>
+
+					{/* KONTENER NA AKTYWNY WYKRES */}
+					<div className="mt-8 transition-all duration-300 animate-in fade-in zoom-in-95">
+						{activeChartTab === "PORTFOLIO" && (
+							<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+								<PortfolioChart
+									data={portfolioChartData}
+									transactions={filteredTransactions}
+									mode={chartMode}
+									setMode={setChartMode}
+									dataMode={dataMode}
+									setDataMode={setDataMode}
+									activeRange={activeRange}
+									onRangeChange={handleRangeChange}
+									showBrush={true}
+									titleInside="Analiza Wartości Kapitału"
+									subtitleInside={chartSubtitle}
+									portfolios={props.portfolios}
+									onPortfolioToggle={togglePortfolio}
+									activeIds={selectedIds}
+								/>
 							</div>
-						</div>
-					)} */}
+						)}
 
-					<SectionLayout
-						title="Nominalny Wynik Dzienny"
-						titleIcon={Banknote}
-						subtitle="Faktyczna kwota wypracowana na rynku"
-						description="Wykres przedstawia dokładną kwotę w walucie, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują Twoje wpłaty i wypłaty z tego dnia, pokazując czystą skuteczność portfela."
-					>
-						<div className="h-96 mt-6">
-							<AbsoluteDailyPnLChart key={chartMode} data={absoluteChartData} />
-						</div>
-					</SectionLayout>
+						{activeChartTab === "DAILY_PNL" && (
+							<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+								<AbsoluteDailyPnLChart
+									key={chartMode}
+									data={absoluteChartData}
+								/>
+							</div>
+						)}
 
-					<SectionLayout
-						title="Analiza Wykresowa"
-						titleIcon={LineChart}
-						subtitle="Sprawdź wyniki swoich inwestycji w czasie"
-						description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym, a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
-					>
-						{/* WAŻNE: Dodana flaga 'relative' i poprawione paddingi dla idealnego wpasowania */}
-						<div className="relative h-[750px] w-full mt-6 flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
-							<PortfolioChart
-								data={portfolioChartData}
-								transactions={filteredTransactions}
-								mode={chartMode}
-								setMode={setChartMode}
-								dataMode={dataMode}
-								setDataMode={setDataMode}
-								activeRange={activeRange}
-								onRangeChange={handleRangeChange}
-								showBrush={true}
-								titleInside="Porównanie strategii"
-								subtitleInside={chartSubtitle}
-								portfolios={portfolios}
-								onPortfolioToggle={togglePortfolio}
-								activeIds={selectedIds}
-							/>
-						</div>
-					</SectionLayout>
+						{activeChartTab === "COMPARISON" && (
+							<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+								<PortfoliosComparisonChart
+									key={`compare-${chartMode}`}
+									data={portfoliosComparisonData}
+									portfolios={props.portfolios}
+									activeIds={selectedIds}
+									chartMode={chartMode}
+									setChartMode={setChartMode}
+									dataMode={dataMode}
+									setDataMode={setDataMode}
+									activeRange={activeRange}
+									onRangeChange={handleRangeChange}
+									titleInside="Zbiorczy wykres portfeli"
+									subtitleInside={chartSubtitle}
+								/>
+							</div>
+						)}
 
-					{/* <SectionLayout
-						title="Wyścig Portfeli"
-						titleIcon={WalletCards}
-						subtitle="Porównanie Strategii"
-						description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w ${currencySymbol}.`}
-					>
-						<div className="h-96 mt-6">
-							<PortfoliosComparisonChart
-								key={`compare-${chartMode}`}
-								data={portfoliosComparisonData}
-								portfolios={props.portfolios}
-								activeIds={selectedIds}
-								chartMode={chartMode}
-							/>
-						</div>
-					</SectionLayout> */}
-
-					<SectionLayout
-						title="Porównanie Strategii"
-						titleIcon={WalletCards}
-						subtitle="Ścigające się portfele z osobna"
-						description="Włączaj i wyłączaj poszczególne portfele w legendzie pod wykresem, aby bezpośrednio porównać ich wyniki i sprawdzić, która strategia radzi sobie najlepiej."
-					>
-						<div className="relative h-[600px] w-full mt-6 flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
-							<PortfoliosComparisonChart
-								key={`compare-${chartMode}`}
-								data={portfoliosComparisonData}
-								portfolios={props.portfolios}
-								activeIds={selectedIds}
-								chartMode={chartMode}
-								setChartMode={setChartMode}
-								dataMode={dataMode}
-								setDataMode={setDataMode}
-								activeRange={activeRange}
-								onRangeChange={handleRangeChange}
-								titleInside="Zbiorczy wykres portfeli"
-								// 								subtitleInside="Zakres: 5Y + Wszystkie portfele
-								// Oś Y przedstawia wynik w PLN"
-								subtitleInside={chartSubtitle}
-							/>
-						</div>
-					</SectionLayout>
-					<SectionLayout
-						title="Porównanie z Rynkiem"
-						titleIcon={Globe}
-						subtitle="Portfel vs Indeksy"
-						description="Wykres przedstawia skumulowaną stopę zwrotu Twojego portfela w wybranym czasie, porównaną z wybranymi przez Ciebie indeksami światowymi. Wszystkie wartości startują od zera, co pozwala na obiektywną ocenę siły Twoich inwestycji względem szerokiego rynku."
-					>
-						<div className="h-96 mt-6">
-							<PortfolioBenchmarkChart
-								key={chartMode}
-								data={benchmarkChartData}
-								userIndices={props.userIndices || []}
-							/>
-						</div>
-					</SectionLayout>
-				</div>
+						{activeChartTab === "BENCHMARK" && (
+							<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+								<PortfolioBenchmarkChart
+									key={chartMode}
+									data={benchmarkChartData}
+									userIndices={props.userIndices || []}
+								/>
+							</div>
+						)}
+					</div>
+				</SectionLayout>
 			</div>
 		</div>
 	);

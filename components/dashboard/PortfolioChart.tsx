@@ -241,7 +241,7 @@ export function PortfolioChart({
 				</span>
 			</div>
 			{transactions.length > 0 && (
-				<div className="hidden md:flex items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+				<div className="flex items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 					<div className="flex items-center gap-1.5">
 						<span className="w-4 h-4 flex items-center justify-center rounded-full bg-[#10b981] border-white border-2 text-[9px] font-bold text-white">
 							K
@@ -374,23 +374,8 @@ export function PortfolioChart({
 	};
 
 	const chartContent = (
-		<ChartContainer className="h-full min-h-0 w-full flex-1 relative flex flex-col">
-			{(titleInside || subtitleInside) && (
-				<div className="absolute top-2 left-2 z-20 pointer-events-none max-w-md bg-t-bg-panel/50  p-2 rounded-lg">
-					{titleInside && (
-						<h3 className="text-sm font-bold text-t-text-primary">
-							{titleInside}
-						</h3>
-					)}
-					{subtitleInside && (
-						<p className="text-[10px] text-t-text-tertiary mt-1 leading-tight whitespace-pre-wrap">
-							{subtitleInside}
-						</p>
-					)}
-				</div>
-			)}
-
-			<div className="absolute -bottom-18 right-2 pointer-events-none z-0 opacity-15 dark:opacity-10">
+		<ChartContainer className="h-full min-h-0 w-full flex-1 relative flex flex-col ">
+			<div className="absolute -top-2 w-full  left-5 pointer-events-none z-0 opacity-15 dark:opacity-10">
 				<div className="flex items-center gap-2 grayscale">
 					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center">
 						<Image
@@ -731,6 +716,7 @@ export function PortfolioChart({
 											year: "2-digit",
 										})
 									}
+									className="mt-2" // doesn't work
 								/>
 							)}
 						</AreaChart>
@@ -744,67 +730,95 @@ export function PortfolioChart({
 	);
 
 	const renderControls = () => (
-		<div className="flex flex-col lg:flex-row lg:justify-between lg:items-start z-20 mb-2 sm:mb-4 w-full gap-3">
-			<div>{trendBadge}</div>
-			<div className="flex flex-wrap items-center gap-2">
-				{setMode && (
-					<div className="flex items-center gap-1 border border-t-border rounded-lg p-1 shadow-sm">
-						<FilterBadge
-							id={currencySymbol}
-							label={currencySymbol}
-							isSelected={mode === "VALUE"}
-							onToggle={() => setMode("VALUE")}
-						/>
-						<FilterBadge
-							id={currencySymbol}
-							label="%"
-							isSelected={mode === "PERCENTAGE"}
-							onToggle={() => setMode("PERCENTAGE")}
-						/>
+		<div className="flex flex-col  px-6 z-20 mb-2 sm:mb-4 w-full gap-3">
+			<div className="flex flex-col items-center md:flex-row justify-between w-full">
+				{(titleInside || subtitleInside) && (
+					// <div
+					// 	className={cn(
+					// 		"flex justify-between  md:items-start items-center   pointer-events-none bg-transparent  p-2 rounded-lg",
+					// 		isExpanded && "md:flex-row flex-1",
+					// 	)}
+					// >
+					<div className="  flex justify-between flex-col md:items-start items-center pb-2  pointer-events-none bg-transparent rounded-lg">
+						{!isExpanded && titleInside && (
+							<h3 className="text-sm font-bold text-t-text-primary">
+								{titleInside}
+							</h3>
+						)}
+						{subtitleInside && (
+							<p
+								className={cn(
+									"text-xs flex-1 self-end font-semibold text-t-text-tertiary mt-1 leading-tight",
+									!isExpanded && "whitespace-pre-wrap, text-[10px]",
+								)}
+							>
+								{subtitleInside}
+							</p>
+						)}
 					</div>
 				)}
-				{setDataMode && (
-					<div className="flex items-center gap-1 border border-t-border rounded-lg p-1 shadow-sm">
-						<FilterBadge
-							id={currencySymbol}
-							label="Real"
-							isSelected={dataMode === "REAL"}
-							onToggle={() => setDataMode("REAL")}
-						/>
-						<FilterBadge
-							id={currencySymbol}
-							label="Sym"
-							isSelected={dataMode === "SIMULATED"}
-							onToggle={() => setDataMode("SIMULATED")}
-						/>
+				<div className="flex flex-wrap items-center gap-2  justify-end ">
+					{setMode && (
+						<div className="flex items-center gap-1 border border-t-border rounded-lg p-1 shadow-sm">
+							<FilterBadge
+								id={currencySymbol}
+								label={currencySymbol}
+								isSelected={mode === "VALUE"}
+								onToggle={() => setMode("VALUE")}
+							/>
+							<FilterBadge
+								id={currencySymbol}
+								label="%"
+								isSelected={mode === "PERCENTAGE"}
+								onToggle={() => setMode("PERCENTAGE")}
+							/>
+						</div>
+					)}
+					{setDataMode && (
+						<div className="flex items-center gap-1 border border-t-border rounded-lg p-1 shadow-sm">
+							<FilterBadge
+								id={currencySymbol}
+								label="Real"
+								isSelected={dataMode === "REAL"}
+								onToggle={() => setDataMode("REAL")}
+							/>
+							<FilterBadge
+								id={currencySymbol}
+								label="Sym"
+								isSelected={dataMode === "SIMULATED"}
+								onToggle={() => setDataMode("SIMULATED")}
+							/>
+						</div>
+					)}
+
+					<div className="w-px h-5 bg-t-border mx-1 hidden sm:block" />
+					<div className="flex items-center gap-1">
+						<button
+							onClick={handleDownload}
+							className="flex items-center gap-1.5 px-1 xl:px-3 py-1 xl:py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400"
+						>
+							<Camera className="w-4 h-4" />
+						</button>
+						<button
+							onClick={() => setIsExpanded(!isExpanded)}
+							className={cn(
+								"flex items-center gap-1.5 px-1 xl:px-3 py-1 xl:py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer",
+								isExpanded
+									? "bg-theme-soft text-theme-primary border-theme-border shadow-sm hover:opacity-80 brightness-75"
+									: "text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400",
+							)}
+							title={isExpanded ? "Zwiń wykres" : "Powiększ wykres"}
+						>
+							{isExpanded ? (
+								<Minimize2 className="w-4 h-4" />
+							) : (
+								<Maximize2 className="w-4 h-4" />
+							)}
+						</button>
 					</div>
-				)}
-				<div className="w-px h-5 bg-t-border mx-1 hidden sm:block" />
-				<div className="flex items-center gap-1">
-					<button
-						onClick={handleDownload}
-						className="flex items-center gap-1.5 px-1 xl:px-3 py-1 xl:py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400"
-					>
-						<Camera className="w-4 h-4" />
-					</button>
-					<button
-						onClick={() => setIsExpanded(!isExpanded)}
-						className={cn(
-							"flex items-center gap-1.5 px-1 xl:px-3 py-1 xl:py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer",
-							isExpanded
-								? "bg-theme-soft text-theme-primary border-theme-border shadow-sm hover:opacity-80 brightness-75"
-								: "text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400",
-						)}
-						title={isExpanded ? "Zwiń wykres" : "Powiększ wykres"}
-					>
-						{isExpanded ? (
-							<Minimize2 className="w-4 h-4" />
-						) : (
-							<Maximize2 className="w-4 h-4" />
-						)}
-					</button>
 				</div>
 			</div>
+			<div>{trendBadge}</div>
 		</div>
 	);
 
@@ -877,7 +891,7 @@ export function PortfolioChart({
 				{chartContent}
 			</div>
 			{onRangeChange && (
-				<div className="flex items-center justify-center sm:justify-start gap-1.5 mt-3 pt-3 border-t border-t-border overflow-x-auto pb-1">
+				<div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-3 pt-3 sm:px-6 border-t border-t-border overflow-x-auto pb-1">
 					{TIME_RANGES.map((range) => (
 						<div
 							key={range}

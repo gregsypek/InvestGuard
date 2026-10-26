@@ -75,7 +75,7 @@ interface PortfolioChartProps {
 	showBrush?: boolean;
 	titleInside?: string;
 	subtitleInside?: string;
-	portfolios: PortfolioWithAssets[];
+	portfolios?: PortfolioWithAssets[];
 	onPortfolioToggle?: (id: string) => void;
 	activeIds?: string[];
 }

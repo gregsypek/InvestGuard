@@ -252,7 +252,7 @@ export function PortfoliosComparisonChart({
 			<div className="flex flex-wrap items-center gap-3">
 				<div
 					className={cn(
-						"flex items-center gap-1.5 rounded-full border px-2.5 py-1 bg-emerald-500/10 border-emerald-500/20",
+						"flex items-center gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 bg-emerald-500/10 border-emerald-500/20",
 					)}
 				>
 					<span

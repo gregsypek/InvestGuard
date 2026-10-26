@@ -157,7 +157,8 @@ export function UserDashboard(props: UserDashboardProps) {
 			.join(", ");
 	}, [selectedIds, props.portfolios]);
 
-	const chartSubtitle = `Zakres: ${activeRange} • ${selectedPortfolioNames}\nOś Y przedstawia wynik w ${currencySymbol}`;
+	const chartSubtitle = `Zakres: ${activeRange} • ${selectedPortfolioNames} • Oś Y przedstawia wynik w ${currencySymbol}`;
+	// const chartSubtitle = `Zakres: ${activeRange} • ${selectedPortfolioNames}\nOś Y przedstawia wynik w ${currencySymbol}`;
 
 	let tooltipText = "Odśwież wyceny";
 	if (isPremium) tooltipText += " (Brak limitu)";

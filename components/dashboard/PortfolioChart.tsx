@@ -772,7 +772,7 @@ export function PortfolioChart({
 													stroke="var(--t-bg-base)"
 													// stroke="var(--t-text-tertiary)"
 													strokeWidth={2}
-													// strokeLinecap="round"
+													strokeLinecap="round"
 												/>
 											</g>
 										);
@@ -1069,6 +1069,7 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 					)}
 				</div>
 
+				{/* 🚀 Logika dla zdarzeń (1 od razu szczegóły, >1 zachęta do kliknięcia) */}
 				{totalTxs === 1 && (
 					<div className="mt-3 pt-3 border-t border-t-border-subtle flex flex-col gap-1.5">
 						<span className="text-[9px] font-black text-t-text-tertiary uppercase tracking-widest mb-1">

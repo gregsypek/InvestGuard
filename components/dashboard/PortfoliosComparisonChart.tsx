@@ -10,14 +10,13 @@ import {
 	Tooltip,
 	XAxis,
 	YAxis,
+	ZIndexLayer,
+	usePlotArea,
 } from "recharts";
-import {
-	ChartCardLayout,
-	ComparisonValuePill,
-} from "../shared/ChartCardLayout";
 import React, { useEffect, useMemo, useState } from "react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
+import { ChartCardLayout } from "../shared/ChartCardLayout";
 import { FilterBadge } from "../shared/FilterBadge";
 import { WalletCards } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,6 +51,167 @@ const THEME_COLORS: Record<string, string> = {
 	zinc: "#71717a",
 	stone: "#78716c",
 };
+
+const PILL_HEIGHT = 22;
+const PILL_GAP = 4;
+const PILL_STEP = PILL_HEIGHT + PILL_GAP;
+const PILL_MIN_WIDTH = 65;
+
+interface PillItem {
+	id: string;
+	color: string;
+	value: number;
+	index: number; // indeks względem widocznego zakresu Brusha
+}
+
+/**
+ * Rozstawia etykiety w osi Y tak, by się nie nakładały.
+ * Zwraca finalne pozycje Y (środek pigułki) w tej samej kolejności co `targets`.
+ */
+function spreadLabels(
+	targets: number[],
+	step: number,
+	lo: number,
+	hi: number,
+): number[] {
+	const order = targets
+		.map((_, i) => i)
+		.sort((a, b) => targets[a] - targets[b]);
+
+	const place = (ids: number[]) => {
+		const mean = ids.reduce((s, i) => s + targets[i], 0) / ids.length;
+		const span = (ids.length - 1) * step;
+		const top = Math.min(
+			Math.max(mean - span / 2, lo),
+			Math.max(lo, hi - span),
+		);
+		return { ids, top };
+	};
+
+	let clusters = order.map((i) => place([i]));
+
+	let merged = true;
+	while (merged) {
+		merged = false;
+		for (let c = 1; c < clusters.length; c++) {
+			const prev = clusters[c - 1];
+			const cur = clusters[c];
+			const prevBottom = prev.top + (prev.ids.length - 1) * step;
+			if (cur.top - prevBottom < step - 0.01) {
+				clusters = [
+					...clusters.slice(0, c - 1),
+					place([...prev.ids, ...cur.ids]),
+					...clusters.slice(c + 1),
+				];
+				merged = true;
+				break;
+			}
+		}
+	}
+
+	const result = new Array<number>(targets.length).fill(0);
+	clusters.forEach((cl) =>
+		cl.ids.forEach((id, k) => {
+			result[id] = cl.top + k * step;
+		}),
+	);
+	return result;
+}
+
+interface EndPillsProps {
+	pills: PillItem[];
+	count: number; // liczba punktów w widocznym zakresie
+	domain: [number, number];
+	mode: "VALUE" | "PERCENTAGE";
+	currencySymbol: string;
+	convertPLN: (v: number) => number;
+}
+
+function EndPills({
+	pills,
+	count,
+	domain,
+	mode,
+	currencySymbol,
+	convertPLN,
+}: EndPillsProps) {
+	const plot = usePlotArea();
+	if (!plot || !Number.isFinite(plot.width) || !Number.isFinite(plot.height))
+		return null;
+	const [dMin, dMax] = domain;
+	const range = dMax - dMin || 1;
+	const yOf = (v: number) => plot.y + ((dMax - v) / range) * plot.height;
+	const xOf = (i: number) =>
+		count > 1 ? plot.x + (i / (count - 1)) * plot.width : plot.x + plot.width;
+
+	const items = pills.map((p) => {
+		const label =
+			mode === "PERCENTAGE"
+				? `${p.value > 0 ? "+" : ""}${p.value.toFixed(2)}%`
+				: `${new Intl.NumberFormat("pl-PL", {
+						notation: "compact",
+						maximumFractionDigits: 1,
+					}).format(convertPLN(p.value))} ${currencySymbol}`;
+		return { ...p, x: xOf(p.index), y: yOf(p.value), label };
+	});
+
+	const finalYs = spreadLabels(
+		items.map((i) => i.y),
+		PILL_STEP,
+		plot.y + PILL_HEIGHT / 2,
+		plot.y + plot.height - PILL_HEIGHT / 2,
+	);
+
+	return (
+		<ZIndexLayer zIndex={2000}>
+			<g style={{ pointerEvents: "none" }}>
+				{items.map((it, k) => {
+					const fy = finalYs[k];
+					const w = Math.max(PILL_MIN_WIDTH, it.label.length * 7 + 16);
+					return (
+						<g key={it.id}>
+							<path
+								d={`M ${it.x} ${it.y} C ${it.x - 10} ${it.y}, ${it.x - 10} ${fy}, ${it.x - 16} ${fy}`}
+								stroke={it.color}
+								strokeWidth={1.5}
+								strokeDasharray="2 2"
+								fill="none"
+							/>
+							<rect
+								x={it.x - 16 - w}
+								y={fy - PILL_HEIGHT / 2}
+								width={w}
+								height={PILL_HEIGHT}
+								rx={6}
+								fill={it.color}
+								stroke="var(--t-bg-panel)"
+								strokeWidth={2}
+							/>
+							<text
+								x={it.x - 16 - w / 2}
+								y={fy + 3.5}
+								textAnchor="middle"
+								fill="#fff"
+								fontSize={10}
+								fontWeight="bold"
+							>
+								{it.label}
+							</text>
+							<circle
+								cx={it.x}
+								cy={it.y}
+								r={4}
+								fill={it.color}
+								stroke="var(--t-bg-panel)"
+								strokeWidth={2}
+							/>
+						</g>
+					);
+				})}
+			</g>
+		</ZIndexLayer>
+	);
+}
 
 interface PortfolioInfo {
 	id: string;
@@ -120,8 +280,9 @@ export function PortfoliosComparisonChart({
 
 	const currentDataKey =
 		data && data.length > 0
-			? `${data.length}-${String(data[0].date)}`
+			? `${data.length}-${String(data[0].date)}-${String(data[data.length - 1].date)}`
 			: "empty";
+
 	const [prevDataKey, setPrevDataKey] = useState(currentDataKey);
 
 	if (currentDataKey !== prevDataKey) {
@@ -131,6 +292,15 @@ export function PortfoliosComparisonChart({
 			end: data && data.length > 0 ? data.length - 1 : 0,
 		});
 	}
+
+	const dataLen = data?.length ?? 0;
+	const lastIdx = Math.max(0, dataLen - 1);
+	const brush = useMemo(() => {
+		const start = Math.min(Math.max(0, brushIndex.start), lastIdx);
+		const end = Math.min(Math.max(start, brushIndex.end), lastIdx);
+		return { start, end };
+	}, [brushIndex.start, brushIndex.end, lastIdx]);
+
 	const visibleIds = useMemo(
 		() =>
 			portfolios
@@ -142,29 +312,6 @@ export function PortfoliosComparisonChart({
 				.map((p) => p.id),
 		[portfolios, activeIds, hiddenLines],
 	);
-
-	const lastValid = useMemo(() => {
-		const result: Record<string, { relIndex: number; absIndex: number }> = {};
-		portfolios.forEach((p) => {
-			for (let i = brushIndex.end; i >= brushIndex.start; i--) {
-				if (data[i] && data[i][p.id] != null) {
-					result[p.id] = { relIndex: i - brushIndex.start, absIndex: i };
-					break;
-				}
-			}
-		});
-		return result;
-	}, [data, portfolios, brushIndex.start, brushIndex.end]);
-
-	// Wartości końcowe widocznych linii (do rankingu i rozsuwania pigułek)
-	const endValues = useMemo(() => {
-		const vals: Record<string, number> = {};
-		visibleIds.forEach((id) => {
-			const li = lastValid[id];
-			if (li) vals[id] = Number(data[li.absIndex][id]);
-		});
-		return vals;
-	}, [visibleIds, lastValid, data]);
 
 	const currentActiveIdsStr = activeIds.join(",");
 
@@ -188,6 +335,54 @@ export function PortfoliosComparisonChart({
 		}
 	}, [currentActiveIdsStr, portfolios, activeIds, prevActiveIds]);
 
+	const pills = useMemo<PillItem[]>(() => {
+		if (!data?.length) return [];
+		const out: PillItem[] = [];
+		portfolios.forEach((p) => {
+			if (!visibleIds.includes(p.id)) return;
+			const color = THEME_COLORS[p.colorTheme || "blue"] || THEME_COLORS.blue;
+			for (
+				let i = Math.min(brush.end, data.length - 1);
+				i >= brush.start;
+				i--
+			) {
+				const v = data[i]?.[p.id];
+				if (v != null) {
+					out.push({
+						id: p.id,
+						color,
+						value: Number(v),
+						index: i - brush.start,
+					});
+					break;
+				}
+			}
+		});
+		return out;
+	}, [data, portfolios, visibleIds, brush.start, brush.end]);
+
+	const yDomain = useMemo<[number, number]>(() => {
+		if (!data?.length || visibleIds.length === 0) return [-5, 5];
+		let min = Infinity;
+		let max = -Infinity;
+		for (let i = brush.start; i <= Math.min(brush.end, data.length - 1); i++) {
+			visibleIds.forEach((id) => {
+				const v = data[i]?.[id];
+				if (v != null) {
+					const n = Number(v);
+					if (n < min) min = n;
+					if (n > max) max = n;
+				}
+			});
+		}
+		if (!isFinite(min) || !isFinite(max)) return [-5, 5];
+		if (chartMode === "PERCENTAGE") {
+			min = Math.min(min, 0);
+			max = Math.max(max, 0);
+		}
+		const pad = (max - min || 1) * 0.12;
+		return [min - pad, max + pad];
+	}, [data, visibleIds, brush.start, brush.end, chartMode]);
 	if (!data || data.length === 0 || portfolios.length === 0) {
 		return (
 			<div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center space-y-2 opacity-60">
@@ -197,12 +392,6 @@ export function PortfoliosComparisonChart({
 			</div>
 		);
 	}
-
-	const allValues = data.flatMap((d) =>
-		portfolios.map((p) => Number(d[p.id]) || 0),
-	);
-	const maxAbsValue = Math.max(...allValues.map(Math.abs), 5);
-	const yDomain = Math.ceil(maxAbsValue * 1.1);
 
 	// 🚀 Toggle individual lines inside the chart
 	const toggleLine = (id: string) => {
@@ -264,18 +453,27 @@ export function PortfoliosComparisonChart({
 		</>
 	);
 
-	// Legend passed as headerExtra
+	const leader = [...pills].sort((a, b) => b.value - a.value)[0];
+	const leaderName = portfolios.find((p) => p.id === leader?.id)?.name;
+	const leaderValue = leader
+		? chartMode === "PERCENTAGE"
+			? `${leader.value > 0 ? "+" : ""}${leader.value.toFixed(2)}%`
+			: `${formatCurrency(convertPLN(leader.value))} ${currencySymbol}`
+		: null;
+
 	const legendBadge = (
 		<div className="flex flex-wrap items-center gap-3">
-			<div className="flex items-center gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 bg-blue-500/10 border-blue-500/20">
-				<span className="text-[11px] font-bold tabular-nums text-blue-500">
-					<span className="text-t-text-tertiary mr-1 font-medium">
-						LEGENDA:
+			{leader && (
+				<div className="flex items-center gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 bg-blue-500/10 border-blue-500/20">
+					<span className="text-[11px] font-bold tabular-nums text-blue-500">
+						<span className="text-t-text-tertiary mr-1 font-medium">
+							PROWADZI:
+						</span>
+						{leaderName} {leaderValue}
 					</span>
-					KOLORY
-				</span>
-			</div>
-			<div className="hidden md:flex flex-wrap items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+				</div>
+			)}
+			<div className="flex flex-wrap items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 				{portfolios.map((p) => {
 					// Only show in legend if it's active in parent
 					if (!activeIds.includes("ALL") && !activeIds.includes(p.id))
@@ -372,14 +570,11 @@ export function PortfoliosComparisonChart({
 							}}
 							tickFormatter={(val) =>
 								chartMode === "PERCENTAGE"
-									? `${val > 0 ? "+" : ""}${val}%`
+									? `${val > 0 ? "+" : ""}${Math.round(val)}%`
 									: `${(val / 1000).toFixed(0)}k`
 							}
-							domain={
-								chartMode === "PERCENTAGE"
-									? [-yDomain, yDomain]
-									: ["auto", "auto"]
-							}
+							domain={yDomain}
+							allowDataOverflow
 							width={isMobile ? 35 : 55}
 						/>
 						<ReferenceLine
@@ -402,107 +597,106 @@ export function PortfoliosComparisonChart({
 								pointerEvents: "none",
 							}}
 						/>
-						<Brush
-							dataKey="date"
-							height={24}
-							startIndex={brushIndex.start}
-							endIndex={brushIndex.end}
-							stroke="var(--t-text-tertiary)"
-							fill="transparent"
-							onChange={(e) => {
-								if (
-									e &&
-									typeof e.startIndex === "number" &&
-									typeof e.endIndex === "number"
-								) {
-									setBrushIndex({ start: e.startIndex, end: e.endIndex });
-								}
-							}}
-							tickFormatter={(val) => {
-								const date = new Date(val);
-								const isShortRange = ["1W", "1M", "3M", "YTD"].includes(
-									activeRange || "",
-								);
-								if (isShortRange)
+						{dataLen > 1 && (
+							<Brush
+								key={currentDataKey}
+								dataKey="date"
+								height={24}
+								startIndex={brush.start}
+								endIndex={brush.end}
+								stroke="var(--t-text-tertiary)"
+								fill="transparent"
+								onChange={(e) => {
+									if (
+										e &&
+										Number.isFinite(e.startIndex) &&
+										Number.isFinite(e.endIndex) &&
+										e.startIndex >= 0 &&
+										e.endIndex <= lastIdx &&
+										(e.startIndex !== brush.start || e.endIndex !== brush.end)
+									) {
+										setBrushIndex({ start: e.startIndex, end: e.endIndex });
+									}
+								}}
+								tickFormatter={(val) => {
+									const date = new Date(val);
+									const isShortRange = ["1W", "1M", "3M", "YTD"].includes(
+										activeRange || "",
+									);
+									if (isShortRange)
+										return date.toLocaleDateString("pl-PL", {
+											day: "numeric",
+											month: "short",
+										});
 									return date.toLocaleDateString("pl-PL", {
-										day: "numeric",
 										month: "short",
+										year: "2-digit",
 									});
-								return date.toLocaleDateString("pl-PL", {
-									month: "short",
-									year: "2-digit",
-								});
-							}}
-							traveller={(props: any) => {
-								const { x, y, width, height } = props;
-								return (
-									<g
-										transform={`translate(${x}, ${y})`}
-										className="cursor-ew-resize"
-									>
-										<rect
-											x={0}
-											y={0}
-											width={width}
-											height={height}
-											rx={4}
-											fill="var(--t-text-tertiary)"
-											strokeLinecap="round"
-										/>
-										<line
-											x1={width / 2}
-											y1={height * 0.25}
-											x2={width / 2}
-											y2={height * 0.75}
-											stroke="var(--t-bg-base)"
-											strokeWidth={2}
-											strokeLinecap="round"
-										/>
-									</g>
-								);
-							}}
-						/>
+								}}
+								traveller={(props: any) => {
+									const { x, y, width, height } = props;
+									return (
+										<g
+											transform={`translate(${x}, ${y})`}
+											className="cursor-ew-resize"
+										>
+											<rect
+												x={0}
+												y={0}
+												width={width}
+												height={height}
+												rx={4}
+												fill="var(--t-text-tertiary)"
+												strokeLinecap="round"
+											/>
+											<line
+												x1={width / 2}
+												y1={height * 0.25}
+												x2={width / 2}
+												y2={height * 0.75}
+												stroke="var(--t-bg-base)"
+												strokeWidth={2}
+												strokeLinecap="round"
+											/>
+										</g>
+									);
+								}}
+							/>
+						)}
 						{portfolios.map((p) => {
 							const themeColor =
 								THEME_COLORS[p.colorTheme || "blue"] || THEME_COLORS.blue;
-
 							if (hiddenLines[p.id]) return null;
-
 							return (
-								<React.Fragment key={`group-${p.id}`}>
-									<Line
-										type="monotone"
-										dataKey={p.id}
-										name={p.name}
-										stroke={themeColor}
-										strokeWidth={2.5}
-										dot={false}
-										activeDot={{
-											r: 6,
-											strokeWidth: 2,
-											fill: themeColor,
-											stroke: "var(--t-bg-panel)",
-										}}
-										pointerEvents="none"
-										isAnimationActive
-										animationDuration={800}
-										label={
-											<ComparisonValuePill
-												customProps={{
-													seriesId: p.id,
-													color: themeColor,
-													targetIndex: lastValid[p.id]?.relIndex,
-													endValues,
-													mode: chartMode,
-													currencySymbol,
-													convertPLN,
-												}}
-											/>
-										}
-									/>
-								</React.Fragment>
+								<Line
+									key={`line-${p.id}`}
+									type="monotone"
+									dataKey={p.id}
+									name={p.name}
+									stroke={themeColor}
+									strokeWidth={2.5}
+									dot={false}
+									activeDot={{
+										r: 6,
+										strokeWidth: 2,
+										fill: themeColor,
+										stroke: "var(--t-bg-panel)",
+									}}
+									pointerEvents="none"
+									isAnimationActive
+									animationDuration={800}
+								/>
 							);
 						})}
+
+						<EndPills
+							pills={pills}
+							count={brush.end - brush.start + 1}
+							domain={yDomain}
+							mode={chartMode}
+							currencySymbol={currencySymbol}
+							convertPLN={convertPLN}
+						/>
 					</ComposedChart>
 				</ResponsiveContainer>
 			</div>

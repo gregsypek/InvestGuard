@@ -391,7 +391,7 @@ export function PortfolioChart({
 					<ComposedChart
 						data={mergedData}
 						syncId="portfolioSync"
-						margin={{ top: 40, right: isMobile ? 30 : 40, left: 20, bottom: 0 }}
+						margin={{ top: 40, right: isMobile ? 15 : 20, left: 20, bottom: 0 }}
 					>
 						<defs>
 							<filter
@@ -423,7 +423,7 @@ export function PortfolioChart({
 								fill: "var(--t-text-tertiary)",
 								fontWeight: 500,
 							}}
-							width={isMobile ? 45 : 60}
+							width={isMobile ? 15 : 20}
 							domain={["auto", "auto"]}
 							tickFormatter={(val) =>
 								mode === "PERCENTAGE"
@@ -626,7 +626,7 @@ export function PortfolioChart({
 						syncId="portfolioSync"
 						margin={{
 							top: 10,
-							right: isMobile ? 30 : 40,
+							right: isMobile ? 15 : 20,
 							left: 20,
 							bottom: 35,
 						}}
@@ -661,7 +661,7 @@ export function PortfolioChart({
 								fill: "var(--t-text-tertiary)",
 								fontWeight: 500,
 							}}
-							width={isMobile ? 45 : 60}
+							width={isMobile ? 15 : 20}
 							domain={["dataMin", 0]}
 							tickFormatter={(val) => `${val.toFixed(0)}%`}
 						/>

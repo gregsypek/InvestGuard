@@ -419,7 +419,7 @@ export function PortfoliosComparisonChart({
 	const topControls = (
 		<>
 			{setChartMode && (
-				<div className="flex items-center gap-1 border border-t-border rounded-lg p-1 shadow-sm">
+				<div className="flex items-center gap-1">
 					<FilterBadge
 						id={currencySymbol}
 						label={currencySymbol}
@@ -435,7 +435,7 @@ export function PortfoliosComparisonChart({
 				</div>
 			)}
 			{setDataMode && (
-				<div className="flex items-center gap-1 border border-t-border rounded-lg p-1 shadow-sm">
+				<div className="flex items-center gap-1">
 					<FilterBadge
 						id="REAL"
 						label="Real"
@@ -464,7 +464,7 @@ export function PortfoliosComparisonChart({
 	const legendBadge = (
 		<div className="flex flex-wrap items-center gap-3">
 			{leader && (
-				<div className="flex items-center gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 bg-blue-500/10 border-blue-500/20">
+				<div className="hidden  md:flex items-center gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 bg-blue-500/10 border-blue-500/20">
 					<span className="text-[11px] font-bold tabular-nums text-blue-500">
 						<span className="text-t-text-tertiary mr-1 font-medium">
 							PROWADZI:
@@ -473,7 +473,7 @@ export function PortfoliosComparisonChart({
 					</span>
 				</div>
 			)}
-			<div className="flex flex-wrap items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+			<div className="flex  w-full md:flex-1  justify-center md:justify-start flex-wrap items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 				{portfolios.map((p) => {
 					// Only show in legend if it's active in parent
 					if (!activeIds.includes("ALL") && !activeIds.includes(p.id))
@@ -548,7 +548,7 @@ export function PortfoliosComparisonChart({
 						syncId="portfolioSyncComparison"
 						margin={{
 							top: 40,
-							right: isMobile ? 30 : 40,
+							right: isMobile ? 15 : 20,
 							left: 20,
 							bottom: 0,
 						}}
@@ -575,7 +575,7 @@ export function PortfoliosComparisonChart({
 							}
 							domain={yDomain}
 							allowDataOverflow
-							width={isMobile ? 35 : 55}
+							width={isMobile ? 15 : 20}
 						/>
 						<ReferenceLine
 							y={0}

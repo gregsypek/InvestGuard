@@ -409,6 +409,9 @@ export function UserDashboard(props: UserDashboardProps) {
 									key={chartMode}
 									data={benchmarkChartData}
 									userIndices={props.userIndices || []}
+									activeRange={activeRange}
+									onRangeChange={handleRangeChange}
+									subtitleInside={chartSubtitle}
 								/>
 							</div>
 						)}

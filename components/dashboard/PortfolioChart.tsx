@@ -14,28 +14,16 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
-import {
-	Camera,
-	ChevronLeft,
-	ChevronRight,
-	Maximize2,
-	Minimize2,
-	Wallet2,
-	X,
-} from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ChartCardLayout, SingleValuePill } from "../shared/ChartCardLayout";
+import { ChevronLeft, ChevronRight, Wallet2, X } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
-import { APP_NAME } from "@/lib/constants";
-import { ChartContainer } from "../shared/ChartContainer";
 import { FilterBadge } from "../shared/FilterBadge";
-import Image from "next/image";
 import { PortfolioWithAssets } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
-import { toPng } from "html-to-image";
-import { toast } from "sonner";
 import { useChartContext } from "../providers/ChartProvider";
 
 export interface ChartDataPoint {
@@ -78,6 +66,8 @@ interface PortfolioChartProps {
 	portfolios?: PortfolioWithAssets[];
 	onPortfolioToggle?: (id: string) => void;
 	activeIds?: string[];
+	// 🚀 Added prop: Function to check if range should be disabled
+	isRangeDisabled?: (range: string) => boolean;
 }
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
@@ -102,28 +92,23 @@ export function PortfolioChart({
 	portfolios,
 	onPortfolioToggle,
 	activeIds = [],
+	isRangeDisabled,
 }: PortfolioChartProps) {
-	console.log("🚀 ~ PortfolioChart ~ portfolios:", portfolios);
-	const [isExpanded, setIsExpanded] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
 	const [clickedData, setClickedData] = useState<MergedDataPoint | null>(null);
 	const [txPage, setTxPage] = useState(0);
-	const chartRef = useRef<HTMLDivElement>(null);
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
-	// 🚀 ZARZĄDZANIE STANEM BRUSHA - Inicjalizacja bezpośrednia
 	const [brushIndex, setBrushIndex] = useState({
 		start: 0,
 		end: data && data.length > 0 ? data.length - 1 : 0,
 	});
 
-	// Tworzymy unikalny klucz dla obecnego zestawu danych (ilość elementów + pierwsza data)
 	const currentDataKey =
 		data && data.length > 0 ? `${data.length}-${data[0].date}` : "empty";
 	const [prevDataKey, setPrevDataKey] = useState(currentDataKey);
 
-	// 🚀 Zgodnie z wytycznymi React: Aktualizacja stanu podczas renderowania (zamiast w useEffect)
 	if (currentDataKey !== prevDataKey) {
 		setPrevDataKey(currentDataKey);
 		setBrushIndex({
@@ -139,38 +124,8 @@ export function PortfolioChart({
 		return () => window.removeEventListener("resize", checkMobile);
 	}, []);
 
-	const handleDownload = async () => {
-		if (!chartRef.current) return;
-		const toastId = toast.loading("Generowanie zrzutu ekranu...");
-		try {
-			const bgColor = document.documentElement.classList.contains("dark")
-				? "#0f172a"
-				: "#ffffff";
-			const dataUrl = await toPng(chartRef.current, {
-				cacheBust: true,
-				backgroundColor: bgColor,
-				pixelRatio: 2,
-				filter: (node) => {
-					if (node?.classList?.contains("recharts-brush")) return false;
-					return true;
-				},
-			});
-			const link = document.createElement("a");
-			link.download = `InvestGuard-${format(new Date(), "yyyy-MM-dd")}.png`;
-			link.href = dataUrl;
-			link.click();
-			toast.success("Wykres został zapisany jako zdjęcie.", { id: toastId });
-		} catch (err) {
-			console.error("Błąd generowania obrazu:", err);
-			toast.error("Nie udało się utworzyć obrazu. Spróbuj ponownie.", {
-				id: toastId,
-			});
-		}
-	};
-
 	const mergedData: MergedDataPoint[] = useMemo(() => {
 		if (!data || data.length === 0) return [];
-
 		const txsWithTime = transactions.map((t) => {
 			const txDateStr = t.executedAt || t.date;
 			return {
@@ -180,7 +135,6 @@ export function PortfolioChart({
 		});
 
 		let maxPeak = 0;
-
 		return data.map((point, index) => {
 			const currentPointTime = getEndOfDayTime(point.date);
 			const prevPointTime =
@@ -246,8 +200,9 @@ export function PortfolioChart({
 		trendValue = `${isPositive ? "+" : ""}${pct.toFixed(2)}%`;
 	}
 
+	// 🚀 BADGES TO BE PASSED AS headerExtra
 	const trendBadge = (
-		<div className="flex flex-wrap  justify-center md:justify-start items-center gap-2 md:gap-3">
+		<div className="flex flex-wrap justify-center md:justify-start items-center gap-2 md:gap-3">
 			<div
 				className={cn(
 					"flex items-center gap-1.5 rounded-full border px-1.5 sm:px-2.5 sm:py-1",
@@ -291,13 +246,64 @@ export function PortfolioChart({
 		</div>
 	);
 
+	// 🚀 BUTTONS TO BE PASSED AS controls
+	const topControls = (
+		<>
+			{setMode && (
+				<div className="flex items-center gap-1">
+					<FilterBadge
+						id={currencySymbol}
+						label={currencySymbol}
+						isSelected={mode === "VALUE"}
+						onToggle={() => setMode("VALUE")}
+					/>
+					<FilterBadge
+						id={currencySymbol}
+						label="%"
+						isSelected={mode === "PERCENTAGE"}
+						onToggle={() => setMode("PERCENTAGE")}
+					/>
+				</div>
+			)}
+			{setDataMode && (
+				<div className="flex items-center gap-1">
+					<FilterBadge
+						id={currencySymbol}
+						label="Real"
+						isSelected={dataMode === "REAL"}
+						onToggle={() => setDataMode("REAL")}
+					/>
+					<FilterBadge
+						id={currencySymbol}
+						label="Sym"
+						isSelected={dataMode === "SIMULATED"}
+						onToggle={() => setDataMode("SIMULATED")}
+					/>
+				</div>
+			)}
+		</>
+	);
+
+	// 🚀 PORTFOLIOS OVERLAY TO BE PASSED AS topOverlay
+	const portfoliosOverlay = portfolios?.map((p) => {
+		const isActive = activeIds.includes("ALL") || activeIds.includes(p.id);
+		return (
+			<FilterBadge
+				key={p.id}
+				id={p.id}
+				label={p.name}
+				isSelected={isActive}
+				onToggle={() => onPortfolioToggle?.(p.id)}
+			/>
+		);
+	});
+
 	const EventLabel = (props: any) => {
 		const { cx, cy, type, payload } = props;
 		if (!cx || !cy) return null;
 		const color =
 			type === "BUY" ? "#10b981" : type === "SELL" ? "#ef4444" : "#9333ea";
 		const letter = type === "BUY" ? "K" : type === "SELL" ? "S" : "W";
-
 		return (
 			<g
 				style={{ outline: "none" }}
@@ -317,7 +323,6 @@ export function PortfolioChart({
 					fill="rgba(255, 255, 255, 0)"
 					pointerEvents="all"
 				/>
-
 				<circle
 					cx={cx}
 					cy={cy}
@@ -343,663 +348,394 @@ export function PortfolioChart({
 		);
 	};
 
-	// 🚀 INTELIGENTNA PLAKIETKA (Rysowana po prawej stronie osi)
-	const LastValuePill = (props: any) => {
-		const { x, y, value, index } = props;
-
-		// Renderuj pigułkę tylko dla absolutnie ostatniego punktu objętego przez aktualny Brush!
-		if (index !== brushIndex.end || x == null || y == null || value == null)
-			return null;
-
-		const isPercentage = mode === "PERCENTAGE";
-		const displayValue = isPercentage
-			? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
-			: `${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(convertPLN(value))} ${currencySymbol}`;
-
-		const rectWidth = Math.max(
-			isPercentage ? 60 : 70,
-			displayValue.length * 7 + 16,
-		);
-		const rectHeight = 22;
-
-		return (
-			<g style={{ outline: "none" }}>
-				{/* Linia narysowana w PRAWĄ stronę, poza granicą wykresu (w marginesie) */}
-				<line
-					x1={x}
-					y1={y}
-					x2={x + 12}
-					y2={y}
-					stroke="var(--theme-primary)"
-					strokeWidth={1.5}
-					strokeDasharray="2 2"
-				/>
-				<rect
-					x={x + 12}
-					y={y - rectHeight / 2}
-					width={rectWidth}
-					height={rectHeight}
-					rx={6}
-					fill="var(--theme-primary)"
-				/>
-				<text
-					x={x + 12 + rectWidth / 2}
-					y={y + 3.5}
-					textAnchor="middle"
-					fill="#fff"
-					fontSize={10}
-					fontWeight="bold"
-				>
-					{displayValue}
-				</text>
-				<circle
-					cx={x}
-					cy={y}
-					r={4}
-					fill="var(--theme-primary)"
-					stroke="var(--t-bg-panel)"
-					strokeWidth={2}
-				/>
-			</g>
-		);
-	};
-
-	const chartContent = (
-		<ChartContainer className="h-full min-h-0 w-full flex-1 relative flex flex-col ">
-			<div className="flex">
-				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 xl:top-[-8px] xl:left-5 xl:translate-x-0 xl:translate-y-0 w-auto xl:w-full pointer-events-none z-0 opacity-15 dark:opacity-10">
-					<div className="flex items-center justify-center xl:justify-start gap-2 grayscale">
-						<div className="w-24 h-24 xl:w-12 xl:h-12 rounded-xl flex items-center justify-center">
-							<Image
-								src="/logo-static.svg"
-								alt="Logo"
-								width={96}
-								height={96}
-								className="block dark:hidden object-contain w-24 h-24 xl:w-8 xl:h-8"
-							/>
-							<Image
-								src="/logo-light-static.svg"
-								alt="Logo"
-								width={96}
-								height={96}
-								className="hidden dark:block object-contain w-24 h-24 xl:w-8 xl:h-8"
-							/>
-						</div>
-						<span className="text-xl font-black tracking-tighter hidden xl:inline-block transition-colors text-t-text-primary">
-							{APP_NAME}.
-						</span>
+	// 🚀 DISABLED LOGIC IN FOOTER
+	const footerRanges = onRangeChange
+		? TIME_RANGES.map((range) => {
+				// Disable button if in REAL mode and range has no data
+				const disabled =
+					dataMode === "REAL" && isRangeDisabled
+						? isRangeDisabled(range)
+						: false;
+				return (
+					<div
+						key={range}
+						className={cn(
+							!activeRange && "opacity-40 grayscale pointer-events-none",
+							disabled &&
+								"opacity-30 grayscale cursor-not-allowed pointer-events-none",
+						)}
+					>
+						<FilterBadge
+							id={range}
+							label={range}
+							isSelected={activeRange === range && !disabled}
+							onToggle={disabled ? undefined : onRangeChange}
+						/>
 					</div>
-				</div>
-				<div className="md:justify-end justify-center flex flex-wrap w-full gap-2">
-					{portfolios?.map((p) => {
-						// 🚀 Sprawdzamy czy dany portfel (lub 'ALL') jest w tablicy aktywnych ID
-						const isActive =
-							activeIds.includes("ALL") || activeIds.includes(p.id);
+				);
+			})
+		: null;
 
-						return (
-							<FilterBadge
-								key={p.id}
-								id={p.id}
-								label={p.name}
-								isSelected={isActive}
-								onToggle={() => onPortfolioToggle?.(p.id)}
-							/>
-						);
-					})}
-				</div>
-			</div>
-			<div className="relative z-10 h-full w-full [&_*:focus]:outline-none flex flex-col">
-				<div className="w-full flex-1 min-h-0 border-b border-t-border-subtle pb-2 relative h-full">
-					<ResponsiveContainer width="100%" height="100%">
-						<ComposedChart
-							data={mergedData}
-							syncId="portfolioSync"
-							// 🚀 WIEKSZY PRAWY MARGINES - Otwiera miejsce dla plakietki by nie ucinała jej krawędź
-							margin={{
-								top: 40,
-								// right: isMobile ? 85 : 100,
-								right: isMobile ? 30 : 40,
-								left: 20,
-								bottom: 0,
+	return (
+		<ChartCardLayout
+			title={titleInside}
+			subtitle={subtitleInside}
+			icon={Wallet2}
+			controls={topControls}
+			headerExtra={trendBadge}
+			topOverlay={portfoliosOverlay}
+			footer={footerRanges}
+		>
+			<div className="w-full flex-1 min-h-0 border-b border-t-border-subtle pb-2 relative h-full">
+				<ResponsiveContainer width="100%" height="100%">
+					<ComposedChart
+						data={mergedData}
+						syncId="portfolioSync"
+						margin={{ top: 40, right: isMobile ? 30 : 40, left: 20, bottom: 0 }}
+					>
+						<defs>
+							<filter
+								id="glowBlue"
+								x="-20%"
+								y="-20%"
+								width="140%"
+								height="140%"
+							>
+								<feGaussianBlur stdDeviation="4" result="blur" />
+								<feMerge>
+									<feMergeNode in="blur" />
+									<feMergeNode in="SourceGraphic" />
+								</feMerge>
+							</filter>
+						</defs>
+						<CartesianGrid
+							strokeDasharray="4 4"
+							vertical={false}
+							stroke="var(--t-border)"
+						/>
+						<XAxis dataKey="date" hide={true} />
+						<YAxis
+							orientation="right"
+							axisLine={false}
+							tickLine={false}
+							tick={{
+								fontSize: 10,
+								fill: "var(--t-text-tertiary)",
+								fontWeight: 500,
 							}}
-						>
-							<defs>
-								<filter
-									id="glowBlue"
-									x="-20%"
-									y="-20%"
-									width="140%"
-									height="140%"
-								>
-									<feGaussianBlur stdDeviation="4" result="blur" />
-									<feMerge>
-										<feMergeNode in="blur" />
-										<feMergeNode in="SourceGraphic" />
-									</feMerge>
-								</filter>
-							</defs>
-							<CartesianGrid
-								strokeDasharray="4 4"
-								vertical={false}
-								stroke="var(--t-border)"
-							/>
-							<XAxis dataKey="date" hide={true} />
-							<YAxis
-								orientation="right"
-								axisLine={false}
-								tickLine={false}
-								tick={{
-									fontSize: 10,
-									fill: "var(--t-text-tertiary)",
-									fontWeight: 500,
-								}}
-								width={isMobile ? 45 : 60}
-								domain={["auto", "auto"]}
-								tickFormatter={(val) =>
-									mode === "PERCENTAGE"
-										? `${val > 0 ? "+" : ""}${val}%`
-										: `${new Intl.NumberFormat("pl-PL", { notation: "compact", compactDisplay: "short" }).format(convertPLN(val))}`
-								}
-							/>
-							{mode === "PERCENTAGE" && (
-								<ReferenceLine y={0} stroke="var(--t-border)" strokeWidth={1} />
+							width={isMobile ? 45 : 60}
+							domain={["auto", "auto"]}
+							tickFormatter={(val) =>
+								mode === "PERCENTAGE"
+									? `${val > 0 ? "+" : ""}${val}%`
+									: `${new Intl.NumberFormat("pl-PL", { notation: "compact", compactDisplay: "short" }).format(convertPLN(val))}`
+							}
+						/>
+						{mode === "PERCENTAGE" && (
+							<ReferenceLine y={0} stroke="var(--t-border)" strokeWidth={1} />
+						)}
+						<Tooltip
+							content={<CustomTooltip mode={mode} />}
+							offset={15}
+							cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
+							wrapperStyle={{
+								zIndex: 1000,
+								outline: "none",
+								pointerEvents: "none",
+							}}
+						/>
+						<Area
+							type="monotone"
+							dataKey="value"
+							stroke="var(--theme-primary)"
+							strokeWidth={2.5}
+							fillOpacity={1}
+							fill="transparent"
+							filter="url(#glowBlue)"
+							pointerEvents="none"
+							activeDot={{
+								r: 6,
+								fill: "var(--theme-primary)",
+								stroke: "var(--t-bg-panel)",
+								strokeWidth: 2,
+								pointerEvents: "none",
+							}}
+							label={(props: any) => (
+								<SingleValuePill
+									{...props}
+									customProps={{
+										brushEndIndex: brushIndex.end,
+										mode: mode,
+										currencySymbol: currencySymbol,
+										convertPLN: convertPLN,
+									}}
+								/>
 							)}
-
-							<Tooltip
-								content={<CustomTooltip mode={mode} />}
-								offset={15}
-								cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
-								wrapperStyle={{
-									zIndex: 1000,
-									outline: "none",
-									pointerEvents: "none",
-								}}
-							/>
-
-							<Area
-								type="monotone"
-								dataKey="value"
-								stroke="var(--theme-primary)"
-								strokeWidth={2.5}
-								fillOpacity={1}
-								fill="transparent"
-								filter="url(#glowBlue)"
+						/>
+						{mode === "VALUE" && (
+							<Line
+								type="stepAfter"
+								dataKey="invested"
+								stroke="var(--t-text-tertiary)"
+								strokeWidth={2}
+								strokeDasharray="5 5"
+								dot={false}
+								activeDot={false}
+								opacity={0.6}
 								pointerEvents="none"
-								activeDot={{
-									r: 6,
-									fill: "var(--theme-primary)",
-									stroke: "var(--t-bg-panel)",
-									strokeWidth: 2,
-									pointerEvents:
-										"none" /* 🚀 MAGIA: Kółko wraca, ale przepuszcza Twoje kliknięcia do spodu! */,
-								}}
-								label={(props: any) => <LastValuePill {...props} />}
 							/>
-							{mode === "VALUE" && (
-								<Line
-									type="stepAfter"
-									dataKey="invested"
-									stroke="var(--t-text-tertiary)"
-									strokeWidth={2}
-									strokeDasharray="5 5"
-									dot={false}
-									activeDot={false}
-									opacity={0.6}
-									pointerEvents="none"
-								/>
-							)}
-							{transactions.length > 0 && (
-								<Scatter
-									dataKey="buyEvent"
-									shape={(props: any) => <EventLabel {...props} type="BUY" />}
-								/>
-							)}
-							{transactions.length > 0 && (
-								<Scatter
-									dataKey="sellEvent"
-									shape={(props: any) => <EventLabel {...props} type="SELL" />}
-								/>
-							)}
-							{transactions.length > 0 && (
-								<Scatter
-									dataKey="multiEvent"
-									shape={(props: any) => <EventLabel {...props} type="MULTI" />}
-								/>
-							)}
-						</ComposedChart>
-					</ResponsiveContainer>
+						)}
+						{transactions.length > 0 && (
+							<Scatter
+								dataKey="buyEvent"
+								shape={(props: any) => <EventLabel {...props} type="BUY" />}
+							/>
+						)}
+						{transactions.length > 0 && (
+							<Scatter
+								dataKey="sellEvent"
+								shape={(props: any) => <EventLabel {...props} type="SELL" />}
+							/>
+						)}
+						{transactions.length > 0 && (
+							<Scatter
+								dataKey="multiEvent"
+								shape={(props: any) => <EventLabel {...props} type="MULTI" />}
+							/>
+						)}
+					</ComposedChart>
+				</ResponsiveContainer>
 
-					{clickedData && (
+				{/* Blocked Modal for Transaction Details */}
+				{clickedData && (
+					<div
+						className="absolute inset-0 z-[2000] flex items-center justify-center pointer-events-auto bg-t-bg-base/70 rounded-lg"
+						onClick={() => setClickedData(null)}
+					>
 						<div
-							className="absolute inset-0 z-[2000] flex items-center justify-center pointer-events-auto bg-t-bg-base/70 rounded-lg"
-							onClick={() => setClickedData(null)}
+							className="bg-t-bg-panel border border-t-border shadow-2xl rounded-2xl p-5 w-full max-w-[320px] animate-in zoom-in-95 fade-in duration-200"
+							onClick={(e) => e.stopPropagation()}
 						>
-							<div
-								className="bg-t-bg-panel border border-t-border shadow-2xl rounded-2xl p-5 w-full max-w-[320px] animate-in zoom-in-95 fade-in duration-200"
-								onClick={(e) => e.stopPropagation()}
-							>
-								<div className="flex justify-between items-center mb-4 border-b border-t-border pb-3">
-									<div className="flex items-center gap-2">
-										{clickedData.txDetails &&
-										clickedData.txDetails.length > 1 ? (
-											<>
-												<button
-													onClick={() => setTxPage(Math.max(0, txPage - 1))}
-													disabled={txPage === 0}
-													className="hover:text-t-text-primary disabled:opacity-30 p-1.5 bg-t-bg-base rounded-md border border-t-border-subtle transition-colors"
-												>
-													<ChevronLeft className="w-4 h-4" />
-												</button>
-												<span className="text-xs font-bold w-12 text-center">
-													{txPage + 1} / {clickedData.txDetails.length}
-												</span>
-												<button
-													onClick={() =>
-														setTxPage(
-															Math.min(
-																(clickedData.txDetails?.length || 1) - 1,
-																txPage + 1,
-															),
-														)
-													}
-													disabled={
-														txPage === (clickedData.txDetails?.length || 1) - 1
-													}
-													className="hover:text-t-text-primary disabled:opacity-30 p-1.5 bg-t-bg-base rounded-md border border-t-border-subtle transition-colors"
-												>
-													<ChevronRight className="w-4 h-4" />
-												</button>
-											</>
-										) : (
-											<span className="text-[11px] font-bold text-t-text-secondary uppercase tracking-wider">
-												Szczegóły zdarzenia
-											</span>
-										)}
-									</div>
-									<button
-										onClick={() => setClickedData(null)}
-										className="text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 font-bold w-7 h-7 flex items-center justify-center rounded-full transition-colors"
-									>
-										<X className="w-4 h-4" />
-									</button>
-								</div>
-
-								{clickedData.txDetails && clickedData.txDetails[txPage] && (
-									<div className="space-y-3">
-										<div className="flex justify-between items-center text-sm border-b border-t-border-subtle pb-2">
-											<span className="text-t-text-tertiary text-xs">Data</span>
-											<span className="font-bold">
-												{format(new Date(clickedData.date), "dd.MM.yyyy")}
-											</span>
-										</div>
-										<div className="flex justify-between items-center text-sm border-b border-t-border-subtle pb-2">
-											<span className="text-t-text-tertiary text-xs">Typ</span>
-											<span
-												className={
-													clickedData.txDetails[txPage].type === "BUY" ||
-													clickedData.txDetails[txPage].type === "DEPOSIT"
-														? "text-emerald-500 font-bold"
-														: "text-rose-500 font-bold"
-												}
+							<div className="flex justify-between items-center mb-4 border-b border-t-border pb-3">
+								<div className="flex items-center gap-2">
+									{clickedData.txDetails && clickedData.txDetails.length > 1 ? (
+										<>
+											<button
+												onClick={() => setTxPage(Math.max(0, txPage - 1))}
+												disabled={txPage === 0}
+												className="hover:text-t-text-primary disabled:opacity-30 p-1.5 bg-t-bg-base rounded-md border border-t-border-subtle transition-colors"
 											>
-												{clickedData.txDetails[txPage].type === "BUY" ||
-												clickedData.txDetails[txPage].type === "DEPOSIT"
-													? "Wpłata / Kupno"
-													: "Wypłata / Sprzedaż"}
+												<ChevronLeft className="w-4 h-4" />
+											</button>
+											<span className="text-xs font-bold w-12 text-center">
+												{txPage + 1} / {clickedData.txDetails.length}
 											</span>
-										</div>
-										<div className="flex justify-between items-center text-sm border-b border-t-border-subtle pb-2">
-											<span className="text-t-text-tertiary text-xs">
-												Walor
-											</span>
-											<span
-												className="font-medium truncate max-w-[150px] text-right"
-												title={
-													clickedData.txDetails[txPage].assetName ||
-													clickedData.txDetails[txPage].ticker ||
-													""
-												}
-											>
-												{clickedData.txDetails[txPage].assetName ||
-													clickedData.txDetails[txPage].ticker ||
-													"-"}
-											</span>
-										</div>
-										<div className="flex justify-between items-center text-sm">
-											<span className="text-t-text-tertiary text-xs">
-												Kwota
-											</span>
-											<span className="font-mono font-bold text-base">
-												{formatCurrency(
-													convertPLN(
-														Math.abs(
-															clickedData.txDetails[txPage].executedValue || 0,
+											<button
+												onClick={() =>
+													setTxPage(
+														Math.min(
+															(clickedData.txDetails?.length || 1) - 1,
+															txPage + 1,
 														),
-													),
-												)}{" "}
-												{currencySymbol}
-											</span>
-										</div>
-									</div>
-								)}
-							</div>
-						</div>
-					)}
-				</div>
-
-				<div className="w-full h-[120px] shrink-0 pt-2">
-					<ResponsiveContainer width="100%" height="100%">
-						<AreaChart
-							data={mergedData}
-							syncId="portfolioSync"
-							// 🚀 MARGINES BOTTOM: 35 tworzy świetną przerwę dla Brusha poniżej wykresu!
-							// 🚀 MARGINES RIGHT: Zsynchronizowany z górnym dla perfekcyjnej lini.
-							margin={{
-								top: 10,
-								right: isMobile ? 30 : 40,
-								left: 20,
-								bottom: 35,
-							}}
-						>
-							<CartesianGrid
-								strokeDasharray="4 4"
-								vertical={false}
-								stroke="var(--t-border)"
-							/>
-							<XAxis
-								dataKey="date"
-								axisLine={false}
-								tickLine={false}
-								tick={{
-									fontSize: 10,
-									fill: "var(--t-text-tertiary)",
-									fontWeight: 500,
-								}}
-								tickMargin={12}
-								tickFormatter={(val) =>
-									format(new Date(val), "MMM yy", { locale: pl })
-								}
-								minTickGap={20}
-								padding={{ left: 10, right: 10 }}
-							/>
-							<YAxis
-								orientation="right"
-								axisLine={false}
-								tickLine={false}
-								tick={{
-									fontSize: 9,
-									fill: "var(--t-text-tertiary)",
-									fontWeight: 500,
-								}}
-								width={isMobile ? 45 : 60}
-								domain={["dataMin", 0]}
-								tickFormatter={(val) => `${val.toFixed(0)}%`}
-							/>
-							<Tooltip
-								content={<CustomTooltip mode="DRAWDOWN" />}
-								cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
-								wrapperStyle={{ zIndex: 1000, outline: "none" }}
-							/>
-							<Area
-								type="monotone"
-								dataKey="drawdown"
-								stroke="#ef4444"
-								strokeWidth={1.5}
-								fill="#ef4444"
-								fillOpacity={0.1}
-							/>
-							{showBrush && (
-								<Brush
-									dataKey="date"
-									height={24}
-									stroke="var(--t-text-tertiary)"
-									fill="transparent"
-									// 🚀 AKTUALIZACJA STANU PRZY ZOOMOWANIU
-									onChange={(e) => {
-										if (
-											e &&
-											typeof e.startIndex === "number" &&
-											typeof e.endIndex === "number"
-										) {
-											setBrushIndex({ start: e.startIndex, end: e.endIndex });
-										}
-									}}
-									tickFormatter={(val) =>
-										new Date(val).toLocaleDateString("pl-PL", {
-											month: "short",
-											year: "2-digit",
-										})
-									}
-									// 🚀 CUSTOMOWY UI DLA UCHWYTÓW (Z zaokrągleniami)
-									traveller={(props: any) => {
-										const { x, y, width, height } = props;
-										return (
-											<g
-												transform={`translate(${x}, ${y})`}
-												className="cursor-ew-resize"
+													)
+												}
+												disabled={
+													txPage === (clickedData.txDetails?.length || 1) - 1
+												}
+												className="hover:text-t-text-primary disabled:opacity-30 p-1.5 bg-t-bg-base rounded-md border border-t-border-subtle transition-colors"
 											>
-												<rect
-													x={0}
-													y={0}
-													width={width}
-													height={height}
-													rx={4}
-													fill="var(--t-text-tertiary)"
-													// fill="var(--t-bg-base)"
-													strokeLinecap="round"
-												/>
-												<line
-													x1={width / 2}
-													y1={height * 0.25}
-													x2={width / 2}
-													y2={height * 0.75}
-													stroke="var(--t-bg-base)"
-													// stroke="var(--t-text-tertiary)"
-													strokeWidth={2}
-													strokeLinecap="round"
-												/>
-											</g>
-										);
-									}}
-								/>
+												<ChevronRight className="w-4 h-4" />
+											</button>
+										</>
+									) : (
+										<span className="text-[11px] font-bold text-t-text-secondary uppercase tracking-wider">
+											Szczegóły zdarzenia
+										</span>
+									)}
+								</div>
+								<button
+									onClick={() => setClickedData(null)}
+									className="text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 font-bold w-7 h-7 flex items-center justify-center rounded-full transition-colors"
+								>
+									<X className="w-4 h-4" />
+								</button>
+							</div>
+							{clickedData.txDetails && clickedData.txDetails[txPage] && (
+								<div className="space-y-3">
+									<div className="flex justify-between items-center text-sm border-b border-t-border-subtle pb-2">
+										<span className="text-t-text-tertiary text-xs">Data</span>
+										<span className="font-bold">
+											{format(new Date(clickedData.date), "dd.MM.yyyy")}
+										</span>
+									</div>
+									<div className="flex justify-between items-center text-sm border-b border-t-border-subtle pb-2">
+										<span className="text-t-text-tertiary text-xs">Typ</span>
+										<span
+											className={
+												clickedData.txDetails[txPage].type === "BUY" ||
+												clickedData.txDetails[txPage].type === "DEPOSIT"
+													? "text-emerald-500 font-bold"
+													: "text-rose-500 font-bold"
+											}
+										>
+											{clickedData.txDetails[txPage].type === "BUY" ||
+											clickedData.txDetails[txPage].type === "DEPOSIT"
+												? "Wpłata / Kupno"
+												: "Wypłata / Sprzedaż"}
+										</span>
+									</div>
+									<div className="flex justify-between items-center text-sm border-b border-t-border-subtle pb-2">
+										<span className="text-t-text-tertiary text-xs">Walor</span>
+										<span
+											className="font-medium truncate max-w-[150px] text-right"
+											title={
+												clickedData.txDetails[txPage].assetName ||
+												clickedData.txDetails[txPage].ticker ||
+												""
+											}
+										>
+											{clickedData.txDetails[txPage].assetName ||
+												clickedData.txDetails[txPage].ticker ||
+												"-"}
+										</span>
+									</div>
+									<div className="flex justify-between items-center text-sm">
+										<span className="text-t-text-tertiary text-xs">Kwota</span>
+										<span className="font-mono font-bold text-base">
+											{formatCurrency(
+												convertPLN(
+													Math.abs(
+														clickedData.txDetails[txPage].executedValue || 0,
+													),
+												),
+											)}{" "}
+											{currencySymbol}
+										</span>
+									</div>
+								</div>
 							)}
-						</AreaChart>
-					</ResponsiveContainer>
-					<div className="absolute bottom-[22%] left-8 text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary opacity-70">
-						Obsunięcie kapitału (%)
-					</div>
-				</div>
-			</div>
-		</ChartContainer>
-	);
-
-	const renderControls = () => (
-		<div className="flex flex-col  px-6 z-20 mb-2 sm:mb-4 w-full gap-3">
-			<div className="flex flex-col items-center md:flex-row justify-between w-full">
-				{(titleInside || subtitleInside) && (
-					<div className="  flex justify-between  flex-col md:items-start items-center pb-2 mx-auto pointer-events-none bg-transparent rounded-lg">
-						{!isExpanded && titleInside && (
-							<h3 className="text-md font-bold text-t-text-primary">
-								{titleInside}
-							</h3>
-						)}
-						{subtitleInside && (
-							<p
-								className={cn(
-									"text-xs flex-1 self-center sm:self-end font-semibold text-t-text-tertiary mt-1 leading-tight",
-									!isExpanded && "whitespace-pre-wrap, text-[10px]",
-								)}
-							>
-								{subtitleInside}
-							</p>
-						)}
+						</div>
 					</div>
 				)}
-				<div
-					className={cn(
-						"flex flex-wrap items-center gap-2 w-full  md:justify-end",
-						isExpanded ? "justify-end" : "justify-center ",
-					)}
-				>
-					{setMode && (
-						<div className="flex items-center gap-1">
-							<FilterBadge
-								id={currencySymbol}
-								label={currencySymbol}
-								isSelected={mode === "VALUE"}
-								onToggle={() => setMode("VALUE")}
-							/>
-							<FilterBadge
-								id={currencySymbol}
-								label="%"
-								isSelected={mode === "PERCENTAGE"}
-								onToggle={() => setMode("PERCENTAGE")}
-							/>
-						</div>
-					)}
-					{setDataMode && (
-						<div className="flex items-center gap-1  ">
-							<FilterBadge
-								id={currencySymbol}
-								label="Real"
-								isSelected={dataMode === "REAL"}
-								onToggle={() => setDataMode("REAL")}
-							/>
-							<FilterBadge
-								id={currencySymbol}
-								label="Sym"
-								isSelected={dataMode === "SIMULATED"}
-								onToggle={() => setDataMode("SIMULATED")}
-							/>
-						</div>
-					)}
-
-					<div className="w-px h-5 bg-t-border mx-1 hidden sm:block" />
-					<div className="flex items-center gap-1">
-						<button
-							onClick={handleDownload}
-							className="flex items-center gap-1.5 px-1 xl:px-3 py-1 xl:py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400"
-						>
-							<Camera className="w-4 h-4" />
-						</button>
-						<button
-							onClick={() => setIsExpanded(!isExpanded)}
-							className={cn(
-								"flex items-center gap-1.5 px-1 xl:px-3 py-1 xl:py-1.5 rounded-lg text-xs font-bold transition-all duration-300 border hover:cursor-pointer",
-								isExpanded
-									? "bg-theme-soft text-theme-primary border-theme-border shadow-sm hover:opacity-80 brightness-75"
-									: "text-slate-400 border-slate-700/60 hover:text-slate-600 hover:border-slate-400",
-							)}
-							title={isExpanded ? "Zwiń wykres" : "Powiększ wykres"}
-						>
-							{isExpanded ? (
-								<Minimize2 className="w-4 h-4" />
-							) : (
-								<Maximize2 className="w-4 h-4" />
-							)}
-						</button>
-					</div>
-				</div>
 			</div>
-			<div>{trendBadge}</div>
-		</div>
-	);
 
-	if (isExpanded) {
-		return (
-			<div className="fixed inset-0 z-[100] bg-t-bg-base/95 backdrop-blur-xl p-6 md:p-12 flex flex-col animate-in fade-in duration-200">
-				<div
-					className="pointer-events-none absolute inset-0 opacity-40"
-					style={{
-						background:
-							"radial-gradient(circle at 15% 10%, var(--theme-soft), transparent 45%)",
-					}}
-				/>
-
-				{/* 🚀 NAPRAWA: Ten div teraz otacza CAŁOŚĆ - i Header, i Wykres */}
-				<div
-					ref={chartRef}
-					className="relative flex flex-col flex-1 min-h-0 w-full rounded-2xl p-2 md:p-4 bg-t-bg-base/30"
-				>
-					{/* HEADER */}
-					<div className="relative flex flex-col items-center  justify-between sm:flex-row sm:items-start mb-6 ">
-						<div className="flex items-start gap-3 flex-col">
-							<div className="flex">
-								<div className="p-2 rounded-xl h-full bg-blue-500/10  border-blue-500/20 hidden sm:block">
-									<Wallet2 className="w-5 h-5 text-blue-500" />
-								</div>
-
-								<h3 className="lg:text-xl flex-1 self-center text-md font-bold text-t-text-primary tracking-tight">
-									Szczegóły Inwestycji
-								</h3>
-							</div>
-							<p className="text-xs flex-1 sm:text-sm text-t-text-secondary hidden sm:block">
-								Dokładna analiza wartości kapitału w czasie i historia
-								transakcji
-							</p>
-						</div>
-						{renderControls()}
-					</div>
-
-					{/* WYKRES */}
-					<div className="relative flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-xl flex flex-col">
-						<div className="flex-1 w-full bg-t-bg-panel rounded-lg pb-2 pt-2 relative ">
-							{chartContent}
-						</div>
-						{onRangeChange && (
-							<div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-3 pt-3 border-t border-t-border overflow-x-auto pb-1">
-								{TIME_RANGES.map((range) => (
-									<div
-										key={range}
-										className={cn(
-											!activeRange &&
-												"opacity-40 grayscale pointer-events-none",
-										)}
-									>
-										<FilterBadge
-											id={range}
-											label={range}
-											isSelected={activeRange === range}
-											onToggle={onRangeChange}
-										/>
-									</div>
-								))}
-							</div>
+			<div className="w-full h-[120px] shrink-0 pt-2">
+				<ResponsiveContainer width="100%" height="100%">
+					<AreaChart
+						data={mergedData}
+						syncId="portfolioSync"
+						margin={{
+							top: 10,
+							right: isMobile ? 30 : 40,
+							left: 20,
+							bottom: 35,
+						}}
+					>
+						<CartesianGrid
+							strokeDasharray="4 4"
+							vertical={false}
+							stroke="var(--t-border)"
+						/>
+						<XAxis
+							dataKey="date"
+							axisLine={false}
+							tickLine={false}
+							tick={{
+								fontSize: 10,
+								fill: "var(--t-text-tertiary)",
+								fontWeight: 500,
+							}}
+							tickMargin={12}
+							tickFormatter={(val) =>
+								format(new Date(val), "MMM yy", { locale: pl })
+							}
+							minTickGap={20}
+							padding={{ left: 10, right: 10 }}
+						/>
+						<YAxis
+							orientation="right"
+							axisLine={false}
+							tickLine={false}
+							tick={{
+								fontSize: 9,
+								fill: "var(--t-text-tertiary)",
+								fontWeight: 500,
+							}}
+							width={isMobile ? 45 : 60}
+							domain={["dataMin", 0]}
+							tickFormatter={(val) => `${val.toFixed(0)}%`}
+						/>
+						<Tooltip
+							content={<CustomTooltip mode="DRAWDOWN" />}
+							cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
+							wrapperStyle={{ zIndex: 1000, outline: "none" }}
+						/>
+						<Area
+							type="monotone"
+							dataKey="drawdown"
+							stroke="#ef4444"
+							strokeWidth={1.5}
+							fill="#ef4444"
+							fillOpacity={0.1}
+						/>
+						{showBrush && (
+							<Brush
+								dataKey="date"
+								height={24}
+								stroke="var(--t-text-tertiary)"
+								fill="transparent"
+								onChange={(e) => {
+									if (
+										e &&
+										typeof e.startIndex === "number" &&
+										typeof e.endIndex === "number"
+									) {
+										setBrushIndex({ start: e.startIndex, end: e.endIndex });
+									}
+								}}
+								tickFormatter={(val) =>
+									new Date(val).toLocaleDateString("pl-PL", {
+										month: "short",
+										year: "2-digit",
+									})
+								}
+								traveller={(props: any) => {
+									const { x, y, width, height } = props;
+									return (
+										<g
+											transform={`translate(${x}, ${y})`}
+											className="cursor-ew-resize"
+										>
+											<rect
+												x={0}
+												y={0}
+												width={width}
+												height={height}
+												rx={4}
+												fill="var(--t-text-tertiary)"
+												strokeLinecap="round"
+											/>
+											<line
+												x1={width / 2}
+												y1={height * 0.25}
+												x2={width / 2}
+												y2={height * 0.75}
+												stroke="var(--t-bg-base)"
+												strokeWidth={2}
+												strokeLinecap="round"
+											/>
+										</g>
+									);
+								}}
+							/>
 						)}
-					</div>
+					</AreaChart>
+				</ResponsiveContainer>
+				<div className="absolute bottom-[22%] left-8 text-[9px] font-bold uppercase tracking-widest text-t-text-tertiary opacity-70">
+					Obsunięcie kapitału (%)
 				</div>
 			</div>
-		);
-	}
-	return (
-		<div
-			ref={chartRef}
-			className="relative w-full h-full flex flex-col group bg-t-bg-panel p-2 rounded-xl"
-		>
-			{renderControls()}
-			<div className="flex-1 w-full min-h-0 relative z-10 bg-t-bg-panel rounded-lg pt-2 pb-2 pr-2">
-				{chartContent}
-			</div>
-			{onRangeChange && (
-				<div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-3 pt-3 sm:px-6 border-t border-t-border overflow-x-auto pb-1">
-					{TIME_RANGES.map((range) => (
-						<div
-							key={range}
-							className={cn(
-								!activeRange && "opacity-40 grayscale pointer-events-none",
-							)}
-						>
-							<FilterBadge
-								id={range}
-								label={range}
-								isSelected={activeRange === range}
-								onToggle={onRangeChange}
-							/>
-						</div>
-					))}
-				</div>
-			)}
-		</div>
+		</ChartCardLayout>
 	);
 }
 
@@ -1021,7 +757,6 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 
 	if (active && payload && payload.length && label) {
 		const dataObj = payload[0].payload;
-
 		if (mode === "DRAWDOWN") {
 			return (
 				<div className="bg-t-bg-panel/95 backdrop-blur-md border border-t-border rounded-xl p-3 shadow-xl">
@@ -1039,7 +774,6 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 				</div>
 			);
 		}
-
 		const value = payload.find((p) => p.dataKey === "value")?.value || 0;
 		const invested = payload.find((p) => p.dataKey === "invested")?.value || 0;
 		const formatVal = (val: number) =>
@@ -1048,7 +782,6 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 				: `${formatCurrency(convertPLN(val))} ${currencySymbol}`;
 		const isProfit = mode === "PERCENTAGE" ? value >= 0 : value >= invested;
 		const difference = value - invested;
-
 		const txs = dataObj.txDetails || [];
 		const totalTxs = txs.length;
 
@@ -1105,8 +838,6 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 						</>
 					)}
 				</div>
-
-				{/* 🚀 Logika dla zdarzeń (1 od razu szczegóły, >1 zachęta do kliknięcia) */}
 				{totalTxs === 1 && (
 					<div className="mt-3 pt-3 border-t border-t-border-subtle flex flex-col gap-1.5">
 						<span className="text-[9px] font-black text-t-text-tertiary uppercase tracking-widest mb-1">
@@ -1146,7 +877,6 @@ function CustomTooltip({ active, payload, label, mode }: CustomTooltipProps) {
 						</div>
 					</div>
 				)}
-
 				{totalTxs > 1 && (
 					<div className="mt-3 pt-3 border-t border-t-border-subtle flex items-center justify-between mb-2">
 						<span className="text-xs font-bold text-t-text-secondary">

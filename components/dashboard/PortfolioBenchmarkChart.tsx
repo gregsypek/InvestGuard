@@ -400,7 +400,8 @@ export function PortfolioBenchmarkChart({
 							id={range}
 							label={range}
 							isSelected={activeRange === range && !disabled}
-							onToggle={disabled ? undefined : onRangeChange}
+							// 🚀 Fix: Pass an empty no-op handler instead of undefined to satisfy TypeScript
+							onToggle={disabled ? () => {} : (id) => onRangeChange?.(id)}
 						/>
 					</div>
 				);

@@ -341,7 +341,7 @@ export function PortfoliosComparisonChart({
 							id={range}
 							label={range}
 							isSelected={activeRange === range && !disabled}
-							onToggle={disabled ? undefined : onRangeChange}
+							onToggle={disabled ? () => {} : (id) => onRangeChange?.(id)}
 						/>
 					</div>
 				);

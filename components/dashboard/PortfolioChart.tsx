@@ -369,7 +369,8 @@ export function PortfolioChart({
 							id={range}
 							label={range}
 							isSelected={activeRange === range && !disabled}
-							onToggle={disabled ? undefined : onRangeChange}
+							// 🚀 Fix: Forward the badge 'id' (which holds the range) safely without passing undefined
+							onToggle={disabled ? () => {} : (id) => onRangeChange?.(id)}
 						/>
 					</div>
 				);

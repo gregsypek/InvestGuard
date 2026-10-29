@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { EndPills, PillItem, THEME_COLORS } from "../shared/EndPills";
 import React, { useEffect, useMemo, useState } from "react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { ChartCardLayout } from "../shared/ChartCardLayout";
 import { FilterBadge } from "../shared/FilterBadge";
@@ -23,15 +24,26 @@ import { pl } from "date-fns/locale";
 import { useChartContext } from "../providers/ChartProvider";
 
 export interface BenchmarkDataPoint {
-	date: string;
-	portfolioPct: number;
-	[indexName: string]: string | number;
+	date: string | Date;
+	// Zamiast 'portfolioPct' oczekujemy kluczy portfeli p.id oraz indeksów (np. 'SP500')
+	[key: string]: string | number | Date;
+}
+
+interface PortfolioInfo {
+	id: string;
+	name: string;
+	colorTheme?: string;
 }
 
 interface PortfolioBenchmarkChartProps {
 	data: BenchmarkDataPoint[];
 	userIndices: string[];
-	portfolioColorTheme?: string;
+	portfolios: PortfolioInfo[];
+	activeIds: string[];
+	chartMode: "VALUE" | "PERCENTAGE";
+	setChartMode?: (mode: "VALUE" | "PERCENTAGE") => void;
+	dataMode?: "REAL" | "SIMULATED";
+	setDataMode?: (mode: "REAL" | "SIMULATED") => void;
 	activeRange?: string;
 	onRangeChange?: (range: string) => void;
 	isRangeDisabled?: (range: string) => boolean;
@@ -49,32 +61,43 @@ const INDEX_COLORS: Record<string, string> = {
 };
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
-const PORTFOLIO_KEY = "portfolioPct";
 
 export function PortfolioBenchmarkChart({
 	data,
 	userIndices,
-	portfolioColorTheme = "blue",
+	portfolios,
+	activeIds,
+	chartMode,
+	setChartMode,
+	dataMode,
+	setDataMode,
 	activeRange,
 	onRangeChange,
 	isRangeDisabled,
 	titleInside,
 	subtitleInside,
 }: PortfolioBenchmarkChartProps) {
-	const { convertPLN } = useChartContext();
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
 
 	const [hiddenLines, setHiddenLines] = useState<Record<string, boolean>>({});
+	const [prevActiveIds, setPrevActiveIds] = useState<string>("");
 	const [isMobile, setIsMobile] = useState(false);
+
+	// Sync logic for brush
+	const [brushIndex, setBrushIndex] = useState({
+		start: 0,
+		end: data && data.length > 0 ? data.length - 1 : 0,
+	});
 
 	const dataLen = data?.length ?? 0;
 	const lastIdx = Math.max(0, dataLen - 1);
-
-	const [brushIndex, setBrushIndex] = useState({ start: 0, end: lastIdx });
 
 	const currentDataKey =
 		dataLen > 0
 			? `${dataLen}-${String(data[0].date)}-${String(data[lastIdx].date)}`
 			: "empty";
+
 	const [prevDataKey, setPrevDataKey] = useState(currentDataKey);
 
 	if (currentDataKey !== prevDataKey) {
@@ -88,6 +111,8 @@ export function PortfolioBenchmarkChart({
 		return { start, end };
 	}, [brushIndex.start, brushIndex.end, lastIdx]);
 
+	const currentActiveIdsStr = activeIds.join(",");
+
 	useEffect(() => {
 		const checkMobile = () => setIsMobile(window.innerWidth < 640);
 		checkMobile();
@@ -95,37 +120,51 @@ export function PortfolioBenchmarkChart({
 		return () => window.removeEventListener("resize", checkMobile);
 	}, []);
 
-	const mainPortfolioColor =
-		THEME_COLORS[portfolioColorTheme] || THEME_COLORS.blue;
+	useEffect(() => {
+		if (currentActiveIdsStr !== prevActiveIds) {
+			setPrevActiveIds(currentActiveIdsStr);
+			const nextHidden: Record<string, boolean> = { ...hiddenLines };
+			portfolios.forEach((p) => {
+				nextHidden[p.id] = !(
+					activeIds.includes("ALL") || activeIds.includes(p.id)
+				);
+			});
+			setHiddenLines(nextHidden);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentActiveIdsStr, portfolios, activeIds, prevActiveIds]);
 
-	const colorOf = (key: string) =>
-		key === PORTFOLIO_KEY ? mainPortfolioColor : INDEX_COLORS[key] || "#64748b";
-
-	const seriesKeys = useMemo(
-		() => [PORTFOLIO_KEY, ...userIndices],
-		[userIndices],
+	const visiblePortfolioIds = useMemo(
+		() =>
+			portfolios
+				.filter(
+					(p) =>
+						(activeIds.includes("ALL") || activeIds.includes(p.id)) &&
+						!hiddenLines[p.id],
+				)
+				.map((p) => p.id),
+		[portfolios, activeIds, hiddenLines],
 	);
-	const visibleKeys = useMemo(
-		() => seriesKeys.filter((k) => !hiddenLines[k]),
-		[seriesKeys, hiddenLines],
-	);
 
-	const toggleLine = (key: string) =>
-		setHiddenLines((prev) => ({ ...prev, [key]: !prev[key] }));
+	const visibleIndices = useMemo(
+		() => userIndices.filter((idx) => !hiddenLines[idx]),
+		[userIndices, hiddenLines],
+	);
 
 	const pills = useMemo<PillItem[]>(() => {
-		if (!dataLen) return [];
+		if (!data?.length) return [];
 		const out: PillItem[] = [];
-		visibleKeys.forEach((key) => {
+
+		// Pills dla portfeli
+		portfolios.forEach((p) => {
+			if (!visiblePortfolioIds.includes(p.id)) return;
+			const color = THEME_COLORS[p.colorTheme || "blue"] || THEME_COLORS.blue;
 			for (let i = brush.end; i >= brush.start; i--) {
-				const v = data[i]?.[key];
+				const v = data[i]?.[p.id];
 				if (v != null) {
 					out.push({
-						id: key,
-						color:
-							key === PORTFOLIO_KEY
-								? mainPortfolioColor
-								: INDEX_COLORS[key] || "#64748b",
+						id: p.id,
+						color,
 						value: Number(v),
 						index: i - brush.start,
 					});
@@ -133,15 +172,47 @@ export function PortfolioBenchmarkChart({
 				}
 			}
 		});
+
+		// Pills dla indeksów
+		userIndices.forEach((idx) => {
+			if (!visibleIndices.includes(idx)) return;
+			const color = INDEX_COLORS[idx] || "#64748b";
+			for (let i = brush.end; i >= brush.start; i--) {
+				const v = data[i]?.[idx];
+				if (v != null) {
+					out.push({
+						id: idx,
+						color,
+						value: Number(v),
+						index: i - brush.start,
+					});
+					break;
+				}
+			}
+		});
+
 		return out;
-	}, [data, dataLen, visibleKeys, brush.start, brush.end, mainPortfolioColor]);
+	}, [
+		data,
+		portfolios,
+		userIndices,
+		visiblePortfolioIds,
+		visibleIndices,
+		brush.start,
+		brush.end,
+	]);
 
 	const yDomain = useMemo<[number, number]>(() => {
-		if (!dataLen || visibleKeys.length === 0) return [-5, 5];
-		let min = 0;
-		let max = 0;
+		if (
+			!data?.length ||
+			(visiblePortfolioIds.length === 0 && visibleIndices.length === 0)
+		)
+			return [-5, 5];
+		let min = Infinity;
+		let max = -Infinity;
+
 		for (let i = brush.start; i <= brush.end; i++) {
-			visibleKeys.forEach((key) => {
+			[...visiblePortfolioIds, ...visibleIndices].forEach((key) => {
 				const v = data[i]?.[key];
 				if (v != null) {
 					const n = Number(v);
@@ -150,79 +221,162 @@ export function PortfolioBenchmarkChart({
 				}
 			});
 		}
+		if (!isFinite(min) || !isFinite(max)) return [-5, 5];
+		if (chartMode === "PERCENTAGE") {
+			min = Math.min(min, 0);
+			max = Math.max(max, 0);
+		}
 		const pad = (max - min || 1) * 0.12;
 		return [min - pad, max + pad];
-	}, [data, dataLen, visibleKeys, brush.start, brush.end]);
+	}, [
+		data,
+		visiblePortfolioIds,
+		visibleIndices,
+		brush.start,
+		brush.end,
+		chartMode,
+	]);
 
 	if (!data || dataLen === 0) {
 		return (
 			<div className="flex items-center justify-center h-full min-h-[300px] opacity-60">
 				<p className="text-xs font-bold uppercase tracking-widest text-t-text-tertiary">
-					Brak danych do porównania
+					Brak danych do benchmarku
 				</p>
 			</div>
 		);
 	}
 
-	const currentPortfolioPct = data[lastIdx]?.portfolioPct || 0;
-	const isPortfolioPositive = currentPortfolioPct >= 0;
+	const toggleLine = (id: string) => {
+		setHiddenLines((prev) => ({ ...prev, [id]: !prev[id] }));
+	};
 
-	// Klikalne filtry nad wykresem (portfel zawsze widoczny, indeksy do przełączania)
-	const overlay = (
+	const topControls = (
 		<>
-			<FilterBadge
-				id={PORTFOLIO_KEY}
-				label="Twój Portfel"
-				isSelected
-				onToggle={undefined}
-			/>
-			{userIndices.map((key) => (
-				<FilterBadge
-					key={key}
-					id={key}
-					label={key}
-					isSelected={!hiddenLines[key]}
-					onToggle={() => toggleLine(key)}
-				/>
-			))}
+			{setChartMode && (
+				<div className="flex items-center gap-1 ">
+					<FilterBadge
+						id={currencySymbol}
+						label={currencySymbol}
+						isSelected={chartMode === "VALUE"}
+						onToggle={() => setChartMode("VALUE")}
+					/>
+					<FilterBadge
+						id="%"
+						label="%"
+						isSelected={chartMode === "PERCENTAGE"}
+						onToggle={() => setChartMode("PERCENTAGE")}
+					/>
+				</div>
+			)}
+			{setDataMode && (
+				<div className="flex items-center gap-1 ">
+					<FilterBadge
+						id="REAL"
+						label="Real"
+						isSelected={dataMode === "REAL"}
+						onToggle={() => setDataMode("REAL")}
+					/>
+					<FilterBadge
+						id="SIMULATED"
+						label="Sym"
+						isSelected={dataMode === "SIMULATED"}
+						onToggle={() => setDataMode("SIMULATED")}
+					/>
+				</div>
+			)}
 		</>
 	);
 
+	// Filtry Portfeli
+	const portfoliosOverlay = portfolios?.map((p) => {
+		if (!activeIds.includes("ALL") && !activeIds.includes(p.id)) return null;
+		return (
+			<FilterBadge
+				key={p.id}
+				id={p.id}
+				label={p.name}
+				isSelected={!hiddenLines[p.id]}
+				onToggle={() => toggleLine(p.id)}
+			/>
+		);
+	});
+
+	// Filtry Indeksów
+	const indicesOverlay = userIndices.map((idx) => (
+		<FilterBadge
+			key={idx}
+			id={idx}
+			label={idx}
+			isSelected={!hiddenLines[idx]}
+			onToggle={() => toggleLine(idx)}
+		/>
+	));
+
+	const combinedOverlay = (
+		<div className="flex flex-wrap items-center gap-2 md:justify-end justify-center w-full">
+			{portfoliosOverlay}
+			{userIndices.length > 0 && portfolios.length > 0 && (
+				<div className="w-px h-5 bg-t-border mx-1" />
+			)}
+			{indicesOverlay}
+		</div>
+	);
+
+	const leader = [...pills].sort((a, b) => b.value - a.value)[0];
+	const leaderName =
+		portfolios.find((p) => p.id === leader?.id)?.name || leader?.id; // fallback dla indeksu
+	const leaderValue = leader
+		? chartMode === "PERCENTAGE"
+			? `${leader.value > 0 ? "+" : ""}${leader.value.toFixed(2)}%`
+			: `${formatCurrency(convertPLN(leader.value))} ${currencySymbol}`
+		: null;
+
 	const headerExtra = (
 		<div className="flex flex-wrap items-center gap-3">
-			<div
-				className={cn(
-					"flex items-center gap-1.5 rounded-full border px-2.5 py-1",
-					isPortfolioPositive
-						? "bg-emerald-500/10 border-emerald-500/20"
-						: "bg-rose-500/10 border-rose-500/20",
-				)}
-			>
-				<span
-					className={cn(
-						"text-[11px] font-bold tabular-nums",
-						isPortfolioPositive ? "text-emerald-500" : "text-rose-500",
-					)}
-				>
-					<span className="text-t-text-tertiary mr-1 font-medium">
-						Twój Portfel:
+			{leader && (
+				<div className="hidden md:flex items-center gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 bg-emerald-500/10 border-emerald-500/20">
+					<span className="text-[11px] font-bold tabular-nums text-emerald-500">
+						<span className="text-t-text-tertiary mr-1 font-medium">
+							PROWADZI:
+						</span>
+						{leaderName} {leaderValue}
 					</span>
-					{isPortfolioPositive ? "+" : ""}
-					{currentPortfolioPct.toFixed(2)}%
-				</span>
-			</div>
+				</div>
+			)}
 			<div className="flex flex-wrap items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-				{seriesKeys.map((key) => (
-					<div key={key} className="flex items-center gap-1.5">
+				{/* Legenda Portfeli */}
+				{portfolios.map((p) => {
+					if (!activeIds.includes("ALL") && !activeIds.includes(p.id))
+						return null;
+					return (
+						<div key={p.id} className="flex items-center gap-1.5">
+							<span
+								className="w-3 h-3 rounded-full"
+								style={{
+									backgroundColor:
+										THEME_COLORS[p.colorTheme || "blue"] || THEME_COLORS.blue,
+									opacity: hiddenLines[p.id] ? 0.3 : 1,
+								}}
+							/>
+							<span className={cn(hiddenLines[p.id] && "opacity-40 grayscale")}>
+								{p.name}
+							</span>
+						</div>
+					);
+				})}
+				{/* Legenda Indeksów */}
+				{userIndices.map((idx) => (
+					<div key={idx} className="flex items-center gap-1.5">
 						<span
 							className="w-3 h-3 rounded-full"
 							style={{
-								backgroundColor: colorOf(key),
-								opacity: hiddenLines[key] ? 0.3 : 1,
+								backgroundColor: INDEX_COLORS[idx] || "#64748b",
+								opacity: hiddenLines[idx] ? 0.3 : 1,
 							}}
 						/>
-						<span className={cn(hiddenLines[key] && "opacity-40 grayscale")}>
-							{key === PORTFOLIO_KEY ? "Twój Portfel" : key}
+						<span className={cn(hiddenLines[idx] && "opacity-40 grayscale")}>
+							{idx}
 						</span>
 					</div>
 				))}
@@ -252,29 +406,34 @@ export function PortfolioBenchmarkChart({
 				);
 			})
 		: null;
-
+	// 🚀 DEBUG: Sprawdzamy dokładnie co trafia do wykresu
+	// console.log("📊 DEBUG WYKRESU BENCHMARKU:");
+	// console.log(
+	// 	"1. Dostępne Portfele:",
+	// 	portfolios.map((p) => ({ name: p.name, id: p.id })),
+	// );
+	// console.log("2. Pierwszy punkt danych z brzegu:", data[0]);
+	// console.log(
+	// 	"3. Aktywne ID Portfeli (powinny pasować do kluczy z p.id):",
+	// 	visiblePortfolioIds,
+	// );
 	return (
 		<ChartCardLayout
-			title={titleInside || "Benchmark Portfela"}
+			title={titleInside || "Benchmark Portfeli"}
 			subtitle={
-				subtitleInside ||
-				"Stopa zwrotu Twojego portfela na tle głównych indeksów rynkowych"
+				subtitleInside || "Stopa zwrotu i wycena Twoich strategii na tle rynków"
 			}
+			controls={topControls}
 			icon={TrendingUp}
 			headerExtra={headerExtra}
-			topOverlay={overlay}
+			topOverlay={combinedOverlay}
 			footer={footerRanges}
 		>
 			<div className="w-full flex-1 min-h-0 border-b border-t-border-subtle pb-2 relative h-full">
 				<ResponsiveContainer width="100%" height="100%">
 					<ComposedChart
 						data={data}
-						margin={{
-							top: 40,
-							right: isMobile ? 30 : 40,
-							left: 20,
-							bottom: 0,
-						}}
+						margin={{ top: 40, right: isMobile ? 30 : 40, left: 20, bottom: 0 }}
 					>
 						<defs>
 							<filter
@@ -291,7 +450,6 @@ export function PortfolioBenchmarkChart({
 								</feMerge>
 							</filter>
 						</defs>
-
 						<CartesianGrid
 							strokeDasharray="4 4"
 							vertical={false}
@@ -307,8 +465,11 @@ export function PortfolioBenchmarkChart({
 								fill: "var(--t-text-tertiary)",
 								fontWeight: 500,
 							}}
+							// ZMIANA TUTAJ:
 							tickFormatter={(val) =>
-								`${val > 0 ? "+" : ""}${Math.round(val)}%`
+								chartMode === "PERCENTAGE"
+									? `${val > 0 ? "+" : ""}${Math.round(val)}%`
+									: `${new Intl.NumberFormat("pl-PL", { notation: "compact", compactDisplay: "short" }).format(convertPLN(val))}`
 							}
 							domain={yDomain}
 							allowDataOverflow
@@ -320,7 +481,13 @@ export function PortfolioBenchmarkChart({
 							strokeWidth={1}
 						/>
 						<Tooltip
-							content={<BenchmarkTooltip hiddenLines={hiddenLines} />}
+							content={
+								<BenchmarkTooltip
+									hiddenLines={hiddenLines}
+									chartMode={chartMode}
+									portfolios={portfolios}
+								/>
+							}
 							offset={15}
 							cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
 							wrapperStyle={{
@@ -393,50 +560,65 @@ export function PortfolioBenchmarkChart({
 							/>
 						)}
 
-						{userIndices.map((key) =>
-							hiddenLines[key] ? null : (
+						{/* Renderowanie Indeksów */}
+						{userIndices.map((idx) => {
+							if (hiddenLines[idx]) return null;
+							return (
 								<Line
-									key={`line-${key}`}
+									key={`idx-${idx}`}
 									type="monotone"
-									dataKey={key}
-									name={key}
-									stroke={colorOf(key)}
+									dataKey={idx}
+									name={idx}
+									stroke={INDEX_COLORS[idx] || "#64748b"}
 									strokeWidth={2.5}
+									strokeDasharray="5 5"
 									dot={false}
 									activeDot={{ r: 4, strokeWidth: 0 }}
 									opacity={0.8}
 									pointerEvents="none"
+									isAnimationActive={true}
+									animationDuration={800}
+								/>
+							);
+						})}
+
+						{/* Renderowanie Portfeli */}
+						{portfolios.map((p) => {
+							if (hiddenLines[p.id]) return null;
+							if (!visiblePortfolioIds.includes(p.id)) return null;
+
+							const themeColor =
+								THEME_COLORS[p.colorTheme || "blue"] || THEME_COLORS.blue;
+
+							return (
+								<Line
+									key={`port-${p.id}`}
+									type="monotone"
+									dataKey={p.id}
+									name={p.name}
+									stroke={themeColor}
+									strokeWidth={3.5}
+									dot={false}
+									activeDot={{
+										r: 6,
+										fill: themeColor,
+										stroke: "var(--t-bg-panel)",
+										strokeWidth: 2,
+									}}
+									// 🚀 USUNIĘTO filter="url(#lineGlow)" - to on ukrywał ścieżki SVG!
+									pointerEvents="none"
 									isAnimationActive
 									animationDuration={800}
 								/>
-							),
-						)}
-
-						<Line
-							type="monotone"
-							dataKey={PORTFOLIO_KEY}
-							name="Twój Portfel"
-							stroke={mainPortfolioColor}
-							strokeWidth={3.5}
-							dot={false}
-							activeDot={{
-								r: 6,
-								fill: mainPortfolioColor,
-								stroke: "var(--t-bg-panel)",
-								strokeWidth: 2,
-							}}
-							filter="url(#lineGlow)"
-							pointerEvents="none"
-							isAnimationActive
-							animationDuration={800}
-						/>
-
+							);
+						})}
+						{/* Reusable EndPills */}
 						<EndPills
 							pills={pills}
 							count={brush.end - brush.start + 1}
 							domain={yDomain}
-							mode="PERCENTAGE"
-							currencySymbol="%"
+							mode={chartMode}
+							currencySymbol={currencySymbol}
 							convertPLN={convertPLN}
 						/>
 					</ComposedChart>
@@ -461,6 +643,8 @@ interface BenchmarkTooltipProps {
 	payload?: TooltipPayloadItem[];
 	label?: string;
 	hiddenLines?: Record<string, boolean>;
+	chartMode: "VALUE" | "PERCENTAGE";
+	portfolios: PortfolioInfo[];
 }
 
 function BenchmarkTooltip({
@@ -468,22 +652,32 @@ function BenchmarkTooltip({
 	payload,
 	label,
 	hiddenLines,
+	chartMode,
+	portfolios,
 }: BenchmarkTooltipProps) {
+	const { currency, convertPLN } = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
+
 	if (!active || !payload || payload.length === 0) return null;
 
-	const sortedPayload = [...payload]
+	// Zabezpieczenie przed duplikatami poprzez deduplikację na podstawie dataKey
+	const uniquePayload = Array.from(
+		new Map(payload.map((item) => [item.dataKey, item])).values(),
+	);
+
+	const sortedPayload = uniquePayload
 		.filter((entry) => !(hiddenLines && hiddenLines[entry.dataKey]))
 		.sort((a, b) => b.value - a.value);
 
-	const mainEntry = sortedPayload.find((e) => e.dataKey === PORTFOLIO_KEY);
-	const isMainPositive = mainEntry ? mainEntry.value >= 0 : true;
+	const topEntry = sortedPayload[0];
+	const isTopPositive = topEntry ? topEntry.value >= 0 : true;
 
 	return (
-		<div className="bg-t-bg-panel/95 backdrop-blur-md border border-t-border rounded-xl p-4 shadow-xl min-w-[240px] max-w-[280px] relative overflow-hidden">
+		<div className="bg-t-bg-panel/95 backdrop-blur-md border border-t-border rounded-xl p-4 shadow-xl min-w-[240px] max-w-[300px] relative overflow-hidden">
 			<div
 				className={cn(
 					"absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r",
-					isMainPositive
+					isTopPositive
 						? "from-emerald-400 to-emerald-600"
 						: "from-rose-400 to-rose-600",
 				)}
@@ -494,10 +688,10 @@ function BenchmarkTooltip({
 			<div className="space-y-2.5">
 				{sortedPayload.map((entry, index) => {
 					const isPositive = entry.value >= 0;
-					const isPortfolio = entry.dataKey === PORTFOLIO_KEY;
+					const isPortfolio = portfolios.some((p) => p.id === entry.dataKey);
 					return (
 						<div
-							key={index}
+							key={`${entry.dataKey}-${index}`}
 							className={cn(
 								"flex justify-between items-center gap-6",
 								isPortfolio &&
@@ -511,7 +705,7 @@ function BenchmarkTooltip({
 								/>
 								<span
 									className={cn(
-										"text-xs",
+										"text-xs line-clamp-1 max-w-[140px]",
 										isPortfolio
 											? "font-bold text-t-text-primary"
 											: "font-medium text-t-text-secondary",
@@ -522,12 +716,13 @@ function BenchmarkTooltip({
 							</div>
 							<span
 								className={cn(
-									"text-sm font-bold tabular-nums",
+									"text-sm font-bold tabular-nums whitespace-nowrap",
 									isPositive ? "text-emerald-500" : "text-rose-500",
 								)}
 							>
-								{isPositive ? "+" : ""}
-								{Number(entry.value).toFixed(2)}%
+								{chartMode === "PERCENTAGE"
+									? `${isPositive ? "+" : ""}${Number(entry.value).toFixed(2)}%`
+									: `${formatCurrency(convertPLN(entry.value))} ${currencySymbol}`}
 							</span>
 						</div>
 					);

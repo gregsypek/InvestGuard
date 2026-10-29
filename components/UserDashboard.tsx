@@ -4,6 +4,7 @@ import {
 	Activity,
 	Banknote,
 	Globe,
+	Info,
 	LineChart,
 	RefreshCw,
 	Settings,
@@ -403,16 +404,62 @@ export function UserDashboard(props: UserDashboardProps) {
 							</div>
 						)}
 
-						{activeChartTab === "BENCHMARK" && (
+						{/* {activeChartTab === "BENCHMARK" && (
 							<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
 								<PortfolioBenchmarkChart
 									key={chartMode}
 									data={benchmarkChartData}
+									portfolios={props.portfolios} // Przekazujemy listę portfeli
+									activeIds={selectedIds} // Przekazujemy stan klikniętych filtrów
+									chartMode={chartMode}
+									setChartMode={setChartMode}
+									dataMode={dataMode}
+									setDataMode={setDataMode} // Przekazujemy obsługę Real/Sym
 									userIndices={props.userIndices || []}
 									activeRange={activeRange}
 									onRangeChange={handleRangeChange}
 									subtitleInside={chartSubtitle}
 								/>
+							</div>
+						)} */}
+						{activeChartTab === "BENCHMARK" && (
+							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
+								{/* 🚀 BANER INFORMACYJNY */}
+								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
+									<Info className="w-5 h-5 shrink-0 mt-0.5" />
+									<div className="flex flex-col">
+										<span className="text-sm font-bold tracking-tight">
+											Jak czytać ten wykres?
+										</span>
+										<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
+											Wykres symuluje scenariusz, w którym Twój całkowity
+											kapitał początkowy (wkład własny) został w całości
+											zainwestowany w wybrane rynki (np. S&P 500, Bitcoin).
+											Przerywane linie reprezentują{" "}
+											<strong>"co by było, gdyby"</strong>, pozwalając Ci na
+											pierwszy rzut oka ocenić, czy Twoje aktywne strategie
+											(ciągłe linie) przynoszą lepsze efekty niż bierne
+											podążanie za rynkiem.
+										</span>
+									</div>
+								</div>
+
+								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+									<PortfolioBenchmarkChart
+										key={chartMode}
+										data={benchmarkChartData}
+										portfolios={props.portfolios}
+										activeIds={selectedIds}
+										chartMode={chartMode}
+										setChartMode={setChartMode}
+										dataMode={dataMode}
+										setDataMode={setDataMode}
+										userIndices={props.userIndices || []}
+										activeRange={activeRange}
+										onRangeChange={handleRangeChange}
+										subtitleInside={chartSubtitle}
+									/>
+								</div>
 							</div>
 						)}
 					</div>

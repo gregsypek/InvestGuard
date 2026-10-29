@@ -383,6 +383,10 @@ export function useDashboardData({
 				});
 			});
 
+			const firstDay = baseData[0];
+			const initialPortfolioValue = firstDay ? firstDay.value : 0;
+			const initialPortfolioInvested = firstDay ? firstDay.invested : 0;
+
 			// Build Benchmark arrays
 			const mockIndexHistory: Record<string, Record<string, number>> = {};
 			userIndices.forEach((idx, i) => {
@@ -414,44 +418,94 @@ export function useDashboardData({
 			});
 
 			const finalBenchmarkData: any[] = [];
-			const firstDay = baseData[0];
-			const initialPortfolioValue = firstDay ? firstDay.value : 0;
-			const initialPortfolioInvested = firstDay ? firstDay.invested : 0;
-			const basePortfolioPct =
-				initialPortfolioInvested > 0
-					? ((initialPortfolioValue - initialPortfolioInvested) /
-							initialPortfolioInvested) *
-						100
-					: 0;
 
+			// Obliczamy wartości bazowe (pierwszy dzień w wybranym zakresie) dla Indeksów
+			const firstDayDate = allDates[0];
 			const baseIndexValues: Record<string, number> = {};
 			userIndices.forEach((idx) => {
 				baseIndexValues[idx] =
-					firstDay && mockIndexHistory[idx][firstDay.date]
-						? mockIndexHistory[idx][firstDay.date]
+					firstDayDate && mockIndexHistory[idx][firstDayDate]
+						? mockIndexHistory[idx][firstDayDate]
 						: 0;
 			});
 
-			for (let i = 0; i < baseData.length; i++) {
-				const today = baseData[i];
-				let currentPortfolioPct = 0;
-				if (today.invested > 0) {
-					currentPortfolioPct =
-						((today.value - today.invested) / today.invested) * 100 -
-						basePortfolioPct;
-				}
-				const dataPoint: any = {
-					date: today.date,
-					portfolioPct: Number(currentPortfolioPct.toFixed(2)),
-				};
-				userIndices.forEach((idx) => {
-					let idxPct = 0;
-					const todayValue = mockIndexHistory[idx][today.date];
-					const baseValue = baseIndexValues[idx];
-					if (baseValue > 0)
-						idxPct = ((todayValue - baseValue) / baseValue) * 100;
-					dataPoint[idx] = Number(idxPct.toFixed(2));
+			// Obliczamy wartości bazowe dla poszczególnych Portfeli
+			// (dzięki temu, w trybie procentowym wykres zawsze zaczyna się od zera na początku przedziału)
+			const basePortfolioPcts: Record<string, number> = {};
+			const basePortfolioValues: Record<string, number> = {};
+
+			if (firstDayDate) {
+				const initialSnaps = sortedSnapshots.filter(
+					(s) => getDateStr(s.date) === firstDayDate,
+				);
+				activePortfolioIds.forEach((pId) => {
+					const snap = initialSnaps.find((s) => s.portfolioId === pId);
+					if (snap) {
+						basePortfolioValues[pId] = snap.totalValue;
+						basePortfolioPcts[pId] =
+							snap.investedValue > 0
+								? ((snap.totalValue - snap.investedValue) /
+										snap.investedValue) *
+									100
+								: 0;
+					} else {
+						basePortfolioValues[pId] = 0;
+						basePortfolioPcts[pId] = 0;
+					}
 				});
+			}
+
+			// Główna pętla budująca dane dzień po dniu
+			for (let i = 0; i < allDates.length; i++) {
+				const dateStr = allDates[i];
+				const dataPoint: any = { date: dateStr };
+
+				// 1. Zapisujemy zyski procentowe / wartościowe dla poszczególnych portfeli
+				activePortfolioIds.forEach((pId) => {
+					const currentState = lastKnownState[pId];
+					if (currentState) {
+						if (chartMode === "PERCENTAGE") {
+							let currentPct = 0;
+							if (currentState.invested > 0) {
+								currentPct =
+									((currentState.value - currentState.invested) /
+										currentState.invested) *
+									100;
+							}
+							dataPoint[pId] = Number(
+								(currentPct - (basePortfolioPcts[pId] || 0)).toFixed(2),
+							);
+						} else {
+							// Tryb VALUE
+							dataPoint[pId] = Number(currentState.value.toFixed(2));
+						}
+					}
+				});
+
+				// 2. Zapisujemy zyski dla indeksów
+				userIndices.forEach((idx) => {
+					const todayValue = mockIndexHistory[idx][dateStr];
+					const baseValue = baseIndexValues[idx];
+
+					if (chartMode === "PERCENTAGE") {
+						let idxPct = 0;
+						if (baseValue > 0)
+							idxPct = ((todayValue - baseValue) / baseValue) * 100;
+						dataPoint[idx] = Number(idxPct.toFixed(2));
+					} else {
+						// Symulowana kwota "VALUE" (w PLN) – startujemy od sumy całego kapitału w dniu pierwszym (dla porównania)
+						let simulatedValue = 0;
+						if (baseValue > 0) {
+							const multiplier = todayValue / baseValue;
+							simulatedValue =
+								(initialPortfolioInvested > 0
+									? initialPortfolioInvested
+									: initialPortfolioValue) * multiplier;
+						}
+						dataPoint[idx] = Number(simulatedValue.toFixed(2));
+					}
+				});
+
 				finalBenchmarkData.push(dataPoint);
 			}
 

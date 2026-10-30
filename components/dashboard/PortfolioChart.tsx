@@ -105,8 +105,13 @@ export function PortfolioChart({
 		end: data && data.length > 0 ? data.length - 1 : 0,
 	});
 
+	// 🔥 BEZPIECZNY WZORZEC REACT: Aktualizacja stanu podczas renderowania
+	// Włączamy 'activeRange' do klucza, by mieć pewność, że kliknięcie w przycisk ZAWSZE resetuje brusha
 	const currentDataKey =
-		data && data.length > 0 ? `${data.length}-${data[0].date}` : "empty";
+		data && data.length > 0
+			? `${activeRange}-${data.length}-${data[0].date}`
+			: `empty-${activeRange}`;
+
 	const [prevDataKey, setPrevDataKey] = useState(currentDataKey);
 
 	if (currentDataKey !== prevDataKey) {
@@ -116,7 +121,6 @@ export function PortfolioChart({
 			end: data && data.length > 0 ? data.length - 1 : 0,
 		});
 	}
-
 	useEffect(() => {
 		const checkMobile = () => setIsMobile(window.innerWidth < 640);
 		checkMobile();

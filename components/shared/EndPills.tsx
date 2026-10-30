@@ -157,6 +157,7 @@ export function EndPills({
 								height={PILL_HEIGHT}
 								rx={6}
 								fill={it.color}
+								fillOpacity={0.7}
 								stroke="var(--t-bg-panel)"
 								strokeWidth={2}
 							/>

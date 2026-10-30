@@ -356,76 +356,118 @@ export function UserDashboard(props: UserDashboardProps) {
 					{/* KONTENER NA AKTYWNY WYKRES */}
 					<div className="mt-8 transition-all duration-300 animate-in fade-in zoom-in-95">
 						{activeChartTab === "PORTFOLIO" && (
-							<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
-								<PortfolioChart
-									data={portfolioChartData}
-									transactions={filteredTransactions}
-									mode={chartMode}
-									setMode={setChartMode}
-									dataMode={dataMode}
-									setDataMode={setDataMode}
-									activeRange={activeRange}
-									onRangeChange={handleRangeChange}
-									showBrush={true}
-									titleInside="Analiza Wartości Kapitału"
-									subtitleInside={chartSubtitle}
-									portfolios={props.portfolios}
-									onPortfolioToggle={togglePortfolio}
-									activeIds={selectedIds}
-								/>
+							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
+								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+									<PortfolioChart
+										data={portfolioChartData}
+										transactions={filteredTransactions}
+										mode={chartMode}
+										setMode={setChartMode}
+										dataMode={dataMode}
+										setDataMode={setDataMode}
+										activeRange={activeRange}
+										onRangeChange={handleRangeChange}
+										showBrush={true}
+										titleInside="Analiza Wartości Kapitału"
+										subtitleInside={chartSubtitle}
+										portfolios={props.portfolios}
+										onPortfolioToggle={togglePortfolio}
+										activeIds={selectedIds}
+									/>
+								</div>
+								{/* 🚀 BANER INFORMACYJNY - PORTFOLIO */}
+								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
+									<Info className="w-5 h-5 shrink-0 mt-0.5" />
+									<div className="flex flex-col">
+										<span className="text-sm font-bold tracking-tight">
+											Jak czytać ten wykres?
+										</span>
+										<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
+											Wykres prezentuje historyczną wartość kapitału dla
+											wybranych portfeli.{" "}
+											<strong>W trybie wyceny (PLN/EUR/USD)</strong> widoczne są
+											dwie główne linie: zsumowana, całkowita wartość aktywów
+											(gruba, falista) oraz wkład własny (przerywana), a odstęp
+											między nimi to wygenerowany wynik. Zdarzenia inwestycyjne
+											(np. wpłaty i wypłaty) nanoszone są punktowo, by pomóc Ci
+											powiązać nagłe skoki portfela z Twoją faktyczną
+											aktywnością na koncie.
+										</span>
+									</div>
+								</div>
 							</div>
 						)}
 
 						{activeChartTab === "DAILY_PNL" && (
-							<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
-								<AbsoluteDailyPnLChart
-									key={chartMode}
-									data={absoluteChartData}
-								/>
+							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
+								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+									<AbsoluteDailyPnLChart
+										key={chartMode}
+										data={absoluteChartData}
+									/>
+								</div>
+								{/* 🚀 BANER INFORMACYJNY - DAILY PNL */}
+								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
+									<Info className="w-5 h-5 shrink-0 mt-0.5" />
+									<div className="flex flex-col">
+										<span className="text-sm font-bold tracking-tight">
+											Jak czytać ten wykres?
+										</span>
+										<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
+											Przedstawia on bezwzględną, codzienną zmianę wartości
+											Twoich portfeli ujętą jako słupek wygenerowanego zysku (na
+											zielono) lub straty (na czerwono) dla konkretnego dnia na
+											rynku. Linia kropek reprezentuje strumień wpłat (Net Cash
+											Flow) oddzielony od wyniku wygenerowanego bezpośrednio ze
+											wzrostów na giełdzie, abyś dokładnie widział, jak
+											wypracowany zysk ma się do kapitału, który zasila konto.
+										</span>
+									</div>
+								</div>
 							</div>
 						)}
 
 						{activeChartTab === "COMPARISON" && (
-							<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
-								<PortfoliosComparisonChart
-									key={`compare-${chartMode}`}
-									data={portfoliosComparisonData}
-									portfolios={props.portfolios}
-									activeIds={selectedIds}
-									chartMode={chartMode}
-									setChartMode={setChartMode}
-									dataMode={dataMode}
-									setDataMode={setDataMode}
-									activeRange={activeRange}
-									onRangeChange={handleRangeChange}
-									titleInside="Zbiorczy wykres portfeli"
-									subtitleInside={chartSubtitle}
-								/>
+							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
+								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+									<PortfoliosComparisonChart
+										key={`compare-${chartMode}`}
+										data={portfoliosComparisonData}
+										portfolios={props.portfolios}
+										activeIds={selectedIds}
+										chartMode={chartMode}
+										setChartMode={setChartMode}
+										dataMode={dataMode}
+										setDataMode={setDataMode}
+										activeRange={activeRange}
+										onRangeChange={handleRangeChange}
+										titleInside="Zbiorczy wykres portfeli"
+										subtitleInside={chartSubtitle}
+									/>
+								</div>
+								{/* 🚀 BANER INFORMACYJNY - COMPARISON */}
+								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
+									<Info className="w-5 h-5 shrink-0 mt-0.5" />
+									<div className="flex flex-col">
+										<span className="text-sm font-bold tracking-tight">
+											Jak czytać ten wykres?
+										</span>
+										<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
+											To arena walki wszystkich Twoich strategii inwestycyjnych.
+											Śledzi zachowanie każdego subportfela niezależnie na
+											jednej wspólnej osi, odcinając sumaryczną wartość
+											inwestycji. Wykorzystaj ten tryb z przyciskiem procentowym
+											(%), by łatwo sprawdzić i porównać stopy zwrotu każdego
+											koszyka i zobaczyć, która strategia aktualnie wygrywa z
+											pozostałymi w ujęciu procentowym.
+										</span>
+									</div>
+								</div>
 							</div>
 						)}
 
-						{/* {activeChartTab === "BENCHMARK" && (
-							<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
-								<PortfolioBenchmarkChart
-									key={chartMode}
-									data={benchmarkChartData}
-									portfolios={props.portfolios} // Przekazujemy listę portfeli
-									activeIds={selectedIds} // Przekazujemy stan klikniętych filtrów
-									chartMode={chartMode}
-									setChartMode={setChartMode}
-									dataMode={dataMode}
-									setDataMode={setDataMode} // Przekazujemy obsługę Real/Sym
-									userIndices={props.userIndices || []}
-									activeRange={activeRange}
-									onRangeChange={handleRangeChange}
-									subtitleInside={chartSubtitle}
-								/>
-							</div>
-						)} */}
 						{activeChartTab === "BENCHMARK" && (
 							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
-								{/* 🚀 BANER INFORMACYJNY */}
-
 								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
 									<PortfolioBenchmarkChart
 										key={chartMode}
@@ -442,6 +484,7 @@ export function UserDashboard(props: UserDashboardProps) {
 										subtitleInside={chartSubtitle}
 									/>
 								</div>
+								{/* 🚀 BANER INFORMACYJNY - BENCHMARK */}
 								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
 									<Info className="w-5 h-5 shrink-0 mt-0.5" />
 									<div className="flex flex-col">
@@ -449,17 +492,17 @@ export function UserDashboard(props: UserDashboardProps) {
 											Jak czytać ten wykres?
 										</span>
 										<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
-											Jak czytać ten wykres? Wykres symuluje scenariusz, w
-											którym Twój całkowity kapitał początkowy (wkład własny)
-											został w całości zainwestowany w wybrane rynki
-											referencyjne (np. S&P 500, Bitcoin). Przerywane linie
-											pokazują wariant "co by było, gdyby", pozwalając łatwo
-											ocenić, czy Twoja aktywna strategia przynosi lepsze efekty
-											niż bierne podążanie za rynkiem. <strong>Uwaga:</strong> W
-											trybie kwotowym (PLN) linie rynków referencyjnych startują
-											od wartości Twojego wkładu własnego, podczas gdy linia
-											portfela pokazuje jego pełną rynkową wycenę (wraz z
-											wypracowanymi wcześniej zyskami).
+											Wykres symuluje scenariusz, w którym Twój całkowity
+											kapitał początkowy (wkład własny) został w całości
+											zainwestowany w wybrane rynki referencyjne (np. S&P 500,
+											Bitcoin). Przerywane linie pokazują wariant "co by było,
+											gdyby", pozwalając łatwo ocenić, czy Twoja aktywna
+											strategia przynosi lepsze efekty niż bierne podążanie za
+											rynkiem. <strong>Uwaga:</strong> W trybie kwotowym (PLN)
+											linie rynków referencyjnych startują od wartości Twojego
+											początkowego wkładu własnego w zadanym oknie czasowym,
+											podczas gdy linia portfela pokazuje jego pełną rynkową
+											wycenę wraz ze wszystkimi bieżącymi wpłatami i wypłatami.
 										</span>
 									</div>
 								</div>

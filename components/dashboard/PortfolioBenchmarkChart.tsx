@@ -25,7 +25,6 @@ import { useChartContext } from "../providers/ChartProvider";
 
 export interface BenchmarkDataPoint {
 	date: string | Date;
-	// Zamiast 'portfolioPct' oczekujemy kluczy portfeli p.id oraz indeksów (np. 'SP500')
 	[key: string]: string | number | Date;
 }
 
@@ -59,6 +58,9 @@ const INDEX_COLORS: Record<string, string> = {
 	BTC: "#f59e0b",
 	GOLD: "#fbbf24",
 };
+
+const TOTAL_KEY = "TOTAL_CAPITAL";
+const TOTAL_COLOR = "#2563eb"; // Highlighted primary blue color for Total Capital
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
 
@@ -155,7 +157,23 @@ export function PortfolioBenchmarkChart({
 		if (!data?.length) return [];
 		const out: PillItem[] = [];
 
-		// Pills dla portfeli
+		// Pill for Total Capital
+		if (!hiddenLines[TOTAL_KEY]) {
+			for (let i = brush.end; i >= brush.start; i--) {
+				const v = data[i]?.[TOTAL_KEY];
+				if (v != null) {
+					out.push({
+						id: TOTAL_KEY,
+						color: TOTAL_COLOR,
+						value: Number(v),
+						index: i - brush.start,
+					});
+					break;
+				}
+			}
+		}
+
+		// Pills for individual portfolios
 		portfolios.forEach((p) => {
 			if (!visiblePortfolioIds.includes(p.id)) return;
 			const color = THEME_COLORS[p.colorTheme || "blue"] || THEME_COLORS.blue;
@@ -173,7 +191,7 @@ export function PortfolioBenchmarkChart({
 			}
 		});
 
-		// Pills dla indeksów
+		// Pills for market indices
 		userIndices.forEach((idx) => {
 			if (!visibleIndices.includes(idx)) return;
 			const color = INDEX_COLORS[idx] || "#64748b";
@@ -198,6 +216,7 @@ export function PortfolioBenchmarkChart({
 		userIndices,
 		visiblePortfolioIds,
 		visibleIndices,
+		hiddenLines,
 		brush.start,
 		brush.end,
 	]);
@@ -205,14 +224,19 @@ export function PortfolioBenchmarkChart({
 	const yDomain = useMemo<[number, number]>(() => {
 		if (
 			!data?.length ||
-			(visiblePortfolioIds.length === 0 && visibleIndices.length === 0)
+			(visiblePortfolioIds.length === 0 &&
+				visibleIndices.length === 0 &&
+				hiddenLines[TOTAL_KEY])
 		)
 			return [-5, 5];
 		let min = Infinity;
 		let max = -Infinity;
 
+		const keysToCheck = [...visiblePortfolioIds, ...visibleIndices];
+		if (!hiddenLines[TOTAL_KEY]) keysToCheck.push(TOTAL_KEY);
+
 		for (let i = brush.start; i <= brush.end; i++) {
-			[...visiblePortfolioIds, ...visibleIndices].forEach((key) => {
+			keysToCheck.forEach((key) => {
 				const v = data[i]?.[key];
 				if (v != null) {
 					const n = Number(v);
@@ -232,6 +256,7 @@ export function PortfolioBenchmarkChart({
 		data,
 		visiblePortfolioIds,
 		visibleIndices,
+		hiddenLines,
 		brush.start,
 		brush.end,
 		chartMode,
@@ -254,7 +279,7 @@ export function PortfolioBenchmarkChart({
 	const topControls = (
 		<>
 			{setChartMode && (
-				<div className="flex items-center gap-1 ">
+				<div className="flex items-center gap-1">
 					<FilterBadge
 						id={currencySymbol}
 						label={currencySymbol}
@@ -270,7 +295,7 @@ export function PortfolioBenchmarkChart({
 				</div>
 			)}
 			{setDataMode && (
-				<div className="flex items-center gap-1 ">
+				<div className="flex items-center gap-1">
 					<FilterBadge
 						id="REAL"
 						label="Real"
@@ -288,7 +313,7 @@ export function PortfolioBenchmarkChart({
 		</>
 	);
 
-	// Filtry Portfeli
+	// Portfolio Filters
 	const portfoliosOverlay = portfolios?.map((p) => {
 		if (!activeIds.includes("ALL") && !activeIds.includes(p.id)) return null;
 		return (
@@ -302,7 +327,7 @@ export function PortfolioBenchmarkChart({
 		);
 	});
 
-	// Filtry Indeksów
+	// Index Filters
 	const indicesOverlay = userIndices.map((idx) => (
 		<FilterBadge
 			key={idx}
@@ -315,17 +340,24 @@ export function PortfolioBenchmarkChart({
 
 	const combinedOverlay = (
 		<div className="flex flex-wrap items-center gap-2 md:justify-end justify-center w-full">
+			<FilterBadge
+				id={TOTAL_KEY}
+				label="Suma Portfeli"
+				isSelected={!hiddenLines[TOTAL_KEY]}
+				onToggle={() => toggleLine(TOTAL_KEY)}
+			/>
+			{portfolios.length > 0 && <div className="w-px h-5 bg-t-border mx-1" />}
 			{portfoliosOverlay}
-			{userIndices.length > 0 && portfolios.length > 0 && (
-				<div className="w-px h-5 bg-t-border mx-1" />
-			)}
+			{userIndices.length > 0 && <div className="w-px h-5 bg-t-border mx-1" />}
 			{indicesOverlay}
 		</div>
 	);
 
 	const leader = [...pills].sort((a, b) => b.value - a.value)[0];
 	const leaderName =
-		portfolios.find((p) => p.id === leader?.id)?.name || leader?.id; // fallback dla indeksu
+		leader?.id === TOTAL_KEY
+			? "Suma Portfeli"
+			: portfolios.find((p) => p.id === leader?.id)?.name || leader?.id;
 	const leaderValue = leader
 		? chartMode === "PERCENTAGE"
 			? `${leader.value > 0 ? "+" : ""}${leader.value.toFixed(2)}%`
@@ -345,7 +377,23 @@ export function PortfolioBenchmarkChart({
 				</div>
 			)}
 			<div className="flex flex-wrap items-center gap-3 ml-2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-				{/* Legenda Portfeli */}
+				{/* Suma Portfeli Legend */}
+				<div className="flex items-center gap-1.5">
+					<span
+						className="w-3 h-3 rounded-full"
+						style={{
+							backgroundColor: TOTAL_COLOR,
+							opacity: hiddenLines[TOTAL_KEY] ? 0.3 : 1,
+						}}
+					/>
+					<span
+						className={cn(hiddenLines[TOTAL_KEY] && "opacity-40 grayscale")}
+					>
+						Suma Portfeli
+					</span>
+				</div>
+
+				{/* Individual Portfolios Legend */}
 				{portfolios.map((p) => {
 					if (!activeIds.includes("ALL") && !activeIds.includes(p.id))
 						return null;
@@ -365,7 +413,7 @@ export function PortfolioBenchmarkChart({
 						</div>
 					);
 				})}
-				{/* Legenda Indeksów */}
+				{/* Market Indices Legend */}
 				{userIndices.map((idx) => (
 					<div key={idx} className="flex items-center gap-1.5">
 						<span
@@ -400,24 +448,13 @@ export function PortfolioBenchmarkChart({
 							id={range}
 							label={range}
 							isSelected={activeRange === range && !disabled}
-							// 🚀 Fix: Pass an empty no-op handler instead of undefined to satisfy TypeScript
 							onToggle={disabled ? () => {} : (id) => onRangeChange?.(id)}
 						/>
 					</div>
 				);
 			})
 		: null;
-	// 🚀 DEBUG: Sprawdzamy dokładnie co trafia do wykresu
-	// console.log("📊 DEBUG WYKRESU BENCHMARKU:");
-	// console.log(
-	// 	"1. Dostępne Portfele:",
-	// 	portfolios.map((p) => ({ name: p.name, id: p.id })),
-	// );
-	// console.log("2. Pierwszy punkt danych z brzegu:", data[0]);
-	// console.log(
-	// 	"3. Aktywne ID Portfeli (powinny pasować do kluczy z p.id):",
-	// 	visiblePortfolioIds,
-	// );
+
 	return (
 		<ChartCardLayout
 			title={titleInside || "Benchmark Portfeli"}
@@ -436,21 +473,6 @@ export function PortfolioBenchmarkChart({
 						data={data}
 						margin={{ top: 40, right: isMobile ? 30 : 40, left: 20, bottom: 0 }}
 					>
-						<defs>
-							<filter
-								id="lineGlow"
-								x="-20%"
-								y="-20%"
-								width="140%"
-								height="140%"
-							>
-								<feGaussianBlur stdDeviation="3" result="blur" />
-								<feMerge>
-									<feMergeNode in="blur" />
-									<feMergeNode in="SourceGraphic" />
-								</feMerge>
-							</filter>
-						</defs>
 						<CartesianGrid
 							strokeDasharray="4 4"
 							vertical={false}
@@ -466,7 +488,6 @@ export function PortfolioBenchmarkChart({
 								fill: "var(--t-text-tertiary)",
 								fontWeight: 500,
 							}}
-							// ZMIANA TUTAJ:
 							tickFormatter={(val) =>
 								chartMode === "PERCENTAGE"
 									? `${val > 0 ? "+" : ""}${Math.round(val)}%`
@@ -583,7 +604,30 @@ export function PortfolioBenchmarkChart({
 							);
 						})}
 
-						{/* Renderowanie Portfeli */}
+						{/* Renderowanie Sumy Portfeli */}
+						{!hiddenLines[TOTAL_KEY] && (
+							<Line
+								key={`port-${TOTAL_KEY}`}
+								type="monotone"
+								dataKey={TOTAL_KEY}
+								name="Suma Portfeli"
+								stroke={TOTAL_COLOR}
+								strokeWidth={4}
+								strokeDasharray="7 7" // 🚀 DODANA ZMIANA: Przerywana linia dla Sumy Portfeli
+								dot={false}
+								activeDot={{
+									r: 7,
+									fill: TOTAL_COLOR,
+									stroke: "var(--t-bg-panel)",
+									strokeWidth: 2,
+								}}
+								pointerEvents="none"
+								isAnimationActive
+								animationDuration={800}
+							/>
+						)}
+
+						{/* Renderowanie Poszczególnych Portfeli */}
 						{portfolios.map((p) => {
 							if (hiddenLines[p.id]) return null;
 							if (!visiblePortfolioIds.includes(p.id)) return null;
@@ -598,7 +642,7 @@ export function PortfolioBenchmarkChart({
 									dataKey={p.id}
 									name={p.name}
 									stroke={themeColor}
-									strokeWidth={3.5}
+									strokeWidth={3}
 									dot={false}
 									activeDot={{
 										r: 6,
@@ -606,13 +650,13 @@ export function PortfolioBenchmarkChart({
 										stroke: "var(--t-bg-panel)",
 										strokeWidth: 2,
 									}}
-									// 🚀 USUNIĘTO filter="url(#lineGlow)" - to on ukrywał ścieżki SVG!
 									pointerEvents="none"
 									isAnimationActive
 									animationDuration={800}
 								/>
 							);
 						})}
+
 						{/* Reusable EndPills */}
 						<EndPills
 							pills={pills}
@@ -661,7 +705,6 @@ function BenchmarkTooltip({
 
 	if (!active || !payload || payload.length === 0) return null;
 
-	// Zabezpieczenie przed duplikatami poprzez deduplikację na podstawie dataKey
 	const uniquePayload = Array.from(
 		new Map(payload.map((item) => [item.dataKey, item])).values(),
 	);
@@ -689,7 +732,12 @@ function BenchmarkTooltip({
 			<div className="space-y-2.5">
 				{sortedPayload.map((entry, index) => {
 					const isPositive = entry.value >= 0;
-					const isPortfolio = portfolios.some((p) => p.id === entry.dataKey);
+					const isPortfolio =
+						portfolios.some((p) => p.id === entry.dataKey) ||
+						entry.dataKey === TOTAL_KEY;
+					const displayName =
+						entry.dataKey === TOTAL_KEY ? "Suma Portfeli" : entry.name;
+
 					return (
 						<div
 							key={`${entry.dataKey}-${index}`}
@@ -712,7 +760,7 @@ function BenchmarkTooltip({
 											: "font-medium text-t-text-secondary",
 									)}
 								>
-									{entry.name}
+									{displayName}
 								</span>
 							</div>
 							<span

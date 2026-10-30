@@ -44,7 +44,7 @@ export function useDashboardData({
 	const searchParams = useSearchParams();
 
 	const [isPending, startTransition] = useTransition();
-	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("SIMULATED");
+	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("REAL");
 	const [chartMode, setChartMode] = useState<"VALUE" | "PERCENTAGE">("VALUE");
 	const [selectedIds, setSelectedIds] = useState(["ALL"]);
 
@@ -192,7 +192,7 @@ export function useDashboardData({
 
 		const now = new Date();
 		now.setUTCHours(0, 0, 0, 0);
-		let cutoff = new Date(0); // Default to MAX
+		let cutoff = new Date(0);
 
 		switch (activeRange) {
 			case "1W":
@@ -244,7 +244,6 @@ export function useDashboardData({
 		const maxDate = Math.max(...dates);
 		const daysDiff = differenceInDays(new Date(maxDate), new Date(minDate));
 
-		// If viewing less than 90 days, return daily raw data
 		if (daysDiff < 90) return timeFilteredSnapshots;
 
 		const groupedByPeriod: Record<string, SimulatedSnapshot[]> = {};
@@ -252,14 +251,12 @@ export function useDashboardData({
 			const dateObj = new Date(snap.date);
 			let periodKey = "";
 
-			// 90 days to 2 years => Weekly Candles
 			if (daysDiff >= 90 && daysDiff <= 730) {
 				periodKey = format(
 					endOfWeek(dateObj, { weekStartsOn: 1 }),
 					"yyyy-MM-dd",
 				);
 			} else {
-				// > 2 years => Monthly Candles
 				periodKey = format(endOfMonth(dateObj), "yyyy-MM-dd");
 			}
 
@@ -271,17 +268,14 @@ export function useDashboardData({
 		Object.values(groupedByPeriod).forEach((periodSnaps) => {
 			const portfolioSnaps: Record<string, SimulatedSnapshot> = {};
 
-			// Sort chronologically inside the period
 			periodSnaps.sort(
 				(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 			);
 
 			periodSnaps.forEach((snap) => {
 				const prevSnap = portfolioSnaps[snap.portfolioId];
-				// Clone snapshot to prevent mutating database objects
 				portfolioSnaps[snap.portfolioId] = { ...snap };
 
-				// Accumulate daily PnL for the bar chart so we don't lose intra-week/month profits
 				if (prevSnap) {
 					portfolioSnaps[snap.portfolioId].dailyChange += prevSnap.dailyChange;
 				}
@@ -419,7 +413,7 @@ export function useDashboardData({
 
 			const finalBenchmarkData: any[] = [];
 
-			// Obliczamy wartości bazowe (pierwszy dzień w wybranym zakresie) dla Indeksów
+			// Calculate base values (first day in selected range) for Indices
 			const firstDayDate = allDates[0];
 			const baseIndexValues: Record<string, number> = {};
 			userIndices.forEach((idx) => {
@@ -429,8 +423,7 @@ export function useDashboardData({
 						: 0;
 			});
 
-			// Obliczamy wartości bazowe dla poszczególnych Portfeli
-			// (dzięki temu, w trybie procentowym wykres zawsze zaczyna się od zera na początku przedziału)
+			// Calculate base values for individual Portfolios
 			const basePortfolioPcts: Record<string, number> = {};
 			const basePortfolioValues: Record<string, number> = {};
 
@@ -455,12 +448,37 @@ export function useDashboardData({
 				});
 			}
 
-			// Główna pętla budująca dane dzień po dniu
+			// Calculate base percentage for TOTAL_CAPITAL (Suma Portfeli)
+			let baseTotalPct = 0;
+			if (firstDay && firstDay.invested > 0) {
+				baseTotalPct =
+					((firstDay.value - firstDay.invested) / firstDay.invested) * 100;
+			}
+
+			// Main loop building benchmark data point by point
 			for (let i = 0; i < allDates.length; i++) {
 				const dateStr = allDates[i];
+				const todayBase = baseData[i];
 				const dataPoint: any = { date: dateStr };
 
-				// 1. Zapisujemy zyski procentowe / wartościowe dla poszczególnych portfeli
+				// 1. TOTAL_CAPITAL (Suma Portfeli)
+				if (todayBase) {
+					if (chartMode === "PERCENTAGE") {
+						let currentTotalPct = 0;
+						if (todayBase.invested > 0) {
+							currentTotalPct =
+								((todayBase.value - todayBase.invested) / todayBase.invested) *
+								100;
+						}
+						dataPoint["TOTAL_CAPITAL"] = Number(
+							(currentTotalPct - baseTotalPct).toFixed(2),
+						);
+					} else {
+						dataPoint["TOTAL_CAPITAL"] = Number(todayBase.value.toFixed(2));
+					}
+				}
+
+				// 2. Individual Portfolios
 				activePortfolioIds.forEach((pId) => {
 					const currentState = lastKnownState[pId];
 					if (currentState) {
@@ -476,13 +494,12 @@ export function useDashboardData({
 								(currentPct - (basePortfolioPcts[pId] || 0)).toFixed(2),
 							);
 						} else {
-							// Tryb VALUE
 							dataPoint[pId] = Number(currentState.value.toFixed(2));
 						}
 					}
 				});
 
-				// 2. Zapisujemy zyski dla indeksów
+				// 3. User Indices (SP500, NASDAQ, BTC, etc.)
 				userIndices.forEach((idx) => {
 					const todayValue = mockIndexHistory[idx][dateStr];
 					const baseValue = baseIndexValues[idx];
@@ -493,14 +510,13 @@ export function useDashboardData({
 							idxPct = ((todayValue - baseValue) / baseValue) * 100;
 						dataPoint[idx] = Number(idxPct.toFixed(2));
 					} else {
-						// Symulowana kwota "VALUE" (w PLN) – startujemy od sumy całego kapitału w dniu pierwszym (dla porównania)
 						let simulatedValue = 0;
 						if (baseValue > 0) {
 							const multiplier = todayValue / baseValue;
-							simulatedValue =
-								(initialPortfolioInvested > 0
-									? initialPortfolioInvested
-									: initialPortfolioValue) * multiplier;
+							// ZMIANA: Zamiast kapitału zainwestowanego (initialPortfolioInvested)
+							// Używamy faktycznej wyceny początkowej portfela (initialPortfolioValue)
+							// Dzięki temu indeksy wystartują z tego samego punktu co "Suma Portfeli"
+							simulatedValue = initialPortfolioValue * multiplier;
 						}
 						dataPoint[idx] = Number(simulatedValue.toFixed(2));
 					}
@@ -544,7 +560,7 @@ export function useDashboardData({
 			indexQuotesHistory,
 		]);
 
-	// STEP 4: Comparison Chart Data (uses same compressed snapshots)
+	// STEP 4: Comparison Chart Data
 	const portfoliosComparisonData = useMemo(() => {
 		if (compressedSnapshots.length === 0) return [];
 		const dataByDate: Record<string, any> = {};

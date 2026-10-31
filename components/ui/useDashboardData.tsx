@@ -20,6 +20,7 @@ export interface SimulatedSnapshot {
 	investedValue: number;
 	dailyChange: number;
 	isPositive: boolean;
+	isLive?: boolean;
 }
 
 interface UseDashboardDataProps {
@@ -339,8 +340,10 @@ export function useDashboardData({
 					dayDailyChangeFromDB = 0;
 				let dayNetCashFlow = 0,
 					dayExactChangePLN = 0;
+				let isLiveSnapshot = false; // 🚀 1. Flaga dla dzisiejszego dnia
 
 				snapsToday.forEach((snap) => {
+					if (snap.isLive) isLiveSnapshot = true; // 🚀 2. Przechwytujemy zrzut z dzisiaj
 					dayDailyChangeFromDB += snap.dailyChange;
 					if (!seenPortfolios.has(snap.portfolioId)) {
 						seenPortfolios.add(snap.portfolioId);
@@ -379,8 +382,139 @@ export function useDashboardData({
 					exactChangePLN: Number(dayExactChangePLN.toFixed(2)),
 					totalPortfolioValue: Number(dayTotalValue.toFixed(2)),
 					netCashFlow: Number(dayNetCashFlow.toFixed(2)),
+					// 🚀 3. Wrzucamy flagę do wykresu! Jeśli to dzisiejsza data, to ZAWSZE jest "live".
+					isLive: isLiveSnapshot || dateStr === getDateStr(new Date()),
 				});
 			});
+			// 🔥 BEZPIECZNE DOKLEJENIE DZISIEJSZEGO DNIA "NA ŻYWO" DLA TRYBU REAL 🔥
+			const todayStr = getDateStr(new Date());
+			const hasToday = finalAbsoluteData.some((d: any) => d.date === todayStr);
+
+			if (!hasToday && dataMode === "REAL" && portfolios.length > 0) {
+				console.log(
+					`\n--- 🕵️ DEBUG: START KALKULACJI 'NA ŻYWO' (${todayStr}) ---`,
+				);
+				console.log(`Aktywne portfele:`, activePortfolioIds);
+
+				let liveTotalVal = 0;
+				let liveInvestedVal = 0;
+				let livePrevDayVal = 0;
+				let todayNetCashFlow = 0;
+
+				// 1. Obliczamy dzisiejsze przepływy pieniężne
+				const todayTxs = allTransactions.filter((tx) => {
+					const rawDate = tx.executedAt || (tx as any).date;
+					if (!rawDate) return false;
+					return (
+						getDateStr(rawDate as Date | string) === todayStr &&
+						activePortfolioIds.includes(tx.portfolioId)
+					);
+				});
+
+				todayTxs.forEach((tx) => {
+					if (tx.type === "DEPOSIT") todayNetCashFlow += tx.executedValue || 0;
+					if (tx.type === "WITHDRAWAL")
+						todayNetCashFlow -= tx.executedValue || 0;
+				});
+				console.log(
+					`Dzisiejsze transfery (CashFlow): ${todayNetCashFlow} (Znaleziono transakcji z dzisiaj: ${todayTxs.length})`,
+				);
+
+				// // 2. Precyzyjne zliczanie wartości na podstawie włączonych portfeli
+				activePortfolioIds.forEach((pId) => {
+					const p = portfolios.find((port) => port.id === pId);
+					if (p) {
+						let pVal = 0;
+						let pInv = 0;
+
+						console.log(
+							`\n➡️ Portfel [${p.name}]: PARAGON AKTYWÓW (Tabela Asset)`,
+						);
+						p.assets.forEach((a) => {
+							const val = a.currentValue || 0;
+							const inv = a.investedCapital || 0;
+							pVal += val;
+							pInv += inv;
+							console.log(
+								`   - [${a.category}] ${a.name}: Wycena = ${val.toFixed(2)} PLN (Wkład: ${inv})`,
+							);
+						});
+
+						liveTotalVal += pVal;
+						liveInvestedVal += pInv;
+
+						console.log(`   💰 SUMA BIEŻĄCA PORTFELA: ${pVal.toFixed(2)} PLN`);
+
+						// Szukamy absolutnie OSTATNIEGO zrzutu dla tego portfela
+						const portSnaps = realSnapshots.filter(
+							(s) => s.portfolioId === pId && getDateStr(s.date) < todayStr,
+						);
+						if (portSnaps.length > 0) {
+							// Sortujemy od najnowszego, by chwycić zrzut z wczoraj
+							portSnaps.sort(
+								(a, b) =>
+									new Date(b.date).getTime() - new Date(a.date).getTime(),
+							);
+							const lastSnap = portSnaps[0];
+							livePrevDayVal += lastSnap.totalValue;
+							console.log(
+								`   📸 WCZORAJSZY SNAPSHOT (${getDateStr(lastSnap.date)}): ${lastSnap.totalValue} PLN`,
+							);
+							console.log(
+								`   📉 RÓŻNICA (Bieżąca - Snapshot): ${(pVal - lastSnap.totalValue).toFixed(2)} PLN`,
+							);
+						} else {
+							const fallbackVal = pInv;
+							livePrevDayVal += fallbackVal;
+							console.log(
+								`   ⚠️ BRAK SNAPSHOTU! Fallback na wkład = ${fallbackVal}`,
+							);
+						}
+					}
+				});
+
+				// 3. Czysty zysk/strata = Obecna Wartość - Wczorajsza Wartość - Dzisiejsze Transfery
+				let liveDailyChange = liveTotalVal - livePrevDayVal - todayNetCashFlow;
+				// 🛡️ BEZPIECZNIK DLA OBLIGACJI I GOTÓWKI:
+				// Jeśli portfel nie ma transakcji sprzedaży, a wyszedł ujemny wynik na obligacjach/gotówce
+				// (np. przez delikatne błędy zaokrągleń w tabeli Asset), blokujemy spadek na poziomie 0.
+				const isOnlySafeAssets = portfolios
+					.filter((p) => activePortfolioIds.includes(p.id))
+					.every((p) =>
+						p.assets.every(
+							(a) => a.category === "BONDS" || a.category === "CASH",
+						),
+					);
+
+				if (isOnlySafeAssets && liveDailyChange < 0 && todayNetCashFlow === 0) {
+					liveDailyChange = 0; // Obligacje nie tracą z dnia na dzień bez powodu!
+					liveTotalVal = livePrevDayVal; // Wyrównujemy do wczorajszego stanu, by uniknąć skoków
+				}
+				console.log(`\n--- 🧮 WYNIK KOŃCOWY ---`);
+				console.log(`Obecna Wartość całkowita: ${liveTotalVal}`);
+				console.log(`Wczorajsza Wartość (suma zrzutów): ${livePrevDayVal}`);
+				console.log(`Odejmujemy Transfery Dzisiaj: ${todayNetCashFlow}`);
+				console.log(
+					`👉 Czysty Wynik Rynkowy z dzisiaj (słupek): ${liveDailyChange}`,
+				);
+				console.log(`------------------------------------------------------\n`);
+
+				baseData.push({
+					date: todayStr,
+					value: Number(liveTotalVal.toFixed(2)),
+					invested: Number(liveInvestedVal.toFixed(2)),
+					change: Number(liveDailyChange.toFixed(2)),
+					isPositive: liveDailyChange >= 0,
+				});
+
+				finalAbsoluteData.push({
+					date: todayStr,
+					exactChangePLN: Number(liveDailyChange.toFixed(2)),
+					totalPortfolioValue: Number(liveTotalVal.toFixed(2)),
+					netCashFlow: Number(todayNetCashFlow.toFixed(2)),
+					isLive: true,
+				});
+			}
 
 			let finalChartData: ChartDataPoint[] = [];
 			if (chartMode === "PERCENTAGE") {
@@ -646,6 +780,10 @@ export function useDashboardData({
 			toDate,
 			userIndices,
 			indexQuotesHistory,
+			dataMode,
+			portfolios,
+			allTransactions,
+			realSnapshots,
 		]);
 
 	// STEP 4: Comparison Chart Data (Tylko Portfele, bez zmian)

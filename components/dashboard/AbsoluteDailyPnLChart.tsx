@@ -18,7 +18,10 @@ import { Maximize2, Minimize2, TrendingUp } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useState } from "react";
 
-import { ChartContainer } from "../shared/ChartContainer";
+import { ChartCardLayout } from "../shared/ChartCardLayout";
+import { FilterBadge } from "../shared/FilterBadge";
+import { PortfolioWithAssets } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 import { useChartContext } from "../providers/ChartProvider";
@@ -33,16 +36,35 @@ export interface AbsolutePnLDataPoint {
 
 interface AbsoluteDailyPnLChartProps {
 	data: AbsolutePnLDataPoint[];
+	portfolios?: PortfolioWithAssets[];
+	activeIds?: string[];
+	onPortfolioToggle?: (id: string) => void;
+	activeRange?: string;
+	onRangeChange?: (range: string) => void;
+	dataMode?: "REAL" | "SIMULATED";
+	setDataMode?: (mode: "REAL" | "SIMULATED") => void;
+	isRangeDisabled?: (range: string) => boolean;
 }
 
-export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
+const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
+
+export function AbsoluteDailyPnLChart({
+	data,
+	portfolios,
+	activeIds = [],
+	onPortfolioToggle,
+	activeRange,
+	onRangeChange,
+	dataMode,
+	setDataMode,
+	isRangeDisabled,
+}: AbsoluteDailyPnLChartProps) {
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
 
-	// Śledzimy rozmiar ekranu, by dostosować szerokość osi Y i marginesy
 	useEffect(() => {
 		const handleResize = () => {
 			setIsMobile(window.innerWidth < 640);
@@ -86,35 +108,32 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	const pnlPercent = (twrMultiplier - 1) * 100;
 	const isPeriodPositive = totalPnL >= 0;
 
-	const trendBadge = (compact = false) => (
-		<div className="flex items-center gap-2">
+	// Odznaka ROI
+	const trendBadge = (
+		<div className="flex flex-wrap justify-center md:justify-start items-center gap-2 md:gap-3">
 			<div
-				className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
+				className={cn(
+					"flex items-center gap-1.5 rounded-full border px-1.5 sm:px-2.5 sm:py-1",
 					isPeriodPositive
 						? "bg-emerald-500/10 border-emerald-500/20"
-						: "bg-rose-500/10 border-rose-500/20"
-				}`}
+						: "bg-rose-500/10 border-rose-500/20",
+				)}
 			>
 				<span
-					className={`text-[11px] font-bold tabular-nums ${
-						isPeriodPositive ? "text-emerald-500" : "text-rose-500"
-					}`}
-				>
-					{!compact ? (
-						<span className="text-t-text-tertiary mr-1 font-medium">
-							Stopa TWR:
-						</span>
-					) : (
-						<span className="text-t-text-tertiary mr-1 font-medium">TWR:</span>
+					className={cn(
+						"text-[11px] font-bold tabular-nums",
+						isPeriodPositive ? "text-emerald-500" : "text-rose-500",
 					)}
+				>
+					<span className="text-t-text-tertiary mr-1 font-medium">TWR:</span>
 					{isPeriodPositive ? "+" : ""}
 					{pnlPercent.toFixed(2)}%
 				</span>
-
 				<span
-					className={`text-[10px] font-semibold tabular-nums opacity-80 ${
-						isPeriodPositive ? "text-emerald-500" : "text-rose-500"
-					}`}
+					className={cn(
+						"text-[10px] font-semibold tabular-nums opacity-80",
+						isPeriodPositive ? "text-emerald-500" : "text-rose-500",
+					)}
 				>
 					({formatCurrency(convertPLN(totalPnL), 0)}
 					<span className="text-[8px] font-medium ml-0.5">
@@ -124,7 +143,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 				</span>
 			</div>
 
-			<div className="group relative  items-center justify-center cursor-help z-50 hidden sm:flex">
+			<div className="group relative items-center justify-center cursor-help z-50 hidden sm:flex">
 				<div className="w-5 h-5 rounded-full border border-t-text-tertiary flex items-center justify-center">
 					<span className="text-[10px] font-bold text-t-text-tertiary transition-colors">
 						i
@@ -143,12 +162,12 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		</div>
 	);
 
+	// Odchudzona, ale kompletna legenda
 	const renderLegend = () => {
 		const liveEntry = data.find((d) => d.isLive);
 		const isTodayPositive = (liveEntry?.exactChangePLN ?? 0) >= 0;
 
 		return (
-			//  Zmniejszono padding-top (pt-0) i margines w dół, legenda ma przylegać wyżej
 			<div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-6 gap-y-1.5 pt-0 mt-2">
 				<div className="flex items-center gap-1.5">
 					<span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.5)] shrink-0" />
@@ -156,6 +175,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						Dzienny Wynik
 					</span>
 				</div>
+				{/* Sekcja "Dzisiaj" - wróciła na swoje miejsce */}
 				{liveEntry && (
 					<div className="flex items-center gap-1.5 animate-in fade-in duration-200">
 						<span
@@ -180,10 +200,69 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 		);
 	};
 
+	const topControls = (
+		<>
+			{setDataMode && (
+				<div className="flex items-center gap-1">
+					<FilterBadge
+						id={currencySymbol}
+						label="Real"
+						isSelected={dataMode === "REAL"}
+						onToggle={() => setDataMode("REAL")}
+					/>
+					<FilterBadge
+						id={currencySymbol}
+						label="Sym"
+						isSelected={dataMode === "SIMULATED"}
+						onToggle={() => setDataMode("SIMULATED")}
+					/>
+				</div>
+			)}
+		</>
+	);
+
+	const portfoliosOverlay = portfolios?.map((p) => {
+		const isActive = activeIds.includes("ALL") || activeIds.includes(p.id);
+		return (
+			<FilterBadge
+				key={p.id}
+				id={p.id}
+				label={p.name}
+				isSelected={isActive}
+				onToggle={() => onPortfolioToggle?.(p.id)}
+			/>
+		);
+	});
+
+	const footerRanges = onRangeChange
+		? TIME_RANGES.map((range) => {
+				const disabled =
+					dataMode === "REAL" && isRangeDisabled
+						? isRangeDisabled(range)
+						: false;
+				return (
+					<div
+						key={range}
+						className={cn(
+							!activeRange && "opacity-40 grayscale pointer-events-none",
+							disabled &&
+								"opacity-30 grayscale cursor-not-allowed pointer-events-none",
+						)}
+					>
+						<FilterBadge
+							id={range}
+							label={range}
+							isSelected={activeRange === range && !disabled}
+							onToggle={disabled ? () => {} : (id) => onRangeChange(id)}
+						/>
+					</div>
+				);
+			})
+		: null;
+
 	const chartContent = (
-		<ChartContainer className="h-full min-h-[300px] w-full flex-1">
+		<div className="w-full flex-1 min-h-[300px] border-b border-t-border-subtle pb-2 relative h-full">
 			<ResponsiveContainer width="100%" height="100%">
-				{/* 🚀 ZMIANA KLUCZOWA: Zwiększono diametralnie margines z dołu, aby zrobić bufor na załamaną legendę! */}
 				<ComposedChart
 					data={data}
 					margin={{
@@ -262,7 +341,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 							fontWeight: 500,
 						}}
 						tickMargin={12}
-						//  Na małym ekranie format to tylko 'dd MMM', bez dodatkowych spacji, oszczędza miejsce
 						tickFormatter={(val) =>
 							format(new Date(val), isMobile ? "dd MMM" : "dd MMM", {
 								locale: pl,
@@ -281,10 +359,10 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 							fill: "var(--t-text-tertiary)",
 							fontWeight: 500,
 						}}
-						tickFormatter={(val) =>
-							// 🚀 ZMIANA: convertPLN(val) oraz dynamiczny currencySymbol
-							`${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(convertPLN(val))}\u00A0${currencySymbol}`
-						}
+						tickFormatter={(val) => formatCurrency(convertPLN(val))}
+						// tickFormatter={(val) =>
+						// 	`${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(convertPLN(val))}\u00A0${currencySymbol}`
+						// }
 						width={isMobile ? 42 : 58}
 						domain={[-pnlDomain, pnlDomain]}
 					/>
@@ -300,10 +378,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 							fontWeight: 600,
 						}}
 						tickFormatter={(val) =>
-							val === 0
-								? ""
-								: // 🚀 ZMIANA: convertPLN(val) oraz dynamiczny currencySymbol
-									`${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(convertPLN(val))}\u00A0${currencySymbol}`
+							val === 0 ? "" : formatCurrency(convertPLN(val))
 						}
 						width={isMobile ? 45 : 65}
 						domain={[-cashDomain, cashDomain]}
@@ -322,7 +397,6 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						wrapperStyle={{ zIndex: 1000, outline: "none" }}
 					/>
 
-					{/* 🚀 ZMIANA: Utrzymano verticalAlign, ale layout renderLegend został mocno odchudzony! */}
 					<Legend
 						content={renderLegend}
 						wrapperStyle={{ zIndex: 10 }}
@@ -344,7 +418,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 									fill={
 										entry.isLive
 											? isPositive
-												? "rgba(16, 185, 129, 0.2)"
+												? "rgba(16, 185, 129, 0.2)" // Przezroczyste wypełnienie na żywo
 												: "rgba(244, 63, 94, 0.2)"
 											: isPositive
 												? "url(#positiveBarGradient)"
@@ -353,6 +427,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 									stroke={
 										entry.isLive ? (isPositive ? "#10b981" : "#f43f5e") : "none"
 									}
+									// 🔥 PRZYWRÓCONE KRESKOWANIE DLA ZAZNACZONEGO SŁUPKA NA ŻYWO (dashed line)
 									strokeDasharray={entry.isLive ? "4 4" : "none"}
 									strokeWidth={entry.isLive ? 2 : 0}
 								/>
@@ -406,7 +481,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 					/>
 				</ComposedChart>
 			</ResponsiveContainer>
-		</ChartContainer>
+		</div>
 	);
 
 	if (isExpanded) {
@@ -429,11 +504,11 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 								Nominalny Wynik Dzienny
 							</h3>
 							<p className="text-xs sm:text-sm text-t-text-secondary">
-								Widok szczegółowy · Lewa oś: wynik rynkowy · Prawa oś: wpłaty i
-								wypłaty
+								Zakres: {activeRange} • Oś Y przedstawia wynik w{" "}
+								{currencySymbol}
 							</p>
 						</div>
-						<div className="mt-2 sm:mt-0 sm:ml-4">{trendBadge(false)}</div>
+						<div className="mt-2 sm:mt-0 sm:ml-4">{trendBadge}</div>
 					</div>
 					<button
 						onClick={() => setIsExpanded(false)}
@@ -442,7 +517,7 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 						<Minimize2 className="w-5 h-5 sm:w-6 sm:h-6" />
 					</button>
 				</div>
-				<div className="relative flex flex-col flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl card-padding shadow-xl">
+				<div className="relative flex flex-col flex-1 min-h-0 bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-xl">
 					{chartContent}
 				</div>
 			</div>
@@ -450,23 +525,32 @@ export function AbsoluteDailyPnLChart({ data }: AbsoluteDailyPnLChartProps) {
 	}
 
 	return (
-		<div className="relative w-full h-full flex flex-col group bg-t-bg-panel border border-t-border  rounded-2xl card-padding ">
-			<div className="flex justify-between items-start z-20 mb-2">
-				<div>{trendBadge(true)}</div>
+		// 🔥 CHART CARD LAYOUT: Tu wrzucamy wszystko, by wyglądało dokładnie jak reszta tabów!
+		<ChartCardLayout
+			title="Nominalny Wynik Dzienny"
+			subtitle={`Zakres: ${activeRange} • Oś Y przedstawia wynik w ${currencySymbol}`}
+			icon={TrendingUp}
+			controls={topControls}
+			headerExtra={trendBadge}
+			topOverlay={portfoliosOverlay}
+			footer={footerRanges}
+			// onExpand={() => setIsExpanded(true)}
+		>
+			<div className="w-full flex-1 min-h-0 relative z-10 flex flex-col">
 				<button
 					onClick={() => setIsExpanded(true)}
-					className="p-1.5 
-					 bg-t-bg-base text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
+					className="absolute top-2 right-2 z-20 p-1.5 bg-t-bg-base text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
 					title="Powiększ wykres"
 				>
 					<Maximize2 className="w-4 h-4" />
 				</button>
+				{chartContent}
 			</div>
-			<div className="flex-1 w-full min-h-0 relative z-10">{chartContent}</div>
-		</div>
+		</ChartCardLayout>
 	);
 }
 
+// Sekcja tooltipa pozostaje bez zmian
 interface TooltipPayloadItem {
 	dataKey: string;
 	value: number;

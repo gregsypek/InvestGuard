@@ -64,6 +64,7 @@ export function UserDashboard(props: UserDashboardProps) {
 		activeRange,
 		togglePortfolio,
 		handleRangeChange,
+		isRangeDisabled,
 		filteredTransactions,
 		totalInvested,
 		totalCurrent,
@@ -404,6 +405,14 @@ export function UserDashboard(props: UserDashboardProps) {
 									<AbsoluteDailyPnLChart
 										key={chartMode}
 										data={absoluteChartData}
+										portfolios={props.portfolios}
+										activeIds={selectedIds}
+										onPortfolioToggle={togglePortfolio}
+										activeRange={activeRange}
+										onRangeChange={handleRangeChange}
+										dataMode={dataMode}
+										setDataMode={setDataMode}
+										isRangeDisabled={isRangeDisabled}
 									/>
 								</div>
 								{/* 🚀 BANER INFORMACYJNY - DAILY PNL */}

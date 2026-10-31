@@ -32,13 +32,30 @@ export async function GET(req: Request) {
 		for (const portfolio of portfolios) {
 			let totalValue = 0;
 			let investedValue = 0;
+
 			for (const asset of portfolio.assets) {
 				investedValue += Number(asset.investedCapital) || 0;
-				totalValue +=
+
+				const calculatedValue =
 					asset.category === "BONDS"
 						? getBondAccruedValue(asset)
 						: Number(asset.currentValue) || 0;
+
+				totalValue += calculatedValue;
+
+				// 🚀 NAPRAWA: Aktualizujemy currentValue w bazie, jeśli to obligacje,
+				// żeby tabela Asset była zawsze zsynchronizowana z odsetkami!
+				if (
+					asset.category === "BONDS" &&
+					calculatedValue !== Number(asset.currentValue)
+				) {
+					await db.asset.update({
+						where: { id: asset.id },
+						data: { currentValue: Number(calculatedValue.toFixed(2)) },
+					});
+				}
 			}
+
 			snapshotsToCreate.push({
 				portfolioId: portfolio.id,
 				totalValue: Number(totalValue.toFixed(2)),

@@ -3,11 +3,14 @@
 import {
 	Activity,
 	Banknote,
+	ChevronDown,
 	Globe,
 	Info,
 	LineChart,
 	RefreshCw,
 	Settings,
+	TrendingDown,
+	TrendingUp,
 	WalletCards,
 } from "lucide-react";
 import { SimulatedSnapshot, useDashboardData } from "./ui/useDashboardData";
@@ -93,6 +96,22 @@ export function UserDashboard(props: UserDashboardProps) {
 		{ id: "COMPARISON", icon: WalletCards, label: "Strategie" },
 		{ id: "BENCHMARK", icon: Globe, label: "Rynek" },
 	] as const;
+
+	const radarTotal = observedAssets.length;
+	const radarAdvancing = observedAssets.filter(
+		(a) => (a.dailyChange ?? 0) > 0,
+	).length;
+	const radarDeclining = observedAssets.filter(
+		(a) => (a.dailyChange ?? 0) < 0,
+	).length;
+	const radarSorted = [...observedAssets].sort(
+		(a, b) => (b.dailyChange ?? 0) - (a.dailyChange ?? 0),
+	);
+	const radarBest = radarSorted[0];
+	const radarWorst = radarSorted[radarSorted.length - 1];
+
+	const formatRadarChange = (value: number) =>
+		`${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 
 	const handleGlobalRefresh = async () => {
 		setIsRefreshing(true);
@@ -184,7 +203,7 @@ export function UserDashboard(props: UserDashboardProps) {
 								disabled={isRefreshing || isRateLimited}
 								title={tooltipText}
 								className={cn(
-									"flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-3 h-9 sm:h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest transition-colors w-full sm:w-auto",
+									"flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-3 h-9 sm:h-10 rounded-xl sm:rounded-2xl bg-theme-soft text-theme-primary border border-theme-border hover:bg-theme-primary/20 text-[10px] font-bold uppercase tracking-widest transition-colors w-full sm:w-auto shadow-sm",
 									(isRefreshing || isRateLimited) &&
 										"opacity-50 cursor-not-allowed",
 								)}
@@ -208,10 +227,103 @@ export function UserDashboard(props: UserDashboardProps) {
 					</div>
 				}
 			>
-				<div className="flex flex-col gap-4 lg:gap-6">
+				<div className="flex flex-col gap-5 lg:gap-6">
+					{/* ---------- PODSUMOWANIE DNIA ---------- */}
+					{radarTotal > 0 && (
+						<div className="grid grid-cols-1 sm:grid-cols-3 sm:divide-x divide-y sm:divide-y-0 divide-t-border-subtle rounded-2xl border border-t-border bg-t-bg-panel overflow-hidden">
+							{/* Szerokość rynku: ile walorów rośnie, a ile spada */}
+							<div className="p-3 sm:p-4 flex flex-col gap-2.5">
+								<div className="flex items-baseline justify-between gap-2">
+									<span className="text-xs font-semibold text-t-text-primary">
+										Nastroje w portfelu
+									</span>
+									<span className="text-[10px] font-medium text-t-text-tertiary num">
+										{radarTotal} walorów
+									</span>
+								</div>
+								<div className="flex h-1.5 w-full overflow-hidden rounded-full bg-t-border gap-px">
+									{radarAdvancing > 0 && (
+										<div
+											className="h-full bg-gain transition-all duration-700"
+											style={{
+												width: `${(radarAdvancing / radarTotal) * 100}%`,
+											}}
+										/>
+									)}
+									{radarDeclining > 0 && (
+										<div
+											className="h-full bg-loss transition-all duration-700"
+											style={{
+												width: `${(radarDeclining / radarTotal) * 100}%`,
+											}}
+										/>
+									)}
+								</div>
+								<div className="flex items-center gap-4 text-[11px] font-medium num">
+									<span className="flex items-center gap-1.5 text-gain">
+										<TrendingUp className="w-3.5 h-3.5" />
+										{radarAdvancing} rośnie
+									</span>
+									<span className="flex items-center gap-1.5 text-loss">
+										<TrendingDown className="w-3.5 h-3.5" />
+										{radarDeclining} spada
+									</span>
+								</div>
+							</div>
+
+							{/* Lider dnia */}
+							<div className="p-3 sm:p-4 flex flex-col gap-1">
+								<span className="text-xs font-semibold text-t-text-secondary">
+									Najmocniejszy dziś
+								</span>
+								<div className="flex items-baseline justify-between gap-2 min-w-0">
+									<span className="text-sm font-semibold text-t-text-primary truncate">
+										{radarBest?.ticker ?? radarBest?.name}
+									</span>
+									<span className="font-mono num text-sm font-semibold text-gain shrink-0">
+										{formatRadarChange(radarBest?.dailyChange ?? 0)}
+									</span>
+								</div>
+							</div>
+
+							{/* Outsider dnia */}
+							<div className="p-3 sm:p-4 flex flex-col gap-1">
+								<span className="text-xs font-semibold text-t-text-secondary">
+									Najsłabszy dziś
+								</span>
+								<div className="flex items-baseline justify-between gap-2 min-w-0">
+									<span className="text-sm font-semibold text-t-text-primary truncate">
+										{radarWorst?.ticker ?? radarWorst?.name}
+									</span>
+									<span
+										className={cn(
+											"font-mono num text-sm font-semibold shrink-0",
+											(radarWorst?.dailyChange ?? 0) < 0
+												? "text-loss"
+												: "text-gain",
+										)}
+									>
+										{formatRadarChange(radarWorst?.dailyChange ?? 0)}
+									</span>
+								</div>
+							</div>
+						</div>
+					)}
+
+					{/* ---------- INDEKSY ---------- */}
 					{props.userIndices && props.userIndices.length > 0 && (
-						<div className="flex-1 rounded-2xl ">
-							<div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+						<div className="flex flex-col gap-2.5">
+							<div className="flex items-center gap-2">
+								<h4 className="text-xs font-bold text-t-text-primary">
+									Indeksy
+								</h4>
+								<span className="px-1.5 py-0.5 rounded-md bg-t-bg-sticky border border-t-border-subtle text-[9px] font-bold text-t-text-tertiary num">
+									{props.userIndices.length}
+								</span>
+								<div className="h-px flex-1 bg-t-border-subtle" />
+							</div>
+
+							<div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-4 gap-3">
 								{props.userIndices.map((indexId) => {
 									const changeValue = props.indexQuotes?.[indexId] || 0;
 									const historyObject =
@@ -220,54 +332,75 @@ export function UserDashboard(props: UserDashboardProps) {
 										.sort()
 										.map((dateKey) => historyObject[dateKey]);
 									return (
-										<div
+										<button
 											key={indexId}
+											type="button"
 											onClick={() =>
 												toast.info(`Ładowanie wykresu dla ${indexId}...`)
 											}
-											className="cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95"
+											className="group block w-full text-left rounded-2xl cursor-pointer active:scale-[0.98] transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60"
 										>
 											<PremiumMarketCard
+												variant="index"
 												name={GLOBAL_INDICES_MAP[indexId] || indexId}
 												change={changeValue}
 												historyData={historyArray}
 												logo={getStockLogo(indexId)}
 											/>
-										</div>
+										</button>
 									);
 								})}
 							</div>
 						</div>
 					)}
-					<div className="flex-1">
-						<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
+
+					{/* ---------- WALORY ---------- */}
+					<div className="flex flex-col gap-2.5">
+						<div className="flex items-center gap-2">
+							<h4 className="text-xs font-bold text-t-text-primary">
+								Twoje aktywa
+							</h4>
+							{radarTotal > 0 && (
+								<span className="px-1.5 py-0.5 rounded-md bg-t-bg-sticky border border-t-border-subtle text-[9px] font-bold text-t-text-tertiary num">
+									{radarTotal}
+								</span>
+							)}
+							<div className="h-px flex-1 bg-t-border-subtle" />
+						</div>
+
+						<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
 							{observedAssets.length > 0 ? (
 								observedAssets.slice(0, visibleAssetsCount).map((asset) => (
-									<div
+									<button
 										key={asset.id}
+										type="button"
 										onClick={() =>
 											toast.info(`Ładowanie wykresu dla ${asset.ticker}...`)
 										}
-										className="cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95"
+										className="group block w-full text-left rounded-xl cursor-pointer active:scale-[0.98] transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60"
 									>
 										<PremiumMarketCard
+											variant="asset"
 											name={asset.name}
 											ticker={asset.ticker}
 											change={asset.dailyChange || 0}
 											logo={getStockLogo(asset.ticker ?? "")}
 										/>
-									</div>
+									</button>
 								))
 							) : (
-								<div className="col-span-full flex flex-col items-center justify-center py-8 px-4 text-center border border-dashed rounded-xl border-t-border bg-t-bg-base/50">
-									<p className="text-xs font-bold text-t-text-secondary mb-1">
+								<div className="col-span-full flex flex-col items-center justify-center py-10 px-4 text-center border border-dashed rounded-2xl border-t-border bg-t-bg-base/50">
+									<div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 border border-t-border-subtle bg-black/5 dark:bg-white/5">
+										<Activity className="w-4 h-4 text-t-text-tertiary" />
+									</div>
+									<p className="text-sm font-bold text-t-text-primary mb-1">
 										Brak aktywów na radarze
 									</p>
-									<p className="text-[10px] text-t-text-tertiary mb-3">
+									<p className="text-xs text-t-text-secondary mb-4 max-w-xs">
 										Wybierz walory, które chcesz na bieżąco śledzić.
 									</p>
 									<SafeActionButton
-										label="Wybierz Aktywa"
+										label="Wybierz aktywa"
 										icon={Settings}
 										variant="outline"
 										className="h-9 text-[10px] border-t-border bg-t-bg-base text-t-text-secondary hover:text-t-text-primary"
@@ -276,22 +409,25 @@ export function UserDashboard(props: UserDashboardProps) {
 								</div>
 							)}
 						</div>
+
 						{observedAssets.length > 6 && (
-							<div className="flex justify-center mt-4 pt-3 border-t border-t-border-subtle">
+							<div className="flex justify-center pt-1">
 								{visibleAssetsCount < observedAssets.length ? (
 									<button
 										onClick={() => setVisibleAssetsCount((prev) => prev + 6)}
-										className="px-4 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-t-border text-t-text-secondary hover:text-t-text-primary text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
+										className="group flex items-center gap-2 px-4 h-9 rounded-xl bg-t-bg-panel border border-t-border text-t-text-secondary hover:text-t-text-primary hover:border-theme-border text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
 									>
 										Pokaż więcej ({observedAssets.length - visibleAssetsCount}{" "}
 										kolejnych)
+										<ChevronDown className="w-3.5 h-3.5 transition-transform group-hover:translate-y-0.5" />
 									</button>
 								) : (
 									<button
 										onClick={() => setVisibleAssetsCount(6)}
-										className="px-4 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 border border-t-border text-t-text-tertiary hover:text-t-text-primary text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
+										className="group flex items-center gap-2 px-4 h-9 rounded-xl bg-t-bg-panel border border-t-border text-t-text-tertiary hover:text-t-text-primary hover:border-theme-border text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm"
 									>
 										Zwiń listę
+										<ChevronDown className="w-3.5 h-3.5 rotate-180 transition-transform group-hover:-translate-y-0.5" />
 									</button>
 								)}
 							</div>

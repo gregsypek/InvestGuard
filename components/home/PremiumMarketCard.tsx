@@ -1,54 +1,82 @@
-import { TrendingDown, TrendingUp } from "lucide-react";
+"use client";
+
+import { ArrowUpRight, TrendingDown, TrendingUp } from "lucide-react";
+import React, { useId } from "react";
 
 import Image from "next/image";
-import React from "react";
 import { cn } from "@/lib/utils";
 
+/* =========================================
+   SPARKLINE (linia + wypełnienie gradientem)
+   Skaluje się do szerokości karty.
+   ========================================= */
 function Sparkline({
 	data,
 	isPositive,
+	className,
 }: {
 	data: number[];
 	isPositive: boolean;
+	className?: string;
 }) {
+	// useId musi być przed early-return (zasady hooków)
+	const gradientId = `spark-${useId().replace(/:/g, "")}`;
+
 	if (!data || data.length < 2) return null;
+
+	const W = 100;
+	const H = 40;
+	const PAD = 4; // zapas, żeby obrys linii nie był ucinany
 
 	const min = Math.min(...data);
 	const max = Math.max(...data);
 	const range = max - min || 1;
-	const width = 60;
-	const height = 24;
 
-	const points = data
-		.map((val, i) => {
-			const x = (i / (data.length - 1)) * width;
-			const y = height - ((val - min) / range) * height;
-			return `${x},${y}`;
-		})
+	const coords = data.map((val, i) => {
+		const x = (i / (data.length - 1)) * W;
+		const y = H - PAD - ((val - min) / range) * (H - PAD * 2);
+		return [x, y] as const;
+	});
+
+	const line = coords
+		.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`)
 		.join(" ");
-
-	const strokeColor = isPositive ? "text-emerald-500" : "text-rose-500";
+	const area = `${line} L${W},${H} L0,${H} Z`;
 
 	return (
 		<svg
-			width={width}
-			height={height}
-			className="overflow-visible"
-			viewBox={`0 0 ${width} ${height}`}
+			viewBox={`0 0 ${W} ${H}`}
+			preserveAspectRatio="none"
+			className={cn(
+				"w-full h-10 overflow-visible",
+				isPositive ? "text-gain" : "text-loss",
+				className,
+			)}
+			aria-hidden="true"
 		>
-			<polyline
-				points={points}
+			<defs>
+				<linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stopColor="currentColor" stopOpacity="0.28" />
+					<stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+				</linearGradient>
+			</defs>
+			<path d={area} fill={`url(#${gradientId})`} />
+			<path
+				d={line}
 				fill="none"
-				className={cn("stroke-[1.5px]", strokeColor)}
 				stroke="currentColor"
+				strokeWidth="1.75"
 				strokeLinecap="round"
 				strokeLinejoin="round"
+				vectorEffect="non-scaling-stroke"
 			/>
 		</svg>
 	);
 }
 
-// 🚀 NOWE: Funkcja "czyszcząca" i kategoryzująca nazwy aktywów
+/* =========================================
+   NAZWY AKTYWÓW: czyszczenie i kategoryzacja
+   ========================================= */
 function formatAssetName(rawName: string) {
 	let cleanName = rawName;
 	let isETF = false;
@@ -71,13 +99,12 @@ function formatAssetName(rawName: string) {
 	for (const p of providers) {
 		if (cleanName.startsWith(p)) {
 			provider = p;
-			// Usuwamy nazwę dostawcy z głównego tekstu
 			cleanName = cleanName.replace(p, "").trim();
 			break;
 		}
 	}
 
-	// 3. Usuwamy śmieci typowe dla ETF-ów (UCITS, klasy walutowe, Acc/Dist)
+	// 3. Usuwamy śmieci typowe dla ETF-ów
 	cleanName = cleanName
 		.replace(/UCITS/g, "")
 		.replace(/ETF/g, "")
@@ -87,10 +114,9 @@ function formatAssetName(rawName: string) {
 		.replace(/\(Acc\)/gi, "")
 		.replace(/\(Dist\)/gi, "")
 		.replace(/\(PLN Hedged\)/gi, "")
-		.replace(/\s+/g, " ") // Usuwa podwójne spacje po wycinaniu
+		.replace(/\s+/g, " ")
 		.trim();
 
-	// Jeśli po wycięciu wszystkiego nazwa jest pusta (rzadki przypadek), zwracamy oryginał
 	if (cleanName.length === 0) {
 		cleanName = rawName;
 	}
@@ -98,94 +124,204 @@ function formatAssetName(rawName: string) {
 	return { cleanName, isETF, provider };
 }
 
+/* =========================================
+   LOGO
+   ========================================= */
+function AssetLogo({
+	logo,
+	name,
+	className,
+}: {
+	logo?: string | null;
+	name: string;
+	className?: string;
+}) {
+	return (
+		<div
+			className={cn(
+				"shrink-0 w-8 h-8 rounded-full bg-t-bg-sticky border border-t-border flex items-center justify-center overflow-hidden p-1.5 shadow-sm",
+				className,
+			)}
+		>
+			{logo ? (
+				<Image
+					src={logo}
+					alt={name}
+					width={20}
+					height={20}
+					className="w-full h-full object-contain dark:invert"
+				/>
+			) : (
+				<span className="text-[10px] font-bold text-t-text-tertiary">
+					{name.charAt(0)}
+				</span>
+			)}
+		</div>
+	);
+}
+
+/* =========================================
+   KARTA RYNKOWA
+   variant="index" → duża karta z wykresem (indeksy)
+   variant="asset" → kompaktowa karta (walory)
+   Domyślnie: jeśli są dane historyczne → "index".
+   ========================================= */
 export function PremiumMarketCard({
 	name,
 	ticker,
 	change,
 	logo,
 	historyData,
+	variant,
 }: {
 	name: string;
 	ticker?: string | null;
 	change: number;
 	logo?: string | null;
 	historyData?: number[];
+	variant?: "index" | "asset";
 }) {
 	const isPositive = change >= 0;
-	const changeColor = isPositive ? "text-emerald-500" : "text-rose-500";
+	const { cleanName, isETF } = formatAssetName(name);
+	const resolvedVariant =
+		variant ?? (historyData && historyData.length > 1 ? "index" : "asset");
 
-	// 🚀 Aplikujemy funkcję formatującą
-	const { cleanName, isETF, provider } = formatAssetName(name);
+	const TrendIcon = isPositive ? TrendingUp : TrendingDown;
+	const formattedChange = `${isPositive ? "+" : ""}${change.toFixed(2)}%`;
 
-	return (
-		<div className="flex items-center bg-black/2 justify-between p-1 sm:p-2 border border-t-border  rounded-xl w-full min-w-0 gap-2 overflow-hidden">
-			{/* <div className="flex items-center bg justify-between p-2 rounded-xl  bg-black/2 border border-t-border w-full min-w-0 gap-2 overflow-hidden"> */}
-			{/* LEWA STRONA: Logo, Nazwa i Ticker */}
-			<div className="flex items-center gap-2 flex-1 min-w-0">
-				<div className="shrink-0">
-					<div className="w-6 h-6 rounded-full overflow-hidden bg-t-bg-sticky border border-t-border flex items-center justify-center shadow-sm p-1">
-						{logo ? (
-							<Image
-								src={logo}
-								alt={name}
-								width={12}
-								height={12}
-								className="w-full h-full object-contain dark:invert"
-							/>
-						) : (
-							<span className="text-[9px] font-medium text-slate-500">
-								{name.charAt(0)}
-							</span>
+	const cardBase =
+		"group-hover:border-theme-border group-hover:shadow-lg group-hover:-translate-y-0.5 transition-all duration-300";
+
+	/* ---------- WARIANT: INDEKS ---------- */
+	if (resolvedVariant === "index") {
+		return (
+			<div
+				className={cn(
+					"relative flex flex-col gap-3 w-full min-w-0 overflow-hidden rounded-2xl border border-t-border bg-t-bg-panel p-3 sm:p-4",
+					cardBase,
+				)}
+			>
+				{/* Poświata zależna od kierunku zmiany */}
+				<div
+					className={cn(
+						"pointer-events-none absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl transition-colors duration-500",
+						isPositive
+							? "bg-gain/10 group-hover:bg-gain/20"
+							: "bg-loss/10 group-hover:bg-loss/20",
+					)}
+				/>
+
+				{/* Nagłówek: logo, nazwa, strzałka "otwórz" */}
+				<div className="relative flex items-center gap-2.5 min-w-0">
+					<AssetLogo logo={logo} name={name} />
+					<div className="flex flex-col min-w-0 flex-1">
+						<p
+							className="text-xs font-semibold text-t-text-primary tracking-tight truncate"
+							title={cleanName}
+						>
+							{cleanName}
+						</p>
+						{ticker && (
+							<p className="text-[9px] font-medium uppercase tracking-widest text-t-text-tertiary truncate">
+								{ticker}
+							</p>
 						)}
 					</div>
+					<ArrowUpRight className="w-4 h-4 shrink-0 text-t-text-tertiary opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300" />
 				</div>
 
-				<div className="flex flex-col min-w-0 justify-center">
-					<div className="flex items-center gap-1.5">
+				{/* Wynik */}
+				<div className="relative flex items-center gap-2">
+					<p
+						className={cn(
+							"font-mono num text-xl sm:text-2xl font-semibold tracking-tight",
+							isPositive ? "text-gain" : "text-loss",
+						)}
+					>
+						{formattedChange}
+					</p>
+					<span
+						className={cn(
+							"flex items-center justify-center w-5 h-5 rounded-md",
+							isPositive ? "bg-gain/10 text-gain" : "bg-loss/10 text-loss",
+						)}
+					>
+						<TrendIcon className="w-3 h-3" />
+					</span>
+				</div>
+
+				{/* Wykres */}
+				{historyData && historyData.length > 1 && (
+					<div className="relative -mx-1 mt-auto">
+						<Sparkline data={historyData} isPositive={isPositive} />
+					</div>
+				)}
+			</div>
+		);
+	}
+
+	/* ---------- WARIANT: WALOR ---------- */
+	const meterWidth = Math.min(Math.abs(change) / 5, 1) * 100; // 5% = pełny pasek
+
+	return (
+		<div
+			className={cn(
+				"relative flex flex-col gap-2.5 w-full min-w-0 overflow-hidden rounded-xl border border-t-border bg-t-bg-panel p-2.5 sm:p-3",
+				cardBase,
+			)}
+		>
+			<div className="flex items-center gap-2 min-w-0">
+				<AssetLogo logo={logo} name={name} className="w-7 h-7 p-1.5" />
+				<div className="flex flex-col min-w-0 flex-1">
+					<div className="flex items-center gap-1.5 min-w-0">
 						<p
-							className="font-medium text-[10px] text-t-text-primary tracking-tight truncate"
+							className="text-[11px] font-semibold text-t-text-primary tracking-tight truncate"
 							title={cleanName}
 						>
 							{cleanName}
 						</p>
 						{isETF && (
-							<span className="shrink-0 px-1 py-0.2 rounded bg-theme-soft border border-blue-500/20 text-[6px] font-bold uppercase text-theme-primary tracking-widest hidden xs:inline-block">
+							<span className="shrink-0 px-1 rounded bg-theme-soft border border-theme-border text-[7px] font-bold uppercase text-theme-primary tracking-widest hidden xs:inline-block">
 								ETF
 							</span>
 						)}
 					</div>
-
 					{ticker && (
-						<p className="text-[8px] font-medium uppercase tracking-widest text-t-text-tertiary truncate">
+						<p className="text-[9px] font-medium uppercase tracking-widest text-t-text-tertiary truncate">
 							{ticker}
 						</p>
 					)}
 				</div>
 			</div>
 
-			{/* PRAWA STRONA: Wynik procentowy w tej samej linii */}
-			<div className="flex  bottom-0  right-2  items-center shrink-0">
-				{historyData && historyData.length > 0 && (
-					<div className="opacity-70 shrink-0 hidden md:block">
-						<Sparkline data={historyData} isPositive={isPositive} />
-					</div>
-				)}{" "}
-				<div className="flex items-center gap-1 shrink-0 ml-1">
-					{isPositive ? (
-						<TrendingUp className={cn("w-3 h-3 opacity-70", changeColor)} />
-					) : (
-						<TrendingDown className={cn("w-3 h-3 opacity-70", changeColor)} />
+			<div className="flex items-center justify-between gap-2">
+				<p
+					className={cn(
+						"font-mono num text-sm font-semibold tracking-tight",
+						isPositive ? "text-gain" : "text-loss",
 					)}
-					<p
-						className={cn(
-							"font-mono text-[10px] font-medium opacity-90",
-							changeColor,
-						)}
-					>
-						{isPositive ? "+" : ""}
-						{change.toFixed(2)}%
-					</p>
-				</div>
+				>
+					{formattedChange}
+				</p>
+				<span
+					className={cn(
+						"flex items-center justify-center w-5 h-5 rounded-md",
+						isPositive ? "bg-gain/10 text-gain" : "bg-loss/10 text-loss",
+					)}
+				>
+					<TrendIcon className="w-3 h-3" />
+				</span>
+			</div>
+
+			{/* Miernik siły ruchu (skala do ±5%) */}
+			<div className="h-0.5 w-full rounded-full bg-t-border overflow-hidden">
+				<div
+					className={cn(
+						"h-full rounded-full transition-all duration-700",
+						isPositive ? "bg-gain" : "bg-loss",
+					)}
+					style={{ width: `${Math.max(meterWidth, 4)}%` }}
+				/>
 			</div>
 		</div>
 	);

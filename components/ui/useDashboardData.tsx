@@ -413,8 +413,7 @@ export function useDashboardData({
 
 				todayTxs.forEach((tx) => {
 					if (tx.type === "DEPOSIT") todayNetCashFlow += tx.executedValue || 0;
-					if (tx.type === "WITHDRAWAL")
-						todayNetCashFlow -= tx.executedValue || 0;
+					if (tx.type === "SELL") todayNetCashFlow -= tx.executedValue || 0;
 				});
 				console.log(
 					`Dzisiejsze transfery (CashFlow): ${todayNetCashFlow} (Znaleziono transakcji z dzisiaj: ${todayTxs.length})`,

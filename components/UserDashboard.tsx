@@ -499,7 +499,7 @@ export function UserDashboard(props: UserDashboardProps) {
 			{/* =========================================
 				CENTRUM ANALIZY (TAB VIEW)      
 			========================================= */}
-			<div className="relative space-y-8 mt-12">
+			<div className="relative space-y-8">
 				<SectionLayout
 					title="Centrum Analizy"
 					titleIcon={LineChart}

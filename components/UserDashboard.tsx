@@ -20,6 +20,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
 import { GlobalDashboardHeader } from "./dashboard/GlobalDashboardHeader";
+import { MarketDetailChart } from "./dashboard/MarketDetailChart";
 import { PortfolioBenchmarkChart } from "./dashboard/PortfolioBenchmarkChart";
 import { PortfolioChart } from "./dashboard/PortfolioChart";
 import { PortfolioWithAssets } from "@/lib/types";
@@ -84,6 +85,16 @@ export function UserDashboard(props: UserDashboardProps) {
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const isPremium = props.role === "ADMIN" || props.role === "SUBSCRIBER";
 	const [visibleAssetsCount, setVisibleAssetsCount] = useState(6);
+	const [selectedMarketId, setSelectedMarketId] = useState<string | null>(null);
+
+	const INDEX_COLORS: Record<string, string> = {
+		SP500: "#8b5cf6",
+		NASDAQ: "#ec4899",
+		WIG20: "#3b82f6",
+		DAX: "#06b6d4",
+		BTC: "#f59e0b",
+		GOLD: "#fbbf24",
+	};
 
 	// Taby analityczne
 	const [activeChartTab, setActiveChartTab] = useState<
@@ -231,7 +242,6 @@ export function UserDashboard(props: UserDashboardProps) {
 					{/* ---------- PODSUMOWANIE DNIA ---------- */}
 					{radarTotal > 0 && (
 						<div className="grid grid-cols-1 sm:grid-cols-3 sm:divide-x divide-y sm:divide-y-0 divide-t-border-subtle rounded-2xl border border-t-border bg-t-bg-panel overflow-hidden">
-							{/* Szerokość rynku: ile walorów rośnie, a ile spada */}
 							<div className="p-3 sm:p-4 flex flex-col gap-2.5">
 								<div className="flex items-baseline justify-between gap-2">
 									<span className="text-xs font-semibold text-t-text-primary">
@@ -241,7 +251,7 @@ export function UserDashboard(props: UserDashboardProps) {
 										{radarTotal} walorów
 									</span>
 								</div>
-								<div className="flex h-1.5 w-full overflow-hidden rounded-full bg-t-border gap-px">
+								<div className="flex h-1.5 w-full overflow-hidden opacity-60 rounded-full bg-t-border gap-px">
 									{radarAdvancing > 0 && (
 										<div
 											className="h-full bg-gain transition-all duration-700"
@@ -270,8 +280,6 @@ export function UserDashboard(props: UserDashboardProps) {
 									</span>
 								</div>
 							</div>
-
-							{/* Lider dnia */}
 							<div className="p-3 sm:p-4 flex flex-col gap-1">
 								<span className="text-xs font-semibold text-t-text-secondary">
 									Najmocniejszy dziś
@@ -285,8 +293,6 @@ export function UserDashboard(props: UserDashboardProps) {
 									</span>
 								</div>
 							</div>
-
-							{/* Outsider dnia */}
 							<div className="p-3 sm:p-4 flex flex-col gap-1">
 								<span className="text-xs font-semibold text-t-text-secondary">
 									Najsłabszy dziś
@@ -331,14 +337,21 @@ export function UserDashboard(props: UserDashboardProps) {
 									const historyArray = Object.keys(historyObject)
 										.sort()
 										.map((dateKey) => historyObject[dateKey]);
+									const isSelected = selectedMarketId === indexId;
+
 									return (
 										<button
 											key={indexId}
 											type="button"
 											onClick={() =>
-												toast.info(`Ładowanie wykresu dla ${indexId}...`)
+												setSelectedMarketId(isSelected ? null : indexId)
 											}
-											className="group block w-full text-left rounded-2xl cursor-pointer active:scale-[0.98] transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60"
+											className={cn(
+												"group block w-full text-left rounded-2xl cursor-pointer transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60",
+												isSelected
+													? "ring-2 ring-blue-500 scale-[1.02] shadow-md"
+													: "active:scale-[0.98]",
+											)}
 										>
 											<PremiumMarketCard
 												variant="index"
@@ -351,6 +364,27 @@ export function UserDashboard(props: UserDashboardProps) {
 									);
 								})}
 							</div>
+
+							{/* ROZWIJANY WYKRES DLA INDEKSÓW */}
+							{selectedMarketId &&
+								props.userIndices.includes(selectedMarketId) && (
+									<MarketDetailChart
+										name={
+											GLOBAL_INDICES_MAP[selectedMarketId] || selectedMarketId
+										}
+										ticker={selectedMarketId}
+										color={INDEX_COLORS[selectedMarketId] || "#3b82f6"}
+										data={Object.entries(
+											props.indexQuotesHistory?.[selectedMarketId] || {},
+										)
+											.sort(
+												([dateA], [dateB]) =>
+													new Date(dateA).getTime() - new Date(dateB).getTime(),
+											)
+											.map(([date, value]) => ({ date, value }))}
+										onClose={() => setSelectedMarketId(null)}
+									/>
+								)}
 						</div>
 					)}
 
@@ -370,24 +404,32 @@ export function UserDashboard(props: UserDashboardProps) {
 
 						<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
 							{observedAssets.length > 0 ? (
-								observedAssets.slice(0, visibleAssetsCount).map((asset) => (
-									<button
-										key={asset.id}
-										type="button"
-										onClick={() =>
-											toast.info(`Ładowanie wykresu dla ${asset.ticker}...`)
-										}
-										className="group block w-full text-left rounded-xl cursor-pointer active:scale-[0.98] transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60"
-									>
-										<PremiumMarketCard
-											variant="asset"
-											name={asset.name}
-											ticker={asset.ticker}
-											change={asset.dailyChange || 0}
-											logo={getStockLogo(asset.ticker ?? "")}
-										/>
-									</button>
-								))
+								observedAssets.slice(0, visibleAssetsCount).map((asset) => {
+									const isSelected = selectedMarketId === asset.id;
+									return (
+										<button
+											key={asset.id}
+											type="button"
+											onClick={() =>
+												setSelectedMarketId(isSelected ? null : asset.id)
+											}
+											className={cn(
+												"group block w-full text-left rounded-xl cursor-pointer transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60",
+												isSelected
+													? "ring-2 ring-blue-500 scale-[1.02] shadow-md"
+													: "active:scale-[0.98]",
+											)}
+										>
+											<PremiumMarketCard
+												variant="asset"
+												name={asset.name}
+												ticker={asset.ticker}
+												change={asset.dailyChange || 0}
+												logo={getStockLogo(asset.ticker ?? "")}
+											/>
+										</button>
+									);
+								})
 							) : (
 								<div className="col-span-full flex flex-col items-center justify-center py-10 px-4 text-center border border-dashed rounded-2xl border-t-border bg-t-bg-base/50">
 									<div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 border border-t-border-subtle bg-black/5 dark:bg-white/5">
@@ -409,6 +451,24 @@ export function UserDashboard(props: UserDashboardProps) {
 								</div>
 							)}
 						</div>
+
+						{/* ROZWIJANY WYKRES DLA WALORÓW Z PORTFELA */}
+						{selectedMarketId &&
+							observedAssets.some((a) => a.id === selectedMarketId) &&
+							(() => {
+								const selectedAsset = observedAssets.find(
+									(a) => a.id === selectedMarketId,
+								);
+								return (
+									<MarketDetailChart
+										name={selectedAsset?.name || ""}
+										ticker={selectedAsset?.ticker || undefined}
+										color="#3b82f6" // Możemy dobrać kolory po kategorii, na razie bazowy niebieski
+										data={[]} // BRAK DANYCH W BAZIE! Zostawiamy puste, by pokazać ładny błąd
+										onClose={() => setSelectedMarketId(null)}
+									/>
+								);
+							})()}
 
 						{observedAssets.length > 6 && (
 							<div className="flex justify-center pt-1">
@@ -448,9 +508,7 @@ export function UserDashboard(props: UserDashboardProps) {
 				>
 					{/* NAWIGACJA Z IKONAMI POŁĄCZONYMI LINIĄ */}
 					<div className="relative w-full max-w-3xl mx-auto my-8 md:my-10 px-4 sm:px-12">
-						{/* Pozioma linia łącząca (tło) */}
 						<div className="absolute top-[24px] left-[10%] right-[10%] h-[2px] bg-t-border-subtle z-0" />
-
 						<div className="relative z-10 flex justify-between items-start">
 							{CHART_TABS.map((tab) => {
 								const isActive = activeChartTab === tab.id;
@@ -460,7 +518,6 @@ export function UserDashboard(props: UserDashboardProps) {
 										onClick={() => setActiveChartTab(tab.id)}
 										className="group flex flex-col items-center gap-3 w-1/4 outline-none"
 									>
-										{/* Okrągła ikona */}
 										<div
 											className={cn(
 												"w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300",
@@ -471,7 +528,6 @@ export function UserDashboard(props: UserDashboardProps) {
 										>
 											<tab.icon className="w-5 h-5" />
 										</div>
-										{/* Etykieta */}
 										<div className="flex flex-col items-center text-center">
 											<span
 												className={cn(
@@ -494,7 +550,7 @@ export function UserDashboard(props: UserDashboardProps) {
 					<div className="mt-8 transition-all duration-300 animate-in fade-in zoom-in-95">
 						{activeChartTab === "PORTFOLIO" && (
 							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
-								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl md:p-4 shadow-sm gap-4">
 									<PortfolioChart
 										data={portfolioChartData}
 										transactions={filteredTransactions}
@@ -537,7 +593,7 @@ export function UserDashboard(props: UserDashboardProps) {
 
 						{activeChartTab === "DAILY_PNL" && (
 							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
-								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl md:p-4 shadow-sm gap-4">
 									<AbsoluteDailyPnLChart
 										key={chartMode}
 										data={absoluteChartData}
@@ -550,7 +606,7 @@ export function UserDashboard(props: UserDashboardProps) {
 										setDataMode={setDataMode}
 										isRangeDisabled={isRangeDisabled}
 									/>
-								</div>
+								</div>{" "}
 								{/* 🚀 BANER INFORMACYJNY - DAILY PNL */}
 								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
 									<Info className="w-5 h-5 shrink-0 mt-0.5" />
@@ -574,7 +630,7 @@ export function UserDashboard(props: UserDashboardProps) {
 
 						{activeChartTab === "COMPARISON" && (
 							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
-								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl md:p-4 shadow-sm gap-4">
 									<PortfoliosComparisonChart
 										key={`compare-${chartMode}`}
 										data={portfoliosComparisonData}
@@ -589,7 +645,7 @@ export function UserDashboard(props: UserDashboardProps) {
 										titleInside="Zbiorczy wykres portfeli"
 										subtitleInside={chartSubtitle}
 									/>
-								</div>
+								</div>{" "}
 								{/* 🚀 BANER INFORMACYJNY - COMPARISON */}
 								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
 									<Info className="w-5 h-5 shrink-0 mt-0.5" />
@@ -613,7 +669,7 @@ export function UserDashboard(props: UserDashboardProps) {
 
 						{activeChartTab === "BENCHMARK" && (
 							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
-								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm gap-4">
+								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl md:p-4 shadow-sm gap-4">
 									<PortfolioBenchmarkChart
 										key={chartMode}
 										data={benchmarkChartData}
@@ -628,7 +684,7 @@ export function UserDashboard(props: UserDashboardProps) {
 										onRangeChange={handleRangeChange}
 										subtitleInside={chartSubtitle}
 									/>
-								</div>
+								</div>{" "}
 								{/* 🚀 BANER INFORMACYJNY - BENCHMARK */}
 								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
 									<Info className="w-5 h-5 shrink-0 mt-0.5" />

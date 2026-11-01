@@ -428,7 +428,7 @@ export function PortfolioChart({
 								fill: "var(--t-text-tertiary)",
 								fontWeight: 500,
 							}}
-							width={isMobile ? 15 : 20}
+							width={isMobile ? 35 : 40}
 							domain={["auto", "auto"]}
 							tickFormatter={(val) =>
 								mode === "PERCENTAGE"
@@ -666,7 +666,7 @@ export function PortfolioChart({
 								fill: "var(--t-text-tertiary)",
 								fontWeight: 500,
 							}}
-							width={isMobile ? 15 : 20}
+							width={isMobile ? 35 : 40}
 							domain={["dataMin", 0]}
 							tickFormatter={(val) => `${val.toFixed(0)}%`}
 						/>

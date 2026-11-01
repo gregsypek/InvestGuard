@@ -252,7 +252,7 @@ export function PremiumMarketCard({
 
 				{/* Wykres */}
 				{historyData && historyData.length > 1 && (
-					<div className="relative -mx-1 mt-auto">
+					<div className="relative -mx-1 mt-auto opacity-60">
 						<Sparkline data={historyData} isPositive={isPositive} />
 					</div>
 				)}
@@ -317,7 +317,7 @@ export function PremiumMarketCard({
 			<div className="h-0.5 w-full rounded-full bg-t-border overflow-hidden">
 				<div
 					className={cn(
-						"h-full rounded-full transition-all duration-700",
+						"h-full rounded-full transition-all duration-700 opacity-60",
 						isPositive ? "bg-gain" : "bg-loss",
 					)}
 					style={{ width: `${Math.max(meterWidth, 4)}%` }}

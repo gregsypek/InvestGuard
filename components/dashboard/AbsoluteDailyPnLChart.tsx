@@ -363,7 +363,7 @@ export function AbsoluteDailyPnLChart({
 						// tickFormatter={(val) =>
 						// 	`${new Intl.NumberFormat("pl-PL", { notation: "compact", maximumFractionDigits: 1 }).format(convertPLN(val))}\u00A0${currencySymbol}`
 						// }
-						width={isMobile ? 42 : 58}
+						width={isMobile ? 55 : 85}
 						domain={[-pnlDomain, pnlDomain]}
 					/>
 
@@ -380,7 +380,7 @@ export function AbsoluteDailyPnLChart({
 						tickFormatter={(val) =>
 							val === 0 ? "" : formatCurrency(convertPLN(val))
 						}
-						width={isMobile ? 45 : 65}
+						width={isMobile ? 55 : 85}
 						domain={[-cashDomain, cashDomain]}
 					/>
 

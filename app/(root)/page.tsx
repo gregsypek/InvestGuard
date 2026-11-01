@@ -71,11 +71,28 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 		latestUpdate.getTime() > 0 ? latestUpdate.toISOString() : null;
 
 	// Pobieramy historyczne wyceny indeksów do wykresów (Benchmark)
+	// const rawIndexHistory = await db.indexHistory.findMany({
+	// 	where: {
+	// 		symbol: { in: userIndices },
+	// 		date: {
+	// 			gte: startDate,
+	// 			lte: endDate,
+	// 		},
+	// 	},
+	// 	orderBy: { date: "asc" },
+	// });
+	// 🚀 Zmiana: Pobieramy historię rynków (Benchmark) niezależnie od wieku portfela.
+	// Bierzemy 5 lat (lub więcej) pełnej rynkowej wyceny, aby wykres radaru (1Y, 3Y, 5Y) zawsze działał,
+
+	// nawet jeśli Twój portfel InvestGuard istnieje od miesiąca.
+	const marketHistoryStartDate = new Date();
+	marketHistoryStartDate.setFullYear(marketHistoryStartDate.getFullYear() - 5);
+
 	const rawIndexHistory = await db.indexHistory.findMany({
 		where: {
 			symbol: { in: userIndices },
 			date: {
-				gte: startDate,
+				gte: marketHistoryStartDate, // Zamiast startDate z historii portfela, ładujemy pełne 5 lat!
 				lte: endDate,
 			},
 		},

@@ -5,19 +5,24 @@ import {
 	CartesianGrid,
 	ComposedChart,
 	Line,
-	ReferenceLine,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
 	YAxis,
 } from "recharts";
 import { EndPills, PillItem } from "../shared/EndPills";
+import {
+	Info,
+	LineChart as LineChartIcon,
+	TrendingDown,
+	TrendingUp,
+} from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { ChartCardLayout } from "../shared/ChartCardLayout";
 import { FilterBadge } from "../shared/FilterBadge";
-import { LineChart as LineChartIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 import { useChartContext } from "../providers/ChartProvider";
@@ -32,6 +37,7 @@ interface MarketDetailChartProps {
 	name: string;
 	ticker?: string;
 	color?: string;
+	srcCurrency?: string;
 	onClose?: () => void;
 }
 
@@ -41,15 +47,19 @@ export function MarketDetailChart({
 	data,
 	name,
 	ticker,
-	color = "#3b82f6", // Domyślny niebieski
+	color = "#3b82f6",
+	srcCurrency = "USD",
 	onClose,
 }: MarketDetailChartProps) {
-	const { currency, convertPLN } = useChartContext();
+	const { currency, exchangeRates } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 	const [isMobile, setIsMobile] = useState(false);
 
 	const [activeRange, setActiveRange] = useState("1Y");
-	const [brushIndex, setBrushIndex] = useState({ start: 0, end: 0 });
+	const [customBrush, setCustomBrush] = useState<{
+		start: number;
+		end: number;
+	} | null>(null);
 
 	useEffect(() => {
 		const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -58,13 +68,23 @@ export function MarketDetailChart({
 		return () => window.removeEventListener("resize", checkMobile);
 	}, []);
 
-	// 1. LOGIKA FILTROWANIA DANYCH (Ożywia filtry pod wykresem!)
+	// 🚀 Sprawdzamy czy mamy wystarczającą historię danych (min. 5 wpisów)
+	const hasEnoughHistory = useMemo(() => {
+		return data && data.length >= 5;
+	}, [data]);
+
+	const startDateFormatted = useMemo(() => {
+		if (!data || data.length === 0) return "";
+		return format(new Date(data[0].date), "dd MMMM yyyy", { locale: pl });
+	}, [data]);
+
 	const filteredData = useMemo(() => {
 		if (!data || data.length === 0) return [];
+		if (!hasEnoughHistory) return data; // Jeśli danych jest mało, nie filtrujemy zakresami
 
 		const now = new Date();
 		now.setUTCHours(0, 0, 0, 0);
-		let cutoff = new Date(0); // Dla MAX bierzemy wszystko
+		let cutoff = new Date(0);
 
 		switch (activeRange) {
 			case "1W":
@@ -93,32 +113,63 @@ export function MarketDetailChart({
 				cutoff = new Date(0);
 				break;
 		}
-
-		// Filtrujemy dane, zostawiając tylko te równe lub nowsze od cutoff
 		return data.filter((d) => new Date(d.date).getTime() >= cutoff.getTime());
-	}, [data, activeRange]);
+	}, [data, activeRange, hasEnoughHistory]);
 
-	// Inicjalizacja zakresu Brusha (za każdym razem, gdy zmieniają się przefiltrowane dane)
-	useEffect(() => {
-		if (filteredData && filteredData.length > 0) {
-			const end = filteredData.length - 1;
-			setBrushIndex({ start: 0, end });
+	// Przeliczamy dane na wybraną walutę w UI
+	const chartDataWithCurrency = useMemo(() => {
+		let rate = 1;
+		const src = srcCurrency.toUpperCase();
+		const tgt = currency.toUpperCase();
+
+		if (src !== tgt) {
+			const usdpln = exchangeRates["USDPLN"] || 4.0;
+			const eurpln = exchangeRates["EURPLN"] || 4.3;
+			const gbppln = exchangeRates["GBPPLN"] || 5.0;
+
+			let rateToPLN = 1;
+			if (src === "USD") rateToPLN = usdpln;
+			else if (src === "EUR") rateToPLN = eurpln;
+			else if (src === "GBP") rateToPLN = gbppln;
+
+			let plnToTgt = 1;
+			if (tgt === "USD") plnToTgt = 1 / usdpln;
+			else if (tgt === "EUR") plnToTgt = 1 / eurpln;
+			else if (tgt === "GBP") plnToTgt = 1 / gbppln;
+
+			rate = rateToPLN * plnToTgt;
 		}
-	}, [filteredData]);
+
+		return filteredData.map((d) => ({
+			...d,
+			value: d.value * rate,
+		}));
+	}, [filteredData, srcCurrency, currency, exchangeRates]);
 
 	const brush = useMemo(() => {
-		const lastIdx = Math.max(0, (filteredData?.length || 1) - 1);
-		const start = Math.min(Math.max(0, brushIndex.start), lastIdx);
-		const end = Math.min(Math.max(start, brushIndex.end), lastIdx);
-		return { start, end };
-	}, [brushIndex.start, brushIndex.end, filteredData]);
+		const lastIdx = Math.max(0, (chartDataWithCurrency?.length || 1) - 1);
+		if (!customBrush) return { start: 0, end: lastIdx };
+		return {
+			start: Math.min(Math.max(0, customBrush.start), lastIdx),
+			end: Math.min(Math.max(customBrush.start, customBrush.end), lastIdx),
+		};
+	}, [customBrush, chartDataWithCurrency]);
+
+	const percentChange = useMemo(() => {
+		if (!chartDataWithCurrency || chartDataWithCurrency.length === 0) return 0;
+		const startVal = chartDataWithCurrency[brush.start]?.value || 0;
+		const endVal = chartDataWithCurrency[brush.end]?.value || 0;
+		if (startVal === 0) return 0;
+		return ((endVal - startVal) / startVal) * 100;
+	}, [chartDataWithCurrency, brush.start, brush.end]);
 
 	const yDomain = useMemo<[number, number]>(() => {
-		if (!filteredData || filteredData.length === 0) return [-5, 5];
+		if (!chartDataWithCurrency || chartDataWithCurrency.length === 0)
+			return [-5, 5];
 		let min = Infinity;
 		let max = -Infinity;
 		for (let i = brush.start; i <= brush.end; i++) {
-			const v = filteredData[i]?.value;
+			const v = chartDataWithCurrency[i]?.value;
 			if (v != null) {
 				if (v < min) min = v;
 				if (v > max) max = v;
@@ -127,13 +178,13 @@ export function MarketDetailChart({
 		if (!isFinite(min) || !isFinite(max)) return [-5, 5];
 		const pad = (max - min || 1) * 0.1;
 		return [min - pad, max + pad];
-	}, [filteredData, brush.start, brush.end]);
+	}, [chartDataWithCurrency, brush.start, brush.end]);
 
 	const pills = useMemo<PillItem[]>(() => {
-		if (!filteredData || filteredData.length === 0) return [];
+		if (!chartDataWithCurrency || chartDataWithCurrency.length === 0) return [];
 		const lastVal =
-			filteredData[brush.end]?.value ||
-			filteredData[filteredData.length - 1]?.value;
+			chartDataWithCurrency[brush.end]?.value ||
+			chartDataWithCurrency[chartDataWithCurrency.length - 1]?.value;
 		return [
 			{
 				id: ticker || name,
@@ -142,7 +193,7 @@ export function MarketDetailChart({
 				index: brush.end - brush.start,
 			},
 		];
-	}, [filteredData, brush.start, brush.end, ticker, name, color]);
+	}, [chartDataWithCurrency, brush.start, brush.end, ticker, name, color]);
 
 	if (!data || data.length < 2) {
 		return (
@@ -152,22 +203,32 @@ export function MarketDetailChart({
 				</p>
 				<p className="text-xs text-t-text-secondary text-center max-w-md">
 					Dla waloru <strong>{name}</strong> nie zebrano jeszcze wystarczającej
-					ilości danych historycznych do wyrysowania wykresu.
+					ilości danych historycznych.
 				</p>
 			</div>
 		);
 	}
 
-	const footerRanges = TIME_RANGES.map((range) => (
-		<div key={range}>
-			<FilterBadge
-				id={range}
-				label={range}
-				isSelected={activeRange === range}
-				onToggle={() => setActiveRange(range)}
-			/>
-		</div>
-	));
+	// 🚀 Jeśli brak pełnej historii, w stopce pokazujemy informację zamiast przycisków
+	const footerRanges = hasEnoughHistory ? (
+		TIME_RANGES.map((range) => (
+			<div key={range}>
+				<FilterBadge
+					id={range}
+					label={range}
+					isSelected={activeRange === range}
+					onToggle={() => {
+						setActiveRange(range);
+						setCustomBrush(null);
+					}}
+				/>
+			</div>
+		))
+	) : (
+		<span className="text-[10px] font-medium text-t-text-tertiary">
+			Zakres czasowy zablokowany • Zbieranie danych w toku
+		</span>
+	);
 
 	return (
 		<div className="w-full animate-in slide-in-from-top-4 fade-in duration-300 mb-6">
@@ -175,7 +236,29 @@ export function MarketDetailChart({
 				<ChartCardLayout
 					title={name}
 					subtitle={
-						ticker ? `Symbol: ${ticker}` : "Historia wycen zebrana z rynku"
+						<div className="flex items-center gap-2 mt-1">
+							<span className="text-xs text-t-text-secondary">
+								{ticker
+									? `Symbol: ${ticker}`
+									: "Historia wycen zebrana z rynku"}
+							</span>
+							<div
+								className={cn(
+									"flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-widest",
+									percentChange >= 0
+										? "bg-gain/10 text-gain"
+										: "bg-loss/10 text-loss",
+								)}
+							>
+								{percentChange >= 0 ? (
+									<TrendingUp className="w-3 h-3" />
+								) : (
+									<TrendingDown className="w-3 h-3" />
+								)}
+								{percentChange >= 0 ? "+" : ""}
+								{percentChange.toFixed(2)}%
+							</div>
+						</div>
 					}
 					icon={LineChartIcon}
 					footer={footerRanges}
@@ -183,7 +266,7 @@ export function MarketDetailChart({
 					<div className="w-full flex-1 min-h-0 border-b border-t-border-subtle pb-2 relative h-full">
 						<ResponsiveContainer width="100%" height="100%">
 							<ComposedChart
-								data={filteredData}
+								data={chartDataWithCurrency}
 								margin={{
 									top: 20,
 									right: isMobile ? 30 : 40,
@@ -206,25 +289,25 @@ export function MarketDetailChart({
 										fill: "var(--t-text-tertiary)",
 										fontWeight: 500,
 									}}
-									// 2. Dodajemy formatowanie waluty na osi Y
 									tickFormatter={(val) =>
-										`${formatCurrency(convertPLN(val), 0)} ${currencySymbol}`
+										`${formatCurrency(val, 1, currency, currency, exchangeRates)}\u00A0${currencySymbol}`
 									}
 									domain={yDomain}
 									width={isMobile ? 45 : 55}
 								/>
 								<Tooltip
-									// Przekazujemy funkcje do Tooltipa
 									content={
 										<MarketTooltip
 											color={color}
+											currency={currency}
 											currencySymbol={currencySymbol}
-											convertPLN={convertPLN}
+											exchangeRates={exchangeRates}
 										/>
 									}
 									cursor={{ stroke: "var(--t-border-subtle)", strokeWidth: 2 }}
 								/>
-								{filteredData.length > 1 && (
+								{/* Pokazujemy pędzel nawigacyjny tylko przy pełnej historii */}
+								{hasEnoughHistory && chartDataWithCurrency.length > 1 && (
 									<Brush
 										dataKey="date"
 										height={24}
@@ -238,7 +321,10 @@ export function MarketDetailChart({
 												Number.isFinite(e.startIndex) &&
 												Number.isFinite(e.endIndex)
 											) {
-												setBrushIndex({ start: e.startIndex, end: e.endIndex });
+												setCustomBrush({
+													start: e.startIndex,
+													end: e.endIndex,
+												});
 											}
 										}}
 									/>
@@ -263,25 +349,35 @@ export function MarketDetailChart({
 									domain={yDomain}
 									mode="VALUE"
 									currencySymbol={currencySymbol}
-									convertPLN={convertPLN}
+									convertPLN={(v) => v}
 								/>
 							</ComposedChart>
 						</ResponsiveContainer>
 					</div>
 				</ChartCardLayout>
 			</div>
+			{/* Baner informacyjny przy krótkiej historii */}
+			{!hasEnoughHistory && (
+				<div className="flex items-center gap-2.5 p-3 mt-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-medium shadow-sm">
+					<Info className="w-4 h-4 shrink-0 text-blue-500" />
+					<span>
+						Zbieranie historii w toku. Wykres prezentuje wstępne dane gromadzone
+						od dnia <strong>{startDateFormatted}</strong>.
+					</span>
+				</div>
+			)}
 		</div>
 	);
 }
 
-// 3. Wyjaśnienie w Tooltipie
 function MarketTooltip({
 	active,
 	payload,
 	label,
 	color,
+	currency,
 	currencySymbol,
-	convertPLN,
+	exchangeRates,
 }: any) {
 	if (!active || !payload || payload.length === 0) return null;
 	const val = payload[0].value;
@@ -302,12 +398,12 @@ function MarketTooltip({
 						</span>
 					</div>
 					<span className="text-sm font-bold tabular-nums text-t-text-primary">
-						{formatCurrency(convertPLN(val), 2)}
+						{formatCurrency(val, 2, currency, currency, exchangeRates)}
+						{"\u00A0"}
 						{currencySymbol}
 					</span>
 				</div>
 			</div>
-			{/* Subtelne wyjaśnienie pochodzenia danych */}
 			<div className="pt-2 mt-2 border-t border-t-border-subtle">
 				<p className="text-[9px] text-t-text-tertiary leading-tight">
 					Dane historyczne pobrane na koniec sesji giełdowej.

@@ -78,7 +78,8 @@ function Sparkline({
    NAZWY AKTYWÓW: czyszczenie i kategoryzacja
    ========================================= */
 function formatAssetName(rawName: string) {
-	let cleanName = rawName;
+	// 🚀 Zabezpieczenie przed undefined/null i wymuszenie typu String
+	let cleanName = String(rawName || "");
 	let isETF = false;
 	let provider = null;
 

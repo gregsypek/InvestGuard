@@ -73,7 +73,7 @@ type ChartPoint = { date: string; amount: number };
 
 // EN: Helper function to clean up messy ETF/Asset names into a premium, readable format
 function formatAssetName(rawName: string) {
-	let cleanName = rawName || "Nieznane Aktywo";
+	let cleanName = String(rawName || "Nieznane Aktywo");
 	let isETF = false;
 	let provider = null;
 

@@ -1,3 +1,5 @@
+// app / api / cron / hourly - prices / route.ts;
+
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { formatYahooTicker } from "@/lib/market-api";
@@ -161,15 +163,46 @@ export async function GET(req: Request) {
 					else if (currency === "EUR") priceInPLN = rawPrice * eurRate;
 				}
 
+				// Aktualizacja portfela
 				await db.asset.update({
 					where: { id: asset.id },
 					data: {
 						currentValue: priceInPLN * asset.quantity,
-						// EN: Store native daily market change percentage
 						dailyChange: quote.regularMarketChangePercent || 0,
 						updatedAt: new Date(),
 					},
 				});
+
+				// 🚀 DODANE: Jeśli aktywo jest na radarze, rzeźbimy mu historię rynkową!
+				if (asset.isObserved && asset.ticker) {
+					// 1. Najpierw upsert do MarketIndex, żeby spełnić klucz obcy dla IndexHistory
+					await db.marketIndex.upsert({
+						where: { symbol: asset.ticker },
+						update: {
+							price: rawPrice,
+							dailyChange: quote.regularMarketChangePercent || 0,
+							updatedAt: new Date(),
+						},
+						create: {
+							symbol: asset.ticker,
+							name: asset.name,
+							price: rawPrice,
+							dailyChange: quote.regularMarketChangePercent || 0,
+						},
+					});
+
+					// 2. Następnie zapis historii cenowej
+					await db.indexHistory.upsert({
+						where: { symbol_date: { symbol: asset.ticker, date: today } },
+						update: { closePrice: rawPrice },
+						create: {
+							symbol: asset.ticker,
+							closePrice: rawPrice,
+							date: today,
+						},
+					});
+				}
+
 				updatedCount++;
 			}
 			await db.portfolio.update({

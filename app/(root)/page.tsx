@@ -83,16 +83,25 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 	// });
 	// 🚀 Zmiana: Pobieramy historię rynków (Benchmark) niezależnie od wieku portfela.
 	// Bierzemy 5 lat (lub więcej) pełnej rynkowej wyceny, aby wykres radaru (1Y, 3Y, 5Y) zawsze działał,
+	// A. Wyłuskaj tickery z obserwowanych aktywów
+	const observedAssetTickers = allAssets
+		.filter((a) => a.isObserved && a.ticker)
+		.map((a) => a.ticker as string);
 
-	// nawet jeśli Twój portfel InvestGuard istnieje od miesiąca.
+	// Połącz indeksy z obserwowanymi walorami dla zapytań o historię rynkową
+	const combinedSymbolsForHistory = Array.from(
+		new Set([...userIndices, ...observedAssetTickers]),
+	);
+
+	// Pobieramy historyczne wyceny indeksów do wykresów (Benchmark)
 	const marketHistoryStartDate = new Date();
 	marketHistoryStartDate.setFullYear(marketHistoryStartDate.getFullYear() - 5);
 
 	const rawIndexHistory = await db.indexHistory.findMany({
 		where: {
-			symbol: { in: userIndices },
+			symbol: { in: combinedSymbolsForHistory }, // 🚀 Było: { in: userIndices }
 			date: {
-				gte: marketHistoryStartDate, // Zamiast startDate z historii portfela, ładujemy pełne 5 lat!
+				gte: marketHistoryStartDate,
 				lte: endDate,
 			},
 		},
@@ -100,18 +109,17 @@ export default async function HomePage(props: { searchParams: SearchParams }) {
 	});
 
 	const indexQuotesHistory: Record<string, Record<string, number>> = {};
-	userIndices.forEach((idx) => {
-		indexQuotesHistory[idx] = {};
+	combinedSymbolsForHistory.forEach((symbol) => {
+		// 🚀 Było: userIndices.forEach
+		indexQuotesHistory[symbol] = {};
 	});
 
 	rawIndexHistory.forEach((record) => {
-		// Wycinamy samą datę YYYY-MM-DD, aby pasowała do kluczy na frontendzie
 		const dateStr = record.date.toISOString().split("T")[0];
 		if (indexQuotesHistory[record.symbol]) {
 			indexQuotesHistory[record.symbol][dateStr] = record.closePrice;
 		}
 	});
-
 	return (
 		<UserDashboard
 			portfolios={portfolios}

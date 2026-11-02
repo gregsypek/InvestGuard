@@ -10,12 +10,12 @@ import { toast } from "sonner";
 
 // EN: Static list of popular global indices
 export const GLOBAL_INDICES = [
-	{ id: "SP500", name: "S&P 500", ticker: "^GSPC" },
-	{ id: "NASDAQ", name: "NASDAQ 100", ticker: "^IXIC" },
-	{ id: "WIG20", name: "WIG20", ticker: "WIG20.WA" },
-	{ id: "DAX", name: "DAX 40", ticker: "^GDAXI" },
-	{ id: "GOLD", name: "Złoto (XAU/USD)", ticker: "GC=F" },
-	{ id: "BTC", name: "Bitcoin", ticker: "BTC-USD" },
+	{ id: "SP500", name: "S&P 500", ticker: "^GSPC", currency: "USD" },
+	{ id: "NASDAQ", name: "NASDAQ 100", ticker: "^IXIC", currency: "USD" },
+	{ id: "WIG20", name: "WIG20", ticker: "WIG20.WA", currency: "PLN" },
+	{ id: "DAX", name: "DAX 40", ticker: "^GDAXI", currency: "EUR" },
+	{ id: "GOLD", name: "Złoto (XAU/USD)", ticker: "GC=F", currency: "USD" },
+	{ id: "BTC", name: "Bitcoin", ticker: "BTC-USD", currency: "USD" },
 ];
 
 interface ObservedMarketsManagerProps {

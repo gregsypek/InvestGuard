@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 export interface ChartCardLayoutProps {
 	title?: string;
-	subtitle?: string;
+	subtitle?: React.ReactNode;
 	icon?: React.ElementType;
 	controls?: React.ReactNode;
 	headerExtra?: React.ReactNode;

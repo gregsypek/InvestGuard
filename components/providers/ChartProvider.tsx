@@ -33,6 +33,7 @@ interface ChartContextType {
 	currency: string;
 	setCurrency: (currency: string) => void;
 	convertPLN: (amount: number) => number;
+	exchangeRates: Record<string, number>;
 }
 
 const ChartContext = createContext<ChartContextType | null>(null);
@@ -155,6 +156,7 @@ export function ChartProvider({
 				currency,
 				setCurrency,
 				convertPLN,
+				exchangeRates,
 			}}
 		>
 			{children}

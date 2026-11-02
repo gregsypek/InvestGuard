@@ -7,6 +7,7 @@ import {
 	Globe,
 	Info,
 	LineChart,
+	Plus,
 	RefreshCw,
 	Settings,
 	TrendingDown,
@@ -20,7 +21,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
 import { GlobalDashboardHeader } from "./dashboard/GlobalDashboardHeader";
+import Link from "next/link";
 import { MarketDetailChart } from "./dashboard/MarketDetailChart";
+// import { MarketDetailChart } from "./dashboard/MarketDetailChart";
 import { PortfolioBenchmarkChart } from "./dashboard/PortfolioBenchmarkChart";
 import { PortfolioChart } from "./dashboard/PortfolioChart";
 import { PortfolioWithAssets } from "@/lib/types";
@@ -34,13 +37,22 @@ import { refreshPortfolioPrices } from "@/lib/actions/refresh-prices";
 import { toast } from "sonner";
 import { useChartContext } from "./providers/ChartProvider";
 
-const GLOBAL_INDICES_MAP: Record<string, string> = {
-	SP500: "S&P 500",
-	NASDAQ: "NASDAQ 100",
-	WIG20: "WIG20",
-	DAX: "DAX 40",
-	GOLD: "Złoto (XAU/USD)",
-	BTC: "Bitcoin",
+const GLOBAL_INDICES_MAP: Record<string, { name: string; currency: string }> = {
+	SP500: { name: "S&P 500", currency: "USD" },
+	NASDAQ: { name: "NASDAQ 100", currency: "USD" },
+	WIG20: { name: "WIG20", currency: "PLN" },
+	DAX: { name: "DAX 40", currency: "EUR" },
+	GOLD: { name: "Złoto (XAU/USD)", currency: "USD" },
+	BTC: { name: "Bitcoin", currency: "USD" },
+};
+
+const inferCurrencyFromTicker = (ticker?: string | null) => {
+	if (!ticker) return "PLN";
+	const t = ticker.toUpperCase();
+	if (t.endsWith(".US")) return "USD";
+	if (t.endsWith(".DE") || t.endsWith(".FR") || t.endsWith(".NL")) return "EUR";
+	if (t.endsWith(".UK") || t.endsWith(".L")) return "GBP";
+	return "PLN"; // Domyślnie dla GPW (.PL / .WA)
 };
 
 interface UserDashboardProps {
@@ -108,19 +120,48 @@ export function UserDashboard(props: UserDashboardProps) {
 		{ id: "BENCHMARK", icon: Globe, label: "Rynek" },
 	] as const;
 
-	const radarTotal = observedAssets.length;
-	const radarAdvancing = observedAssets.filter(
-		(a) => (a.dailyChange ?? 0) > 0,
+	// 🚀 Sprawdzamy, czy giełda w USA (NYSE/NASDAQ) otworzyła się dzisiaj (start: 15:30 CET / 14:30 UTC)
+	const isUSMarketOpenToday = useMemo(() => {
+		const now = new Date();
+		const utcHours = now.getUTCHours();
+		const utcMinutes = now.getUTCMinutes();
+		// 14:30 UTC = 15:30 CET
+		return utcHours > 14 || (utcHours === 14 && utcMinutes >= 30);
+	}, []);
+
+	// 🚀 Przetwarzamy aktywa: jeśli giełda USA jeszcze nie ruszyła, dzisiejsza zmiana = 0%
+	const processedAssets = useMemo(() => {
+		return observedAssets.map((asset) => {
+			const ticker = (asset.ticker || "").toUpperCase();
+			const isUS =
+				ticker.endsWith(".US") ||
+				(!ticker.includes(".") &&
+					!ticker.startsWith("^") &&
+					!["BTC", "GOLD", "WIG20", "DAX"].includes(ticker));
+
+			const dailyChange =
+				isUS && !isUSMarketOpenToday ? 0 : asset.dailyChange || 0;
+
+			return {
+				...asset,
+				dailyChange,
+				isPendingSession: isUS && !isUSMarketOpenToday,
+			};
+		});
+	}, [observedAssets, isUSMarketOpenToday]);
+
+	const radarTotal = processedAssets.length;
+	const radarAdvancing = processedAssets.filter(
+		(a) => a.dailyChange > 0,
 	).length;
-	const radarDeclining = observedAssets.filter(
-		(a) => (a.dailyChange ?? 0) < 0,
+	const radarDeclining = processedAssets.filter(
+		(a) => a.dailyChange < 0,
 	).length;
-	const radarSorted = [...observedAssets].sort(
-		(a, b) => (b.dailyChange ?? 0) - (a.dailyChange ?? 0),
+	const radarSorted = [...processedAssets].sort(
+		(a, b) => b.dailyChange - a.dailyChange,
 	);
 	const radarBest = radarSorted[0];
 	const radarWorst = radarSorted[radarSorted.length - 1];
-
 	const formatRadarChange = (value: number) =>
 		`${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 
@@ -355,7 +396,8 @@ export function UserDashboard(props: UserDashboardProps) {
 										>
 											<PremiumMarketCard
 												variant="index"
-												name={GLOBAL_INDICES_MAP[indexId] || indexId}
+												// 🚀 Zmiana tutaj: wyciągamy pole .name z obiektu
+												name={GLOBAL_INDICES_MAP[indexId]?.name || indexId}
 												change={changeValue}
 												historyData={historyArray}
 												logo={getStockLogo(indexId)}
@@ -370,10 +412,14 @@ export function UserDashboard(props: UserDashboardProps) {
 								props.userIndices.includes(selectedMarketId) && (
 									<MarketDetailChart
 										name={
-											GLOBAL_INDICES_MAP[selectedMarketId] || selectedMarketId
+											GLOBAL_INDICES_MAP[selectedMarketId]?.name ||
+											selectedMarketId
 										}
 										ticker={selectedMarketId}
 										color={INDEX_COLORS[selectedMarketId] || "#3b82f6"}
+										srcCurrency={
+											GLOBAL_INDICES_MAP[selectedMarketId]?.currency || "USD"
+										} // 🚀 Przekazujemy walutę!
 										data={Object.entries(
 											props.indexQuotesHistory?.[selectedMarketId] || {},
 										)
@@ -404,32 +450,73 @@ export function UserDashboard(props: UserDashboardProps) {
 
 						<div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
 							{observedAssets.length > 0 ? (
-								observedAssets.slice(0, visibleAssetsCount).map((asset) => {
-									const isSelected = selectedMarketId === asset.id;
-									return (
-										<button
-											key={asset.id}
-											type="button"
-											onClick={() =>
-												setSelectedMarketId(isSelected ? null : asset.id)
-											}
-											className={cn(
-												"group block w-full text-left rounded-xl cursor-pointer transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60",
-												isSelected
-													? "ring-2 ring-blue-500 scale-[1.02] shadow-md"
-													: "active:scale-[0.98]",
-											)}
-										>
-											<PremiumMarketCard
-												variant="asset"
-												name={asset.name}
-												ticker={asset.ticker}
-												change={asset.dailyChange || 0}
-												logo={getStockLogo(asset.ticker ?? "")}
-											/>
-										</button>
-									);
-								})
+								<>
+									{/* {observedAssets.slice(0, visibleAssetsCount).map((asset) => {
+										const isSelected = selectedMarketId === asset.id;
+										return (
+											<button
+												key={asset.id}
+												type="button"
+												onClick={() =>
+													setSelectedMarketId(isSelected ? null : asset.id)
+												}
+												className={cn(
+													"group block w-full text-left rounded-xl cursor-pointer transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60",
+													isSelected
+														? "ring-2 ring-blue-500 scale-[1.02] shadow-md"
+														: "active:scale-[0.98]",
+												)}
+											>
+												<PremiumMarketCard
+													variant="asset"
+													name={asset.name}
+													ticker={asset.ticker}
+													change={asset.dailyChange || 0}
+													logo={getStockLogo(asset.ticker ?? "")}
+												/>
+											</button>
+										);
+									})} */}
+									{processedAssets.slice(0, visibleAssetsCount).map((asset) => {
+										const isSelected = selectedMarketId === asset.id;
+										return (
+											<button
+												key={asset.id}
+												type="button"
+												onClick={() =>
+													setSelectedMarketId(isSelected ? null : asset.id)
+												}
+												className={cn(
+													"group block w-full text-left rounded-xl cursor-pointer transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60",
+													isSelected
+														? "ring-2 ring-blue-500 scale-[1.02] shadow-md"
+														: "active:scale-[0.98]",
+												)}
+											>
+												<PremiumMarketCard
+													variant="asset"
+													name={asset.name}
+													ticker={asset.ticker}
+													change={asset.dailyChange}
+													logo={getStockLogo(asset.ticker ?? "")}
+												/>
+											</button>
+										);
+									})}
+
+									{/* 🚀 KARTA DODAWANIA (PLUS) */}
+									<Link
+										href="/settings?from=dashboard"
+										className="group flex flex-col items-center justify-center gap-2 w-full h-full min-h-[80px] rounded-xl border border-dashed border-t-border bg-t-bg-panel hover:bg-t-bg-base hover:border-blue-500/40 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+									>
+										<div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+											<Plus className="w-4 h-4 text-blue-500" />
+										</div>
+										<span className="text-[10px] font-bold text-t-text-tertiary group-hover:text-blue-500 uppercase tracking-widest transition-colors">
+											Dodaj walor
+										</span>
+									</Link>
+								</>
 							) : (
 								<div className="col-span-full flex flex-col items-center justify-center py-10 px-4 text-center border border-dashed rounded-2xl border-t-border bg-t-bg-base/50">
 									<div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 border border-t-border-subtle bg-black/5 dark:bg-white/5">
@@ -459,12 +546,28 @@ export function UserDashboard(props: UserDashboardProps) {
 								const selectedAsset = observedAssets.find(
 									(a) => a.id === selectedMarketId,
 								);
+
+								// Wyciągamy ticker wybranego waloru (klucz w bazie IndexHistory)
+								const assetTicker = selectedAsset?.ticker || "";
+
+								// Przekształcamy obiekt { '2026-11-02': 150 } na tablicę [{ date: '2026-11-02', value: 150 }]
+								const chartData = Object.entries(
+									props.indexQuotesHistory?.[assetTicker] || {},
+								)
+									.sort(
+										([dateA], [dateB]) =>
+											new Date(dateA).getTime() - new Date(dateB).getTime(),
+									)
+									.map(([date, value]) => ({ date, value }));
+
 								return (
 									<MarketDetailChart
 										name={selectedAsset?.name || ""}
 										ticker={selectedAsset?.ticker || undefined}
-										color="#3b82f6" // Możemy dobrać kolory po kategorii, na razie bazowy niebieski
-										data={[]} // BRAK DANYCH W BAZIE! Zostawiamy puste, by pokazać ładny błąd
+										// Wnioskujemy walutę po tickerze
+										srcCurrency={inferCurrencyFromTicker(selectedAsset?.ticker)}
+										color="#3b82f6"
+										data={chartData} // 🚀 Przekazujemy właściwą tablicę z danymi historycznymi
 										onClose={() => setSelectedMarketId(null)}
 									/>
 								);

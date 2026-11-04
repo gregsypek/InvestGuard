@@ -13,7 +13,7 @@ const GLOBAL_INDICES = [
 	{ id: "NASDAQ", tickers: ["^IXIC"] },
 	{ id: "WIG20", tickers: ["WIG20.WA", "^WIG20"] },
 	{ id: "DAX", tickers: ["^GDAXI"] },
-	{ id: "GOLD", tickers: ["GC=F"] },
+	{ id: "GOLD", tickers: ["GLD"] },
 	{ id: "BTC", tickers: ["BTC-USD"] },
 ];
 

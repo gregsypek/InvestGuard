@@ -13,7 +13,8 @@ const YAHOO_SYMBOLS: Record<string, string> = {
 	NASDAQ: "^IXIC",
 	WIG20: "WIG20.WA",
 	DAX: "^GDAXI",
-	GOLD: "GC=F",
+	// GOLD: "GC=F",
+	GOLD: "GLD",
 	BTC: "BTC-USD",
 };
 

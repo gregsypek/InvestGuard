@@ -14,7 +14,12 @@ import {
 	TrendingUp,
 	WalletCards,
 } from "lucide-react";
-import { SimulatedSnapshot, useDashboardData } from "./ui/useDashboardData";
+import {
+	SEED_PORTFOLIOS,
+	SEED_REAL_SNAPSHOTS,
+	SimulatedSnapshot,
+	useDashboardData,
+} from "./ui/useDashboardData";
 import { cn, getStockLogo } from "@/lib/utils";
 import { differenceInMinutes, format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
@@ -91,7 +96,14 @@ export function UserDashboard(props: UserDashboardProps) {
 		absoluteChartData,
 		benchmarkChartData,
 		portfoliosComparisonData,
+		// portfolios: activeTestPortfolios,
+		portfolios,
 	} = useDashboardData(props);
+	// } = useDashboardData({
+	// 	...props,
+	// 	portfolios: SEED_PORTFOLIOS,
+	// 	realSnapshots: SEED_REAL_SNAPSHOTS,
+	// });
 
 	const [itemsPerPage, setItemsPerPage] = useState(3);
 	const [isRefreshing, setIsRefreshing] = useState(false);
@@ -700,7 +712,8 @@ export function UserDashboard(props: UserDashboardProps) {
 									<AbsoluteDailyPnLChart
 										key={chartMode}
 										data={absoluteChartData}
-										portfolios={props.portfolios}
+										// portfolios={activeTestPortfolios} // FOR TEST ONLY
+										portfolios={props.portfolios} //activeTestPortfolios (lub SEED_PORTFOLIOS)
 										activeIds={selectedIds}
 										onPortfolioToggle={togglePortfolio}
 										activeRange={activeRange}
@@ -709,7 +722,7 @@ export function UserDashboard(props: UserDashboardProps) {
 										setDataMode={setDataMode}
 										isRangeDisabled={isRangeDisabled}
 									/>
-								</div>{" "}
+								</div>
 								{/* 🚀 BANER INFORMACYJNY - DAILY PNL */}
 								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
 									<Info className="w-5 h-5 shrink-0 mt-0.5" />
@@ -730,7 +743,6 @@ export function UserDashboard(props: UserDashboardProps) {
 								</div>
 							</div>
 						)}
-
 						{activeChartTab === "COMPARISON" && (
 							<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
 								<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl md:p-4 shadow-sm gap-4">

@@ -32,6 +32,149 @@ interface UseDashboardDataProps {
 	indexQuotesHistory?: Record<string, Record<string, number>>;
 }
 
+// EN: Deterministic Seed Data for testing edge cases (losses, same-day deposits + market gains)
+export const SEED_PORTFOLIOS: PortfolioWithAssets[] = [
+	{
+		id: "port-seed-1",
+		name: "Portfel Testowy",
+		userId: "user-1",
+		createdAt: new Date("2026-11-01T10:00:00Z"),
+		updatedAt: new Date("2026-11-05T10:00:00Z"),
+		description: "Seed Data Portfolio for Edge Case Testing",
+		isPublic: false,
+		color: "#3b82f6",
+		targetAllocation: null,
+		lastRefreshedAt: new Date("2026-11-05T10:00:00Z"),
+		assets: [
+			{
+				id: "asset-1",
+				portfolioId: "port-seed-1",
+				name: "Apple Inc.",
+				ticker: "AAPL.US",
+				category: "STOCKS",
+				quantity: 10,
+				purchasePrice: 200,
+				currentPrice: 202,
+				currentValue: 2020, // EN: 10 shares * 202 USD (Market gain on Nov 05)
+				investedCapital: 2000,
+				dailyChange: 5.21,
+				isObserved: true,
+				createdAt: new Date("2026-11-02T12:00:00Z"),
+				updatedAt: new Date("2026-11-05T10:00:00Z"),
+				currency: "USD",
+				notes: null,
+			},
+			{
+				id: "asset-2",
+				portfolioId: "port-seed-1",
+				name: "Microsoft Corp.",
+				ticker: "MSFT.US",
+				category: "STOCKS",
+				quantity: 5,
+				purchasePrice: 200,
+				currentPrice: 200,
+				currentValue: 1000, // EN: Added Nov 05 (Same-day deposit)
+				investedCapital: 1000,
+				dailyChange: 0.0,
+				isObserved: true,
+				createdAt: new Date("2026-11-05T08:00:00Z"),
+				updatedAt: new Date("2026-11-05T10:00:00Z"),
+				currency: "USD",
+				notes: null,
+			},
+		],
+		transactionHistories: [
+			{
+				id: "tx-1",
+				portfolioId: "port-seed-1",
+				assetId: null,
+				type: "DEPOSIT",
+				quantity: null,
+				unitPrice: null,
+				executedValue: 2000,
+				executedAt: new Date("2026-11-01T10:00:00Z"),
+				createdAt: new Date("2026-11-01T10:00:00Z"),
+				notes: "Initial Deposit",
+			},
+			{
+				id: "tx-2",
+				portfolioId: "port-seed-1",
+				assetId: "asset-1",
+				type: "BUY",
+				quantity: 10,
+				unitPrice: 200,
+				executedValue: 2000,
+				executedAt: new Date("2026-11-02T14:30:00Z"),
+				createdAt: new Date("2026-11-02T14:30:00Z"),
+				notes: "Buy AAPL",
+			},
+			{
+				id: "tx-3",
+				portfolioId: "port-seed-1",
+				assetId: null,
+				type: "DEPOSIT",
+				quantity: null,
+				unitPrice: null,
+				executedValue: 1000,
+				executedAt: new Date("2026-11-05T08:00:00Z"),
+				createdAt: new Date("2026-11-05T08:00:00Z"),
+				notes: "Second Deposit",
+			},
+			{
+				id: "tx-4",
+				portfolioId: "port-seed-1",
+				assetId: "asset-2",
+				type: "BUY",
+				quantity: 5,
+				unitPrice: 200,
+				executedValue: 1000,
+				executedAt: new Date("2026-11-05T08:30:00Z"),
+				createdAt: new Date("2026-11-05T08:30:00Z"),
+				notes: "Buy MSFT",
+			},
+		],
+	},
+];
+
+export const SEED_REAL_SNAPSHOTS: SimulatedSnapshot[] = [
+	{
+		id: "snap-1",
+		portfolioId: "port-seed-1",
+		date: "2026-11-01T23:59:59.000Z",
+		totalValue: 2000,
+		investedValue: 2000,
+		dailyChange: 0,
+		isPositive: true,
+	},
+	{
+		id: "snap-2",
+		portfolioId: "port-seed-1",
+		date: "2026-11-02T23:59:59.000Z",
+		totalValue: 2000,
+		investedValue: 2000,
+		dailyChange: 0,
+		isPositive: true,
+	},
+	{
+		id: "snap-3",
+		portfolioId: "port-seed-1",
+		date: "2026-11-03T23:59:59.000Z",
+		totalValue: 2050,
+		investedValue: 2000,
+		dailyChange: 50,
+		isPositive: true,
+	},
+	{
+		id: "snap-4",
+		portfolioId: "port-seed-1",
+		date: "2026-11-04T23:59:59.000Z",
+		totalValue: 1920,
+		investedValue: 2000,
+		dailyChange: -130,
+		isPositive: false,
+	},
+];
+
 export function useDashboardData({
 	portfolios,
 	snapshots,
@@ -285,7 +428,7 @@ export function useDashboardData({
 		return downsampledSnapshots;
 	}, [timeFilteredSnapshots]);
 
-	// STEP 3: Generowanie Danych Wykresów z Oddzielnymi Osiami Czasu
+	// EN: Calculate daily absolute PnL and match Net Cash Flow to transaction execution dates
 	const { portfolioChartData, absoluteChartData, benchmarkChartData } =
 		useMemo(() => {
 			if (
@@ -300,18 +443,18 @@ export function useDashboardData({
 			}
 
 			const getDateStr = (d: string | Date) => {
-				const dateObj = new Date(d);
-				return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
+				const dateObj = typeof d === "string" ? new Date(d) : d;
+				return `${dateObj.getUTCFullYear()}-${String(dateObj.getUTCMonth() + 1).padStart(2, "0")}-${String(dateObj.getUTCDate()).padStart(2, "0")}`;
 			};
 
 			const sortedSnapshots = [...compressedSnapshots].sort(
 				(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 			);
-
 			// ============================================================================
 			// CZĘŚĆ 1: ZABEZPIECZENIE STARYCH WYKRESÓW (AbsoluteDailyPnLChart i PortfolioChart)
 			// (Ta logika jest Nienaruszona - opiera się WYŁĄCZNIE na istnieniu portfela)
 			// ============================================================================
+
 			const portfolioDates = Array.from(
 				new Set(sortedSnapshots.map((s) => getDateStr(s.date))),
 			).sort();
@@ -345,9 +488,12 @@ export function useDashboardData({
 				snapsToday.forEach((snap) => {
 					if (snap.isLive) isLiveSnapshot = true; // 🚀 2. Przechwytujemy zrzut z dzisiaj
 					dayDailyChangeFromDB += snap.dailyChange;
+
 					if (!seenPortfolios.has(snap.portfolioId)) {
 						seenPortfolios.add(snap.portfolioId);
 						dayExactChangePLN += snap.dailyChange || 0;
+						// 🚀 POPRAWKA: Wliczamy pierwszy kapitał początkowy do Cash Flow!
+						dayNetCashFlow += snap.investedValue || 0;
 					} else {
 						const prevState = lastKnownState[snap.portfolioId];
 						const portfolioCashFlow = snap.investedValue - prevState.invested;
@@ -356,6 +502,7 @@ export function useDashboardData({
 						dayNetCashFlow += portfolioCashFlow;
 						dayExactChangePLN += portfolioExactChange;
 					}
+
 					lastKnownState[snap.portfolioId] = {
 						value: snap.totalValue,
 						invested: snap.investedValue,
@@ -383,100 +530,66 @@ export function useDashboardData({
 					totalPortfolioValue: Number(dayTotalValue.toFixed(2)),
 					netCashFlow: Number(dayNetCashFlow.toFixed(2)),
 					// 🚀 3. Wrzucamy flagę do wykresu! Jeśli to dzisiejsza data, to ZAWSZE jest "live".
+
 					isLive: isLiveSnapshot || dateStr === getDateStr(new Date()),
 				});
 			});
-			// 🔥 BEZPIECZNE DOKLEJENIE DZISIEJSZEGO DNIA "NA ŻYWO" DLA TRYBU REAL 🔥
+
+			// 🚀 KALKULACJA "NA ŻYWO" (Zabezpieczona przed wstecznymi importami)
 			const todayStr = getDateStr(new Date());
 			const hasToday = finalAbsoluteData.some((d: any) => d.date === todayStr);
 
 			if (!hasToday && dataMode === "REAL" && portfolios.length > 0) {
-				console.log(
-					`\n--- 🕵️ DEBUG: START KALKULACJI 'NA ŻYWO' (${todayStr}) ---`,
-				);
-				console.log(`Aktywne portfele:`, activePortfolioIds);
-
 				let liveTotalVal = 0;
 				let liveInvestedVal = 0;
 				let livePrevDayVal = 0;
-				let todayNetCashFlow = 0;
+				let livePrevInvestedVal = 0; // 🚀 Zliczamy również wczorajszy wkład
 
-				// 1. Obliczamy dzisiejsze przepływy pieniężne
-				const todayTxs = allTransactions.filter((tx) => {
-					const rawDate = tx.executedAt || (tx as any).date;
-					if (!rawDate) return false;
-					return (
-						getDateStr(rawDate as Date | string) === todayStr &&
-						activePortfolioIds.includes(tx.portfolioId)
-					);
-				});
-
-				todayTxs.forEach((tx) => {
-					if (tx.type === "DEPOSIT") todayNetCashFlow += tx.executedValue || 0;
-					if (tx.type === "SELL") todayNetCashFlow -= tx.executedValue || 0;
-				});
-				console.log(
-					`Dzisiejsze transfery (CashFlow): ${todayNetCashFlow} (Znaleziono transakcji z dzisiaj: ${todayTxs.length})`,
-				);
-
-				// // 2. Precyzyjne zliczanie wartości na podstawie włączonych portfeli
 				activePortfolioIds.forEach((pId) => {
 					const p = portfolios.find((port) => port.id === pId);
 					if (p) {
 						let pVal = 0;
 						let pInv = 0;
 
-						console.log(
-							`\n➡️ Portfel [${p.name}]: PARAGON AKTYWÓW (Tabela Asset)`,
-						);
+						// 1. Zbieramy aktualną, pełną wycenę z obecnego stanu portfela
 						p.assets.forEach((a) => {
-							const val = a.currentValue || 0;
-							const inv = a.investedCapital || 0;
-							pVal += val;
-							pInv += inv;
-							console.log(
-								`   - [${a.category}] ${a.name}: Wycena = ${val.toFixed(2)} PLN (Wkład: ${inv})`,
-							);
+							pVal += a.currentValue || 0;
+							pInv += a.investedCapital || 0;
 						});
 
 						liveTotalVal += pVal;
 						liveInvestedVal += pInv;
 
-						console.log(`   💰 SUMA BIEŻĄCA PORTFELA: ${pVal.toFixed(2)} PLN`);
-
-						// Szukamy absolutnie OSTATNIEGO zrzutu dla tego portfela
+						// 2. Porównujemy to z najświeższym historycznym zrzutem
 						const portSnaps = realSnapshots.filter(
 							(s) => s.portfolioId === pId && getDateStr(s.date) < todayStr,
 						);
+
 						if (portSnaps.length > 0) {
-							// Sortujemy od najnowszego, by chwycić zrzut z wczoraj
 							portSnaps.sort(
 								(a, b) =>
 									new Date(b.date).getTime() - new Date(a.date).getTime(),
 							);
 							const lastSnap = portSnaps[0];
 							livePrevDayVal += lastSnap.totalValue;
-							console.log(
-								`   📸 WCZORAJSZY SNAPSHOT (${getDateStr(lastSnap.date)}): ${lastSnap.totalValue} PLN`,
-							);
-							console.log(
-								`   📉 RÓŻNICA (Bieżąca - Snapshot): ${(pVal - lastSnap.totalValue).toFixed(2)} PLN`,
-							);
+							livePrevInvestedVal += lastSnap.investedValue;
 						} else {
-							const fallbackVal = pInv;
-							livePrevDayVal += fallbackVal;
-							console.log(
-								`   ⚠️ BRAK SNAPSHOTU! Fallback na wkład = ${fallbackVal}`,
-							);
+							livePrevDayVal += pInv;
+							livePrevInvestedVal += pInv;
 						}
 					}
 				});
 
-				// 3. Czysty zysk/strata = Obecna Wartość - Wczorajsza Wartość - Dzisiejsze Transfery
+				// 🚀 REWOLUCJA MATEMATYCZNA:
+				// Całkowicie omijamy problem niedopasowanych dat transakcji!
+				// Jeśli wczoraj kupiłeś aktywo, ale zrzut zrobił się przed importem,
+				// dzisiejszy 'liveInvestedVal' będzie wyższy. Różnica staje się naszym Cash Flow.
+				const todayNetCashFlow = liveInvestedVal - livePrevInvestedVal;
+
+				// Odcinamy Cash Flow, zostawiając idealnie czysty zysk/stratę!
 				let liveDailyChange = liveTotalVal - livePrevDayVal - todayNetCashFlow;
-				// 🛡️ BEZPIECZNIK DLA OBLIGACJI I GOTÓWKI:
-				// Jeśli portfel nie ma transakcji sprzedaży, a wyszedł ujemny wynik na obligacjach/gotówce
-				// (np. przez delikatne błędy zaokrągleń w tabeli Asset), blokujemy spadek na poziomie 0.
+
+				// 🛡️ BEZPIECZNIK DLA OBLIGACJI I GOTÓWKI
 				const isOnlySafeAssets = portfolios
 					.filter((p) => activePortfolioIds.includes(p.id))
 					.every((p) =>
@@ -489,14 +602,6 @@ export function useDashboardData({
 					liveDailyChange = 0; // Obligacje nie tracą z dnia na dzień bez powodu!
 					liveTotalVal = livePrevDayVal; // Wyrównujemy do wczorajszego stanu, by uniknąć skoków
 				}
-				console.log(`\n--- 🧮 WYNIK KOŃCOWY ---`);
-				console.log(`Obecna Wartość całkowita: ${liveTotalVal}`);
-				console.log(`Wczorajsza Wartość (suma zrzutów): ${livePrevDayVal}`);
-				console.log(`Odejmujemy Transfery Dzisiaj: ${todayNetCashFlow}`);
-				console.log(
-					`👉 Czysty Wynik Rynkowy z dzisiaj (słupek): ${liveDailyChange}`,
-				);
-				console.log(`------------------------------------------------------\n`);
 
 				baseData.push({
 					date: todayStr,
@@ -704,13 +809,13 @@ export function useDashboardData({
 				});
 			}
 
-			// E. GŁÓWNA PĘTLA WYKRESU BENCHMARK (Teraz całkowicie odseparowana od "Sym"!)
+			// E. GŁÓWNA PĘTLA WYKRESU BENCHMARK
 			const finalBenchmarkData: any[] = [];
 			benchmarkDates.forEach((dateStr) => {
 				const dataPoint: any = { date: dateStr };
 
 				// I. Portfele: Jeśli data jest sprzed momentu stworzenia Twojego portfela, zmienna 'portState' jest PUSTA.
-				// Recharts ominie ten dzień i nie narysuje tam żadnej linii portfela. Zrobi to dopiero od października.
+				// Recharts ominie ten dzień i nie narysuje tam żadnej linii portfela. Zrobi to dopiero od następnego miesiąca.
 				const portState = portfolioDailyMap[dateStr];
 				if (portState) {
 					if (chartMode === "PERCENTAGE") {
@@ -745,7 +850,6 @@ export function useDashboardData({
 					}
 				}
 
-				// II. Globalne Indeksy: Narysują się na CAŁEJ długości osi X (np. całe 5 lat)
 				userIndices.forEach((idx) => {
 					const todayValue = indexQuotesHistory[idx]?.[dateStr];
 					const baseValue = baseIndexValues[idx];
@@ -774,18 +878,18 @@ export function useDashboardData({
 			compressedSnapshots,
 			selectedIds,
 			chartMode,
-			activeRange, // 🚀 Reaguje na każdą zmianę filtru 1M, YTD, 5Y
+			activeRange,
 			fromDate,
 			toDate,
 			userIndices,
 			indexQuotesHistory,
 			dataMode,
 			portfolios,
-			allTransactions,
+			// allTransactions,
 			realSnapshots,
 		]);
 
-	// STEP 4: Comparison Chart Data (Tylko Portfele, bez zmian)
+	// STEP 4: Comparison Chart Data
 	const portfoliosComparisonData = useMemo(() => {
 		if (compressedSnapshots.length === 0) return [];
 		const dataByDate: Record<string, any> = {};

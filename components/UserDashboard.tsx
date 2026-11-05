@@ -14,12 +14,7 @@ import {
 	TrendingUp,
 	WalletCards,
 } from "lucide-react";
-import {
-	SEED_PORTFOLIOS,
-	SEED_REAL_SNAPSHOTS,
-	SimulatedSnapshot,
-	useDashboardData,
-} from "./ui/useDashboardData";
+import { SimulatedSnapshot, useDashboardData } from "./ui/useDashboardData";
 import { cn, getStockLogo } from "@/lib/utils";
 import { differenceInMinutes, format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";

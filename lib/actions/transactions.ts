@@ -88,3 +88,108 @@ export async function addManualDeposit(formData: {
 		return { success: false, error: "Nie udało się dodać wpłaty" };
 	}
 }
+
+/**
+ * EN: Backfills historical PortfolioSnapshots when a transaction is imported retroactively.
+ * PL: Koryguje historyczne zrzuty portfela, gdy transakcja z przeszłości zostaje wgrana "wstecz".
+ */
+export async function backfillSnapshotsForRetroactiveTransaction(
+	portfolioId: string,
+	transactionDate: Date,
+	transactionValuePLN: number,
+	transactionType: "BUY" | "SELL" | "DEPOSIT" | "INTEREST" | "UPDATE",
+) {
+	// Interesują nas tylko te transakcje, które wpływają na całkowity wkład kapitałowy w portfelu.
+	// W Twojej architekturze wpłaty/wypłaty (DEPOSIT, SELL na zewnątrz) bezpośrednio zmieniają całkowity zainwestowany kapitał.
+
+	let cashFlowDelta = 0;
+	if (transactionType === "DEPOSIT")
+		cashFlowDelta = Math.abs(transactionValuePLN);
+	if (transactionType === "SELL")
+		cashFlowDelta = -Math.abs(transactionValuePLN); // Wypłata zdejmuje kapitał
+
+	// Zakupy (BUY) za gotówkę Wewnątrz portfela nie zmieniają całkowitego zainwestowanego kapitału (tylko przesuwają między Asset CASH a Asset Akcji)
+	if (cashFlowDelta === 0) return { success: true, skipped: true };
+
+	// 1. Znajdź wszystkie historyczne zrzuty, które wydarzyły się PO dacie transakcji
+	// (i wymagają teraz "podniesienia" lub "obniżenia" o ten kapitał)
+	const snapshotsToFix = await db.portfolioSnapshot.findMany({
+		where: {
+			portfolioId: portfolioId,
+			date: {
+				// Ustawiamy na sam początek dnia transakcji (bo zrzut mógł być wieczorem, a transakcja rano)
+				gte: new Date(new Date(transactionDate).setUTCHours(0, 0, 0, 0)),
+			},
+		},
+	});
+
+	if (snapshotsToFix.length === 0) return { success: true, fixedCount: 0 };
+
+	// 2. Hurtowa aktualizacja zrzutów - podbijamy wartość zainwestowaną
+	// Transaction API w Prisma zapewni bezpieczeństwo bazy
+	await db.$transaction(
+		snapshotsToFix.map((snap) =>
+			db.portfolioSnapshot.update({
+				where: { id: snap.id },
+				data: {
+					investedValue: snap.investedValue + cashFlowDelta,
+					// Opcjonalnie podbijamy totalValue, by nie generować fałszywych strat,
+					// ale zrzut zapisywał tylko historyczną wycenę aktywów. Jeśli wpłacono czystą gotówkę wstecz:
+					totalValue: snap.totalValue + cashFlowDelta,
+				},
+			}),
+		),
+	);
+
+	return { success: true, fixedCount: snapshotsToFix.length };
+}
+
+/**
+ * EN: Rolls back historical PortfolioSnapshots when a transaction is DELETED retroactively.
+ * PL: Cofa wartości w zrzutach portfela, gdy wymazujemy historyczną transakcję.
+ */
+export async function rollbackSnapshotsForDeletedTransaction(
+	portfolioId: string,
+	transactionDate: Date,
+	transactionValuePLN: number,
+	transactionType: "BUY" | "SELL" | "DEPOSIT" | "INTEREST" | "UPDATE",
+) {
+	let cashFlowDelta = 0;
+
+	// 🚀 UWAGA: Tu logika jest ODWROTNA niż przy dodawaniu!
+	// Jeśli usuwamy wpłatę (DEPOSIT), musimy ODJĄĆ ten kapitał ze zrzutów.
+	if (transactionType === "DEPOSIT")
+		cashFlowDelta = -Math.abs(transactionValuePLN);
+
+	// Jeśli usuwamy wypłatę (SELL, która uszczupliła portfel), musimy ZWRÓCIĆ ten kapitał do zrzutów.
+	if (transactionType === "SELL") cashFlowDelta = Math.abs(transactionValuePLN);
+
+	// Zakupy wewnątrz portfela nie zmieniają całkowitego wkładu
+	if (cashFlowDelta === 0) return { success: true, skipped: true };
+
+	const snapshotsToFix = await db.portfolioSnapshot.findMany({
+		where: {
+			portfolioId: portfolioId,
+			date: {
+				gte: new Date(new Date(transactionDate).setUTCHours(0, 0, 0, 0)),
+			},
+		},
+	});
+
+	if (snapshotsToFix.length === 0) return { success: true, fixedCount: 0 };
+
+	// Aktualizujemy zrzuty w przód, korygując je o odwróconą różnicę
+	await db.$transaction(
+		snapshotsToFix.map((snap) =>
+			db.portfolioSnapshot.update({
+				where: { id: snap.id },
+				data: {
+					investedValue: snap.investedValue + cashFlowDelta,
+					totalValue: snap.totalValue + cashFlowDelta,
+				},
+			}),
+		),
+	);
+
+	return { success: true, fixedCount: snapshotsToFix.length };
+}

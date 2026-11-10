@@ -44,6 +44,7 @@ interface AbsoluteDailyPnLChartProps {
 	dataMode?: "REAL" | "SIMULATED";
 	setDataMode?: (mode: "REAL" | "SIMULATED") => void;
 	isRangeDisabled?: (range: string) => boolean;
+	tabLayout?: boolean;
 }
 
 const TIME_RANGES = ["1W", "1M", "3M", "YTD", "1Y", "3Y", "5Y", "MAX"];
@@ -58,6 +59,7 @@ export function AbsoluteDailyPnLChart({
 	dataMode,
 	setDataMode,
 	isRangeDisabled,
+	tabLayout = true,
 }: AbsoluteDailyPnLChartProps) {
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
@@ -504,8 +506,8 @@ export function AbsoluteDailyPnLChart({
 								Nominalny Wynik Dzienny
 							</h3>
 							<p className="text-xs sm:text-sm text-t-text-secondary">
-								Zakres: {activeRange} • Oś Y przedstawia wynik w{" "}
-								{currencySymbol}
+								{activeRange ? `Zakres: ${activeRange} • ` : ""}Oś Y
+								przedstawia2 wynik w {currencySymbol}
 							</p>
 						</div>
 						<div className="mt-2 sm:mt-0 sm:ml-4">{trendBadge}</div>
@@ -523,30 +525,34 @@ export function AbsoluteDailyPnLChart({
 			</div>
 		);
 	}
-
 	return (
-		// 🔥 CHART CARD LAYOUT: Tu wrzucamy wszystko, by wyglądało dokładnie jak reszta tabów!
-		<ChartCardLayout
-			title="Nominalny Wynik Dzienny"
-			subtitle={`Zakres: ${activeRange} • Oś Y przedstawia wynik w ${currencySymbol}`}
-			icon={TrendingUp}
-			controls={topControls}
-			headerExtra={trendBadge}
-			topOverlay={portfoliosOverlay}
-			footer={footerRanges}
-			// onExpand={() => setIsExpanded(true)}
-		>
-			<div className="w-full flex-1 min-h-0 relative z-10 flex flex-col">
-				<button
-					onClick={() => setIsExpanded(true)}
-					className="absolute top-2 right-2 z-20 p-1.5 bg-t-bg-base text-t-text-tertiary hover:text-emerald-500 rounded-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
-					title="Powiększ wykres"
-				>
-					<Maximize2 className="w-4 h-4" />
-				</button>
-				{chartContent}
-			</div>
-		</ChartCardLayout>
+		// 🔥 CHART CARD LAYOUT: Układ warunkowy (z legendą lub sam content)
+		tabLayout ? (
+			<ChartCardLayout
+				title="Nominalny Wynik Dzienny"
+				subtitle={`${activeRange ? `Zakres: ${activeRange} • ` : ""}Oś Y przedstawia wynik w ${currencySymbol}`}
+				icon={TrendingUp}
+				controls={topControls}
+				headerExtra={trendBadge}
+				topOverlay={portfoliosOverlay}
+				footer={footerRanges}
+				// onExpand={() => setIsExpanded(true)}
+			>
+				<div className="w-full flex-1 min-h-0 relative z-10 flex flex-col">
+					{chartContent}
+				</div>
+			</ChartCardLayout>
+		) : (
+			<ChartCardLayout
+				headerExtra={trendBadge}
+				topOverlay={portfoliosOverlay}
+				footer={footerRanges}
+			>
+				<div className="w-full flex-1 min-h-0 relative z-10 flex flex-col">
+					{chartContent}
+				</div>
+			</ChartCardLayout>
+		)
 	);
 }
 

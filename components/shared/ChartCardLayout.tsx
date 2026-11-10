@@ -121,24 +121,24 @@ export function ChartCardLayout({
 	);
 
 	const chartContent = (
-		<ChartContainer className="h-full min-h-0 w-full flex-1 relative flex flex-col">
+		<ChartContainer className="h-full min-h-0 w-full flex-1  flex flex-col">
 			<div className="flex">
-				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 xl:top-[-8px] xl:left-5 xl:translate-x-0 xl:translate-y-0 w-auto xl:w-full pointer-events-none z-0 opacity-15 dark:opacity-10">
+				<div className="absolute top-0 left-1/2 -translate-x-1/2 translate-y-1/2 xl:-translate-x-40 xl:translate-y-12   w-auto xl:w-full pointer-events-none z-0 opacity-8 dark:opacity-10">
 					<div className="flex items-center justify-center xl:justify-start gap-2 grayscale">
-						<div className="w-24 h-24 xl:w-12 xl:h-12 rounded-xl flex items-center justify-center">
+						<div className="w-36 h-36 xl:w-18 xl:h-12 rounded-xl flex items-center justify-center">
 							<Image
 								src="/logo-static.svg"
 								alt="Logo"
 								width={96}
 								height={96}
-								className="block dark:hidden object-contain w-24 h-24 xl:w-8 xl:h-8"
+								className="block dark:hidden object-contain w-36 h-36 xl:w-8 xl:h-8"
 							/>
 							<Image
 								src="/logo-light-static.svg"
 								alt="Logo"
 								width={96}
 								height={96}
-								className="hidden dark:block object-contain w-24 h-24 xl:w-8 xl:h-8"
+								className="hidden dark:block object-contain w-36 h-36 xl:w-8 xl:h-8"
 							/>
 						</div>
 						<span className="text-xl font-black tracking-tighter hidden xl:inline-block transition-colors text-t-text-primary">

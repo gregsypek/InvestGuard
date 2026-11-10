@@ -177,9 +177,8 @@ const DashboardAnalytics = ({
 				subtitle="Faktyczna kwota wypracowana na rynku"
 				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują wpłaty i wypłaty z tego dnia."
 			>
-				{/*  Usunięto sztywne h-[400px] z rodzica. Teraz wysokość dostosuje się sama! */}
 				<div className="mt-6 flex flex-col gap-3">
-					{/* Używamy naszego odchudzonego paska filtrów */}
+					{/* Pasek filtrów */}
 					<InlineChartFilters
 						portfolios={[portfolio]}
 						oldestRealSnapshotDate={oldestRealSnapshotDate}
@@ -187,8 +186,7 @@ const DashboardAnalytics = ({
 					/>
 
 					{/* KONTENER Z WYKRESEM I SPINNEREM */}
-					{/*  Nadajemy wysokość stricte kontenerowi wykresu (np. 350px na mobile, 400px wyżej) */}
-					<div className="relative w-full h-[350px] sm:h-[400px]">
+					<div className="relative w-full h-[400px] sm:h-[520px]">
 						{/* NAKŁADKA ŁADUJĄCA */}
 						{isPending && (
 							<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-2xl transition-all duration-300 flex items-center justify-center">
@@ -201,8 +199,11 @@ const DashboardAnalytics = ({
 							</div>
 						)}
 
-						{/* Wykres bezpiecznie zajmie teraz 100% swojej własnej, ustalonej wysokości */}
-						<AbsoluteDailyPnLChart key={chartMode} data={absoluteChartData} />
+						<AbsoluteDailyPnLChart
+							key={chartMode}
+							data={absoluteChartData}
+							tabLayout={false}
+						/>
 					</div>
 				</div>
 			</SectionLayout>

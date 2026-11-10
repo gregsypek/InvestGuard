@@ -441,12 +441,16 @@ const AssetLedgerTable = ({
 										.reduce((acc: ChartPoint[], tx) => {
 											let valueToAdd = 0;
 
-											if (isAggregatedBond) {
-												valueToAdd =
-													tx.type === "SELL"
-														? -Math.abs(convertPLN(tx.executedValue)) // 🚀 FIX
-														: Math.abs(convertPLN(tx.executedValue)); // 🚀 FIX
+											// 🚀 FIX: Gotówkę i Obligacje liczymy po WARTOŚCI (executedValue) i uwzględniamy DEPOSIT
+											if (isAggregatedBond || asset.category === "CASH") {
+												const isNegative =
+													tx.type === "SELL" ||
+													(tx.type === "INTEREST" && tx.executedValue < 0);
+												valueToAdd = isNegative
+													? -Math.abs(convertPLN(tx.executedValue))
+													: Math.abs(convertPLN(tx.executedValue));
 											} else {
+												// Zwykłe akcje liczymy po SZTUKACH (quantity)
 												const isNegative = tx.type === "SELL";
 												valueToAdd = isNegative
 													? -Math.abs(tx.quantity)
@@ -462,7 +466,6 @@ const AssetLedgerTable = ({
 											});
 											return acc;
 										}, []);
-
 									const hasHistory = assetHistory.length > 0;
 									const isExpanded = expandedAssetId === asset.id && hasHistory;
 									const isHighlighted = asset.id === highlightedId;
@@ -899,14 +902,19 @@ const AssetLedgerTable = ({
 																	</div>
 
 																	<div className="max-h-64 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+																		{/* NOTE: Śledzenie czystej alokacji rynkowej 
+Użytkownik importuje wyłącznie transakcje kupna/sprzedaży akcji, nie fatygując się wpisywaniem każdej drobnej wpłaty na konto brokera. Wtedy aplikacja oblicza zainwestowany kapitał na akcjach, a pozycję CASH traktuje jako tzw. pozytywne bufery (np. dywidendy, sprzedaż akcji lub ręczne zasilenie). */}
 																		{visibleHistory.map(
 																			(t: TransactionHistory) => {
-																				const isBuy = t.type === "BUY";
+																				// 🚀 FIX: Uwzględniamy DEPOSIT jako poprawny typ transakcji (zielony)
+																				const isBuy =
+																					t.type === "BUY" ||
+																					t.type === "DEPOSIT";
 																				const isCorrection =
 																					t.type === "UPDATE";
 																				const isInterest =
 																					t.type === "INTEREST";
-
+																				const isSell = t.type === "SELL";
 																				return (
 																					<div
 																						key={t.id}
@@ -935,7 +943,9 @@ const AssetLedgerTable = ({
 																								{isCorrection
 																									? "Korekta"
 																									: isBuy
-																										? "Kupno"
+																										? t.type === "DEPOSIT"
+																											? "Wpłata"
+																											: "Kupno"
 																										: isInterest
 																											? t.executedValue > 0
 																												? "Dywidenda"

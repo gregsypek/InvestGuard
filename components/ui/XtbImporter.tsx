@@ -5,6 +5,10 @@ import * as XLSX from "xlsx";
 import { AlertTriangle, CheckCircle, Trash2 } from "lucide-react";
 import { ParsedXtbTransaction, parseXtbRow } from "@/lib/utils/xtb-parser";
 import React, { useState } from "react";
+import {
+	backfillSnapshotsForRetroactiveTransaction,
+	saveXtbTransaction,
+} from "@/lib/actions/transactions";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { Category } from "@prisma/client";
@@ -12,7 +16,6 @@ import Image from "next/image";
 import JSZip from "jszip";
 import { cn } from "@/lib/utils";
 import { inferTickersCategories } from "@/lib/actions/portfolio.actions";
-import { saveXtbTransaction } from "@/lib/actions/transactions";
 import { syncPortfolioAssets } from "@/lib/actions/asset-actions";
 import { toast } from "sonner";
 import { useChartContext } from "../providers/ChartProvider";
@@ -229,6 +232,13 @@ export const XtbImporter = ({ portfolioId }: { portfolioId: string }) => {
 			try {
 				await saveXtbTransaction(tx, portfolioId);
 				currentSuccess++;
+				// 🚀 NOWE (2): Uruchamiamy korektę wsteczną dla tej jednej wgranej z przeszłości transakcji
+				await backfillSnapshotsForRetroactiveTransaction(
+					portfolioId,
+					new Date(tx.date),
+					tx.amountPLN,
+					tx.type as any,
+				);
 			} catch (err: unknown) {
 				const errMsg = err instanceof Error ? err.message : String(err);
 

@@ -403,14 +403,18 @@ export async function updateAlphaDetails(
 
 // lib/actions/asset-actions.ts
 
+// Zmień import na samej górze pliku, jeśli to konieczne
+// import { db } from "@/lib/db";
+// import { Category } from "@prisma/client";
+
 export async function syncPortfolioAssets(
 	portfolioId: string,
 ): Promise<ActionResponse> {
 	if (!portfolioId || typeof portfolioId !== "string") {
-		console.error("❌ syncPortfolioAssets: portfolioId is missing or invalid!");
 		return { success: false, error: "Missing portfolio ID" };
 	}
 
+	// Pobieramy absolutnie wszystkie transakcje dla portfela, chronologicznie
 	const transactions = await db.transactionHistory.findMany({
 		where: { portfolioId },
 		orderBy: { executedAt: "asc" },
@@ -418,6 +422,7 @@ export async function syncPortfolioAssets(
 
 	const assetMap = new Map<string, SyncAssetMapItem>();
 
+	// Twarda inicjalizacja bazowej pozycji Gotówki (CASH)
 	assetMap.set("CASH", {
 		ticker: "CASH",
 		name: "Wolna Gotówka PLN",
@@ -428,34 +433,41 @@ export async function syncPortfolioAssets(
 	});
 
 	for (const tx of transactions) {
-		const isCashTx =
-			tx.ticker === "CASH" || tx.category === "CASH" || tx.type === "INTEREST";
-		const cashAsset = assetMap.get("CASH")!; // Wiemy, że "CASH" istnieje
+		const cashAsset = assetMap.get("CASH")!;
+
+		// Sprawdzamy czy to operacja na gotówce
+		const isCashTx = tx.ticker === "CASH" || tx.category === "CASH";
 
 		if (isCashTx) {
-			// 1. WPŁATY I PRZEWALUTOWANIA
-			if (tx.type === "DEPOSIT" || tx.type === "BUY") {
+			// Jeśli to wpłata
+			if (tx.type === "DEPOSIT") {
 				cashAsset.totalQuantity += tx.executedValue;
 				cashAsset.totalInvested += tx.executedValue;
 			}
-			// 2. ODSETKI I DYWIDENDY
-			else if (tx.type === "INTEREST") {
-				cashAsset.totalQuantity += tx.executedValue;
-				cashAsset.totalInvested += tx.executedValue;
-			}
-			// 3. WYPŁATY ŚRODKÓW
+			// Wypłata z konta
 			else if (tx.type === "SELL") {
 				cashAsset.totalQuantity -= tx.executedValue;
 				cashAsset.totalInvested -= tx.executedValue;
 			}
-			// 4. KOREKTY RĘCZNE
-			else if (tx.type === "UPDATE") {
+			// Dywidenda / Odsetki (Gotówka wpływa)
+			else if (tx.type === "INTEREST" && tx.executedValue > 0) {
 				cashAsset.totalQuantity += tx.executedValue;
+				cashAsset.totalInvested += tx.executedValue;
+			}
+			// Podatek (Gotówka wypływa)
+			else if (tx.type === "INTEREST" && tx.executedValue < 0) {
+				cashAsset.totalQuantity += tx.executedValue; // Znak minus jest już w kwocie
+				cashAsset.totalInvested += tx.executedValue;
+			}
+			// Zabezpieczenie na ręczne operacje (np. BUY / SELL ukryte jako CASH)
+			else if (tx.type === "BUY" && tx.category === "CASH") {
+				cashAsset.totalQuantity += tx.executedValue;
+				cashAsset.totalInvested += tx.executedValue;
 			}
 			continue;
 		}
 
-		// 2. Inicjalizacja aktywa (jeśli kupujemy coś po raz pierwszy)
+		// LOGIKA DLA ZWYKŁYCH AKTYWÓW (Akcje, ETF, Obligacje)
 		if (tx.ticker && !assetMap.has(tx.ticker)) {
 			assetMap.set(tx.ticker, {
 				ticker: tx.ticker,
@@ -469,37 +481,36 @@ export async function syncPortfolioAssets(
 
 		const asset = tx.ticker ? assetMap.get(tx.ticker) : null;
 
-		if (asset && tx.type === "BUY") {
-			// A. Kupujemy akcje: rośnie ilość aktywa...
-			asset.totalQuantity += tx.quantity;
-			asset.totalInvested += tx.executedValue;
+		if (asset) {
+			if (tx.type === "BUY") {
+				// Rośnie wkład aktywa i jego ilość
+				asset.totalQuantity += tx.quantity;
+				asset.totalInvested += tx.executedValue;
 
-			// B. ale PŁACIMY za to naszą gotówką (CASH spada) - przywracamy dla wszystkiego!
-			// Usunięto warunek (tx.category !== "BONDS")
-			cashAsset.totalQuantity -= tx.executedValue;
-			cashAsset.totalInvested -= tx.executedValue;
-		} else if (asset && tx.type === "SELL") {
-			// A. Obliczamy ratio i odejmujemy wartości
-			const ratio =
-				asset.totalQuantity > 0 ? tx.quantity / asset.totalQuantity : 1;
+				// Pieniądze ZNIKAJĄ z konta gotówkowego (zabezpieczenie by nie kupować w nieskończoność bez pokrycia)
+				cashAsset.totalQuantity -= tx.executedValue;
+				cashAsset.totalInvested -= tx.executedValue;
+			} else if (tx.type === "SELL") {
+				// Obliczanie proporcji (aby sprawiedliwie ująć wkład własny)
+				const ratio =
+					asset.totalQuantity > 0 ? tx.quantity / asset.totalQuantity : 1;
 
-			asset.totalQuantity -= tx.quantity;
-			asset.totalInvested -= asset.totalInvested * ratio;
+				asset.totalQuantity -= tx.quantity;
+				asset.totalInvested -= asset.totalInvested * ratio;
 
-			// 🚀 FIX: Jeśli po sprzedaży zeszliśmy do 0 sztuk, całkowicie resetujemy zainwestowany kapitał.
-			// Dzięki temu następny zakup zacznie historię kosztów (investedCapital) od czystej karty!
-			if (asset.totalQuantity <= 0.0001) {
-				// Używamy epsilona na wypadek problemów zmiennoprzecinkowych JS
-				asset.totalQuantity = 0;
-				asset.totalInvested = 0;
+				if (asset.totalQuantity <= 0.0001) {
+					asset.totalQuantity = 0;
+					asset.totalInvested = 0;
+				}
+
+				// Pieniądze ze sprzedaży WRACAJĄ na konto gotówkowe
+				cashAsset.totalQuantity += tx.executedValue;
+				cashAsset.totalInvested += tx.executedValue;
 			}
-
-			// B. Gotówka wraca
-			cashAsset.totalQuantity += tx.executedValue;
-			cashAsset.totalInvested += tx.executedValue;
 		}
 	}
 
+	// Po przejściu przez całą pętlę, zapisujemy wyniki (UPSERT) do bazy
 	const existingAssets = await db.asset.findMany({ where: { portfolioId } });
 	const existingMap = new Map(existingAssets.map((a) => [a.ticker, a]));
 
@@ -509,14 +520,14 @@ export async function syncPortfolioAssets(
 			data.totalInvested = 0;
 		}
 
-		// Zabezpieczenie przed ujemną gotówką w przypadku braku pełnej historii wpłat z XTB
 		if (ticker === "CASH") {
+			// Zabezpieczenie ujemnej gotówki w wizualizacji
 			if (data.totalQuantity < 0) data.totalQuantity = 0;
-			// 🚀 NOWOŚĆ: Wymuszamy, żeby zainwestowany kapitał gotówki ZAWSZE był równy jej ilości
 			data.totalInvested = data.totalQuantity;
 		}
 
 		const existingAsset = ticker ? existingMap.get(ticker) : undefined;
+
 		let nextCurrentValue = existingAsset
 			? Number(existingAsset.currentValue)
 			: data.totalInvested;
@@ -524,6 +535,7 @@ export async function syncPortfolioAssets(
 		// 🚀 NOWOŚĆ: Wartość rynkowa gotówki to ZAWSZE jej fizyczna ilość
 		if (ticker === "CASH") {
 			nextCurrentValue = data.totalQuantity;
+			// Ponieważ wyżej zabezpieczyliśmy totalQuantity przed <0, nextCurrentValue też nie będzie ujemne.
 		} else if (existingAsset) {
 			if (existingAsset.quantity === 0 && data.totalQuantity > 0) {
 				nextCurrentValue = data.totalInvested;
@@ -542,11 +554,8 @@ export async function syncPortfolioAssets(
 			}
 		}
 
-		// Ponieważ ticker nigdy nie jest pusty w naszej mapie (CASH to też klucz), robimy upsert
 		await db.asset.upsert({
-			where: {
-				portfolioId_ticker: { portfolioId, ticker },
-			},
+			where: { portfolioId_ticker: { portfolioId, ticker } },
 			update: {
 				name: data.name,
 				quantity: data.totalQuantity,

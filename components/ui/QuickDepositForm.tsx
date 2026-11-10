@@ -3,6 +3,7 @@
 import {
 	AlertTriangle,
 	Banknote,
+	Calendar,
 	CheckCircle,
 	PlusCircle,
 	Wallet,
@@ -17,26 +18,32 @@ import { cn } from "@/lib/utils";
 export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
 	const [isPending, startTransition] = useTransition();
 	const [amount, setAmount] = useState("");
+	// 🚀 NOWE: Stan dla daty (domyślnie dzisiejsza w formacie YYYY-MM-DD dla inputa)
+	const [dateStr, setDateStr] = useState(
+		new Date().toISOString().split("T")[0],
+	);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		const val = parseFloat(amount);
 		if (isNaN(val) || val <= 0) return;
 
-		// EN: Execute the deposit and refresh the state
+		// 🚀 Zamieniamy string z inputa na poprawny obiekt Date
+		const selectedDate = dateStr ? new Date(dateStr) : new Date();
+
 		startTransition(async () => {
 			const result = await addManualDeposit({
 				portfolioId,
 				amount: val,
-				date: new Date(),
-				description: "Ręczne zasilenie portfela na zakupy",
+				date: selectedDate, // 👈 Wysyłamy wybraną datę zamiast sztywnego new Date()
+				description: "Ręczne zasilenie portfela",
 			});
 
 			if (result.success) {
 				setAmount("");
-				setSuccess("Wpłata została dodana!");
-				// EN: Optional: You can add a toast notification here
+				setSuccess("Wpłata została zaksięgowana!");
 			} else {
 				setError("Coś poszło nie tak. Spróbuj ponownie.");
 			}
@@ -44,12 +51,11 @@ export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
 	};
 
 	const inputStyles =
-		"h-12 bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-emerald-500 rounded-xl px-4 text-sm font-medium text-t-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+		"h-12 bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border focus:border-emerald-500 rounded-xl text-sm font-medium text-t-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 
 	return (
 		<div className="flex flex-col gap-4 p-6 md:p-8 bg-t-bg-base/30 dark:bg-black/20 rounded-2xl border border-t-border-subtle animate-in fade-in duration-300">
-			{/* GŁÓWNY PASEK AKCJI (Poziomy na dużych ekranach, pionowy na małych) */}
-			<div className="flex flex-col sm:flex-row flex-wrap  items-center gap-6">
+			<div className="flex flex-col sm:flex-row flex-wrap items-center gap-6">
 				{/* Ikona Portfela */}
 				<div className="flex shrink-0 items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 shadow-inner">
 					<Wallet className="w-8 h-8 text-emerald-500" />
@@ -65,20 +71,35 @@ export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
 					</p>
 				</div>
 
-				{/* Formularz wpłaty (Elastyczny) */}
+				{/* Formularz wpłaty (Rozbudowany o datę) */}
 				<form
 					onSubmit={handleSubmit}
-					className="flex flex-col sm:flex-row items-center w-full sm:w-auto gap-3 shrink-0"
+					className="flex flex-col sm:flex-row items-center w-full lg:w-auto gap-3 shrink-0"
 				>
-					{/* ZMIANA: Usunięto min-w-80 i shrink-0, dodano elastyczną szerokość */}
-					<div className="relative w-full sm:w-48 lg:w-56 flex-1">
-						<span className="absolute left-4 top-1/2 -translate-y-1/2 text-t-text-tertiary">
+					{/* 🚀 NOWE: Pole wyboru daty */}
+					<div className="relative w-full sm:w-40 flex-1">
+						<span className="absolute left-4 top-1/2 -translate-y-1/2 text-t-text-tertiary pointer-events-none">
+							<Calendar className="w-4 h-4" />
+						</span>
+						<Input
+							type="date"
+							value={dateStr}
+							onChange={(e) => setDateStr(e.target.value)}
+							max={new Date().toISOString().split("T")[0]} // Blokada dat z przyszłości
+							className={cn(inputStyles, "pl-11 pr-4 font-mono w-full")}
+							required
+						/>
+					</div>
+
+					{/* Pole Kwoty */}
+					<div className="relative w-full sm:w-40 flex-1">
+						<span className="absolute left-4 top-1/2 -translate-y-1/2 text-t-text-tertiary pointer-events-none">
 							<Banknote className="w-4 h-4" />
 						</span>
 						<Input
 							type="number"
-							step="1" // Wymusza pełne liczby całkowite
-							min="1" // Blokuje zera i wartości ujemne
+							step="1"
+							min="1"
 							placeholder="Pełne PLN"
 							value={amount}
 							onChange={(e) => {
@@ -87,8 +108,9 @@ export function QuickDepositForm({ portfolioId }: { portfolioId: string }) {
 								setAmount(onlyNumbers);
 							}}
 							className={cn(inputStyles, "pl-11 pr-14 font-mono w-full")}
+							required
 						/>
-						<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+						<span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary pointer-events-none">
 							PLN
 						</span>
 					</div>

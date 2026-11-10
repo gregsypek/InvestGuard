@@ -80,6 +80,15 @@ export async function addManualDeposit(formData: {
 
 		// 2. Automatycznie przeliczamy aktywa (aby CASH w tabeli się zaktualizował)
 		await syncPortfolioAssets(portfolioId);
+
+		// 🚀 KROK 3: Aktualizujemy historyczne zrzuty, aby wykres wykrył Cash Flow!
+		await backfillSnapshotsForRetroactiveTransaction(
+			portfolioId,
+			date,
+			Math.abs(amount),
+			"DEPOSIT",
+		);
+
 		revalidatePath(`/dashboard/${portfolioId}`);
 
 		return { success: true };
@@ -88,7 +97,6 @@ export async function addManualDeposit(formData: {
 		return { success: false, error: "Nie udało się dodać wpłaty" };
 	}
 }
-
 /**
  * EN: Backfills historical PortfolioSnapshots when a transaction is imported retroactively.
  * PL: Koryguje historyczne zrzuty portfela, gdy transakcja z przeszłości zostaje wgrana "wstecz".

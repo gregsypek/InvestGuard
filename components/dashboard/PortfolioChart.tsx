@@ -651,9 +651,16 @@ export function PortfolioChart({
 								fontWeight: 500,
 							}}
 							tickMargin={12}
-							tickFormatter={(val) =>
-								format(new Date(val), "MMM yy", { locale: pl })
-							}
+							tickFormatter={(val) => {
+								const date = new Date(val);
+								const isShortRange = ["1W", "1M", "3M", "YTD"].includes(
+									activeRange || "",
+								);
+								if (isShortRange) {
+									return format(date, "d MMM", { locale: pl });
+								}
+								return format(date, "MMM yy", { locale: pl });
+							}}
 							minTickGap={20}
 							padding={{ left: 10, right: 10 }}
 						/>
@@ -698,12 +705,22 @@ export function PortfolioChart({
 										setBrushIndex({ start: e.startIndex, end: e.endIndex });
 									}
 								}}
-								tickFormatter={(val) =>
-									new Date(val).toLocaleDateString("pl-PL", {
+								tickFormatter={(val) => {
+									const date = new Date(val);
+									const isShortRange = ["1W", "1M", "3M", "YTD"].includes(
+										activeRange || "",
+									);
+									if (isShortRange) {
+										return date.toLocaleDateString("pl-PL", {
+											day: "numeric",
+											month: "short",
+										});
+									}
+									return date.toLocaleDateString("pl-PL", {
 										month: "short",
 										year: "2-digit",
-									})
-								}
+									});
+								}}
 								traveller={(props: any) => {
 									const { x, y, width, height } = props;
 									return (

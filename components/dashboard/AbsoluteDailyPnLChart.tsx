@@ -110,7 +110,6 @@ export function AbsoluteDailyPnLChart({
 	const pnlPercent = (twrMultiplier - 1) * 100;
 	const isPeriodPositive = totalPnL >= 0;
 
-	// Odznaka ROI
 	const trendBadge = (
 		<div className="flex flex-wrap justify-center md:justify-start items-center gap-2 md:gap-3">
 			<div
@@ -145,13 +144,16 @@ export function AbsoluteDailyPnLChart({
 				</span>
 			</div>
 
-			<div className="group relative items-center justify-center cursor-help z-50 hidden sm:flex">
-				<div className="w-5 h-5 rounded-full border border-t-text-tertiary flex items-center justify-center">
+			{/* 🚀 FIX: Używamy nazwanej grupy 'group/tooltip' zamiast ogólnego 'group' */}
+			<div className="group/tooltip relative hidden sm:flex items-center justify-center w-5 h-5 cursor-help z-50">
+				<div className="w-full h-full rounded-full border border-t-text-tertiary flex items-center justify-center">
 					<span className="text-[10px] font-bold text-t-text-tertiary transition-colors">
 						i
 					</span>
 				</div>
-				<div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-56 p-3 bg-t-bg-panel border border-t-border rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+
+				{/* 🚀 FIX: Reaguje tylko na 'group-hover/tooltip' */}
+				<div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-56 p-3 bg-t-bg-panel border border-t-border rounded-xl shadow-xl opacity-0 invisible scale-95 group-hover/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:scale-100 transition-all duration-200 pointer-events-none z-[1000]">
 					<p className="text-[10px] text-t-text-secondary leading-relaxed normal-case">
 						<strong className="text-t-text-primary block mb-1">
 							Stopa TWR (Time-Weighted Return)
@@ -505,9 +507,10 @@ export function AbsoluteDailyPnLChart({
 							<h3 className="text-xl sm:text-2xl font-bold text-t-text-primary tracking-tight">
 								Nominalny Wynik Dzienny
 							</h3>
+							{/* 🚀 FIX: Sprzątnięta logika renderowania tekstu */}
 							<p className="text-xs sm:text-sm text-t-text-secondary">
-								{activeRange ? `Zakres: ${activeRange} • ` : ""}Oś Y
-								przedstawia2 wynik w {currencySymbol}
+								{activeRange ? `Zakres: ${activeRange} • ` : ""}Oś Y przedstawia
+								wynik w {currencySymbol}
 							</p>
 						</div>
 						<div className="mt-2 sm:mt-0 sm:ml-4">{trendBadge}</div>
@@ -525,34 +528,49 @@ export function AbsoluteDailyPnLChart({
 			</div>
 		);
 	}
+	// return (
+	// 	tabLayout ? (
+	// 		<ChartCardLayout
+	// 			title="Nominalny Wynik Dzienny"
+	// 			subtitle={`${activeRange ? `Zakres: ${activeRange} • ` : ""}Oś Y przedstawia wynik w ${currencySymbol}`}
+	// 			icon={TrendingUp}
+	// 			controls={topControls}
+	// 			headerExtra={trendBadge}
+	// 			topOverlay={portfoliosOverlay}
+	// 			footer={footerRanges}
+	// 		>
+	// 			<div className="w-full flex-1 min-h-0 relative z-10 flex flex-col">
+	// 				{chartContent}
+	// 			</div>
+	// 		</ChartCardLayout>
+	// 	) : (
+	// 		<ChartCardLayout
+	// 			title="Nominalny Wynik Dzienny"
+	// 			subtitle={`${activeRange ? `Zakres: ${activeRange} • ` : ""}Oś Y przedstawia wynik w ${currencySymbol}`}
+	// 			headerExtra={trendBadge}
+	// 			topOverlay={portfoliosOverlay}
+	// 			footer={footerRanges}
+	// 		>
+	// 			<div className="w-full flex-1 min-h-0 relative z-10 flex flex-col">
+	// 				{chartContent}
+	// 			</div>
+	// 		</ChartCardLayout>
+	// 	)
+	// );
 	return (
-		// 🔥 CHART CARD LAYOUT: Układ warunkowy (z legendą lub sam content)
-		tabLayout ? (
-			<ChartCardLayout
-				title="Nominalny Wynik Dzienny"
-				subtitle={`${activeRange ? `Zakres: ${activeRange} • ` : ""}Oś Y przedstawia wynik w ${currencySymbol}`}
-				icon={TrendingUp}
-				controls={topControls}
-				headerExtra={trendBadge}
-				topOverlay={portfoliosOverlay}
-				footer={footerRanges}
-				// onExpand={() => setIsExpanded(true)}
-			>
-				<div className="w-full flex-1 min-h-0 relative z-10 flex flex-col">
-					{chartContent}
-				</div>
-			</ChartCardLayout>
-		) : (
-			<ChartCardLayout
-				headerExtra={trendBadge}
-				topOverlay={portfoliosOverlay}
-				footer={footerRanges}
-			>
-				<div className="w-full flex-1 min-h-0 relative z-10 flex flex-col">
-					{chartContent}
-				</div>
-			</ChartCardLayout>
-		)
+		<ChartCardLayout
+			title="Nominalny Wynik Dzienny"
+			subtitle={`${activeRange ? `Zakres: ${activeRange} • ` : ""}Oś Y przedstawia wynik w ${currencySymbol}`}
+			icon={TrendingUp}
+			controls={topControls}
+			headerExtra={trendBadge}
+			topOverlay={portfoliosOverlay}
+			footer={footerRanges}
+		>
+			<div className="w-full flex-1 min-h-0 relative z-10 flex flex-col">
+				{chartContent}
+			</div>
+		</ChartCardLayout>
 	);
 }
 

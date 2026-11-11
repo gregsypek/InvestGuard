@@ -317,7 +317,7 @@ export default function PortfoliosClientView({
 					/>
 
 					{/*  Wysokość ląduje DOKŁADNIE tutaj, bezpośrednio nad wykresem. Recharts ma się na czym oprzeć! */}
-					<div className="w-full h-[350px] sm:h-[400px]">
+					<div className="w-full h-[400px] sm:h-[520px]">
 						<PortfoliosComparisonChart
 							key={`compare-${chartMode}`}
 							data={portfoliosComparisonData}

@@ -66,14 +66,14 @@ export function ChartCardLayout({
 		<div className="flex flex-col px-6 z-20 mb-2 sm:mb-4 w-full gap-3">
 			<div className="flex flex-col items-center md:flex-row justify-between w-full">
 				{(title || subtitle) && (
-					<div className="flex justify-between flex-col md:items-start items-center pb-2 mx-auto pointer-events-none bg-transparent rounded-lg">
+					<div className="flex w-full justify-between flex-col md:items-start items-center pb-2 mx-auto pointer-events-none bg-transparent rounded-lg">
 						{!isExpanded && title && (
 							<h3 className="text-md font-bold text-t-text-primary">{title}</h3>
 						)}
 						{subtitle && (
 							<p
 								className={cn(
-									"text-xs flex-1 self-center sm:self-end font-semibold text-t-text-tertiary mt-1 leading-tight",
+									"text-xs flex-1 self-center md:self-start font-semibold text-t-text-tertiary mt-1 leading-tight",
 									!isExpanded && "whitespace-pre-wrap text-[10px]",
 								)}
 							>
@@ -176,15 +176,15 @@ export function ChartCardLayout({
 						<div className="flex items-start gap-3 flex-col">
 							<div className="flex">
 								<div className="p-2 rounded-xl h-full bg-blue-500/10 border-blue-500/20 hidden sm:block">
-									<Icon className="w-5 h-5 text-blue-500" />
+									<Icon className="w-5 h-5 text-blue-500 " />
 								</div>
-								<h3 className="lg:text-xl flex-1 self-center text-md font-bold text-t-text-primary tracking-tight">
-									{title || "Chart Details"}
+								<h3 className=" ml-3 lg:text-xl flex-1 self-center text-md font-bold text-t-text-primary tracking-tight">
+									{title}
 								</h3>
 							</div>
-							<p className="text-xs flex-1 sm:text-sm text-t-text-secondary hidden sm:block">
+							{/* <p className="text-xs flex-1 sm:text-sm text-t-text-secondary hidden sm:block">
 								Detailed capital analysis and history
-							</p>
+							</p> */}
 						</div>
 						{renderHeaderControls()}
 					</div>

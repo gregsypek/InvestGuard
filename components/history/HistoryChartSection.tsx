@@ -1,11 +1,12 @@
 "use client";
 
+import { Info, Loader2 } from "lucide-react";
 import { PortfolioWithAssets, Transaction } from "@/lib/types";
 
 import { InlineChartFilters } from "@/components/ui/InlineChartFilters";
-import { Loader2 } from "lucide-react";
 import { PortfolioChart } from "../dashboard/PortfolioChart";
 import { SimulatedSnapshot } from "@/components/ui/useDashboardData";
+import { getCurrencySymbol } from "@/lib/utils/format-currency";
 import { prepareChartAnalytics } from "@/lib/chart-helpers";
 import { useChartContext } from "@/components/providers/ChartProvider";
 import { useMemo } from "react";
@@ -32,8 +33,19 @@ export function HistoryChartSection({
 	}, [portfolios]);
 
 	// 1. Zaciągamy selectedIds z kontekstu
-	const { chartMode, dataMode, isPending, activeRange, selectedIds } =
-		useChartContext();
+	const {
+		chartMode,
+		setChartMode,
+		dataMode,
+		setDataMode,
+		isPending,
+		activeRange,
+		setActiveRange,
+		selectedIds,
+		togglePortfolio,
+		currency,
+	} = useChartContext();
+	const currencySymbol = getCurrencySymbol(currency);
 
 	const portfolioChartData = useMemo(() => {
 		// =========================================================
@@ -104,11 +116,30 @@ export function HistoryChartSection({
 
 		return areaPoints.map((point) => {
 			let normalizedDate = new Date().toISOString().split("T")[0];
-			const [month, year] = point.name.split(".");
-			if (month && year) {
-				const fullYear = parseInt(year) > 50 ? `19${year}` : `20${year}`;
-				normalizedDate = `${fullYear}-${month}-28`;
+			const [monthStr, yearStr] = point.name.split(".");
+
+			if (monthStr && yearStr) {
+				const pointMonth = parseInt(monthStr, 10);
+				const pointYear =
+					parseInt(yearStr, 10) > 50
+						? 1900 + parseInt(yearStr, 10)
+						: 2000 + parseInt(yearStr, 10);
+
+				const dzisiaj = new Date();
+				const aktualnyMiesiac = dzisiaj.getMonth() + 1; // getMonth to 0-11
+				const aktualnyRok = dzisiaj.getFullYear();
+
+				// 🚀 FIX: Jeśli to obecny miesiąc w obecnym roku, ustaw "dzisiaj". W przeciwnym razie ustaw 28. dzień.
+				if (pointYear === aktualnyRok && pointMonth === aktualnyMiesiac) {
+					// Przypina dzisiejszą datę (np. 11 listopada)
+					normalizedDate = dzisiaj.toISOString().split("T")[0];
+				} else {
+					// Dla historycznych miesięcy zostawia sztuczny koniec miesiąca
+					const padMonth = pointMonth.toString().padStart(2, "0");
+					normalizedDate = `${pointYear}-${padMonth}-28`;
+				}
 			}
+
 			const investedVal = point.wkład;
 			const totalVal = point.wycena;
 			const percentageValue =
@@ -124,15 +155,10 @@ export function HistoryChartSection({
 			};
 		});
 	}, [realSnapshots, dataMode, chartMode, portfolios, selectedIds]); // 👈 Zależność od selectedIds wymusza natychmiastowe przeliczenie!
+
 	return (
-		<div className="flex flex-col h-full w-full">
-			<InlineChartFilters
-				portfolios={portfolios}
-				oldestRealSnapshotDate={oldestRealSnapshotDate}
-				showModeToggle={true}
-				showPortfolioSelector={false}
-			/>
-			<div className="relative h-[400px] w-full mt-4">
+		<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
+			<div className="relative h-[600px] w-full flex flex-col bg-t-bg-panel border border-t-border rounded-2xl md:p-4 shadow-sm gap-4">
 				{isPending && (
 					<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-2xl flex items-center justify-center">
 						<Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -143,7 +169,37 @@ export function HistoryChartSection({
 					data={portfolioChartData}
 					transactions={transactions}
 					mode={chartMode}
+					setMode={setChartMode}
+					dataMode={dataMode}
+					setDataMode={setDataMode}
+					activeRange={activeRange}
+					onRangeChange={setActiveRange}
+					showBrush={true}
+					titleInside="Analiza Wartości Kapitału"
+					subtitleInside="Historia wyceny portfela i wkładu własnego"
+					portfolios={portfolios}
+					onPortfolioToggle={togglePortfolio}
+					activeIds={selectedIds}
 				/>
+			</div>
+
+			{/* 🚀 BANER INFORMACYJNY - PORTFOLIO */}
+			<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm mt-2">
+				<Info className="w-5 h-5 shrink-0 mt-0.5" />
+				<div className="flex flex-col">
+					<span className="text-sm font-bold tracking-tight">
+						Jak czytać ten wykres?
+					</span>
+					<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
+						Wykres prezentuje historyczną wartość kapitału dla wybranych
+						portfeli. <strong>W trybie wyceny (PLN/EUR/USD)</strong> widoczne są
+						dwie główne linie: zsumowana, całkowita wartość aktywów (gruba,
+						falista) oraz wkład własny (przerywana), a odstęp między nimi to
+						wygenerowany wynik. Zdarzenia inwestycyjne (np. wpłaty i wypłaty)
+						nanoszone są punktowo, by pomóc Ci powiązać nagłe skoki portfela z
+						Twoją faktyczną aktywnością na koncie.
+					</span>
+				</div>
 			</div>
 		</div>
 	);

@@ -151,7 +151,7 @@ export default async function ActivityPage({
 				description="Ten wykres przedstawia zmianę wartości Twoich inwestycji w czasie. Linia przerywana oznacza fizycznie wpłacony kapitał. Możesz płynnie przełączać się między klasycznym widokiem kwotowym (PLN), a widokiem procentowym (%), który najlepiej oddaje faktyczną wydajność (stopę zwrotu) Twojego portfela. Punkty na linii wykresu to dokonane w tym czasie transakcje."
 			>
 				<HistoryChartSection
-					portfolios={activePortfolios} //  Wykres dostaje tylko aktywne portfele!
+					portfolios={userPortfolios} // 🚀 Przekazujemy wszystkie portfele, by pigułki na wykresie działały
 					transactions={transactions}
 					simulatedSnapshots={simulatedSnapshots}
 					realSnapshots={realSnapshots}

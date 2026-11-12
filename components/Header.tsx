@@ -65,8 +65,10 @@ export default function Header({
 
 	const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-	const urlPortfolioId =
-		searchParams.get("portfolioId") || searchParams.get("portfolio");
+	// const urlPortfolioId =
+	// 	searchParams.get("portfolioId") || searchParams.get("portfolio");
+	// 🚀 FIX: Globalny Header reaguje TYLKO na swój własny parametr, ignorując lokalny filtr Activity
+	const urlPortfolioId = searchParams.get("portfolioId");
 	const strategy = searchParams.get("s");
 	const segments = pathname.split("/");
 
@@ -112,7 +114,7 @@ export default function Header({
 			if (pathname.startsWith("/planner")) {
 				router.push(`/planner?portfolioId=${id}`);
 			} else if (pathname.startsWith("/activity")) {
-				router.push(`/activity?portfolio=${id}`);
+				router.push(`/activity?portfolioId=${id}`); // 🚀 FIX: Zmienione na portfolioId z portfolio
 			} else if (pathname.startsWith("/settings")) {
 				router.push(`/settings?portfolioId=${id}`);
 			} else {

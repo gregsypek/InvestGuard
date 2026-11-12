@@ -52,6 +52,7 @@ export function MonthlyDepositsChart({
 				<BarChart
 					data={data}
 					margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
+					barCategoryGap="10%" // 🚀 FIX: Wymusza elastyczny odstęp między słupkami
 				>
 					<CartesianGrid
 						strokeDasharray="3 3"
@@ -110,7 +111,7 @@ export function MonthlyDepositsChart({
 						dataKey="amount"
 						fill="var(--theme-primary)"
 						radius={[4, 4, 0, 0]}
-						barSize={32}
+						maxBarSize={48} // 🚀 FIX: Zamiast sztywnego barSize={32}, pozwalamy słupkom oddychać, ale nie pozwalamy im urosnąć powyżej 48px
 					/>
 
 					{/* 2. Następnie rysujemy linię (będzie na wierzchu) w kontrastowym kolorze */}

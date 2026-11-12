@@ -163,7 +163,7 @@ export function BondPnLClient({ transactions, assets }: BondPnLClientProps) {
 	}, [timeRange, assets, transactions, oldestTransactionDate]);
 
 	return (
-		<div className="h-[450px] mt-6 flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-sm relative overflow-hidden">
+		<div className="h-[600px] mt-6 flex flex-col bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-sm relative overflow-hidden">
 			{isCalculating && (
 				<div className="absolute inset-0 z-50 bg-slate-950/40 backdrop-blur-[2px] flex items-center justify-center rounded-2xl">
 					<div className="flex flex-col items-center gap-3 bg-slate-900/90 border border-slate-700/50 p-4 rounded-2xl shadow-2xl">

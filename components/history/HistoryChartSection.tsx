@@ -1,15 +1,15 @@
 "use client";
 
-import { Info, Loader2 } from "lucide-react";
+import { ChevronDown, Info, Loader2 } from "lucide-react";
 import { PortfolioWithAssets, Transaction } from "@/lib/types";
+import { useMemo, useState } from "react";
 
-import { InlineChartFilters } from "@/components/ui/InlineChartFilters";
 import { PortfolioChart } from "../dashboard/PortfolioChart";
 import { SimulatedSnapshot } from "@/components/ui/useDashboardData";
+import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/utils/format-currency";
 import { prepareChartAnalytics } from "@/lib/chart-helpers";
 import { useChartContext } from "@/components/providers/ChartProvider";
-import { useMemo } from "react";
 
 interface HistoryChartSectionProps {
 	portfolios: PortfolioWithAssets[];
@@ -26,13 +26,8 @@ export function HistoryChartSection({
 	realSnapshots,
 	oldestRealSnapshotDate,
 }: HistoryChartSectionProps) {
-	const fullTransactionHistory = useMemo(() => {
-		return portfolios.flatMap(
-			(p) => p.transactionHistories || [],
-		) as unknown as Transaction[];
-	}, [portfolios]);
+	const [showInfo, setShowInfo] = useState(false);
 
-	// 1. Zaciągamy selectedIds z kontekstu
 	const {
 		chartMode,
 		setChartMode,
@@ -40,7 +35,7 @@ export function HistoryChartSection({
 		setDataMode,
 		isPending,
 		activeRange,
-		setActiveRange,
+		handleRangeChange, // Naprawiony typ!
 		selectedIds,
 		togglePortfolio,
 		currency,
@@ -48,9 +43,7 @@ export function HistoryChartSection({
 	const currencySymbol = getCurrencySymbol(currency);
 
 	const portfolioChartData = useMemo(() => {
-		// =========================================================
-		// FILTROWANIE PO PIGUŁKACH Z KONTEKSTU (BŁYSKAWICZNE W PAMIĘCI)
-		// =========================================================
+		// Filtrowanie portfeli i zrzutów po wyborze użytkownika (stan selectedIds z kontekstu)
 		const activePortfolios = selectedIds.includes("ALL")
 			? portfolios
 			: portfolios.filter((p) => selectedIds.includes(p.id));
@@ -59,7 +52,7 @@ export function HistoryChartSection({
 			? realSnapshots
 			: realSnapshots.filter((snap) => selectedIds.includes(snap.portfolioId));
 
-		// TRYB REALNY
+		// Generowanie danych dla trybu rzeczywistego
 		if (dataMode === "REAL" && activeRealSnapshots.length > 0) {
 			const groupedByDate = activeRealSnapshots.reduce(
 				(acc: any, snap: any) => {
@@ -94,7 +87,7 @@ export function HistoryChartSection({
 			});
 		}
 
-		// TRYB SYMULOWANY
+		// Generowanie danych dla trybu symulowanego
 		const allAssets = activePortfolios.flatMap((p) => p.assets);
 		const totalInvoiced = allAssets.reduce(
 			(sum, a) => sum + Number(a.investedCapital),
@@ -109,6 +102,7 @@ export function HistoryChartSection({
 		const activeTransactions = activePortfolios.flatMap(
 			(p) => p.transactionHistories || [],
 		) as any;
+
 		const { areaPoints } = prepareChartAnalytics(
 			activeTransactions,
 			currentRoiFactor,
@@ -126,15 +120,13 @@ export function HistoryChartSection({
 						: 2000 + parseInt(yearStr, 10);
 
 				const dzisiaj = new Date();
-				const aktualnyMiesiac = dzisiaj.getMonth() + 1; // getMonth to 0-11
+				const aktualnyMiesiac = dzisiaj.getMonth() + 1;
 				const aktualnyRok = dzisiaj.getFullYear();
 
-				// 🚀 FIX: Jeśli to obecny miesiąc w obecnym roku, ustaw "dzisiaj". W przeciwnym razie ustaw 28. dzień.
+				// Zabezpieczenie obecnego miesiąca przed "wybieganiem" w przyszłość
 				if (pointYear === aktualnyRok && pointMonth === aktualnyMiesiac) {
-					// Przypina dzisiejszą datę (np. 11 listopada)
 					normalizedDate = dzisiaj.toISOString().split("T")[0];
 				} else {
-					// Dla historycznych miesięcy zostawia sztuczny koniec miesiąca
 					const padMonth = pointMonth.toString().padStart(2, "0");
 					normalizedDate = `${pointYear}-${padMonth}-28`;
 				}
@@ -154,7 +146,7 @@ export function HistoryChartSection({
 				invested: investedVal,
 			};
 		});
-	}, [realSnapshots, dataMode, chartMode, portfolios, selectedIds]); // 👈 Zależność od selectedIds wymusza natychmiastowe przeliczenie!
+	}, [realSnapshots, dataMode, chartMode, portfolios, selectedIds]);
 
 	return (
 		<div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300 w-full">
@@ -173,7 +165,7 @@ export function HistoryChartSection({
 					dataMode={dataMode}
 					setDataMode={setDataMode}
 					activeRange={activeRange}
-					onRangeChange={setActiveRange}
+					onRangeChange={handleRangeChange} // Użycie poprawnej funkcji
 					showBrush={true}
 					titleInside="Analiza Wartości Kapitału"
 					subtitleInside="Historia wyceny portfela i wkładu własnego"
@@ -183,22 +175,45 @@ export function HistoryChartSection({
 				/>
 			</div>
 
-			{/* 🚀 BANER INFORMACYJNY - PORTFOLIO */}
-			<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm mt-2">
-				<Info className="w-5 h-5 shrink-0 mt-0.5" />
-				<div className="flex flex-col">
-					<span className="text-sm font-bold tracking-tight">
-						Jak czytać ten wykres?
-					</span>
-					<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
-						Wykres prezentuje historyczną wartość kapitału dla wybranych
-						portfeli. <strong>W trybie wyceny (PLN/EUR/USD)</strong> widoczne są
-						dwie główne linie: zsumowana, całkowita wartość aktywów (gruba,
-						falista) oraz wkład własny (przerywana), a odstęp między nimi to
-						wygenerowany wynik. Zdarzenia inwestycyjne (np. wpłaty i wypłaty)
-						nanoszone są punktowo, by pomóc Ci powiązać nagłe skoki portfela z
-						Twoją faktyczną aktywnością na koncie.
-					</span>
+			{/* ROZWIJANY BANER INFORMACYJNY */}
+			<div className="flex flex-col rounded-xl bg-blue-500/10 border border-blue-500/20 shadow-sm mt-2 overflow-hidden transition-all duration-300">
+				<button
+					onClick={() => setShowInfo(!showInfo)}
+					className="flex items-center justify-between w-full p-4 text-left outline-none hover:bg-blue-500/5 transition-colors"
+				>
+					<div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
+						<Info className="w-5 h-5 shrink-0" />
+						<span className="text-sm font-bold tracking-tight">
+							Jak czytać ten wykres?
+						</span>
+					</div>
+					<ChevronDown
+						className={cn(
+							"w-4 h-4 text-blue-600/70 dark:text-blue-400/70 transition-transform duration-300",
+							showInfo && "rotate-180",
+						)}
+					/>
+				</button>
+
+				<div
+					className={cn(
+						"grid transition-all duration-300 ease-in-out px-4 text-blue-600 dark:text-blue-400",
+						showInfo
+							? "grid-rows-[1fr] pb-4 opacity-100"
+							: "grid-rows-[0fr] opacity-0",
+					)}
+				>
+					<div className="overflow-hidden">
+						<span className="text-xs leading-relaxed opacity-90 font-medium pl-8 block">
+							Wykres prezentuje historyczną wartość kapitału dla wybranych
+							portfeli. <strong>W trybie wyceny (PLN/EUR/USD)</strong> widoczne
+							są dwie główne linie: zsumowana, całkowita wartość aktywów (gruba,
+							falista) oraz wkład własny (przerywana), a odstęp między nimi to
+							wygenerowany wynik. Zdarzenia inwestycyjne (np. wpłaty i wypłaty)
+							nanoszone są punktowo, by pomóc Ci powiązać nagłe skoki portfela z
+							Twoją faktyczną aktywnością na koncie.
+						</span>
+					</div>
 				</div>
 			</div>
 		</div>

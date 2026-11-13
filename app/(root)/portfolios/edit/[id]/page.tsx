@@ -55,15 +55,33 @@ export default async function EditPortfolioPage({ params }: Props) {
 				totalValue={totalValue}
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
+				// customBreadcrumbs={
+				// 	<nav className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic">
+				// 		<Link
+				// 			href="/portfolios"
+				// 			className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
+				// 		>
+				// 			<ChevronLeft className="h-4 w-4" />
+				// 			<span>Portfele</span>
+				// 		</Link>
+				// 		<span className="text-slate-500">/</span>
+				// 		<span className="text-slate-300 lowercase">edycja</span>
+				// 		<span className="text-slate-500">/</span>
+				// 		<span className="text-slate-200 font-medium lowercase">
+				// 			{portfolio.name}
+				// 		</span>
+				// 	</nav>
+				// }
 				customBreadcrumbs={
-					// 🚀 ZMIANA: Responsywne okruszki (Breadcrumbs)
+					// 🚀 ZMIANA: Responsywne okruszki kierujące powrotem do Dashboardu Portfela
 					<nav className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic">
 						<Link
-							href="/portfolios"
+							// 🚀 ZMIANA: Zamiast /portfolios, wracamy prosto do podglądu tego portfela
+							href={`/dashboard/${id}`}
 							className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
 						>
 							<ChevronLeft className="h-4 w-4" />
-							<span>Portfele</span>
+							<span>Panel Główny</span>
 						</Link>
 						<span className="text-slate-500">/</span>
 						<span className="text-slate-300 lowercase">edycja</span>

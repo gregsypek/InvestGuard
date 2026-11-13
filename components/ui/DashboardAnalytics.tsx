@@ -3,6 +3,7 @@
 import {
 	ArrowRightCircle,
 	Banknote,
+	Calculator,
 	ChartArea,
 	History,
 	ListOrdered,
@@ -163,12 +164,24 @@ const DashboardAnalytics = ({
 			{/* 1. SEKCJA: REBALANSOWANIE */}
 			<SectionLayout
 				title="Przewodnik rebalansowania"
-				titleIcon={ArrowRightCircle}
-				subtitle="Kondycja i Rebalancing"
-				description="Porównanie obecnej struktury portfela z Twoim celem inwestycyjnym."
-				subtitleIcon={PieChart}
+				titleIcon={Calculator}
+				subtitle="Zarządzanie strukturą i wagami"
+				description="Eksperymentuj z wagami i planuj przyszłe operacje. Wpisz planowaną kwotę wpłaty (lub wypłaty ze znakiem minus), a system obliczy ile kapitału należy przelać na poszczególne kategorie, aby utrzymać idealny balans. Nowy układ możesz natychmiast zapisać jako stały cel portfela."
+				action={
+					<SafeActionButton
+						label="Edytuj Cele"
+						icon={Pencil}
+						variant="outline"
+						isDemo={isDemo}
+						className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+						href={`/portfolios/edit/${portfolio.id}`}
+					/>
+				}
 			>
-				<StrategyHealthTable data={portfolioStatus} />
+				<StrategyHealthTable
+					data={portfolioStatus}
+					portfolioId={portfolio.id}
+				/>
 			</SectionLayout>
 			{/* 2. NOWA SEKCJA: NOMINALNY WYNIK DZIENNY */}
 			<SectionLayout

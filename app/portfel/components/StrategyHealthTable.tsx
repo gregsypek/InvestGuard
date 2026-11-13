@@ -6,6 +6,8 @@ import {
 	ArrowUpRight,
 	Calculator,
 	CheckCircle2,
+	Loader2,
+	Save,
 	Trash2,
 } from "lucide-react";
 import {
@@ -17,35 +19,44 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { CategoryStatus } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { updatePortfolioTargets } from "@/lib/actions/portfolio.actions"; // Upewnij się, że ścieżka się zgadza
 import { useChartContext } from "@/components/providers/ChartProvider";
 
 interface Props {
+	portfolioId: string; // 🚀 FIX: Dodajemy ID portfela do zapisu
 	data: CategoryStatus[];
 }
 
-export default function StrategyHealthTable({ data }: Props) {
+export default function StrategyHealthTable({ portfolioId, data }: Props) {
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
+	const [isPending, startTransition] = useTransition();
 
-	// 🚀 STAN LOKALNY SYMULATORA
-	// Pobieramy początkowe wagi z bazy (props data)
-	const [weights, setWeights] = useState<Record<string, number>>(() => {
-		const initial: Record<string, number> = {};
+	// Stan początkowy dla resetu
+	const initialWeights = useMemo(() => {
+		const init: Record<string, number> = {};
 		data.forEach((d) => {
-			initial[d.category] = d.weight;
+			init[d.category] = d.weight;
 		});
-		return initial;
-	});
+		return init;
+	}, [data]);
 
-	// Kwota planowanej wpłaty/wypłaty
+	const [weights, setWeights] =
+		useState<Record<string, number>>(initialWeights);
 	const [extraCash, setExtraCash] = useState<number>(0);
 
-	// 🚀 MATEMATYKA NA ŻYWO (Rebalancing)
+	// Synchronizacja przy zmianie portfela
+	useEffect(() => {
+		setWeights(initialWeights);
+		setExtraCash(0);
+	}, [initialWeights]);
+
 	const totalCurrentValue = useMemo(
 		() => data.reduce((acc, item) => acc + item.actualAmount, 0),
 		[data],
@@ -56,10 +67,12 @@ export default function StrategyHealthTable({ data }: Props) {
 		0,
 	);
 
-	// Pokaż tylko te kategorie, które mają wyznaczoną wagę > 0 LUB posiadamy w nich faktyczny kapitał
 	const activeData = data.filter(
 		(item) => (weights[item.category] || 0) > 0 || item.actualAmount > 0,
 	);
+
+	// Sprawdzamy czy użytkownik zmodyfikował wagi
+	const hasChanges = JSON.stringify(weights) !== JSON.stringify(initialWeights);
 
 	const handleWeightChange = (category: string, value: string) => {
 		const numValue = value === "" ? 0 : Number(value);
@@ -70,16 +83,58 @@ export default function StrategyHealthTable({ data }: Props) {
 		setWeights((prev) => ({ ...prev, [category]: 0 }));
 	};
 
+	const handleSaveTargets = () => {
+		if (totalWeight !== 100) {
+			toast.error("Suma wag musi wynosić dokładnie 100%");
+			return;
+		}
+
+		startTransition(async () => {
+			const res = await updatePortfolioTargets(portfolioId, weights);
+			if (res.success) {
+				toast.success("Nowe cele portfela zostały zapisane");
+			} else {
+				toast.error(res.error || "Wystąpił błąd przy zapisie");
+			}
+		});
+	};
+
 	return (
 		<div className="w-full flex flex-col overflow-hidden rounded-2xl border border-t-border bg-t-bg-panel shadow-sm">
-			{/* 🚀 GÓRNY PANEL: KALKULATOR WPŁATY */}
-			<div className="flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 bg-black/2 dark:bg-white/5 border-b border-t-border-subtle gap-3">
-				<div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto text-theme-primary">
-					<Calculator className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-					<span className="text-xs sm:text-sm font-bold tracking-tight">
-						Symulator Rebalancingu
-					</span>
+			{/* GÓRNY PANEL */}
+			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-black/2 dark:bg-white/5 border-b border-t-border-subtle gap-4">
+				<div className="flex flex-col gap-2">
+					<div className="flex items-center gap-2 sm:gap-3 text-theme-primary">
+						<Calculator className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+						<span className="text-xs sm:text-sm font-bold tracking-tight">
+							Symulator Rebalancingu
+						</span>
+					</div>
+
+					{/* 🚀 NOWY PRZYCISK ZAPISU */}
+					<div
+						className={cn(
+							"overflow-hidden transition-all duration-300 ease-in-out",
+							hasChanges && totalWeight === 100
+								? "max-h-12 opacity-100 mt-1"
+								: "max-h-0 opacity-0",
+						)}
+					>
+						<button
+							onClick={handleSaveTargets}
+							disabled={isPending}
+							className="flex items-center gap-1.5 px-3 py-1.5 bg-theme-primary text-white text-[10px] sm:text-xs font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+						>
+							{isPending ? (
+								<Loader2 className="w-3.5 h-3.5 animate-spin" />
+							) : (
+								<Save className="w-3.5 h-3.5" />
+							)}
+							Zapisz jako nowy cel
+						</button>
+					</div>
 				</div>
+
 				<div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
 					<span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-t-text-secondary">
 						Planowana wpłata:
@@ -99,26 +154,6 @@ export default function StrategyHealthTable({ data }: Props) {
 				</div>
 			</div>
 
-			{/* <div
-				className={cn(
-					"grid transition-all duration-300 ease-in-out",
-					totalWeight !== 100
-						? "grid-rows-[1fr] opacity-100"
-						: "grid-rows-[0fr] opacity-0",
-				)}
-			>
-				<div className="overflow-hidden">
-					<div className="px-4 py-2.5 bg-amber-500/10 border-b border-amber-500/20 flex flex-wrap items-center justify-center gap-2 text-amber-600 dark:text-amber-500 text-[10px] sm:text-xs font-bold tracking-wide">
-						<AlertTriangle className="w-4 h-4 shrink-0" />
-						<span>
-							Suma wag wynosi{" "}
-							<span className="font-black text-sm">{totalWeight}%</span>.
-							Dostosuj cele, aby uzyskać równe 100%.
-						</span>
-					</div>
-				</div>
-			</div> */}
-
 			<div className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 				<Table className="w-full min-w-[600px] md:min-w-[700px]">
 					<TableHeader>
@@ -135,7 +170,6 @@ export default function StrategyHealthTable({ data }: Props) {
 							<TableHead className="text-right px-3 py-3 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 								Odchylenie
 							</TableHead>
-							{/* ROZDZIELONE KOLUMNY: AKCJA i KWOTA */}
 							<TableHead className="text-center px-3 py-3 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
 								Akcja
 							</TableHead>
@@ -149,12 +183,8 @@ export default function StrategyHealthTable({ data }: Props) {
 					<TableBody>
 						{activeData.map((item) => {
 							const currentWeight = weights[item.category] || 0;
-
-							// Wyliczenia względem NOWEJ sumy kapitału (w tym planowanej wpłaty)
 							const targetAmount = (currentWeight / 100) * targetTotalValue;
 							const diffPLN = targetAmount - item.actualAmount;
-
-							// Odchylenie wagowe (pokazuje przepaść w obecnym, realnym portfelu względem celu)
 							const currentRealPercentage =
 								totalCurrentValue > 0
 									? (item.actualAmount / totalCurrentValue) * 100
@@ -167,7 +197,6 @@ export default function StrategyHealthTable({ data }: Props) {
 									key={item.category}
 									className="border-t-border-subtle hover:bg-t-hover transition-colors group"
 								>
-									{/* KATEGORIA */}
 									<TableCell className="sticky left-0 z-10 p-0 bg-t-bg-sticky group-hover:bg-t-hover border-r border-t-border-subtle shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.2)] transition-colors">
 										<div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-3">
 											<div
@@ -179,8 +208,6 @@ export default function StrategyHealthTable({ data }: Props) {
 											</span>
 										</div>
 									</TableCell>
-
-									{/* CEL (%) INPUT */}
 									<TableCell className="text-center px-2 py-2">
 										<div className="flex justify-center">
 											<Input
@@ -197,13 +224,9 @@ export default function StrategyHealthTable({ data }: Props) {
 											/>
 										</div>
 									</TableCell>
-
-									{/* AKTUALNIE */}
 									<TableCell className="text-right px-3 py-2 font-mono text-[11px] sm:text-xs font-bold text-t-text-primary">
 										{currentRealPercentage.toFixed(2)}%
 									</TableCell>
-
-									{/* ODCHYLENIE */}
 									<TableCell
 										className={cn(
 											"text-right px-3 py-2 font-mono text-[11px] sm:text-xs font-black",
@@ -214,8 +237,6 @@ export default function StrategyHealthTable({ data }: Props) {
 										{diffWeight.toFixed(1)}{" "}
 										<span className="text-[9px] text-t-text-tertiary">pp</span>
 									</TableCell>
-
-									{/* AKCJA */}
 									<TableCell className="text-center px-3 py-2">
 										{Math.abs(diffPLN) < 10 ? (
 											<div className="flex items-center justify-center gap-1.5 text-t-text-tertiary">
@@ -240,8 +261,6 @@ export default function StrategyHealthTable({ data }: Props) {
 											</div>
 										)}
 									</TableCell>
-
-									{/* KWOTA */}
 									<TableCell className="text-right px-3 py-2">
 										{Math.abs(diffPLN) < 10 ? (
 											<span className="text-t-text-tertiary font-bold">—</span>
@@ -259,8 +278,6 @@ export default function StrategyHealthTable({ data }: Props) {
 											</span>
 										)}
 									</TableCell>
-
-									{/* USUŃ KATEGORIĘ (KOSZ) */}
 									<TableCell className="text-center px-2 py-2">
 										<button
 											onClick={() => handleRemoveCategory(item.category)}
@@ -276,7 +293,6 @@ export default function StrategyHealthTable({ data }: Props) {
 					</TableBody>
 				</Table>
 			</div>
-			{/* 🚀 OSTRZEŻENIE O SUMIE WAG (Przeniesione na dół) */}
 			<div
 				className={cn(
 					"grid transition-all duration-300 ease-in-out",
@@ -286,7 +302,6 @@ export default function StrategyHealthTable({ data }: Props) {
 				)}
 			>
 				<div className="overflow-hidden">
-					{/* Zmieniono border-b na border-t dla lepszego wyglądu na dole */}
 					<div className="px-4 py-2.5 bg-amber-500/10 border-t border-amber-500/20 flex flex-wrap items-center justify-center gap-2 text-amber-600 dark:text-amber-500 text-[10px] sm:text-xs font-bold tracking-wide">
 						<AlertTriangle className="w-4 h-4 shrink-0" />
 						<span>

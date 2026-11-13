@@ -327,3 +327,33 @@ export async function setDefaultPortfolio(portfolioId: string) {
 		};
 	}
 }
+
+export async function updatePortfolioTargets(
+	id: string,
+	weights: Record<string, number>,
+) {
+	try {
+		await db.portfolio.update({
+			where: { id },
+			data: {
+				targetBonds: weights["BONDS"] || 0,
+				targetDeveloped: weights["DEVELOPED"] || 0,
+				targetEmerging: weights["EMERGING"] || 0,
+				targetGold: weights["GOLD"] || 0,
+				targetBooster: weights["BOOSTER"] || 0,
+				targetCash: weights["CASH"] || 0,
+				targetCrypto: weights["CRYPTO"] || 0,
+				targetCommodities: weights["COMMODITIES"] || 0,
+				targetRealEstate: weights["REAL_ESTATE"] || 0,
+				targetCustom: weights["CUSTOM"] || 0,
+			},
+		});
+
+		revalidatePath("/dashboard");
+		revalidatePath(`/dashboard/${id}`);
+		return { success: true };
+	} catch (error) {
+		console.error("Target update error:", error);
+		return { success: false, error: "Nie udało się zapisać celów" };
+	}
+}

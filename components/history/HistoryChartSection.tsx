@@ -27,8 +27,6 @@ export function HistoryChartSection({
 	realSnapshots,
 	oldestRealSnapshotDate,
 }: HistoryChartSectionProps) {
-	const [showInfo, setShowInfo] = useState(false);
-
 	const {
 		chartMode,
 		setChartMode,

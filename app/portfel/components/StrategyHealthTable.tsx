@@ -102,10 +102,10 @@ export default function StrategyHealthTable({ portfolioId, data }: Props) {
 	return (
 		<div className="w-full flex flex-col overflow-hidden rounded-2xl border border-t-border bg-t-bg-panel shadow-sm">
 			{/* GÓRNY PANEL */}
-			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-black/2 dark:bg-white/5 border-b border-t-border-subtle gap-4">
+			<div className="flex flex-col bg-t-bg-base sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4  border-b border-t-border-subtle gap-4">
 				<div className="flex flex-col gap-2">
 					<div className="flex items-center gap-2 sm:gap-3 text-theme-primary">
-						<Calculator className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+						{/* <Calculator className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" /> */}
 						<span className="text-xs sm:text-sm font-bold tracking-tight">
 							Symulator Rebalancingu
 						</span>

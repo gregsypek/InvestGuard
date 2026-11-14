@@ -69,7 +69,6 @@ interface UserDashboardProps {
 }
 
 export function UserDashboard(props: UserDashboardProps) {
-
 	const { currency } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
@@ -123,8 +122,8 @@ export function UserDashboard(props: UserDashboardProps) {
 	>("PORTFOLIO");
 
 	const CHART_TABS = [
-		{ id: "PORTFOLIO", icon: LineChart, label: "Wartość Kapitału" },
 		{ id: "DAILY_PNL", icon: Banknote, label: "Wynik Dzienny" },
+		{ id: "PORTFOLIO", icon: LineChart, label: "Wartość Kapitału" },
 		{ id: "COMPARISON", icon: WalletCards, label: "Strategie" },
 		{ id: "BENCHMARK", icon: Globe, label: "Rynek" },
 	] as const;

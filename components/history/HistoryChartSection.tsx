@@ -4,6 +4,7 @@ import { ChevronDown, Info, Loader2 } from "lucide-react";
 import { PortfolioWithAssets, Transaction } from "@/lib/types";
 import { useMemo, useState } from "react";
 
+import AccordionInfo from "../shared/AccordionInfo";
 import { PortfolioChart } from "../dashboard/PortfolioChart";
 import { SimulatedSnapshot } from "@/components/ui/useDashboardData";
 import { cn } from "@/lib/utils";
@@ -176,46 +177,12 @@ export function HistoryChartSection({
 			</div>
 
 			{/* ROZWIJANY BANER INFORMACYJNY */}
-			<div className="flex flex-col rounded-xl bg-blue-500/10 border border-blue-500/20 shadow-sm mt-2 overflow-hidden transition-all duration-300">
-				<button
-					onClick={() => setShowInfo(!showInfo)}
-					className="flex items-center justify-between w-full p-4 text-left outline-none hover:bg-blue-500/5 transition-colors"
-				>
-					<div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
-						<Info className="w-5 h-5 shrink-0" />
-						<span className="text-sm font-bold tracking-tight">
-							Jak czytać ten wykres?
-						</span>
-					</div>
-					<ChevronDown
-						className={cn(
-							"w-4 h-4 text-blue-600/70 dark:text-blue-400/70 transition-transform duration-300",
-							showInfo && "rotate-180",
-						)}
-					/>
-				</button>
 
-				<div
-					className={cn(
-						"grid transition-all duration-300 ease-in-out px-4 text-blue-600 dark:text-blue-400",
-						showInfo
-							? "grid-rows-[1fr] pb-4 opacity-100"
-							: "grid-rows-[0fr] opacity-0",
-					)}
-				>
-					<div className="overflow-hidden">
-						<span className="text-xs leading-relaxed opacity-90 font-medium pl-8 block">
-							Wykres prezentuje historyczną wartość kapitału dla wybranych
-							portfeli. <strong>W trybie wyceny (PLN/EUR/USD)</strong> widoczne
-							są dwie główne linie: zsumowana, całkowita wartość aktywów (gruba,
-							falista) oraz wkład własny (przerywana), a odstęp między nimi to
-							wygenerowany wynik. Zdarzenia inwestycyjne (np. wpłaty i wypłaty)
-							nanoszone są punktowo, by pomóc Ci powiązać nagłe skoki portfela z
-							Twoją faktyczną aktywnością na koncie.
-						</span>
-					</div>
-				</div>
-			</div>
+			<AccordionInfo
+				des={
+					"Wykres prezentuje historyczną wartość kapitału dla wybranych	portfeli. <strong>W trybie wyceny (PLN/EUR/USD)</strong> widoczne	są dwie główne linie: zsumowana, całkowita wartość aktywów (gruba, falista) oraz wkład własny (przerywana), a odstęp między nimi to	wygenerowany wynik. Zdarzenia inwestycyjne (np. wpłaty i wypłaty)	nanoszone są punktowo, by pomóc Ci powiązać nagłe skoki portfela z							Twoją faktyczną aktywnością na koncie."
+				}
+			/>
 		</div>
 	);
 }

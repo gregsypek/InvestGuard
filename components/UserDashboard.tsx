@@ -20,6 +20,7 @@ import { differenceInMinutes, format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
+import AccordionInfo from "./shared/AccordionInfo";
 import { GlobalDashboardHeader } from "./dashboard/GlobalDashboardHeader";
 import Link from "next/link";
 import { MarketDetailChart } from "./dashboard/MarketDetailChart";
@@ -68,6 +69,7 @@ interface UserDashboardProps {
 }
 
 export function UserDashboard(props: UserDashboardProps) {
+
 	const { currency } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
@@ -679,25 +681,12 @@ export function UserDashboard(props: UserDashboardProps) {
 									/>
 								</div>
 								{/* 🚀 BANER INFORMACYJNY - PORTFOLIO */}
-								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
-									<Info className="w-5 h-5 shrink-0 mt-0.5" />
-									<div className="flex flex-col">
-										<span className="text-sm font-bold tracking-tight">
-											Jak czytać ten wykres?
-										</span>
-										<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
-											Wykres prezentuje historyczną wartość kapitału dla
-											wybranych portfeli.{" "}
-											<strong>W trybie wyceny (PLN/EUR/USD)</strong> widoczne są
-											dwie główne linie: zsumowana, całkowita wartość aktywów
-											(gruba, falista) oraz wkład własny (przerywana), a odstęp
-											między nimi to wygenerowany wynik. Zdarzenia inwestycyjne
-											(np. wpłaty i wypłaty) nanoszone są punktowo, by pomóc Ci
-											powiązać nagłe skoki portfela z Twoją faktyczną
-											aktywnością na koncie.
-										</span>
-									</div>
-								</div>
+								{/* ROZWIJANY BANER INFORMACYJNY */}
+								<AccordionInfo
+									des={
+										"Wykres prezentuje historyczną wartość kapitału dla wybranych	portfeli. <strong>W trybie wyceny (PLN/EUR/USD)</strong> widoczne są dwie główne linie: zsumowana, całkowita wartość aktywów (gruba,falista) oraz wkład własny (przerywana), a odstęp między nimi to wygenerowany wynik. Zdarzenia inwestycyjne (np. wpłaty i wypłaty) nanoszone są punktowo, by pomóc Ci powiązać nagłe skoki portfela z	Twoją faktyczną aktywnością na koncie."
+									}
+								/>
 							</div>
 						)}
 
@@ -719,23 +708,11 @@ export function UserDashboard(props: UserDashboardProps) {
 									/>
 								</div>
 								{/* 🚀 BANER INFORMACYJNY - DAILY PNL */}
-								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
-									<Info className="w-5 h-5 shrink-0 mt-0.5" />
-									<div className="flex flex-col">
-										<span className="text-sm font-bold tracking-tight">
-											Jak czytać ten wykres?
-										</span>
-										<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
-											Przedstawia on bezwzględną, codzienną zmianę wartości
-											Twoich portfeli ujętą jako słupek wygenerowanego zysku (na
-											zielono) lub straty (na czerwono) dla konkretnego dnia na
-											rynku. Linia kropek reprezentuje strumień wpłat (Net Cash
-											Flow) oddzielony od wyniku wygenerowanego bezpośrednio ze
-											wzrostów na giełdzie, abyś dokładnie widział, jak
-											wypracowany zysk ma się do kapitału, który zasila konto.
-										</span>
-									</div>
-								</div>
+								<AccordionInfo
+									des={
+										"Przedstawia on bezwzględną, codzienną zmianę wartości Twoich portfeli ujętą jako słupek wygenerowanego zysku (na	zielono) lub straty (na czerwono) dla konkretnego dnia na rynku. Linia kropek reprezentuje strumień wpłat (Net Cash	Flow) oddzielony od wyniku wygenerowanego bezpośrednio ze	wzrostów na giełdzie, abyś dokładnie widział, jak	wypracowany zysk ma się do kapitału, który zasila konto."
+									}
+								/>
 							</div>
 						)}
 						{activeChartTab === "COMPARISON" && (
@@ -757,23 +734,11 @@ export function UserDashboard(props: UserDashboardProps) {
 									/>
 								</div>{" "}
 								{/* 🚀 BANER INFORMACYJNY - COMPARISON */}
-								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
-									<Info className="w-5 h-5 shrink-0 mt-0.5" />
-									<div className="flex flex-col">
-										<span className="text-sm font-bold tracking-tight">
-											Jak czytać ten wykres?
-										</span>
-										<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
-											To arena walki wszystkich Twoich strategii inwestycyjnych.
-											Śledzi zachowanie każdego subportfela niezależnie na
-											jednej wspólnej osi, odcinając sumaryczną wartość
-											inwestycji. Wykorzystaj ten tryb z przyciskiem procentowym
-											(%), by łatwo sprawdzić i porównać stopy zwrotu każdego
-											koszyka i zobaczyć, która strategia aktualnie wygrywa z
-											pozostałymi w ujęciu procentowym.
-										</span>
-									</div>
-								</div>
+								<AccordionInfo
+									des={
+										"	To arena walki wszystkich Twoich strategii inwestycyjnych. Śledzi zachowanie każdego subportfela niezależnie na	jednej wspólnej osi, odcinając sumaryczną wartość inwestycji. Wykorzystaj ten tryb z przyciskiem procentowym(%), by łatwo sprawdzić i porównać stopy zwrotu każdego	koszyka i zobaczyć, która strategia aktualnie wygrywa z	pozostałymi w ujęciu procentowym."
+									}
+								/>
 							</div>
 						)}
 
@@ -796,27 +761,11 @@ export function UserDashboard(props: UserDashboardProps) {
 									/>
 								</div>{" "}
 								{/* 🚀 BANER INFORMACYJNY - BENCHMARK */}
-								<div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm">
-									<Info className="w-5 h-5 shrink-0 mt-0.5" />
-									<div className="flex flex-col">
-										<span className="text-sm font-bold tracking-tight">
-											Jak czytać ten wykres?
-										</span>
-										<span className="text-xs mt-1 leading-relaxed opacity-90 font-medium">
-											Wykres symuluje scenariusz, w którym Twój całkowity
-											kapitał początkowy (wkład własny) został w całości
-											zainwestowany w wybrane rynki referencyjne (np. S&P 500,
-											Bitcoin). Przerywane linie pokazują wariant "co by było,
-											gdyby", pozwalając łatwo ocenić, czy Twoja aktywna
-											strategia przynosi lepsze efekty niż bierne podążanie za
-											rynkiem. <strong>Uwaga:</strong> W trybie kwotowym (PLN)
-											linie rynków referencyjnych startują od wartości Twojego
-											początkowego wkładu własnego w zadanym oknie czasowym,
-											podczas gdy linia portfela pokazuje jego pełną rynkową
-											wycenę wraz ze wszystkimi bieżącymi wpłatami i wypłatami.
-										</span>
-									</div>
-								</div>
+								<AccordionInfo
+									des={
+										'Wykres symuluje scenariusz, w którym Twój całkowity kapitał początkowy (wkład własny) został w całości	zainwestowany w wybrane rynki referencyjne (np. S&P 500, Bitcoin). Przerywane linie pokazują wariant "co by było,	gdyby", pozwalając łatwo ocenić, czy Twoja aktywna strategia przynosi lepsze efekty niż bierne podążanie za	rynkiem. <strong>Uwaga:</strong> W trybie kwotowym (PLN) linie rynków referencyjnych startują od wartości Twojego	początkowego wkładu własnego w zadanym oknie czasowym, podczas gdy linia portfela pokazuje jego pełną rynkową	wycenę wraz ze wszystkimi bieżącymi wpłatami i wypłatami.'
+									}
+								/>
 							</div>
 						)}
 					</div>

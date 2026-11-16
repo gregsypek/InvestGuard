@@ -633,7 +633,7 @@ export function PlannerDashboardClient({
 				)}
 			>
 				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-sm">
-					<div className="h-[400px] w-full relative">
+					<div className="h-[600px] w-full relative">
 						<GoalProjectionChart portfolios={projPortfolios} />
 					</div>
 				</div>

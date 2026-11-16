@@ -8,8 +8,8 @@ const yahooFinance = new YahooFinance({
 	suppressNotices: ["ripHistorical"],
 });
 
-// 🚀 Definiujemy TYLKO złoto, używając stabilnego ETF-u (GLD)
-const GOLD_INDEX = { id: "GOLD", tickers: ["GLD"] };
+// 🚀 Używamy GC=F (Gold Futures) jako głównego źródła dla ceny uncji, z fallbackiem na GLD
+const GOLD_INDEX = { id: "GOLD", tickers: ["GC=F", "GLD"] };
 
 const prisma = new PrismaClient({
 	adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -18,18 +18,19 @@ const prisma = new PrismaClient({
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main() {
-	console.log("🧹 Czyszczenie starej (i błędnej) historii TYLKO dla złota...");
+	console.log("🧹 Czyszczenie starej i wadliwej historii dla złota...");
 
-	// 🚀 Zabezpieczenie: Usuwamy tylko wpisy, gdzie symbol to "GOLD"
+	// 1. Usuwamy błędne wpisy dla GOLD
 	await prisma.indexHistory.deleteMany({
 		where: { symbol: "GOLD" },
 	});
 
 	const startDate = "2020-01-01";
+	// Pobieramy dane do wczoraj lub bezpieczniej: odfiltrowujemy dzisiejszą niepełną sesję
 	const endDate = new Date().toISOString().split("T")[0];
 
 	console.log(
-		`🌐 Pobieranie stabilnych danych dla złota (GLD) od ${startDate} do ${endDate}...`,
+		`🌐 Pobieranie stabilnych danych dla złota od ${startDate} do ${endDate}...`,
 	);
 
 	let fetchedRecords: { symbol: string; date: Date; closePrice: number }[] = [];
@@ -45,36 +46,74 @@ async function main() {
 			});
 
 			if (result && result.quotes && result.quotes.length > 0) {
-				fetchedRecords = result.quotes
-					.filter((q) => q.close != null)
-					.map((quote) => ({
-						symbol: GOLD_INDEX.id,
-						date: new Date(quote.date),
-						closePrice: quote.close!,
-					}));
-
-				console.log(
-					`✅ Pobrano ${fetchedRecords.length} dni dla ${GOLD_INDEX.id} (${ticker}).`,
+				const rawQuotes = result.quotes.filter(
+					(q) => q.close != null && q.close > 0,
 				);
-				break;
+
+				let lastValidPrice = 0;
+				const cleanedQuotes = [];
+
+				for (const quote of rawQuotes) {
+					const currentPrice = quote.close!;
+					const quoteDate = new Date(quote.date);
+
+					// 🚀 Zabezpieczenie przed anomaliami (bad tick / spadek o więcej niż 30% w 1 dzień)
+					if (lastValidPrice > 0) {
+						const changeRatio =
+							Math.abs(currentPrice - lastValidPrice) / lastValidPrice;
+						if (changeRatio > 0.3) {
+							console.warn(
+								`⚠️ Odrzucono anomalny punkt cenowy dla ${quoteDate.toISOString().split("T")[0]}: ${currentPrice} (poprzednia: ${lastValidPrice})`,
+							);
+							continue; // Pomijamy ten punkt
+						}
+					}
+
+					// Odrzucamy dzisiejszą niekompletną świecę, jeśli ma wartość 0 lub drastycznie odbiega
+					const todayStr = new Date().toISOString().split("T")[0];
+					const quoteDateStr = quoteDate.toISOString().split("T")[0];
+					if (
+						quoteDateStr === todayStr &&
+						currentPrice < lastValidPrice * 0.7
+					) {
+						console.warn(
+							`⚠️ Pominięto niepełną/błędną świecę z dzisiejszego dnia.`,
+						);
+						continue;
+					}
+
+					lastValidPrice = currentPrice;
+					cleanedQuotes.push({
+						symbol: GOLD_INDEX.id,
+						date: quoteDate,
+						closePrice: currentPrice,
+					});
+				}
+
+				if (cleanedQuotes.length > 0) {
+					fetchedRecords = cleanedQuotes;
+					console.log(
+						`✅ Pobrano i oczyszczono ${fetchedRecords.length} dni dla ${GOLD_INDEX.id} (${ticker}).`,
+					);
+					break;
+				}
 			}
 		} catch (error) {
 			console.warn(
-				`⚠️ Ticker ${ticker} nie zwrócił danych dla ${GOLD_INDEX.id}, próbuję kolejny...`,
+				`⚠️ Ticker ${ticker} nie zwrócił poprawnych danych, próbuję kolejny...`,
 			);
 		}
 		await sleep(500);
 	}
 
 	if (fetchedRecords.length > 0) {
-		// Zapis historii do bazy
+		// Zapis oczyszczonej historii do bazy
 		await prisma.indexHistory.createMany({
 			data: fetchedRecords,
 			skipDuplicates: true,
 		});
 
-		// 🚀 Opcjonalnie: Aktualizujemy też główną tabelę MarketIndex,
-		// żeby najnowsza cena nie wisiała jako "38 USD"
+		// Aktualizacja bieżącej ceny w tabeli MarketIndex
 		const latestRecord = fetchedRecords[fetchedRecords.length - 1];
 		if (latestRecord) {
 			await prisma.marketIndex.updateMany({
@@ -90,13 +129,11 @@ async function main() {
 		}
 
 		console.log(
-			`💾 Zapisano ${fetchedRecords.length} rekordów w bazie dla ${GOLD_INDEX.id}.`,
+			`💾 Zapisano pomyślnie ${fetchedRecords.length} rekordów w bazie.`,
 		);
 	} else {
 		console.error(`❌ Nie udało się pobrać danych dla ${GOLD_INDEX.id}.`);
 	}
-
-	console.log("🎉 Sukces! Prawidłowa historia złota jest już w bazie.");
 }
 
 main()

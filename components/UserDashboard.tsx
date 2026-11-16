@@ -119,7 +119,7 @@ export function UserDashboard(props: UserDashboardProps) {
 	// Taby analityczne
 	const [activeChartTab, setActiveChartTab] = useState<
 		"PORTFOLIO" | "DAILY_PNL" | "COMPARISON" | "BENCHMARK"
-	>("PORTFOLIO");
+	>("DAILY_PNL");
 
 	const CHART_TABS = [
 		{ id: "DAILY_PNL", icon: Banknote, label: "Wynik Dzienny" },

@@ -594,6 +594,7 @@ export function PortfolioBenchmarkChart({
 									stroke={INDEX_COLORS[idx] || "#64748b"}
 									strokeWidth={2.5}
 									strokeDasharray="5 5"
+									connectNulls={true}
 									dot={false}
 									activeDot={{ r: 4, strokeWidth: 0 }}
 									opacity={0.8}

@@ -512,14 +512,17 @@ const AssetLedgerTable = ({
 											>
 												<TableCell
 													className={cn(
-														"sticky left-0 z-10 py-2 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none transition-colors w-min-width",
+														"sticky left-0 z-10 py-2 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] border-none transition-colors",
+														// 🚀 FIX: Przenosimy ograniczenia szerokości bezpośrednio na komórkę tabeli (td)
+														"w-[180px] sm:w-[240px] md:w-[280px] lg:w-[320px] max-w-[320px]",
 														isExpanded
 															? "bg-t-bg-sticky-hover"
 															: "bg-t-bg-sticky group-hover:bg-t-bg-sticky-hover",
 														isLastRow && !isExpanded && "rounded-bl-xl",
 													)}
 												>
-													<div className="flex items-center gap-2 md:gap-3 pl-1">
+													{/* 🚀 FIX: Dodajemy klasę truncate oraz w-full do kontenera z flexem, aby wymusić sztywne ramy */}
+													<div className="flex items-center gap-2 md:gap-3 pl-1 overflow-hidden w-full">
 														{hasHistory && (
 															<ChevronDown
 																className={cn(
@@ -533,9 +536,11 @@ const AssetLedgerTable = ({
 															className="w-6 h-6 md:w-8 md:h-8 drop-shadow-sm shrink-0"
 														/>
 
-														<div className="flex flex-col justify-center min-w-0">
+														{/* 🚀 FIX: min-w-0 jest kluczowe w flexboxie, żeby element potrafił się zmniejszyć poniżej zawartości */}
+														<div className="flex flex-col justify-center min-w-0 flex-1">
 															<div
-																className="font-bold text-xs md:text-sm text-t-text-primary truncate max-w-[140px] sm:max-w-[180px] md:max-w-[240px] lg:max-w-[320px] xl:max-w-[400px] tracking-tight flex items-center gap-1.5"
+																// 🚀 FIX: Usunąłem długie, sztywne max-w-[...] na rzecz pełnego dopasowania do rodzica w-full z truncate
+																className="font-bold text-xs md:text-sm text-t-text-primary truncate w-full tracking-tight flex items-center gap-1.5"
 																title={asset.cleanName}
 															>
 																{asset.cleanName}
@@ -550,10 +555,10 @@ const AssetLedgerTable = ({
 																		{asset.provider}
 																	</span>
 																)}
-																<span className="text-[10px] md:text-[9px] font-bold text-t-text-secondary font-mono sm:bg-black/5 dark:sm:bg-white/5 sm:border sm:border-black/10 dark:sm:border-white/10 px-0 sm:px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+																<span className="text-[10px] md:text-[9px] font-bold text-t-text-secondary font-mono sm:bg-black/5 dark:sm:bg-white/5 sm:border sm:border-black/10 dark:sm:border-white/10 px-0 sm:px-1.5 py-0.5 rounded-sm uppercase tracking-wider truncate">
 																	{asset.cleanTicker}
 																</span>
-																<span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold tracking-wide">
+																<span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold tracking-wide shrink-0">
 																	{isAggregatedBond ||
 																		`${formatCurrency(asset.quantity ?? 0, 2)} szt`}
 																</span>

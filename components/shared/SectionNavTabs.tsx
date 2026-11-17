@@ -1,32 +1,28 @@
 "use client";
 
-import {
-	Banknote,
-	Calculator,
-	ChartArea,
-	History,
-	ListOrdered,
-	PieChart,
-} from "lucide-react";
 import React, { useEffect, useState } from "react";
 
+import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Definicja zakładek z pasującymi identyfikatorami sekcji (id)
-const SECTIONS = [
-	{ id: "section-rebalance", label: "Rebalansowanie", icon: Calculator },
-	{ id: "section-daily-pnl", label: "Wynik Dzienny", icon: Banknote },
-	{ id: "section-cards", label: "Karty Aktywów", icon: History },
-	{ id: "section-allocation", label: "Alokacja", icon: PieChart },
-	{ id: "section-growth", label: "Wzrost", icon: ChartArea },
-	{ id: "section-ledger", label: "Rejestr", icon: ListOrdered },
-];
+export interface SectionTab {
+	id: string;
+	label: string;
+	icon: LucideIcon;
+}
 
-export function SectionNavTabs() {
-	const [activeSection, setActiveSection] = useState<string>("");
+interface SectionNavTabsProps {
+	sections: SectionTab[];
+}
 
-	// Opcjonalnie: automatyczne wykrywanie aktywnej sekcji podczas przewijania strony
+export function SectionNavTabs({ sections }: SectionNavTabsProps) {
+	const [activeSection, setActiveSection] = useState<string>(
+		sections[0]?.id || "",
+	);
+
 	useEffect(() => {
+		if (!sections.length) return;
+
 		const observer = new IntersectionObserver(
 			(entries) => {
 				entries.forEach((entry) => {
@@ -35,66 +31,75 @@ export function SectionNavTabs() {
 					}
 				});
 			},
-			{ threshold: 0.3 },
+			{
+				threshold: 0.2,
+				rootMargin: "-80px 0px -50% 0px",
+			},
 		);
 
-		SECTIONS.forEach((section) => {
+		sections.forEach((section) => {
 			const el = document.getElementById(section.id);
 			if (el) observer.observe(el);
 		});
 
 		return () => observer.disconnect();
-	}, []);
+	}, [sections]);
 
 	const scrollToSection = (id: string) => {
 		const el = document.getElementById(id);
 		if (el) {
-			const yOffset = -100; // Offset na ewentualny stały nagłówek strony
-			const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-			window.scrollTo({ top: y, behavior: "smooth" });
+			el.scrollIntoView({ behavior: "smooth", block: "start" });
+			setActiveSection(id);
 		}
 	};
 
+	if (!sections || sections.length === 0) return null;
+
 	return (
-		<div className="relative w-full max-w-2xl mx-auto my-6 px-4">
-			{/* Linia łącząca ikony w tle */}
-			<div className="absolute top-[24px] left-[12%] right-[12%] h-[2px] bg-t-border-subtle z-0 hidden sm:block" />
+		<div className="sticky top-0 md:top-0 z-30 w-full bg-t-bg-base/85 backdrop-blur-md py-2 border-b border-t-border-subtle shadow-sm transition-all">
+			<div className="relative w-full max-w-xl mx-auto px-2 sm:px-4">
+				{/* Cienka linia łącząca w tle */}
+				<div className="absolute top-[20px] sm:top-[22px] left-[8%] right-[8%] h-[2px] bg-t-border-subtle z-0 hidden sm:block" />
 
-			<div className="relative z-10 flex justify-between items-start">
-				{SECTIONS.map((tab) => {
-					const isActive = activeSection === tab.id;
-					const Icon = tab.icon;
+				<div className="relative z-10 flex justify-between items-center">
+					{sections.map((tab) => {
+						const isActive = activeSection === tab.id;
+						const Icon = tab.icon;
 
-					return (
-						<button
-							key={tab.id}
-							type="button"
-							onClick={() => scrollToSection(tab.id)}
-							className="group flex flex-col items-center gap-2 w-1/6 outline-none cursor-pointer"
-						>
-							<div
-								className={cn(
-									"w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-									isActive
-										? "bg-blue-500 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.4)] scale-110"
-										: "bg-t-bg-panel border-t-border text-t-text-tertiary group-hover:border-blue-500/50 group-hover:text-blue-400",
-								)}
+						return (
+							<button
+								key={tab.id}
+								type="button"
+								onClick={() => scrollToSection(tab.id)}
+								className="group flex flex-col items-center gap-1 outline-none cursor-pointer flex-1 px-0 sm:px-1 py-0.5"
+								title={tab.label}
 							>
-								<Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-							</div>
-							<span
-								className={cn(
-									"text-[9px] sm:text-[10px] font-bold transition-colors uppercase tracking-wider text-center line-clamp-1",
-									isActive
-										? "text-t-text-primary"
-										: "text-t-text-tertiary group-hover:text-t-text-secondary",
-								)}
-							>
-								{tab.label}
-							</span>
-						</button>
-					);
-				})}
+								<div
+									className={cn(
+										// Styl inspirowany menu bocznym: eleganckie, półprzezroczyste tło z obramowaniem dla aktywnego
+										"w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border transition-all duration-300",
+										isActive
+											? "bg-blue-500/15 border-blue-500/40 text-blue-500 dark:text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)] scale-105"
+											: "bg-t-bg-panel border-t-border text-t-text-tertiary group-hover:border-blue-500/30 group-hover:text-blue-400",
+									)}
+								>
+									<Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+								</div>
+								{/* Gwarantowane ukrycie etykiety na mniejszych ekranach */}
+								<span
+									className={cn(
+										"hidden md:block text-[9px] font-bold transition-colors uppercase tracking-wider text-center line-clamp-1",
+										isActive
+											? "text-t-text-primary font-black"
+											: "text-t-text-tertiary group-hover:text-t-text-secondary",
+									)}
+								>
+									{tab.label}
+								</span>
+							</button>
+						);
+					})}
+				</div>
 			</div>
 		</div>
 	);

@@ -15,6 +15,7 @@ import {
 	TrendingUp,
 } from "lucide-react";
 import { CategoryStatus, PortfolioWithAssets, Transaction } from "@/lib/types";
+import { SectionNavTabs, SectionTab } from "../shared/SectionNavTabs";
 import { useCallback, useMemo, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "../dashboard/AbsoluteDailyPnLChart";
@@ -44,6 +45,16 @@ interface Props {
 	realSnapshots?: SimulatedSnapshot[];
 	oldestRealSnapshotDate?: Date;
 }
+
+// Definiujemy sekcje dedykowane dla tego widoku (Dashboardu)
+const DASHBOARD_SECTIONS: SectionTab[] = [
+	{ id: "section-rebalance", label: "Rebalans", icon: Calculator },
+	{ id: "section-daily-pnl", label: "Wynik", icon: Banknote },
+	{ id: "section-cards", label: "Aktywa", icon: History },
+	{ id: "section-allocation", label: "Alokacja", icon: PieChart },
+	{ id: "section-growth", label: "Wzrost", icon: ChartArea },
+	{ id: "section-ledger", label: "Rejestr", icon: ListOrdered },
+];
 
 const DashboardAnalytics = ({
 	portfolio,
@@ -161,212 +172,222 @@ const DashboardAnalytics = ({
 
 	return (
 		<div className="flex flex-col">
+			<SectionNavTabs sections={DASHBOARD_SECTIONS} />{" "}
 			{/* 1. SEKCJA: REBALANSOWANIE */}
-			<SectionLayout
-				title="Przewodnik rebalansowania"
-				titleIcon={Calculator}
-				subtitle="Zarządzanie strukturą i wagami"
-				description="Eksperymentuj z wagami i planuj przyszłe operacje. Wpisz planowaną kwotę wpłaty (lub wypłaty ze znakiem minus), a system obliczy ile kapitału należy przelać na poszczególne kategorie, aby utrzymać idealny balans. Nowy układ możesz natychmiast zapisać jako stały cel portfela."
-				action={
-					<SafeActionButton
-						label="Edytuj Cele"
-						icon={Pencil}
-						variant="outline"
-						isDemo={isDemo}
-						className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
-						href={`/portfolios/edit/${portfolio.id}`}
-					/>
-				}
-			>
-				<StrategyHealthTable
-					data={portfolioStatus}
-					portfolioId={portfolio.id}
-				/>
-			</SectionLayout>
-			{/* 2. NOWA SEKCJA: NOMINALNY WYNIK DZIENNY */}
-			<SectionLayout
-				title="Nominalny Wynik Dzienny"
-				titleIcon={Banknote}
-				subtitle="Faktyczna kwota wypracowana na rynku"
-				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują wpłaty i wypłaty z tego dnia."
-			>
-				<div className="mt-6 flex flex-col gap-3">
-					{/* Pasek filtrów */}
-					<InlineChartFilters
-						portfolios={[portfolio]}
-						oldestRealSnapshotDate={oldestRealSnapshotDate}
-						showModeToggle={false}
-					/>
-
-					{/* KONTENER Z WYKRESEM I SPINNEREM */}
-					<div className="relative w-full h-[400px] sm:h-[520px]">
-						{/* NAKŁADKA ŁADUJĄCA */}
-						{isPending && (
-							<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-2xl transition-all duration-300 flex items-center justify-center">
-								<div className="flex flex-col items-center gap-3 bg-slate-900/90 border border-slate-700/50 p-4 rounded-2xl shadow-2xl">
-									<Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-									<span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-										Przeliczanie...
-									</span>
-								</div>
-							</div>
-						)}
-
-						<AbsoluteDailyPnLChart
-							key={chartMode}
-							data={absoluteChartData}
-							tabLayout={false}
+			<div id="section-rebalance" className="scroll-mt-20">
+				<SectionLayout
+					title="Przewodnik rebalansowania"
+					titleIcon={Calculator}
+					subtitle="Zarządzanie strukturą i wagami"
+					description="Eksperymentuj z wagami i planuj przyszłe operacje. Wpisz planowaną kwotę wpłaty (lub wypłaty ze znakiem minus), a system obliczy ile kapitału należy przelać na poszczególne kategorie, aby utrzymać idealny balans. Nowy układ możesz natychmiast zapisać jako stały cel portfela."
+					action={
+						<SafeActionButton
+							label="Edytuj Cele"
+							icon={Pencil}
+							variant="outline"
+							isDemo={isDemo}
+							className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+							href={`/portfolios/edit/${portfolio.id}`}
 						/>
-					</div>
-				</div>
-			</SectionLayout>
-			{/* 2. SEKCJA: KARTY AKTYWÓW */}
-
-			<SectionLayout
-				title="Karty Aktywów"
-				titleIcon={History}
-				subtitle="Twoje pozycje"
-				description="Błyskawiczny podgląd na aktualny stan posiadania, posortowany według ostatniej aktywności na rynku."
-				subtitleIcon={ListOrdered}
-				action={
-					<SafeActionButton
-						label="Dodaj Aktywo"
-						icon={Plus}
-						isDemo={isDemo}
-						variant="outline"
-						className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
-						href={`/dashboard/${portfolio.id}/add-asset`}
+					}
+				>
+					<StrategyHealthTable
+						data={portfolioStatus}
+						portfolioId={portfolio.id}
 					/>
-				}
-			>
-				<div className="flex flex-col gap-4 md:gap-8">
-					{/* 🚀 ZMIANA 3: Nasz nowy uniwersalny panel */}
-					<AssetFilterPanel
-						hideClosed={hideClosed}
-						onToggleHideClosed={() => setHideClosed(!hideClosed)}
-						sortBy={sortBy}
-						onSortChange={setSortBy}
-						sortOptions={[
-							{ id: "ACTIVITY", label: "Ostatnia aktywność" },
-							{ id: "PROFIT", label: "Zysk PLN" },
-							{ id: "PROFIT_PCT", label: "Zysk %" },
-							{ id: "CATEGORY", label: "Kategoria" }, // 👈 Zmieniona nazwa
-							{ id: "ALPHA", label: "A-Z" },
-							{ id: "VALUE", label: "Wartość" },
-						]}
-						// 🚀 Przekazujemy dane do drugiego rzędu filtrów
-						filterCategory={filterCategory}
-						onCategoryChange={setFilterCategory}
-						availableCategories={activeCategories}
-					/>
+				</SectionLayout>
+			</div>
+			{/* 2. NOWA SEKCJA: NOMINALNY WYNIK DZIENNY */}
+			<div id="section-daily-pnl" className="scroll-mt-20">
+				<SectionLayout
+					title="Nominalny Wynik Dzienny"
+					titleIcon={Banknote}
+					subtitle="Faktyczna kwota wypracowana na rynku"
+					description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują wpłaty i wypłaty z tego dnia."
+				>
+					<div className="mt-6 flex flex-col gap-3">
+						{/* Pasek filtrów */}
+						<InlineChartFilters
+							portfolios={[portfolio]}
+							oldestRealSnapshotDate={oldestRealSnapshotDate}
+							showModeToggle={false}
+						/>
 
-					<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-						{filteredAndSortedAssets.length === 0 ? (
-							<div className="col-span-full flex flex-col items-center justify-center p-8 border border-white/5 rounded-xl bg-slate-900/30 text-center w-full">
-								<p className="text-sm font-medium text-slate-300">
-									Brak wyników
-								</p>
-								<p className="text-xs text-slate-500 mt-2">
-									Nie znaleziono aktywów spełniających te filtry.
-								</p>
-							</div>
-						) : (
-							visibleAssets.map((asset) => (
-								<RecentActivityCard
-									asset={asset}
-									isHighlighted={asset.id === highlightedId}
-									key={asset.id}
-									isDemo={isDemo}
-									// 🚀 Przekazujemy naszą wyliczoną datę!
-									activityDate={asset.lastActivityDate}
-								/>
-							))
-						)}
-					</div>
-
-					{/* 🚀 ZMIANA 4: Przyciski pokazujące więcej lub zwijające widok */}
-					{(hasMore || canCollapse) && (
-						<div className="flex gap-2 w-full mt-2">
-							{hasMore && (
-								<button
-									onClick={() => setVisibleCount((prev) => prev + 6)}
-									className="flex-1 h-12 rounded-xl bg-theme-soft border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest text-theme-primary transition-all flex items-center justify-center"
-								>
-									Pokaż więcej ({filteredAndSortedAssets.length - visibleCount})
-								</button>
+						{/* KONTENER Z WYKRESEM I SPINNEREM */}
+						<div className="relative w-full h-[400px] sm:h-[520px]">
+							{/* NAKŁADKA ŁADUJĄCA */}
+							{isPending && (
+								<div className="absolute inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px] rounded-2xl transition-all duration-300 flex items-center justify-center">
+									<div className="flex flex-col items-center gap-3 bg-slate-900/90 border border-slate-700/50 p-4 rounded-2xl shadow-2xl">
+										<Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+										<span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+											Przeliczanie...
+										</span>
+									</div>
+								</div>
 							)}
-							{canCollapse && (
-								<button
-									onClick={() => setVisibleCount(6)}
-									className="px-6 h-12 rounded-xl bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border hover:bg-t-hover text-[10px] font-bold uppercase tracking-widest text-t-text-secondary transition-all flex items-center justify-center"
-								>
-									Zwiń widok
-								</button>
+
+							<AbsoluteDailyPnLChart
+								key={chartMode}
+								data={absoluteChartData}
+								tabLayout={false}
+							/>
+						</div>
+					</div>
+				</SectionLayout>
+			</div>
+			{/* 2. SEKCJA: KARTY AKTYWÓW */}
+			<div id="section-cards" className="scroll-mt-20">
+				<SectionLayout
+					title="Karty Aktywów"
+					titleIcon={History}
+					subtitle="Twoje pozycje"
+					description="Błyskawiczny podgląd na aktualny stan posiadania, posortowany według ostatniej aktywności na rynku."
+					subtitleIcon={ListOrdered}
+					action={
+						<SafeActionButton
+							label="Dodaj Aktywo"
+							icon={Plus}
+							isDemo={isDemo}
+							variant="outline"
+							className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+							href={`/dashboard/${portfolio.id}/add-asset`}
+						/>
+					}
+				>
+					<div className="flex flex-col gap-4 md:gap-8">
+						{/* 🚀 ZMIANA 3: Nasz nowy uniwersalny panel */}
+						<AssetFilterPanel
+							hideClosed={hideClosed}
+							onToggleHideClosed={() => setHideClosed(!hideClosed)}
+							sortBy={sortBy}
+							onSortChange={setSortBy}
+							sortOptions={[
+								{ id: "ACTIVITY", label: "Ostatnia aktywność" },
+								{ id: "PROFIT", label: "Zysk PLN" },
+								{ id: "PROFIT_PCT", label: "Zysk %" },
+								{ id: "CATEGORY", label: "Kategoria" }, // 👈 Zmieniona nazwa
+								{ id: "ALPHA", label: "A-Z" },
+								{ id: "VALUE", label: "Wartość" },
+							]}
+							// 🚀 Przekazujemy dane do drugiego rzędu filtrów
+							filterCategory={filterCategory}
+							onCategoryChange={setFilterCategory}
+							availableCategories={activeCategories}
+						/>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+							{filteredAndSortedAssets.length === 0 ? (
+								<div className="col-span-full flex flex-col items-center justify-center p-8 border border-white/5 rounded-xl bg-slate-900/30 text-center w-full">
+									<p className="text-sm font-medium text-slate-300">
+										Brak wyników
+									</p>
+									<p className="text-xs text-slate-500 mt-2">
+										Nie znaleziono aktywów spełniających te filtry.
+									</p>
+								</div>
+							) : (
+								visibleAssets.map((asset) => (
+									<RecentActivityCard
+										asset={asset}
+										isHighlighted={asset.id === highlightedId}
+										key={asset.id}
+										isDemo={isDemo}
+										// 🚀 Przekazujemy naszą wyliczoną datę!
+										activityDate={asset.lastActivityDate}
+									/>
+								))
 							)}
 						</div>
-					)}
-				</div>
-			</SectionLayout>
 
+						{/* 🚀 ZMIANA 4: Przyciski pokazujące więcej lub zwijające widok */}
+						{(hasMore || canCollapse) && (
+							<div className="flex gap-2 w-full mt-2">
+								{hasMore && (
+									<button
+										onClick={() => setVisibleCount((prev) => prev + 6)}
+										className="flex-1 h-12 rounded-xl bg-theme-soft border border-blue-500/20 hover:bg-blue-500/20 text-[10px] font-bold uppercase tracking-widest text-theme-primary transition-all flex items-center justify-center"
+									>
+										Pokaż więcej (
+										{filteredAndSortedAssets.length - visibleCount})
+									</button>
+								)}
+								{canCollapse && (
+									<button
+										onClick={() => setVisibleCount(6)}
+										className="px-6 h-12 rounded-xl bg-black/5 dark:bg-white/5 border border-t-border-subtle hover:border-t-border hover:bg-t-hover text-[10px] font-bold uppercase tracking-widest text-t-text-secondary transition-all flex items-center justify-center"
+									>
+										Zwiń widok
+									</button>
+								)}
+							</div>
+						)}
+					</div>
+				</SectionLayout>
+			</div>
 			{/* 3. SEKCJA: WYKRESY ALOKACJI */}
-			<SectionLayout
-				title="Strategia Alokacji"
-				titleIcon={PieChart}
-				subtitle="Wizualizacja portfela"
-				description="Modelowa alokacja w zestawieniu z rzeczywistym stanem posiadania."
-				subtitleIcon={ChartArea}
-				action={
-					<SafeActionButton
-						label="Edytuj Cele"
-						icon={Pencil}
-						variant="outline"
-						isDemo={isDemo}
-						className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
-						href={`/portfolios/edit/${portfolio.id}`}
-					/>
-				}
-			>
-				<PortfolioCharts data={portfolioStatus} />
-			</SectionLayout>
-
+			<div id="section-allocation" className="scroll-mt-20">
+				<SectionLayout
+					title="Strategia Alokacji"
+					titleIcon={PieChart}
+					subtitle="Wizualizacja portfela"
+					description="Modelowa alokacja w zestawieniu z rzeczywistym stanem posiadania."
+					subtitleIcon={ChartArea}
+					action={
+						<SafeActionButton
+							label="Edytuj Cele"
+							icon={Pencil}
+							variant="outline"
+							isDemo={isDemo}
+							className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+							href={`/portfolios/edit/${portfolio.id}`}
+						/>
+					}
+				>
+					<PortfolioCharts data={portfolioStatus} />
+				</SectionLayout>
+			</div>
 			{/* 4. SEKCJA: WYKRES WZROSTU */}
-			<SectionLayout
-				title="Analiza Wzrostu i Depozytów"
-				titleIcon={ChartArea}
-				subtitle="Wydajność kapitału"
-				description="Skumulowany wkład vs bieżąca wycena oraz historia wpłat."
-				subtitleIcon={TrendingUp}
-			>
-				<InteractiveChartSection
-					transactions={transactions}
-					assets={portfolio.assets.filter((a) => a.category !== "CASH")}
-				/>
-			</SectionLayout>
-
-			{/* 5. SEKCJA: TABELA AKTYWÓW */}
-			<SectionLayout
-				title="Szczegółowy Rejestr Aktywów"
-				titleIcon={ListOrdered}
-				subtitle="Lista pozycji z portfela"
-				description="Zestawienie średniej ceny zakupu, liczby jednostek i wyniku P&L."
-				subtitleIcon={TableProperties}
-				action={
-					<SafeActionButton
-						label="Nowe Aktywo"
-						icon={Plus}
-						isDemo={isDemo}
-						variant="outline"
-						className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
-						href={`/dashboard/${portfolio.id}/add-asset`}
+			<div id="section-growth" className="scroll-mt-20">
+				<SectionLayout
+					title="Analiza Wzrostu i Depozytów"
+					titleIcon={ChartArea}
+					subtitle="Wydajność kapitału"
+					description="Skumulowany wkład vs bieżąca wycena oraz historia wpłat."
+					subtitleIcon={TrendingUp}
+				>
+					<InteractiveChartSection
+						transactions={transactions}
+						assets={portfolio.assets.filter((a) => a.category !== "CASH")}
 					/>
-				}
-			>
-				<AssetLedger
-					portfolio={portfolio}
-					allPortfoliosWithCash={allPortfoliosWithCash}
-					isDemo={isDemo}
-				/>
-			</SectionLayout>
+				</SectionLayout>
+			</div>
+			{/* 5. SEKCJA: TABELA AKTYWÓW */}
+			<div id="section-ledger" className="scroll-mt-20">
+				<SectionLayout
+					title="Szczegółowy Rejestr Aktywów"
+					titleIcon={ListOrdered}
+					subtitle="Lista pozycji z portfela"
+					description="Zestawienie średniej ceny zakupu, liczby jednostek i wyniku P&L."
+					subtitleIcon={TableProperties}
+					action={
+						<SafeActionButton
+							label="Nowe Aktywo"
+							icon={Plus}
+							isDemo={isDemo}
+							variant="outline"
+							className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+							href={`/dashboard/${portfolio.id}/add-asset`}
+						/>
+					}
+				>
+					<AssetLedger
+						portfolio={portfolio}
+						allPortfoliosWithCash={allPortfoliosWithCash}
+						isDemo={isDemo}
+					/>
+				</SectionLayout>
+			</div>
 		</div>
 	);
 };

@@ -18,6 +18,7 @@ import {
 	Target,
 	TrendingUp,
 } from "lucide-react";
+import { SectionNavTabs, SectionTab } from "../shared/SectionNavTabs";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useMemo, useState } from "react";
 
@@ -57,6 +58,12 @@ interface PlannerDashboardClientProps {
 	defaultPortfolioId?: string;
 }
 
+// Definiujemy sekcje dedykowane dla strony Planera
+const PLANNER_SECTIONS: SectionTab[] = [
+	{ id: "section-monthly", label: "Miesiąc", icon: Target },
+	{ id: "section-pending", label: "Oczekujące", icon: PiggyBank },
+	{ id: "section-projection", label: "Projekcja", icon: TrendingUp },
+];
 export function PlannerDashboardClient({
 	portfolios,
 	plans,
@@ -288,101 +295,275 @@ export function PlannerDashboardClient({
 
 	return (
 		<>
-			<SectionLayout
-				title="Zestawienie Miesiąca"
-				titleIcon={Target}
-				subtitle="Monitor bieżących operacji"
-				description="Śledź swój miesięczny postęp wpłat i weryfikuj najnowsze zaksięgowane transakcje."
-				action={
-					<div className="flex flex-col gap-3 md:gap-4 items-end ">
-						<SafeActionButton
-							label="Dodaj Nowy Plan"
-							icon={PlusSquare}
-							variant="outline"
-							isDemo={false}
-							className="w-min border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary justify-center"
-							href={`/dashboard/${projPortfolioId}/add-asset?view=planner&source=planner`}
-						/>
+			{/* 🚀 Dynamiczny pasek nawigacyjny dla strony Planera */}
+			<SectionNavTabs sections={PLANNER_SECTIONS} />
 
-						<div className="flex flex-row items-center gap-2 flex-wrap sm:w-auto justify-start sm:justify-end">
-							{renderInlinePortfolioSelector(
-								monthPortfolioId,
-								setMonthPortfolioId,
-							)}
-							{renderInlineCategorySelector(
-								monthCategoryId,
-								setMonthCategoryId,
-							)}
-						</div>
-					</div>
-				}
-			>
-				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-5 mb-8 shadow-sm">
-					<div className="flex items-center justify-between mb-3">
-						<div className="flex items-center gap-2">
-							<h3 className="text-sm font-black tracking-tight text-t-text-primary">
-								Cel inwestycyjny
-							</h3>
-						</div>
-						<div className="text-right">
-							<span className="text-sm font-black text-t-text-primary">
-								{formatCurrency(convertPLN(displayMonthlyInvested))}{" "}
-								{currencySymbol}
-							</span>
-							<span
-								className="text-[10px] font-bold text-t-text-tertiary ml-1 cursor-help underline decoration-dotted decoration-t-text-tertiary"
-								title="Całkowity cel na ten miesiąc: Suma zaksięgowanych inwestycji + oczekujące plany (bez filtrów)."
-							>
-								/ {formatCurrency(convertPLN(totalMonthlyGoal))}{" "}
-								{currencySymbol}
-							</span>
-						</div>
-					</div>
-					<div className="flex gap-6 xl:gap-12 items-center justify-between">
-						<div className="h-4 flex-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden border border-t-border-subtle relative">
-							<div
-								className="h-full bg-emerald-500 transition-all duration-1000 ease-out relative opacity-70"
-								style={{ width: `${progressPercentage}%` }}
-							>
-								<div className="absolute inset-0 bg-white/20 w-full h-full "></div>
+			{/* SEKCJA 1: Zestawienie Miesiąca */}
+			<div id="section-monthly" className="scroll-mt-20">
+				<SectionLayout
+					title="Zestawienie Miesiąca"
+					titleIcon={Target}
+					subtitle="Monitor bieżących operacji"
+					description="Śledź swój miesięczny postęp wpłat i weryfikuj najnowsze zaksięgowane transakcje."
+					action={
+						<div className="flex flex-col gap-3 md:gap-4 items-end ">
+							<SafeActionButton
+								label="Dodaj Nowy Plan"
+								icon={PlusSquare}
+								variant="outline"
+								isDemo={false}
+								className="w-min border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary justify-center"
+								href={`/dashboard/${projPortfolioId}/add-asset?view=planner&source=planner`}
+							/>
+
+							<div className="flex flex-row items-center gap-2 flex-wrap sm:w-auto justify-start sm:justify-end">
+								{renderInlinePortfolioSelector(
+									monthPortfolioId,
+									setMonthPortfolioId,
+								)}
+								{renderInlineCategorySelector(
+									monthCategoryId,
+									setMonthCategoryId,
+								)}
 							</div>
 						</div>
-						<p className="text-[10px] flex-1 font-bold uppercase tracking-widest  text-right text-t-text-secondary mt-2">
-							Zrealizowano {progressPercentage}% założeń ({listPlans.length}{" "}
-							wpłat w kolejce)
-						</p>
-					</div>
-					{filteredMonthTransactions &&
-						filteredMonthTransactions.length > 0 && (
-							<div className="mt-6 border-t border-t-border-subtle pt-5">
-								<div className="flex items-center justify-between mb-4">
-									<div className="flex items-center gap-2">
-										<CheckSquare className="w-4 h-4 text-emerald-500" />
-										<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
-											Zaksięgowane w tym miesiącu
-										</h4>
+					}
+				>
+					<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-5 mb-8 shadow-sm">
+						<div className="flex items-center justify-between mb-3">
+							<div className="flex items-center gap-2">
+								<h3 className="text-sm font-black tracking-tight text-t-text-primary">
+									Cel inwestycyjny
+								</h3>
+							</div>
+							<div className="text-right">
+								<span className="text-sm font-black text-t-text-primary">
+									{formatCurrency(convertPLN(displayMonthlyInvested))}{" "}
+									{currencySymbol}
+								</span>
+								<span
+									className="text-[10px] font-bold text-t-text-tertiary ml-1 cursor-help underline decoration-dotted decoration-t-text-tertiary"
+									title="Całkowity cel na ten miesiąc: Suma zaksięgowanych inwestycji + oczekujące plany (bez filtrów)."
+								>
+									/ {formatCurrency(convertPLN(totalMonthlyGoal))}{" "}
+									{currencySymbol}
+								</span>
+							</div>
+						</div>
+						<div className="flex gap-6 xl:gap-12 items-center justify-between">
+							<div className="h-4 flex-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden border border-t-border-subtle relative">
+								<div
+									className="h-full bg-emerald-500 transition-all duration-1000 ease-out relative opacity-70"
+									style={{ width: `${progressPercentage}%` }}
+								>
+									<div className="absolute inset-0 bg-white/20 w-full h-full "></div>
+								</div>
+							</div>
+							<p className="text-[10px] flex-1 font-bold uppercase tracking-widest  text-right text-t-text-secondary mt-2">
+								Zrealizowano {progressPercentage}% założeń ({listPlans.length}{" "}
+								wpłat w kolejce)
+							</p>
+						</div>
+						{filteredMonthTransactions &&
+							filteredMonthTransactions.length > 0 && (
+								<div className="mt-6 border-t border-t-border-subtle pt-5">
+									<div className="flex items-center justify-between mb-4">
+										<div className="flex items-center gap-2">
+											<CheckSquare className="w-4 h-4 text-emerald-500" />
+											<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+												Zaksięgowane w tym miesiącu
+											</h4>
+										</div>
+
+										<div className="flex items-center  gap-4">
+											<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500">
+												Suma:{" "}
+												{formatCurrency(
+													convertPLN(
+														filteredMonthTransactions.reduce(
+															(sum, tx) => sum + tx.executedValue,
+															0,
+														),
+													),
+												)}{" "}
+												{currencySymbol}
+											</span>
+											<button
+												onClick={() =>
+													setIsCurrentMonthOpen(!isCurrentMonthOpen)
+												}
+												className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary hover:text-t-text-primary transition-colors flex items-center gap-1"
+											>
+												{isCurrentMonthOpen ? "Zwiń" : "Rozwiń"}
+												{isCurrentMonthOpen ? (
+													<ChevronUp className="w-3 h-3" />
+												) : (
+													<ChevronDown className="w-3 h-3" />
+												)}
+											</button>
+										</div>
 									</div>
 
-									<div className="flex items-center  gap-4">
-										{/* 🚀 ZMIANA: Dynamiczna suma widoczna nawet po zwinięciu */}
-										<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500">
-											Suma:{" "}
-											{formatCurrency(
-												convertPLN(
-													filteredMonthTransactions.reduce(
-														(sum, tx) => sum + tx.executedValue,
-														0,
-													),
-												),
-											)}{" "}
+									{isCurrentMonthOpen && (
+										<div className="animate-in fade-in slide-in-from-top-2 duration-300">
+											<div className="mb-6 space-y-3 p-4 rounded-xl border border-t-border-subtle">
+												<div className="flex justify-between items-center mb-1">
+													<span className="text-[9px] font-black uppercase tracking-widest text-t-text-secondary">
+														Struktura kapitału
+													</span>
+													<span className="text-[9px] font-bold text-t-text-tertiary">
+														100% ={" "}
+														{formatCurrency(convertPLN(displayMonthlyInvested))}{" "}
+														{currencySymbol}
+													</span>
+												</div>
+
+												<div className="h-3 w-full flex rounded-full overflow-hidden border border-t-border shadow-sm">
+													{categoryBreakdown.map((item) => (
+														<div
+															key={item.category}
+															style={{
+																width: `${item.percentage}%`,
+																backgroundColor:
+																	COLORS[
+																		item.category as keyof typeof COLORS
+																	] || "#94a3b8",
+															}}
+															className="h-full transition-all duration-1000 ease-out hover:opacity-80"
+															title={`${CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] || item.category}: ${item.percentage.toFixed(1)}%`}
+														/>
+													))}
+												</div>
+
+												<div className="flex flex-wrap gap-x-4 gap-y-2 pt-1">
+													{categoryBreakdown.map((item) => (
+														<div
+															key={item.category}
+															className="flex items-center gap-1.5"
+														>
+															<span
+																className="w-2 h-2 rounded-full shadow-sm"
+																style={{
+																	backgroundColor:
+																		COLORS[
+																			item.category as keyof typeof COLORS
+																		] || "#94a3b8",
+																}}
+															/>
+															<span className="text-[10px] font-bold text-t-text-primary">
+																{CATEGORY_LABELS[
+																	item.category as keyof typeof CATEGORY_LABELS
+																] || item.category}
+															</span>
+															<span className="text-[9px] font-mono text-t-text-tertiary">
+																({item.percentage.toFixed(1)}%)
+															</span>
+														</div>
+													))}
+												</div>
+											</div>
+
+											<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+												{filteredMonthTransactions.map((tx) => (
+													<label
+														key={tx.id}
+														className={cn(
+															"flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all cursor-pointer select-none",
+															selectedTxs.includes(tx.id)
+																? "bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/40 shadow-sm"
+																: "bg-black/5 dark:bg-white/5 border-t-border-subtle hover:bg-black/10 dark:hover:bg-white/10",
+														)}
+													>
+														<input
+															type="checkbox"
+															checked={selectedTxs.includes(tx.id)}
+															onChange={() => toggleTx(tx.id)}
+															className="w-4 h-4 rounded border-t-border-subtle text-blue-500 focus:ring-blue-500 cursor-pointer accent-blue-500 shrink-0"
+														/>
+
+														<div className="flex flex-col overflow-hidden flex-1">
+															<span className="text-xs font-bold text-t-text-primary truncate pr-2">
+																{tx.assetName}
+															</span>
+															<span className="text-[9px] font-mono text-t-text-tertiary flex items-center gap-1.5 mt-0.5">
+																<span
+																	className="w-2 h-2 rounded-full shrink-0"
+																	style={{
+																		backgroundColor:
+																			COLORS[
+																				tx.category as keyof typeof COLORS
+																			] || "#94a3b8",
+																	}}
+																/>
+																{tx.ticker} •{" "}
+																{new Date(tx.executedAt).toLocaleDateString(
+																	"pl-PL",
+																)}
+															</span>
+														</div>
+														<div className="text-right flex flex-col shrink-0">
+															<span
+																className={cn(
+																	"text-xs font-black",
+																	selectedTxs.includes(tx.id)
+																		? "text-blue-600 dark:text-blue-400"
+																		: "text-emerald-600 dark:text-emerald-400",
+																)}
+															>
+																+{formatCurrency(convertPLN(tx.executedValue))}{" "}
+																{currencySymbol}
+															</span>
+
+															{tx.originalPrice !== null &&
+																tx.originalPrice > 0 &&
+																tx.originalCurrency &&
+																tx.originalCurrency !== currency && (
+																	<span className="text-[9px] font-mono text-t-text-tertiary">
+																		{tx.quantity.toFixed(4)} szt @{" "}
+																		{tx.originalPrice.toFixed(2)}{" "}
+																		{tx.originalCurrency}
+																	</span>
+																)}
+														</div>
+													</label>
+												))}
+											</div>
+
+											{selectedTxs.length > 0 && (
+												<div className="mt-4 flex justify-end animate-in fade-in slide-in-from-top-2 duration-300">
+													<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-4 py-2.5 rounded-xl shadow-sm">
+														<Calculator className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+														<span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+															Suma: {formatCurrency(convertPLN(selectedSum))}{" "}
+															{currencySymbol}
+														</span>
+													</div>
+												</div>
+											)}
+										</div>
+									)}
+								</div>
+							)}
+
+						{filteredNextMonthPlans.length > 0 && (
+							<div className="mt-6 border-t border-t-border-subtle pt-5">
+								<div className="flex items-center justify-between mb-3">
+									<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center gap-2">
+										<Clock className="w-4 h-4 text-amber-500" />
+										Na celowniku: Przyszły miesiąc
+									</h4>
+
+									<div className="flex items-center gap-4">
+										<span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
+											Suma: {formatCurrency(convertPLN(nextMonthTotal))}{" "}
 											{currencySymbol}
 										</span>
 										<button
-											onClick={() => setIsCurrentMonthOpen(!isCurrentMonthOpen)}
+											onClick={() => setIsNextMonthOpen(!isNextMonthOpen)}
 											className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary hover:text-t-text-primary transition-colors flex items-center gap-1"
 										>
-											{isCurrentMonthOpen ? "Zwiń" : "Rozwiń"}
-											{isCurrentMonthOpen ? (
+											{isNextMonthOpen ? "Zwiń" : "Rozwiń"}
+											{isNextMonthOpen ? (
 												<ChevronUp className="w-3 h-3" />
 											) : (
 												<ChevronDown className="w-3 h-3" />
@@ -391,253 +572,97 @@ export function PlannerDashboardClient({
 									</div>
 								</div>
 
-								{isCurrentMonthOpen && (
-									<div className="animate-in fade-in slide-in-from-top-2 duration-300">
-										<div className="mb-6 space-y-3 p-4 rounded-xl border border-t-border-subtle">
-											<div className="flex justify-between items-center mb-1">
-												<span className="text-[9px] font-black uppercase tracking-widest text-t-text-secondary">
-													Struktura kapitału
-												</span>
-												<span className="text-[9px] font-bold text-t-text-tertiary">
-													100% ={" "}
-													{formatCurrency(convertPLN(displayMonthlyInvested))}{" "}
-													{currencySymbol}
-												</span>
-											</div>
-
-											<div className="h-3 w-full flex rounded-full overflow-hidden border border-t-border shadow-sm">
-												{categoryBreakdown.map((item) => (
-													<div
-														key={item.category}
-														style={{
-															width: `${item.percentage}%`,
-															backgroundColor:
-																COLORS[item.category as keyof typeof COLORS] ||
-																"#94a3b8",
-														}}
-														className="h-full transition-all duration-1000 ease-out hover:opacity-80"
-														title={`${CATEGORY_LABELS[item.category as keyof typeof CATEGORY_LABELS] || item.category}: ${item.percentage.toFixed(1)}%`}
-													/>
-												))}
-											</div>
-
-											<div className="flex flex-wrap gap-x-4 gap-y-2 pt-1">
-												{categoryBreakdown.map((item) => (
-													<div
-														key={item.category}
-														className="flex items-center gap-1.5"
-													>
-														<span
-															className="w-2 h-2 rounded-full shadow-sm"
-															style={{
-																backgroundColor:
-																	COLORS[
-																		item.category as keyof typeof COLORS
-																	] || "#94a3b8",
-															}}
-														/>
-														<span className="text-[10px] font-bold text-t-text-primary">
-															{CATEGORY_LABELS[
-																item.category as keyof typeof CATEGORY_LABELS
-															] || item.category}
-														</span>
-														<span className="text-[9px] font-mono text-t-text-tertiary">
-															({item.percentage.toFixed(1)}%)
-														</span>
-													</div>
-												))}
-											</div>
-										</div>
-
-										<div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-											{filteredMonthTransactions.map((tx) => (
-												<label
-													key={tx.id}
-													className={cn(
-														"flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all cursor-pointer select-none",
-														selectedTxs.includes(tx.id)
-															? "bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/40 shadow-sm"
-															: "bg-black/5 dark:bg-white/5 border-t-border-subtle hover:bg-black/10 dark:hover:bg-white/10",
-													)}
-												>
-													<input
-														type="checkbox"
-														checked={selectedTxs.includes(tx.id)}
-														onChange={() => toggleTx(tx.id)}
-														className="w-4 h-4 rounded border-t-border-subtle text-blue-500 focus:ring-blue-500 cursor-pointer accent-blue-500 shrink-0"
-													/>
-
-													<div className="flex flex-col overflow-hidden flex-1">
-														<span className="text-xs font-bold text-t-text-primary truncate pr-2">
-															{tx.assetName}
-														</span>
-														<span className="text-[9px] font-mono text-t-text-tertiary flex items-center gap-1.5 mt-0.5">
-															<span
-																className="w-2 h-2 rounded-full shrink-0"
-																style={{
-																	backgroundColor:
-																		COLORS[
-																			tx.category as keyof typeof COLORS
-																		] || "#94a3b8",
-																}}
-															/>
-															{tx.ticker} •{" "}
-															{new Date(tx.executedAt).toLocaleDateString(
-																"pl-PL",
-															)}
-														</span>
-													</div>
-													<div className="text-right flex flex-col shrink-0">
-														<span
-															className={cn(
-																"text-xs font-black",
-																selectedTxs.includes(tx.id)
-																	? "text-blue-600 dark:text-blue-400"
-																	: "text-emerald-600 dark:text-emerald-400",
-															)}
-														>
-															+{formatCurrency(convertPLN(tx.executedValue))}{" "}
-															{currencySymbol}
-														</span>
-
-														{tx.originalPrice !== null &&
-															tx.originalPrice > 0 &&
-															tx.originalCurrency &&
-															tx.originalCurrency !== currency && (
-																<span className="text-[9px] font-mono text-t-text-tertiary">
-																	{tx.quantity.toFixed(4)} szt @{" "}
-																	{tx.originalPrice.toFixed(2)}{" "}
-																	{tx.originalCurrency}
-																</span>
-															)}
-													</div>
-												</label>
-											))}
-										</div>
-
-										{selectedTxs.length > 0 && (
-											<div className="mt-4 flex justify-end animate-in fade-in slide-in-from-top-2 duration-300">
-												<div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-4 py-2.5 rounded-xl shadow-sm">
-													<Calculator className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-													<span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-														Suma: {formatCurrency(convertPLN(selectedSum))}{" "}
+								{isNextMonthOpen && (
+									<div className="grid grid-cols-1 lg:grid-cols-2 gap-3 opacity-80 animate-in fade-in slide-in-from-top-2 duration-300">
+										{filteredNextMonthPlans.map((plan) => (
+											<div
+												key={plan.id}
+												className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-dashed border-t-border bg-black/5 dark:bg-white/5"
+											>
+												<div
+													className="w-1.5 self-stretch rounded-full shrink-0 opacity-50"
+													style={{
+														backgroundColor:
+															COLORS[
+																plan.targetCategory as keyof typeof COLORS
+															] || "#94a3b8",
+													}}
+												/>
+												<div className="flex flex-col overflow-hidden flex-1">
+													<span className="text-xs font-bold text-t-text-secondary truncate pr-2">
+														{plan.name ||
+															`${CATEGORY_LABELS[plan.targetCategory as keyof typeof CATEGORY_LABELS]}`}
+													</span>
+													<span className="text-[9px] font-mono text-t-text-tertiary">
+														- {plan.ticker || "Brak tickera"} {plan.plannedDate}
+													</span>
+												</div>
+												<div className="text-right shrink-0">
+													<span className="text-xs font-black text-t-text-secondary">
+														{formatCurrency(convertPLN(plan.value))}{" "}
 														{currencySymbol}
 													</span>
 												</div>
 											</div>
-										)}
+										))}
 									</div>
 								)}
 							</div>
 						)}
+					</div>
+				</SectionLayout>
+			</div>
 
-					{/* 🚀 NOWE: Sekcja przyszłego miesiąca - wyprowadzona całkowicie poza poprzednią */}
-					{filteredNextMonthPlans.length > 0 && (
-						<div className="mt-6 border-t border-t-border-subtle pt-5">
-							<div className="flex items-center justify-between mb-3">
-								<h4 className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary flex items-center gap-2">
-									<Clock className="w-4 h-4 text-amber-500" />
-									Na celowniku: Przyszły miesiąc
-								</h4>
-
-								<div className="flex items-center gap-4">
-									<span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500">
-										Suma: {formatCurrency(convertPLN(nextMonthTotal))}{" "}
-										{currencySymbol}
-									</span>
-									<button
-										onClick={() => setIsNextMonthOpen(!isNextMonthOpen)}
-										className="text-[10px] font-bold uppercase tracking-widest text-t-text-secondary hover:text-t-text-primary transition-colors flex items-center gap-1"
-									>
-										{isNextMonthOpen ? "Zwiń" : "Rozwiń"}
-										{isNextMonthOpen ? (
-											<ChevronUp className="w-3 h-3" />
-										) : (
-											<ChevronDown className="w-3 h-3" />
-										)}
-									</button>
-								</div>
+			{/* SEKCJA 2: Oczekujące Realizacje */}
+			<div id="section-pending" className="scroll-mt-20">
+				<SectionLayout
+					title="Oczekujące Realizacje"
+					titleIcon={PiggyBank}
+					subtitle="Lista zaplanowanych zakupów"
+					description="Na jej podstawie możesz monitorować nadchodzące inwestycje i zarządzać nimi w czasie."
+					action={
+						<div className="flex flex-row justify-end items-center gap-3">
+							<div className="flex items-center gap-2 border border-blue-500/20 px-3 py-1.5 rounded-lg">
+								<span className="text-[10px] font-black uppercase tracking-widest text-theme-primary">
+									Zostało: {formatCurrency(convertPLN(listTotalValue))}{" "}
+									{currencySymbol}
+								</span>
 							</div>
-
-							{isNextMonthOpen && (
-								<div className="grid grid-cols-1 lg:grid-cols-2 gap-3 opacity-80 animate-in fade-in slide-in-from-top-2 duration-300">
-									{filteredNextMonthPlans.map((plan) => (
-										<div
-											key={plan.id}
-											className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-dashed border-t-border bg-black/5 dark:bg-white/5"
-										>
-											<div
-												className="w-1.5 self-stretch rounded-full shrink-0 opacity-50"
-												style={{
-													backgroundColor:
-														COLORS[
-															plan.targetCategory as keyof typeof COLORS
-														] || "#94a3b8",
-												}}
-											/>
-											<div className="flex flex-col overflow-hidden flex-1">
-												<span className="text-xs font-bold text-t-text-secondary truncate pr-2">
-													{plan.name ||
-														`${CATEGORY_LABELS[plan.targetCategory as keyof typeof CATEGORY_LABELS]}`}
-												</span>
-												<span className="text-[9px] font-mono text-t-text-tertiary">
-													{plan.ticker || "Brak tickera"} • {plan.plannedDate}
-												</span>
-											</div>
-											<div className="text-right shrink-0">
-												<span className="text-xs font-black text-t-text-secondary">
-													{formatCurrency(convertPLN(plan.value))}{" "}
-													{currencySymbol}
-												</span>
-											</div>
-										</div>
-									))}
-								</div>
+							{renderInlinePortfolioSelector(
+								listPortfolioId,
+								setListPortfolioId,
 							)}
 						</div>
+					}
+				>
+					<PlannerClientList
+						plans={listPlans}
+						cashPortfolioIds={cashPortfolioIds}
+						allPortfoliosWithCash={portfolios}
+						currentMonthTransactions={currentMonthTransactions}
+					/>
+				</SectionLayout>
+			</div>
+
+			{/* SEKCJA 3: Projekcja Celu */}
+			<div id="section-projection" className="scroll-mt-20">
+				<SectionLayout
+					title="Projekcja Celu"
+					titleIcon={TrendingUp}
+					subtitle="Symulacja osiągnięcia celu"
+					description="Wizualizacja pokazuje, jak Twoje obecne oszczędności i plany mogą przyczynić się do osiągnięcia celu finansowego (zakładany zwrot 7% rocznie)."
+					action={renderInlinePortfolioSelector(
+						projPortfolioId,
+						setProjPortfolioId,
 					)}
-				</div>
-			</SectionLayout>
-			<SectionLayout
-				title="Oczekujące Realizacje"
-				titleIcon={PiggyBank}
-				subtitle="Lista zaplanowanych zakupów"
-				description="Na jej podstawie możesz monitorować nadchodzące inwestycje i zarządzać nimi w czasie."
-				action={
-					<div className="flex flex-row justify-end items-center gap-3">
-						<div className="flex items-center gap-2  border border-blue-500/20 px-3 py-1.5 rounded-lg">
-							<span className="text-[10px] font-black uppercase tracking-widest text-theme-primary">
-								Zostało: {formatCurrency(convertPLN(listTotalValue))}{" "}
-								{currencySymbol}
-							</span>
+				>
+					<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-sm">
+						<div className="h-[600px] w-full relative">
+							<GoalProjectionChart portfolios={projPortfolios} />
 						</div>
-						{renderInlinePortfolioSelector(listPortfolioId, setListPortfolioId)}
 					</div>
-				}
-			>
-				<PlannerClientList
-					plans={listPlans}
-					cashPortfolioIds={cashPortfolioIds}
-					allPortfoliosWithCash={portfolios}
-					currentMonthTransactions={currentMonthTransactions}
-				/>
-			</SectionLayout>
-			<SectionLayout
-				title="Projekcja Celu"
-				titleIcon={TrendingUp}
-				subtitle="Symulacja osiągnięcia celu"
-				description="Wizualizacja pokazuje, jak Twoje obecne oszczędności i plany mogą przyczynić się do osiągnięcia celu finansowego (zakładany zwrot 7% rocznie)."
-				action={renderInlinePortfolioSelector(
-					projPortfolioId,
-					setProjPortfolioId,
-				)}
-			>
-				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 md:p-6 shadow-sm">
-					<div className="h-[600px] w-full relative">
-						<GoalProjectionChart portfolios={projPortfolios} />
-					</div>
-				</div>
-			</SectionLayout>
+				</SectionLayout>
+			</div>
 		</>
 	);
 }

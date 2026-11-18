@@ -10,6 +10,7 @@ import {
 	TrendingUp,
 	WalletCards,
 } from "lucide-react";
+import { SectionNavTabs, SectionTab } from "../shared/SectionNavTabs";
 import { useCallback, useMemo, useState } from "react";
 
 import { AssetFilterPanel } from "../shared/AssetFilterPanel";
@@ -44,6 +45,14 @@ interface Props {
 		assetsCount: number;
 	};
 }
+
+const PORTFOLIOS_SECTIONS: SectionTab[] = [
+	{ id: "section-portfolios", label: "Portfele", icon: Briefcase },
+	{ id: "section-race", label: "Wyścig", icon: WalletCards },
+	{ id: "section-structure", label: "Struktura", icon: BarChart2 },
+	{ id: "section-growth", label: "Wzrost", icon: ChartArea },
+	{ id: "section-allocation", label: "Alokacja", icon: Globe },
+];
 
 export default function PortfoliosClientView({
 	portfolios,
@@ -258,159 +267,173 @@ export default function PortfoliosClientView({
 					}
 				/>
 			</div>
+			<div className="flex flex-col">
+				<SectionNavTabs sections={PORTFOLIOS_SECTIONS} />
 
-			{/* SEKCJA 1: Twoje Portfele */}
-			<SectionLayout
-				title="Zarządzanie Portfelami"
-				titleIcon={Briefcase}
-				subtitle="Lista Portfeli"
-				description="Przeglądaj, edytuj i dodawaj nowe portfele do swojego konta."
-				action={
-					<SafeActionButton
-						label="Dodaj Nowy Portfel"
-						icon={Plus}
-						isDemo={isDemo}
-						variant="outline"
-						href="/portfolios/new"
-						className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
-					/>
-				}
-			>
-				<div className="w-full min-w-0">
-					<div
-						className={cn(
-							"flex overflow-x-auto pb-6 justify-start gap-4 snap-x snap-mandatory no-scrollbar -mx-4 px-4",
-							"md:grid md:grid-cols-2 xl:grid-cols-3 md:overflow-visible md:snap-none md:mx-0 md:px-0 md:pb-0 md:gap-6",
-						)}
-					>
-						{portfolios.map((p) => (
-							<div
-								key={p.id}
-								className={cn(
-									"min-w-[290px] sm:min-w-[320px] flex snap-start shrink-0",
-									"md:min-w-0 md:w-full md:shrink",
-								)}
-							>
-								<PortfolioCard
-									portfolio={p}
-									isDemo={isDemo}
-									defaultPortfolioId={defaultPortfolioId}
-								/>
-							</div>
-						))}
-					</div>
-				</div>
-			</SectionLayout>
-			{/* SEKCJA 2: Wyścig Portfeli */}
-
-			<SectionLayout
-				title="Wyścig Portfeli"
-				titleIcon={WalletCards}
-				subtitle="Porównanie Strategii"
-				description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w PLN.`}
-			>
-				{/*  Czysty kontener kolumnowy bez wymuszonej wysokości (h-400) i bez flex-1 */}
-				<div className="mt-6 flex flex-col gap-3">
-					<InlineChartFilters
-						portfolios={portfolios}
-						oldestRealSnapshotDate={oldestRealSnapshotDate}
-					/>
-
-					{/*  Wysokość ląduje DOKŁADNIE tutaj, bezpośrednio nad wykresem. Recharts ma się na czym oprzeć! */}
-					<div className="w-full h-[400px] sm:h-[520px]">
-						<PortfoliosComparisonChart
-							key={`compare-${chartMode}`}
-							data={portfoliosComparisonData}
-							portfolios={portfolios}
-							activeIds={portfolios.map((p) => p.id)}
-							chartMode={chartMode}
-						/>
-					</div>
-				</div>
-			</SectionLayout>
-			{/* SEKCJA 2: Struktura Inwestycji */}
-			<SectionLayout
-				title="Struktura Inwestycji"
-				titleIcon={BarChart2}
-				subtitle="Analiza Wizualna"
-				description="Przegląd alokacji i największych pozycji dla wybranego zakresu."
-			>
-				<AssetFilterPanel
-					selectedPortfolioId={chartsPortfolioId}
-					onPortfolioChange={setChartsPortfolioId}
-					portfolioOptions={portfolioOptions}
-					hideClosed={chartsHideClosed}
-					onToggleHideClosed={() => setChartsHideClosed(!chartsHideClosed)}
-					sortBy={chartsSortBy}
-					onSortChange={setChartsSortBy}
-					sortOptions={[
-						{ id: "VALUE", label: "Wartość" },
-						{ id: "PROFIT", label: "Zysk PLN" },
-						{ id: "PROFIT_PCT", label: "Zysk %" },
-					]}
-					filterCategory={chartsFilterCategory}
-					onCategoryChange={setChartsFilterCategory}
-					availableCategories={chartsActiveCategories}
-				/>
-
-				<div className="mt-6">
-					<GlobalAnalyticsCharts
-						assets={chartsAssets}
-						totalValue={chartsTotalValue}
-						hideClosed={chartsHideClosed}
-						sortBy={chartsSortBy}
-						filterCategory={chartsFilterCategory}
-					/>
-				</div>
-			</SectionLayout>
-
-			{/* SEKCJA 3: Analiza Wzrostu i Depozytów */}
-			<SectionLayout
-				title="Analiza Wzrostu i Depozytów"
-				titleIcon={ChartArea}
-				subtitle="Wydajność kapitału"
-				description="Skumulowany wkład vs bieżąca wycena oraz historia wpłat."
-				subtitleIcon={TrendingUp}
-				action={renderInlinePortfolioSelector(
-					growthPortfolioId,
-					setGrowthPortfolioId,
-				)}
-			>
-				<InteractiveChartSection
-					transactions={growthTransactions}
-					assets={growthAssets.filter((a) => a.category !== "CASH")}
-				/>
-			</SectionLayout>
-
-			{/* SEKCJA 4: Tabela Alokacji */}
-			<SectionLayout
-				title="Tabela Alokacji"
-				titleIcon={Globe}
-				subtitle="Skład i Zdrowie Portfeli"
-				description="Dokładne zestawienie procentowe i kwotowe wybranych aktywów."
-				subtitleIcon={PieChart}
-				action={
-					<div className="flex flex-col-reverse sm:flex-row items-end sm:items-center gap-3">
-						{renderInlinePortfolioSelector(
-							tablePortfolioId,
-							setTablePortfolioId,
-						)}
-						{initialPortfolioId && (
+				{/* SEKCJA 1: Twoje Portfele */}
+				<div id="section-portfolios" className="scroll-mt-20">
+					<SectionLayout
+						title="Zarządzanie Portfelami"
+						titleIcon={Briefcase}
+						subtitle="Lista Portfeli"
+						description="Przeglądaj, edytuj i dodawaj nowe portfele do swojego konta."
+						action={
 							<SafeActionButton
-								label="Dodaj Aktywo"
+								label="Dodaj Nowy Portfel"
 								icon={Plus}
 								isDemo={isDemo}
 								variant="outline"
-								href={`/dashboard/${initialPortfolioId}/add-asset`}
+								href="/portfolios/new"
 								className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
 							/>
+						}
+					>
+						<div className="w-full min-w-0">
+							<div
+								className={cn(
+									"flex overflow-x-auto pb-6 justify-start gap-4 snap-x snap-mandatory no-scrollbar -mx-4 px-4",
+									"md:grid md:grid-cols-2 xl:grid-cols-3 md:overflow-visible md:snap-none md:mx-0 md:px-0 md:pb-0 md:gap-6",
+								)}
+							>
+								{portfolios.map((p) => (
+									<div
+										key={p.id}
+										className={cn(
+											"min-w-[290px] sm:min-w-[320px] flex snap-start shrink-0",
+											"md:min-w-0 md:w-full md:shrink",
+										)}
+									>
+										<PortfolioCard
+											portfolio={p}
+											isDemo={isDemo}
+											defaultPortfolioId={defaultPortfolioId}
+										/>
+									</div>
+								))}
+							</div>
+						</div>
+					</SectionLayout>
+				</div>
+
+				{/* SEKCJA 2: Wyścig Portfeli */}
+				<div id="section-race" className="scroll-mt-20">
+					<SectionLayout
+						title="Wyścig Portfeli"
+						titleIcon={WalletCards}
+						subtitle="Porównanie Strategii"
+						description={`Wykres przedstawiający zestawienie wyników poszczególnych portfeli. Użyj przycisków na górnym pasku, aby przełączyć się między trybem procentowym a wartością w PLN.`}
+					>
+						<div className="mt-6 flex flex-col gap-3">
+							<InlineChartFilters
+								portfolios={portfolios}
+								oldestRealSnapshotDate={oldestRealSnapshotDate}
+							/>
+
+							<div className="w-full h-[400px] sm:h-[520px]">
+								<PortfoliosComparisonChart
+									key={`compare-${chartMode}`}
+									data={portfoliosComparisonData}
+									portfolios={portfolios}
+									activeIds={portfolios.map((p) => p.id)}
+									chartMode={chartMode}
+								/>
+							</div>
+						</div>
+					</SectionLayout>
+				</div>
+
+				{/* SEKCJA 3: Struktura Inwestycji */}
+				<div id="section-structure" className="scroll-mt-20">
+					<SectionLayout
+						title="Struktura Inwestycji"
+						titleIcon={BarChart2}
+						subtitle="Analiza Wizualna"
+						description="Przegląd alokacji i największych pozycji dla wybranego zakresu."
+					>
+						<AssetFilterPanel
+							selectedPortfolioId={chartsPortfolioId}
+							onPortfolioChange={setChartsPortfolioId}
+							portfolioOptions={portfolioOptions}
+							hideClosed={chartsHideClosed}
+							onToggleHideClosed={() => setChartsHideClosed(!chartsHideClosed)}
+							sortBy={chartsSortBy}
+							onSortChange={setChartsSortBy}
+							sortOptions={[
+								{ id: "VALUE", label: "Wartość" },
+								{ id: "PROFIT", label: "Zysk PLN" },
+								{ id: "PROFIT_PCT", label: "Zysk %" },
+							]}
+							filterCategory={chartsFilterCategory}
+							onCategoryChange={setChartsFilterCategory}
+							availableCategories={chartsActiveCategories}
+						/>
+
+						<div className="mt-6">
+							<GlobalAnalyticsCharts
+								assets={chartsAssets}
+								totalValue={chartsTotalValue}
+								hideClosed={chartsHideClosed}
+								sortBy={chartsSortBy}
+								filterCategory={chartsFilterCategory}
+							/>
+						</div>
+					</SectionLayout>
+				</div>
+
+				{/* SEKCJA 4: Analiza Wzrostu i Depozytów */}
+				<div id="section-growth" className="scroll-mt-20">
+					<SectionLayout
+						title="Analiza Wzrostu i Depozytów"
+						titleIcon={ChartArea}
+						subtitle="Wydajność kapitału"
+						description="Skumulowany wkład vs bieżąca wycena oraz historia wpłat."
+						subtitleIcon={TrendingUp}
+						action={renderInlinePortfolioSelector(
+							growthPortfolioId,
+							setGrowthPortfolioId,
 						)}
-					</div>
-				}
-			>
-				{/* 🚀 ZMIANA: Podajemy nowy format danych */}
-				<CategoryTable data={tableCategoryStats} totalValue={tableTotalValue} />
-			</SectionLayout>
+					>
+						<InteractiveChartSection
+							transactions={growthTransactions}
+							assets={growthAssets.filter((a) => a.category !== "CASH")}
+						/>
+					</SectionLayout>
+				</div>
+
+				{/* SEKCJA 5: Tabela Alokacji */}
+				<div id="section-allocation" className="scroll-mt-20">
+					<SectionLayout
+						title="Tabela Alokacji"
+						titleIcon={Globe}
+						subtitle="Skład i Zdrowie Portfeli"
+						description="Dokładne zestawienie procentowe i kwotowe wybranych aktywów."
+						subtitleIcon={PieChart}
+						action={
+							<div className="flex flex-col-reverse sm:flex-row items-end sm:items-center gap-3">
+								{renderInlinePortfolioSelector(
+									tablePortfolioId,
+									setTablePortfolioId,
+								)}
+								{initialPortfolioId && (
+									<SafeActionButton
+										label="Dodaj Aktywo"
+										icon={Plus}
+										isDemo={isDemo}
+										variant="outline"
+										href={`/dashboard/${initialPortfolioId}/add-asset`}
+										className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+									/>
+								)}
+							</div>
+						}
+					>
+						<CategoryTable
+							data={tableCategoryStats}
+							totalValue={tableTotalValue}
+						/>
+					</SectionLayout>
+				</div>
+			</div>
 		</>
 	);
 }

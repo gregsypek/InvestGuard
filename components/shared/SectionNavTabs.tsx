@@ -89,7 +89,7 @@ export function SectionNavTabs({ sections }: SectionNavTabsProps) {
 	}
 
 	return (
-		<div className="sticky top-0 md:top-0 z-30 w-full bg-t-bg-base/95 py-2 transition-all ">
+		<div className="sticky top-0 md:top-0 z-30 w-full bg-t-bg-base py-2 transition-all ">
 			<div className="relative w-full  mx-auto px-2 sm:px-4">
 				{/* Cienka linia łącząca w tle */}
 				<div className="absolute top-[20px] sm:top-[22px] left-[8%] right-[8%] h-[2px] bg-t-border-subtle z-0 hidden xs:block" />

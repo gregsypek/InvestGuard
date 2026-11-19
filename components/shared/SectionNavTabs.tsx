@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	Activity,
 	Banknote,
 	BarChart2,
 	BarChart3,
@@ -39,6 +40,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 	PiggyBank,
 	TrendingUp,
 	BarChart3,
+	Activity,
 };
 
 export interface SectionTab {

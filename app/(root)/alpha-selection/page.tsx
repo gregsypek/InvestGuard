@@ -5,6 +5,7 @@ import {
 	ListOrdered,
 	Rocket,
 } from "lucide-react";
+import { SectionNavTabs, SectionTab } from "@/components/shared/SectionNavTabs";
 
 import { AlphaHeader } from "@/components/AlphaHeader";
 import AlphaLedgerTable from "@/components/AlphaLedgerTable";
@@ -19,6 +20,17 @@ import { db } from "@/lib/db";
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 import { redirect } from "next/navigation";
 
+// Sections mapped to the Alpha view blocks
+const ALPHA_SECTIONS: SectionTab[] = [
+	{ id: "section-alpha-analytics", label: "Analityka", iconName: "ChartArea" },
+	{ id: "section-alpha-daily-pnl", label: "Wynik", iconName: "Banknote" },
+	{
+		id: "section-alpha-stress-test",
+		label: "Stress Test",
+		iconName: "Activity",
+	},
+	{ id: "section-alpha-ledger", label: "Pozycje", iconName: "ListOrdered" },
+];
 export default async function AlphaSelectionPage({
 	searchParams,
 }: {
@@ -99,67 +111,77 @@ export default async function AlphaSelectionPage({
 		<div>
 			<AlphaHeader assets={alphaAssets} globalTotalValue={globalTotalValue} />
 
+			<SectionNavTabs sections={ALPHA_SECTIONS} />
+
 			{/* GŁÓWNA SEKCJA: Analityka i Wykres Interaktywny */}
-			<SectionLayout
-				title="Analityka Wyników Alpha"
-				titleIcon={ChartArea}
-				subtitle="Wydajność strategii"
-				description="Wizualizacja trendu wartości oraz historia wpłat dla kapitału podwyższonego ryzyka (Booster i Krypto)."
-				action={
-					<Button
-						asChild
-						className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
-					>
-						<Link href={targetUrl} className="flex items-center gap-2">
-							<Rocket className="w-4 h-4" />
-							Nowa Teza
-						</Link>
-					</Button>
-				}
-			>
-				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
-					<InteractiveChartSection
+			<div id="section-alpha-analytics" className="scroll-mt-20">
+				<SectionLayout
+					title="Analityka Wyników Alpha"
+					titleIcon={ChartArea}
+					subtitle="Wydajność strategii"
+					description="Wizualizacja trendu wartości oraz historia wpłat dla kapitału podwyższonego ryzyka (Booster i Krypto)."
+					action={
+						<Button
+							asChild
+							className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
+						>
+							<Link href={targetUrl} className="flex items-center gap-2">
+								<Rocket className="w-4 h-4" />
+								Nowa Teza
+							</Link>
+						</Button>
+					}
+				>
+					<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
+						<InteractiveChartSection
+							transactions={alphaTransactions}
+							assets={alphaAssets}
+						/>
+					</div>
+				</SectionLayout>
+			</div>
+
+			{/* NOWA SEKCJA: Nominalny Wynik Dzienny z wyliczaniem hybrydowym */}
+			<div id="section-alpha-daily-pnl" className="scroll-mt-20">
+				<SectionLayout
+					title="Nominalny Wynik Dzienny"
+					titleIcon={Banknote}
+					subtitle="Faktyczna kwota wypracowana na rynku"
+					description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują wpłaty i wypłaty z tego dnia."
+				>
+					<AlphaPnLClient
+						snapshotsData={absoluteChartData}
 						transactions={alphaTransactions}
 						assets={alphaAssets}
 					/>
-				</div>
-			</SectionLayout>
-
-			{/* NOWA SEKCJA: Nominalny Wynik Dzienny z wyliczaniem hybrydowym */}
-			<SectionLayout
-				title="Nominalny Wynik Dzienny"
-				titleIcon={Banknote}
-				subtitle="Faktyczna kwota wypracowana na rynku"
-				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich aktywów danego dnia. Obliczenia ignorują wpłaty i wypłaty z tego dnia."
-			>
-				<AlphaPnLClient
-					snapshotsData={absoluteChartData}
-					transactions={alphaTransactions}
-					assets={alphaAssets}
-				/>
-			</SectionLayout>
+				</SectionLayout>
+			</div>
 
 			{/* NOWA SEKCJA: Symulator Szoków (Stress Test) */}
-			<SectionLayout
-				title="Symulacja Szoków Rynkowych"
-				titleIcon={Activity}
-				subtitle="Stress-test portfela Alpha"
-				description="Sprawdź, jak potencjalne tąpnięcia lub rajdy w wybranych sektorach wpłyną na Twoją ogólną wycenę i ROI."
-			>
-				<AlphaStressTest assets={alphaAssets} />
-			</SectionLayout>
+			<div id="section-alpha-stress-test" className="scroll-mt-20">
+				<SectionLayout
+					title="Symulacja Szoków Rynkowych"
+					titleIcon={Activity}
+					subtitle="Stress-test portfela Alpha"
+					description="Sprawdź, jak potencjalne tąpnięcia lub rajdy w wybranych sektorach wpłyną na Twoją ogólną wycenę i ROI."
+				>
+					<AlphaStressTest assets={alphaAssets} />
+				</SectionLayout>
+			</div>
 
 			{/* SEKCJA: Tabela Ledger */}
-			<SectionLayout
-				title="Szczegółowe Pozycje Alpha"
-				titleIcon={ListOrdered}
-				subtitle="Twoje aktywa Booster i Krypto"
-				description="Lista wszystkich aktywów o podwyższonym ryzyku wraz z kluczowymi informacjami, zyskami i możliwością szybkiej edycji pozycji."
-			>
-				<div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-t-border bg-t-bg-panel shadow-sm p-1 md:p-0">
-					<AlphaLedgerTable activeBoosterAssets={alphaAssets} />
-				</div>
-			</SectionLayout>
+			<div id="section-alpha-ledger" className="scroll-mt-20">
+				<SectionLayout
+					title="Szczegółowe Pozycje Alpha"
+					titleIcon={ListOrdered}
+					subtitle="Twoje aktywa Booster i Krypto"
+					description="Lista wszystkich aktywów o podwyższonym ryzyku wraz z kluczowymi informacjami, zyskami i możliwością szybkiej edycji pozycji."
+				>
+					<div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-t-border bg-t-bg-panel shadow-sm p-1 md:p-0">
+						<AlphaLedgerTable activeBoosterAssets={alphaAssets} />
+					</div>
+				</SectionLayout>
+			</div>
 		</div>
 	);
 }

@@ -1,14 +1,51 @@
 "use client";
 
-import { Eye, EyeOff, LucideIcon } from "lucide-react";
+import {
+	Banknote,
+	BarChart2,
+	BarChart3,
+	Briefcase,
+	Calculator,
+	ChartArea,
+	Eye,
+	EyeOff,
+	Globe,
+	History,
+	ListOrdered,
+	LucideIcon,
+	PieChart,
+	PiggyBank,
+	Target,
+	TrendingUp,
+	WalletCards,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
+// Słownik ikon dostępnych dla zakładek
+const ICON_MAP: Record<string, LucideIcon> = {
+	Calculator,
+	Banknote,
+	History,
+	PieChart,
+	ChartArea,
+	ListOrdered,
+	Briefcase,
+	WalletCards,
+	BarChart2,
+	Globe,
+	Target,
+	PiggyBank,
+	TrendingUp,
+	BarChart3,
+};
+
 export interface SectionTab {
 	id: string;
 	label: string;
-	icon: LucideIcon;
+	iconName?: keyof typeof ICON_MAP;
+	icon?: LucideIcon; // Zachowujemy kompatybilność wsteczną
 }
 
 interface SectionNavTabsProps {
@@ -19,8 +56,6 @@ export function SectionNavTabs({ sections }: SectionNavTabsProps) {
 	const [activeSection, setActiveSection] = useState<string>(
 		sections[0]?.id || "",
 	);
-
-	// Stan ukrycia navtaba z zapamiętaniem w localStorage
 	const [isVisible, setIsVisible] = useState<boolean>(true);
 
 	useEffect(() => {
@@ -97,7 +132,8 @@ export function SectionNavTabs({ sections }: SectionNavTabsProps) {
 				<div className="relative z-10 flex justify-between items-center">
 					{sections.map((tab) => {
 						const isActive = activeSection === tab.id;
-						const Icon = tab.icon;
+						// Rozwiązujemy ikonę po nazwie lub przekazanym komponencie
+						const Icon = tab.iconName ? ICON_MAP[tab.iconName] : tab.icon;
 
 						return (
 							<button
@@ -115,7 +151,7 @@ export function SectionNavTabs({ sections }: SectionNavTabsProps) {
 											: "bg-t-bg-panel border-t-border text-t-text-tertiary group-hover:border-theme-primary/40 group-hover:text-theme-primary",
 									)}
 								>
-									<Icon className="h-4 w-4" />
+									{Icon && <Icon className="h-4 w-4" />}
 								</div>
 								<span
 									className={cn(
@@ -131,12 +167,10 @@ export function SectionNavTabs({ sections }: SectionNavTabsProps) {
 						);
 					})}
 
-					{/* Dyskretny przycisk ukrywania po prawej stronie */}
-
 					<button
 						type="button"
 						onClick={toggleVisibility}
-						className="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2 p-1.5 text-t-text-tertiary hover:text-t-text-primary  border border-t-border rounded-full shadow-sm transition-colors cursor-pointer"
+						className="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2 p-1.5 text-t-text-tertiary hover:text-t-text-primary bg-t-bg-panel border border-t-border rounded-full shadow-sm transition-colors cursor-pointer"
 						title="Ukryj pasek nawigacji"
 					>
 						<EyeOff className="w-3.5 h-3.5" />

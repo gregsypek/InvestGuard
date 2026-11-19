@@ -6,6 +6,7 @@ import {
 	Plus,
 	ShieldCheck,
 } from "lucide-react";
+import { SectionNavTabs, SectionTab } from "@/components/shared/SectionNavTabs";
 import { notFound, redirect } from "next/navigation";
 
 import AssetCard from "@/components/ui/assets/RecentActivityCard";
@@ -28,6 +29,14 @@ interface Props {
 	searchParams: Promise<{ portfolioId?: string }>;
 }
 
+// Sections mapped to the bonds view blocks
+const BONDS_SECTIONS: SectionTab[] = [
+	{ id: "section-bond-history", label: "Historia", iconName: "History" },
+	{ id: "section-bond-analytics", label: "Analityka", iconName: "ChartArea" },
+	{ id: "section-bond-daily-pnl", label: "Wynik", iconName: "Banknote" },
+	{ id: "section-bond-inflation", label: "Inflacja", iconName: "ShieldCheck" },
+	{ id: "section-bond-ledger", label: "Portfel", iconName: "Landmark" },
+];
 export default async function BondReportsPage({ params, searchParams }: Props) {
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
@@ -109,142 +118,152 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 				totalBonds={totalBondsQuantity}
 				stats={stats}
 				portfolioName={portfolioName}
-				// Przekazujemy wszystkie obligacje, by Header mógł je przefiltrować
 				bonds={bonds}
 			/>
-			<SectionLayout
-				title="Historia Aktywności"
-				titleIcon={History}
-				subtitle="Ostatnio dodane serie"
-				description="Lista ostatnio zakupionych transz obligacji z możliwością szybkiego podglądu."
-				// Przyciski w nowym standardzie (outline pasujący do design systemu)
-				action={
-					<Button
-						asChild
-						className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
-					>
-						<Link
-							href={`/dashboard/${id}/add-asset?cat=BONDS&source=bonds`}
-							className="flex items-center gap-2"
+
+			<SectionNavTabs sections={BONDS_SECTIONS} />
+
+			<div id="section-bond-history" className="scroll-mt-20">
+				<SectionLayout
+					title="Historia Aktywności"
+					titleIcon={History}
+					subtitle="Ostatnio dodane serie"
+					description="Lista ostatnio zakupionych transz obligacji z możliwością szybkiego podglądu."
+					action={
+						<Button
+							asChild
+							className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
 						>
-							<Plus className="w-4 h-4" />
-							Dodaj Serię
-						</Link>
-					</Button>
-				}
-			>
-				<div className="flex flex-wrap gap-4">
-					{recentBonds.length === 0 ? (
-						<div className="flex flex-col items-center justify-center p-8 border border-t-border-subtle rounded-2xl bg-t-bg-base/30 text-center w-full shadow-sm">
-							<p className="text-sm font-bold text-t-text-primary">
-								Brak aktywności
-							</p>
-							<p className="text-xs text-t-text-tertiary mt-2 max-w-md">
-								Twój portfel obligacji jest obecnie pusty. Kliknij &quot;Dodaj
-								Serię&quot;, aby zarejestrować pierwszą inwestycję.
-							</p>
-						</div>
-					) : (
-						recentBonds.map((bond) => {
-							// ZMIANA: Tworzymy obiekt zgodny z interfejsem Asset "w locie"
-							const assetFromBond: any = {
-								...bond,
-								category: "BONDS",
-								targetPercentage: 55, // Domyślna wartość
-								dailyChange: 0,
-								nominalValue: bond.currentValue ?? null,
-								rationale: null,
-								timeHorizon: null,
-								expectedRoi: null,
-								conviction: null,
-								riskLevel: null,
-								rateType: null,
-							};
+							<Link
+								href={`/dashboard/${id}/add-asset?cat=BONDS&source=bonds`}
+								className="flex items-center gap-2"
+							>
+								<Plus className="w-4 h-4" />
+								Dodaj Serię
+							</Link>
+						</Button>
+					}
+				>
+					<div className="flex flex-wrap gap-4">
+						{recentBonds.length === 0 ? (
+							<div className="flex flex-col items-center justify-center p-8 border border-t-border-subtle rounded-2xl bg-t-bg-base/30 text-center w-full shadow-sm">
+								<p className="text-sm font-bold text-t-text-primary">
+									Brak aktywności
+								</p>
+								<p className="text-xs text-t-text-tertiary mt-2 max-w-md">
+									Twój portfel obligacji jest obecnie pusty. Kliknij &quot;Dodaj
+									Serię&quot;, aby zarejestrować pierwszą inwestycję.
+								</p>
+							</div>
+						) : (
+							recentBonds.map((bond) => {
+								const assetFromBond: any = {
+									...bond,
+									category: "BONDS",
+									targetPercentage: 55,
+									dailyChange: 0,
+									nominalValue: bond.currentValue ?? null,
+									rationale: null,
+									timeHorizon: null,
+									expectedRoi: null,
+									conviction: null,
+									riskLevel: null,
+									rateType: null,
+								};
 
-							return (
-								<AssetCard
-									asset={assetFromBond}
-									isHighlighted={bond.id === highlightedId}
-									key={bond.id}
-								/>
-							);
-						})
-					)}
-				</div>
-			</SectionLayout>
-			<SectionLayout
-				title="Analityka Wyników Obligacji"
-				titleIcon={ChartArea}
-				subtitle="Wydajność portfela"
-				description="Wizualizacja trendu wartości oraz historia wpłat kapitału wyłącznie dla bezpiecznych aktywów."
-			>
-				{/* Pudełko systemowe dla wykresu (Glassmorphism) */}
-				<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
-					<InteractiveChartSection
-						// Przekaż wszystkie transakcje, które pobierasz na tej stronie
-						transactions={portfolio?.transactionHistories || []}
-						// Upewnij się, że filtrujesz aktywa tylko dla obligacji
-						// (jeśli przekazujesz z głównej puli, to wyfiltruj, jeśli masz już tablicę 'bonds', użyj jej)
-						assets={portfolio.assets.filter((a) => a.category === "BONDS")}
-					/>
-				</div>
-			</SectionLayout>
+								return (
+									<AssetCard
+										asset={assetFromBond}
+										isHighlighted={bond.id === highlightedId}
+										key={bond.id}
+									/>
+								);
+							})
+						)}
+					</div>
+				</SectionLayout>
+			</div>
 
-			<SectionLayout
-				title="Nominalny Wynik Dzienny"
-				titleIcon={Banknote}
-				subtitle="Faktyczna kwota wypracowana na odsetkach"
-				description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich obligacji danego dnia."
-			>
-				<BondPnLClient
-					snapshotsData={absoluteChartData} // Pamiętaj, by pobrać zrzuty z DB tak samo jak na stronie Alpha
-					transactions={portfolio?.transactionHistories || []}
-					assets={portfolio.assets}
-				/>
-			</SectionLayout>
-
-			<SectionLayout
-				title="Tarcza Antyinflacyjna"
-				titleIcon={ShieldCheck}
-				subtitle="Ochrona siły nabywczej"
-				description="Porównanie uśrednionego oprocentowania Twojego portfela obligacji z oficjalnymi odczytami inflacji GUS. Sprawdź, czy generujesz realny zysk."
-			>
-				<InflationShieldClient inflationData={inflationHistory} bonds={bonds} />
-			</SectionLayout>
-
-			{/* GŁÓWNA SEKCJA (Z tabelą i przyciskiem) */}
-			<SectionLayout
-				title="Portfel Obligacji"
-				titleIcon={Landmark}
-				subtitle="Analiza bezpiecznych aktywów"
-				description="Tabela przedstawia wszystkie obligacje skarbowe z Twojego portfela, posegregowane rodzajami i aktualizowane z uwzględnieniem narosłych odsetek."
-				action={
-					<Button
-						asChild
-						className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
-					>
-						<Link
-							href={`/dashboard/${id}/add-asset?cat=BONDS&source=bonds`}
-							className="flex items-center gap-2"
-						>
-							<Plus className="w-4 h-4" />
-							Dodaj Serię
-						</Link>
-					</Button>
-				}
-			>
-				{isEmpty ? (
-					<PortfolioEmptyState variant="BONDS" portfolioId={id} />
-				) : (
-					<div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-t-border bg-t-bg-panel shadow-sm p-1 md:p-0">
-						<BondLedgerTable
-							initialBonds={bonds}
-							portfolioId={id}
-							allPortfolios={allPortfoliosWithCash}
+			<div id="section-bond-analytics" className="scroll-mt-20">
+				<SectionLayout
+					title="Analityka Wyników Obligacji"
+					titleIcon={ChartArea}
+					subtitle="Wydajność portfela"
+					description="Wizualizacja trendu wartości oraz historia wpłat kapitału wyłącznie dla bezpiecznych aktywów."
+				>
+					<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
+						<InteractiveChartSection
+							transactions={portfolio?.transactionHistories || []}
+							assets={portfolio.assets.filter((a) => a.category === "BONDS")}
 						/>
 					</div>
-				)}
-			</SectionLayout>
+				</SectionLayout>
+			</div>
+
+			<div id="section-bond-daily-pnl" className="scroll-mt-20">
+				<SectionLayout
+					title="Nominalny Wynik Dzienny"
+					titleIcon={Banknote}
+					subtitle="Faktyczna kwota wypracowana na odsetkach"
+					description="Wykres przedstawia dokładną kwotę w PLN, o jaką zmieniła się wartość Twoich obligacji danego dnia."
+				>
+					<BondPnLClient
+						snapshotsData={absoluteChartData}
+						transactions={portfolio?.transactionHistories || []}
+						assets={portfolio.assets}
+					/>
+				</SectionLayout>
+			</div>
+
+			<div id="section-bond-inflation" className="scroll-mt-20">
+				<SectionLayout
+					title="Tarcza Antyinflacyjna"
+					titleIcon={ShieldCheck}
+					subtitle="Ochrona siły nabywczej"
+					description="Porównanie uśrednionego oprocentowania Twojego portfela obligacji z oficjalnymi odczytami inflacji GUS. Sprawdź, czy generujesz realny zysk."
+				>
+					<InflationShieldClient
+						inflationData={inflationHistory}
+						bonds={bonds}
+					/>
+				</SectionLayout>
+			</div>
+
+			{/* GŁÓWNA SEKCJA (Z tabelą i przyciskiem) */}
+			<div id="section-bond-ledger" className="scroll-mt-20">
+				<SectionLayout
+					title="Portfel Obligacji"
+					titleIcon={Landmark}
+					subtitle="Analiza bezpiecznych aktywów"
+					description="Tabela przedstawia wszystkie obligacje skarbowe z Twojego portfela, posegregowane rodzajami i aktualizowane z uwzględnieniem narosłych odsetek."
+					action={
+						<Button
+							asChild
+							className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
+						>
+							<Link
+								href={`/dashboard/${id}/add-asset?cat=BONDS&source=bonds`}
+								className="flex items-center gap-2"
+							>
+								<Plus className="w-4 h-4" />
+								Dodaj Serię
+							</Link>
+						</Button>
+					}
+				>
+					{isEmpty ? (
+						<PortfolioEmptyState variant="BONDS" portfolioId={id} />
+					) : (
+						<div className="w-full overflow-x-auto no-scrollbar rounded-2xl border border-t-border bg-t-bg-panel shadow-sm p-1 md:p-0">
+							<BondLedgerTable
+								initialBonds={bonds}
+								portfolioId={id}
+								allPortfolios={allPortfoliosWithCash}
+							/>
+						</div>
+					)}
+				</SectionLayout>
+			</div>
 		</div>
 	);
 }

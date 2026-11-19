@@ -12,10 +12,12 @@ import {
 	EyeOff,
 	Globe,
 	History,
+	Landmark,
 	ListOrdered,
 	LucideIcon,
 	PieChart,
 	PiggyBank,
+	ShieldCheck,
 	Target,
 	TrendingUp,
 	WalletCards,
@@ -41,6 +43,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
 	TrendingUp,
 	BarChart3,
 	Activity,
+	ShieldCheck,
+	Landmark,
 };
 
 export interface SectionTab {

@@ -1,10 +1,10 @@
-"use server"; // EN: Ensures all functions in this file run only on the server
-// PL: Gwarantuje, że wszystkie funkcje w tym pliku będą uruchamiane tylko na serwerze
+"use server";
+
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import { ParsedXtbTransaction } from "../utils/xtb-parser";
 import { Prisma } from "@prisma/client";
 import { db } from "../db";
-import { revalidatePath } from "next/cache";
 import { syncPortfolioAssets } from "./asset-actions";
 
 export async function saveXtbTransaction(
@@ -12,14 +12,11 @@ export async function saveXtbTransaction(
 	portfolioId: string,
 ) {
 	try {
-		// 🚀 FIX: Tworzymy precyzyjny klucz (ID Zlecenia + Typ)
+		// Create deterministic unique key (Order ID + Type)
 		const finalExternalId = `${data.uniqueKey}_${data.type}`;
 
-		// 🚀 FIX: Usunięto agresywny `softDuplicate`. Baza danych sama zablokuje
-		// ponowny import tego samego pliku, ale przepuści transze z tego samego dnia.
-		// EN: Perform a strict creation to enforce underlying unique constraint checks
-		// PL: Wykonujemy twarde utworzenie, aby wymusić sprawdzenie unikalności klucza
-		return await db.transactionHistory.create({
+		// Enforce underlying unique constraint check in database
+		const created = await db.transactionHistory.create({
 			data: {
 				externalId: finalExternalId,
 				type: data.type,
@@ -38,17 +35,17 @@ export async function saveXtbTransaction(
 				comment: data.comment,
 			},
 		});
+
+		revalidateTag("snapshots", "max");
+		return created;
 	} catch (error) {
-		// EN: Check if the thrown exception matches Prisma's unique constraint violation code (P2002)
-		// PL: Sprawdzamy, czy rzucony wyjątek to błąd naruszenia unikalności Prisma (kod P2002)
+		// Check if the thrown exception matches Prisma's unique constraint violation code (P2002)
 		if (
 			error instanceof Prisma.PrismaClientKnownRequestError &&
 			error.code === "P2002"
 		) {
 			throw new Error("Ta dokładna transakcja została już zaimportowana.");
 		}
-		// EN: Forward any other unexpected database exceptions downstream
-		// PL: Przekazujemy wszelkie inne nieoczekiwane błędy bazy danych dalej
 		throw error;
 	}
 }
@@ -62,7 +59,7 @@ export async function addManualDeposit(formData: {
 	try {
 		const { portfolioId, amount, date, description } = formData;
 
-		// 1. Tworzymy transakcję typu DEPOSIT
+		// 1. Create DEPOSIT transaction record
 		await db.transactionHistory.create({
 			data: {
 				portfolioId,
@@ -78,10 +75,10 @@ export async function addManualDeposit(formData: {
 			},
 		});
 
-		// 2. Automatycznie przeliczamy aktywa (aby CASH w tabeli się zaktualizował)
+		// 2. Recalculate portfolio assets to update CASH balance
 		await syncPortfolioAssets(portfolioId);
 
-		// 🚀 KROK 3: Aktualizujemy historyczne zrzuty, aby wykres wykrył Cash Flow!
+		// 3. Adjust historical snapshots so charts reflect the retroactive cash flow
 		await backfillSnapshotsForRetroactiveTransaction(
 			portfolioId,
 			date,
@@ -89,6 +86,7 @@ export async function addManualDeposit(formData: {
 			"DEPOSIT",
 		);
 
+		revalidateTag("snapshots", "max");
 		revalidatePath(`/dashboard/${portfolioId}`);
 
 		return { success: true };
@@ -97,9 +95,10 @@ export async function addManualDeposit(formData: {
 		return { success: false, error: "Nie udało się dodać wpłaty" };
 	}
 }
+
 /**
- * EN: Backfills historical PortfolioSnapshots when a transaction is imported retroactively.
- * PL: Koryguje historyczne zrzuty portfela, gdy transakcja z przeszłości zostaje wgrana "wstecz".
+ * Backfills historical PortfolioSnapshots when a transaction is imported retroactively.
+ * Uses atomic updateMany with increment to update all affected rows in a single DB query (0 egress).
  */
 export async function backfillSnapshotsForRetroactiveTransaction(
 	portfolioId: string,
@@ -107,54 +106,43 @@ export async function backfillSnapshotsForRetroactiveTransaction(
 	transactionValuePLN: number,
 	transactionType: "BUY" | "SELL" | "DEPOSIT" | "INTEREST" | "UPDATE",
 ) {
-	// Interesują nas tylko te transakcje, które wpływają na całkowity wkład kapitałowy w portfelu.
-	// W Twojej architekturze wpłaty/wypłaty (DEPOSIT, SELL na zewnątrz) bezpośrednio zmieniają całkowity zainwestowany kapitał.
-
 	let cashFlowDelta = 0;
 	if (transactionType === "DEPOSIT")
 		cashFlowDelta = Math.abs(transactionValuePLN);
 	if (transactionType === "SELL")
-		cashFlowDelta = -Math.abs(transactionValuePLN); // Wypłata zdejmuje kapitał
+		cashFlowDelta = -Math.abs(transactionValuePLN);
 
-	// Zakupy (BUY) za gotówkę Wewnątrz portfela nie zmieniają całkowitego zainwestowanego kapitału (tylko przesuwają między Asset CASH a Asset Akcji)
+	// Internal BUY operations shift CASH to Asset without altering total invested capital
 	if (cashFlowDelta === 0) return { success: true, skipped: true };
 
-	// 1. Znajdź wszystkie historyczne zrzuty, które wydarzyły się PO dacie transakcji
-	// (i wymagają teraz "podniesienia" lub "obniżenia" o ten kapitał)
-	const snapshotsToFix = await db.portfolioSnapshot.findMany({
+	const startOfTransactionDay = new Date(
+		new Date(transactionDate).setUTCHours(0, 0, 0, 0),
+	);
+
+	// Single atomic SQL UPDATE across all subsequent snapshots instead of N+1 fetch-and-update loop
+	const result = await db.portfolioSnapshot.updateMany({
 		where: {
-			portfolioId: portfolioId,
+			portfolioId,
 			date: {
-				// Ustawiamy na sam początek dnia transakcji (bo zrzut mógł być wieczorem, a transakcja rano)
-				gte: new Date(new Date(transactionDate).setUTCHours(0, 0, 0, 0)),
+				gte: startOfTransactionDay,
 			},
+		},
+		data: {
+			investedValue: { increment: cashFlowDelta },
+			totalValue: { increment: cashFlowDelta },
 		},
 	});
 
-	if (snapshotsToFix.length === 0) return { success: true, fixedCount: 0 };
+	if (result.count > 0) {
+		revalidateTag("snapshots", "max");
+	}
 
-	// 2. Hurtowa aktualizacja zrzutów - podbijamy wartość zainwestowaną
-	// Transaction API w Prisma zapewni bezpieczeństwo bazy
-	await db.$transaction(
-		snapshotsToFix.map((snap) =>
-			db.portfolioSnapshot.update({
-				where: { id: snap.id },
-				data: {
-					investedValue: snap.investedValue + cashFlowDelta,
-					// Opcjonalnie podbijamy totalValue, by nie generować fałszywych strat,
-					// ale zrzut zapisywał tylko historyczną wycenę aktywów. Jeśli wpłacono czystą gotówkę wstecz:
-					totalValue: snap.totalValue + cashFlowDelta,
-				},
-			}),
-		),
-	);
-
-	return { success: true, fixedCount: snapshotsToFix.length };
+	return { success: true, fixedCount: result.count };
 }
 
 /**
- * EN: Rolls back historical PortfolioSnapshots when a transaction is DELETED retroactively.
- * PL: Cofa wartości w zrzutach portfela, gdy wymazujemy historyczną transakcję.
+ * Rolls back historical PortfolioSnapshots when a transaction is deleted retroactively.
+ * Uses atomic updateMany with increment/decrement in a single DB query.
  */
 export async function rollbackSnapshotsForDeletedTransaction(
 	portfolioId: string,
@@ -164,40 +152,33 @@ export async function rollbackSnapshotsForDeletedTransaction(
 ) {
 	let cashFlowDelta = 0;
 
-	// 🚀 UWAGA: Tu logika jest ODWROTNA niż przy dodawaniu!
-	// Jeśli usuwamy wpłatę (DEPOSIT), musimy ODJĄĆ ten kapitał ze zrzutów.
+	// Reverse delta direction compared to backfill
 	if (transactionType === "DEPOSIT")
 		cashFlowDelta = -Math.abs(transactionValuePLN);
-
-	// Jeśli usuwamy wypłatę (SELL, która uszczupliła portfel), musimy ZWRÓCIĆ ten kapitał do zrzutów.
 	if (transactionType === "SELL") cashFlowDelta = Math.abs(transactionValuePLN);
 
-	// Zakupy wewnątrz portfela nie zmieniają całkowitego wkładu
 	if (cashFlowDelta === 0) return { success: true, skipped: true };
 
-	const snapshotsToFix = await db.portfolioSnapshot.findMany({
+	const startOfTransactionDay = new Date(
+		new Date(transactionDate).setUTCHours(0, 0, 0, 0),
+	);
+
+	const result = await db.portfolioSnapshot.updateMany({
 		where: {
-			portfolioId: portfolioId,
+			portfolioId,
 			date: {
-				gte: new Date(new Date(transactionDate).setUTCHours(0, 0, 0, 0)),
+				gte: startOfTransactionDay,
 			},
+		},
+		data: {
+			investedValue: { increment: cashFlowDelta },
+			totalValue: { increment: cashFlowDelta },
 		},
 	});
 
-	if (snapshotsToFix.length === 0) return { success: true, fixedCount: 0 };
+	if (result.count > 0) {
+		revalidateTag("snapshots", "max");
+	}
 
-	// Aktualizujemy zrzuty w przód, korygując je o odwróconą różnicę
-	await db.$transaction(
-		snapshotsToFix.map((snap) =>
-			db.portfolioSnapshot.update({
-				where: { id: snap.id },
-				data: {
-					investedValue: snap.investedValue + cashFlowDelta,
-					totalValue: snap.totalValue + cashFlowDelta,
-				},
-			}),
-		),
-	);
-
-	return { success: true, fixedCount: snapshotsToFix.length };
+	return { success: true, fixedCount: result.count };
 }

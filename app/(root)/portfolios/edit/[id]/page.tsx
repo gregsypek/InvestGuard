@@ -14,7 +14,6 @@ interface Props {
 }
 
 export default async function EditPortfolioPage({ params }: Props) {
-	// 1. Zabezpieczenie sesji
 	const session = await auth();
 	if (!session?.user?.id) {
 		redirect("/sign-in");
@@ -22,61 +21,44 @@ export default async function EditPortfolioPage({ params }: Props) {
 
 	const { id } = await params;
 
-	// 2. ZABEZPIECZENIE: Pobieramy portfel TYLKO jeśli należy do tego usera
-	const portfolio = await db.portfolio.findUnique({
-		where: {
-			id: id,
-			userId: session.user.id,
-		},
-	});
-
-	// Jeśli ktoś wpisał losowe ID lub ID cudzego portfela -> 404
-	if (!portfolio) {
-		notFound();
-	}
-
-	// 3. ZABEZPIECZENIE: Pobieramy do statystyk TYLKO portfele tego usera
+	// Single query: fetches all user portfolios with minimal asset fields for header stats,
+	// and extracts the edited portfolio directly from the result
 	const allPortfolios = await db.portfolio.findMany({
 		where: {
 			userId: session.user.id,
 		},
-		include: { assets: true, transactionHistories: true },
+		include: {
+			assets: {
+				select: {
+					id: true,
+					category: true,
+					currentValue: true,
+					investedCapital: true,
+				},
+			},
+		},
 	});
 
-	// 4. Kalkulacja bezpiecznych danych
-	const { totalValue, portfoliosCount, assetsCount } =
-		getGlobalStats(allPortfolios);
+	const portfolio = allPortfolios.find((p) => p.id === id);
+
+	if (!portfolio) {
+		notFound();
+	}
+
+	const { totalValue, portfoliosCount, assetsCount } = getGlobalStats(
+		allPortfolios as any,
+	);
 
 	return (
-		// 🚀 ZMIANA: Animacja wejścia i odstępy zgodne z nowym standardem
 		<div className="space-y-8 animate-in fade-in duration-500 pb-20">
 			<PortfoliosHeader
 				title="Edytuj portfel"
 				totalValue={totalValue}
 				portfoliosCount={portfoliosCount}
 				assetsCount={assetsCount}
-				// customBreadcrumbs={
-				// 	<nav className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic">
-				// 		<Link
-				// 			href="/portfolios"
-				// 			className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
-				// 		>
-				// 			<ChevronLeft className="h-4 w-4" />
-				// 			<span>Portfele</span>
-				// 		</Link>
-				// 		<span className="text-slate-500">/</span>
-				// 		<span className="text-slate-300 lowercase">edycja</span>
-				// 		<span className="text-slate-500">/</span>
-				// 		<span className="text-slate-200 font-medium lowercase">
-				// 			{portfolio.name}
-				// 		</span>
-				// 	</nav>
-				// }
 				customBreadcrumbs={
-					// 🚀 ZMIANA: Responsywne okruszki kierujące powrotem do Dashboardu Portfela
 					<nav className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic">
 						<Link
-							// 🚀 ZMIANA: Zamiast /portfolios, wracamy prosto do podglądu tego portfela
 							href={`/dashboard/${id}`}
 							className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
 						>

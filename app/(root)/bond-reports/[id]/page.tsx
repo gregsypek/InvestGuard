@@ -23,6 +23,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getBondsData } from "@/lib/actions/bond-actions";
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
+import { unstable_cache } from "next/cache";
 
 interface Props {
 	params: Promise<{ id: string }>;
@@ -37,6 +38,60 @@ const BONDS_SECTIONS: SectionTab[] = [
 	{ id: "section-bond-inflation", label: "Inflacja", iconName: "ShieldCheck" },
 	{ id: "section-bond-ledger", label: "Portfel", iconName: "Landmark" },
 ];
+
+// Cached snapshot query selecting only required numeric fields to minimize database egress
+const getCachedBondSnapshots = unstable_cache(
+	async (portfolioId: string) => {
+		const rawSnapshots = await db.portfolioSnapshot.findMany({
+			where: { portfolioId },
+			orderBy: { date: "asc" },
+			select: {
+				date: true,
+				totalValue: true,
+				investedValue: true,
+			},
+		});
+
+		let prevTotal = 0;
+		let prevInvested = 0;
+
+		return rawSnapshots.map((snap, index) => {
+			const currentTotal = Number(snap.totalValue);
+			const currentInvested = Number(snap.investedValue);
+			const netCashFlow = currentInvested - prevInvested;
+			const exactChangePLN = currentTotal - prevTotal - netCashFlow;
+
+			prevTotal = currentTotal;
+			prevInvested = currentInvested;
+
+			return {
+				date: snap.date.toISOString(),
+				globalChangePLN: index === 0 ? 0 : exactChangePLN, // Volatility curve derived from the entire portfolio
+				globalTotalValue: currentTotal,
+			};
+		});
+	},
+	["bonds-portfolio-snapshots"],
+	{
+		revalidate: 300, // Cache for 5 minutes
+		tags: ["snapshots"],
+	},
+);
+
+// Cache monthly GUS inflation readings for 24 hours
+const getCachedInflationHistory = unstable_cache(
+	async () => {
+		return db.inflationRate.findMany({
+			orderBy: { yearMonth: "asc" },
+		});
+	},
+	["gus-inflation-history"],
+	{
+		revalidate: 86400, // Cache for 24 hours
+		tags: ["inflation"],
+	},
+);
+
 export default async function BondReportsPage({ params, searchParams }: Props) {
 	const session = await auth();
 	if (!session?.user?.id) redirect("/sign-in");
@@ -44,75 +99,55 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 	const { id } = await params;
 
 	// =====================================================================
-	// 1. STRAŻNIK: Bezpieczne pobranie portfela (zastępuje findUnique!)
+	// 1. PORTFOLIO GUARD: Securely fetch portfolio (replaces findUnique)
 	// =====================================================================
 	const { portfolio, errorComponent } = await getGuardedPortfolio({
 		searchParams: Promise.resolve({ portfolioId: id }),
 		userId: session.user.id,
 	});
 
-	// Jeśli ktoś wpisze ID cudzego portfela -> dostanie błąd
+	// Return error component if user attempts to access another user's portfolio ID
 	if (errorComponent || !portfolio) return errorComponent;
 
 	// =====================================================================
-	// 2. Pobieranie danych dla tego widoku
+	// 2. PARALLEL DATA FETCHING FOR BONDS VIEW
 	// =====================================================================
-	const allPortfoliosWithCash = await db.portfolio.findMany({
-		where: {
-			userId: session.user.id,
-			targetCash: { gt: 0 },
-		},
-		select: { id: true, name: true },
-	});
+	const [
+		allPortfoliosWithCash,
+		resolvedParams,
+		data,
+		inflationHistory,
+		absoluteChartData,
+	] = await Promise.all([
+		db.portfolio.findMany({
+			where: {
+				userId: session.user.id,
+				targetCash: { gt: 0 },
+			},
+			select: { id: true, name: true },
+		}),
+		searchParams,
+		getBondsData(id),
+		getCachedInflationHistory(),
+		getCachedBondSnapshots(portfolio.id),
+	]);
 
-	const resolvedParams = await searchParams;
-	const highlightedId = resolvedParams?.portfolioId || null;
-
-	// Zostawiamy funkcję do specyficznych kalkulacji obligacji
-	const data = await getBondsData(id);
 	if (!data) return notFound();
 
-	// POBIERAMY INFLACJĘ (Sortujemy rosnąco, żeby najstarsze były na początku dla wykresu)
-	const inflationHistory = await db.inflationRate.findMany({
-		orderBy: { yearMonth: "asc" },
-	});
-
+	const highlightedId = resolvedParams?.portfolioId || null;
 	const { bonds, stats, portfolioName } = data;
 	const recentBonds = [...bonds].slice(0, 6);
 	const isEmpty = bonds.length === 0;
 
-	// Sumujemy fizyczną ilość wszystkich obligacji
+	// Sum physical quantity across all bond series
 	const totalBondsQuantity = bonds.reduce(
 		(sum, b) => sum + (b.quantity || 0),
 		0,
 	);
-	// =====================================================================
-	// 2. POBRANIE HISTORII Z BAZY (Dla kształtu wykresu Nominalnego PnL)
-	// =====================================================================
-	const rawSnapshots = await db.portfolioSnapshot.findMany({
-		where: { portfolioId: portfolio.id },
-		orderBy: { date: "asc" },
-	});
-
-	let prevTotal = 0;
-	let prevInvested = 0;
-	const absoluteChartData = rawSnapshots.map((snap, index) => {
-		const netCashFlow = Number(snap.investedValue) - prevInvested;
-		const exactChangePLN = Number(snap.totalValue) - prevTotal - netCashFlow;
-
-		prevTotal = Number(snap.totalValue);
-		prevInvested = Number(snap.investedValue);
-
-		return {
-			date: snap.date.toISOString(),
-			globalChangePLN: index === 0 ? 0 : exactChangePLN, // Kształt zmienności z całego portfela
-			globalTotalValue: Number(snap.totalValue),
-		};
-	});
 
 	return (
 		<div>
-			{/* NAGŁÓWEK GŁÓWNY (Teraz interaktywny, ze sprytnym filtrowaniem Tickerów) */}
+			{/* MAIN HEADER (Interactive with smart ticker filtering) */}
 			<BondHeader
 				title="Moje Obligacje"
 				totalBonds={totalBondsQuantity}
@@ -229,7 +264,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 				</SectionLayout>
 			</div>
 
-			{/* GŁÓWNA SEKCJA (Z tabelą i przyciskiem) */}
+			{/* MAIN SECTION (Ledger table and action button) */}
 			<div id="section-bond-ledger" className="scroll-mt-20">
 				<SectionLayout
 					title="Portfel Obligacji"

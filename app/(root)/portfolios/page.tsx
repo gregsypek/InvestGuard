@@ -7,7 +7,6 @@ import { getGlobalStats } from "@/lib/calculations";
 import { getPortfolioSnapshotsHistory } from "@/lib/history-engine";
 import { redirect } from "next/navigation";
 
-// 1. Rozszerzony interfejs Props o parametry dla zakresów dat
 interface Props {
 	searchParams: Promise<{
 		portfolioId?: string;
@@ -24,48 +23,64 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 		redirect("/sign-in");
 	}
 
-	// 2. Oczekujemy na parametry z URL (wymóg dla Promise w Next.js)
 	const resolvedSearchParams = await searchParams;
 
-	const portfolios = await db.portfolio.findMany({
-		where: { userId: session.user.id },
-		include: { assets: true, transactionHistories: true },
-		orderBy: { createdAt: "desc" },
-	});
-
-	// Pobieramy użytkownika, żeby sprawdzić, jaki ma domyślny portfel
-	const user = await db.user.findUnique({
-		where: { id: session.user.id },
-		select: { defaultPortfolioId: true },
-	});
+	// Fetch portfolios (with lightweight transactionHistories projection), user settings, and active portfolio ID in parallel
+	const [portfolios, user, rawPortfolioId] = await Promise.all([
+		db.portfolio.findMany({
+			where: { userId: session.user.id },
+			include: {
+				assets: true,
+				transactionHistories: {
+					orderBy: { executedAt: "desc" },
+					take: 300,
+					select: {
+						id: true,
+						type: true,
+						assetName: true,
+						ticker: true,
+						executedValue: true,
+						category: true,
+						executedAt: true,
+						quantity: true,
+						portfolioId: true,
+					},
+				},
+			},
+			orderBy: { createdAt: "desc" },
+		}),
+		db.user.findUnique({
+			where: { id: session.user.id },
+			select: { defaultPortfolioId: true },
+		}),
+		getActivePortfolioId(searchParams),
+	]);
 
 	if (portfolios.length === 0) {
 		return <PortfolioEmptyState variant="PORTFOLIOS" />;
 	}
 
-	const rawPortfolioId = await getActivePortfolioId(searchParams);
 	const activePortfolio = portfolios.find((p) => p.id === rawPortfolioId);
 	const portfolioId = activePortfolio ? rawPortfolioId : null;
-
 	const { totalValue, portfoliosCount, assetsCount, categoryTotals } =
-		getGlobalStats(portfolios);
+		getGlobalStats(portfolios as any);
 
 	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
 		await getPortfolioSnapshotsHistory(
-			portfolios, // Przekazujemy ten jeden portfel
+			portfolios,
 			resolvedSearchParams,
 			session.user.id,
 		);
+
 	return (
 		<div className="space-y-10">
 			<PortfoliosClientView
-				portfolios={portfolios}
+				portfolios={portfolios as any}
 				portfolioId={portfolioId ?? undefined}
 				categoryTotals={categoryTotals}
 				realSnapshots={realSnapshots}
 				snapshots={simulatedSnapshots}
 				oldestRealSnapshotDate={oldestRealSnapshotDate}
-				// 🚀 DODANE: Przekazujemy statystyki przeliczone na Serwerze
 				globalStats={{
 					totalValue,
 					portfoliosCount,

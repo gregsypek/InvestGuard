@@ -20,7 +20,7 @@ const DashboardGoal = ({ progress, remaining, goal }: Props) => {
 	const isCompleted = progress >= 100;
 
 	return (
-		<section className="w-full  border-b border-t-border-subtle xl:border-none rounded-2xl ">
+		<section className="w-full mb-5  border-b border-t-border-subtle xl:border-none rounded-2xl ">
 			<div className="flex justify-between items-end mb-4">
 				{/* LEWA STRONA: Postęp procentowy w stylu Hero */}
 				<div className="flex flex-col gap-1">

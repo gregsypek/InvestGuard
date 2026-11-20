@@ -1,4 +1,5 @@
 import { AlertCircle, BarChart3, ChartArea, ListOrdered } from "lucide-react";
+import { Category, Prisma } from "@prisma/client";
 import {
 	Pagination,
 	PaginationContent,
@@ -22,7 +23,6 @@ import { getPortfolioSnapshotsHistory } from "@/lib/history-engine";
 import { getTransactionHistory } from "@/lib/actions/history.actions";
 import { redirect } from "next/navigation";
 
-// Define dedicated sections for the Activity page using icon names as strings
 const ACTIVITY_SECTIONS: SectionTab[] = [
 	{ id: "section-stats", label: "Statystyki", iconName: "BarChart3" },
 	{ id: "section-history-chart", label: "Wykres", iconName: "ChartArea" },
@@ -47,12 +47,14 @@ export default async function ActivityPage({
 	const cookieStore = await cookies();
 	const defaultPortfolioId = cookieStore.get("selectedPortfolioId")?.value;
 
-	// Fetch user portfolios with assets and transaction history for KPI calculations and filters
+	// Fetch portfolios with assets and an empty transactionHistories array (0 rows transferred, satisfies PortfolioWithAssets type)
 	const userPortfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
 		include: {
 			assets: true,
-			transactionHistories: true,
+			transactionHistories: {
+				take: 0,
+			},
 		},
 		orderBy: { createdAt: "desc" },
 	});
@@ -72,22 +74,46 @@ export default async function ActivityPage({
 	const hasActiveFilters =
 		search !== "" || category !== "ALL" || portfolioFilter !== "ALL";
 
-	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
-		await getPortfolioSnapshotsHistory(
+	// Build strongly typed Prisma WhereInput for KPI aggregation
+	const kpiWhereClause: Prisma.TransactionHistoryWhereInput = {
+		portfolio: { userId: session.user.id },
+		...(portfolioFilter !== "ALL" ? { portfolioId: portfolioFilter } : {}),
+		...(category !== "ALL" ? { category: category as Category } : {}),
+		...(search
+			? {
+					OR: [
+						{ assetName: { contains: search, mode: "insensitive" } },
+						{ ticker: { contains: search, mode: "insensitive" } },
+					],
+				}
+			: {}),
+	};
+
+	const [snapshotsResult, result, kpiGrouped] = await Promise.all([
+		getPortfolioSnapshotsHistory(
 			userPortfolios,
 			{ range: resolvedParams.range || "1Y" },
 			session.user.id,
-		);
+		),
+		getTransactionHistory(
+			currentPage,
+			10,
+			session.user.id,
+			search,
+			category,
+			sort,
+			portfolioFilter,
+		),
+		db.transactionHistory.groupBy({
+			by: ["type"],
+			where: kpiWhereClause,
+			_count: { _all: true },
+			_sum: { executedValue: true },
+		}),
+	]);
 
-	const result = await getTransactionHistory(
-		currentPage,
-		10,
-		session.user.id,
-		search,
-		category,
-		sort,
-		portfolioFilter,
-	);
+	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
+		snapshotsResult;
 
 	if (!result.success || !result.data) {
 		return (
@@ -106,52 +132,36 @@ export default async function ActivityPage({
 
 	const { data: transactions, meta } = result;
 
-	// Filter all transactions across selected portfolios to compute accurate global KPIs
-	const activePortfolios =
-		portfolioFilter === "ALL"
-			? userPortfolios
-			: userPortfolios.filter((p) => p.id === portfolioFilter);
+	// Compute KPI metrics from the grouped DB result
+	let meaningfulCount = 0;
+	let totalVolumeValue = 0;
+	let buyCount = 0;
+	let sellCount = 0;
+	let totalPassiveIncome = 0;
 
-	const allFilteredTransactions = activePortfolios
-		.flatMap((p) => p.transactionHistories)
-		.filter((t) => {
-			const matchesCategory = category === "ALL" || t.category === category;
-			const matchesSearch =
-				!search ||
-				t.assetName?.toLowerCase().includes(search.toLowerCase()) ||
-				t.ticker?.toLowerCase().includes(search.toLowerCase());
-			return matchesCategory && matchesSearch;
-		});
+	for (const group of kpiGrouped) {
+		const count = group._count?._all ?? 0;
+		const sumVal = Number(group._sum?.executedValue ?? 0);
 
-	// Exclude technical balance adjustments (UPDATE) and zero-value entries
-	const meaningfulTransactions = allFilteredTransactions.filter(
-		(t) => t.type !== "UPDATE" && Math.abs(Number(t.executedValue)) > 0,
-	);
-
-	// Sum of absolute executed values across all meaningful operations
-	const totalVolumeValue = meaningfulTransactions.reduce(
-		(sum, t) => sum + Math.abs(Number(t.executedValue)),
-		0,
-	);
+		if (group.type !== "UPDATE" && Math.abs(sumVal) > 0) {
+			meaningfulCount += count;
+			totalVolumeValue += Math.abs(sumVal);
+		}
+		if (group.type === "BUY" || group.type === "DEPOSIT") {
+			buyCount += count;
+		}
+		if (group.type === "SELL") {
+			sellCount += count;
+		}
+		if (group.type === "INTEREST" && sumVal > 0) {
+			totalPassiveIncome += sumVal;
+		}
+	}
 
 	const avgTransactionValue =
-		meaningfulTransactions.length > 0
-			? totalVolumeValue / meaningfulTransactions.length
-			: 0;
+		meaningfulCount > 0 ? totalVolumeValue / meaningfulCount : 0;
 
-	const buyCount = allFilteredTransactions.filter(
-		(t) => t.type === "BUY" || t.type === "DEPOSIT",
-	).length;
-
-	const sellCount = allFilteredTransactions.filter(
-		(t) => t.type === "SELL",
-	).length;
-
-	const totalPassiveIncome = allFilteredTransactions
-		.filter((t) => t.type === "INTEREST" && Number(t.executedValue) > 0)
-		.reduce((sum, t) => sum + Number(t.executedValue), 0);
-
-	const volumeTooltipText = `Suma wartości bezwzględnych (${meaningfulTransactions.length} operacji z pominięciem korekt UPDATE) dla aktywnych filtrów: kupno, sprzedaż, wpłaty, dywidendy i odsetki w PLN.`;
+	const volumeTooltipText = `Suma wartości bezwzględnych (${meaningfulCount} operacji z pominięciem korekt UPDATE) dla aktywnych filtrów: kupno, sprzedaż, wpłaty, dywidendy i odsetki w PLN.`;
 
 	const createPageUrl = (pageNumber: number) => {
 		const params = new URLSearchParams();
@@ -172,12 +182,10 @@ export default async function ActivityPage({
 				portfolios={userPortfolios}
 			/>
 
-			<div className="mt-10">
-				<SectionNavTabs sections={ACTIVITY_SECTIONS} />
-			</div>
+			<SectionNavTabs sections={ACTIVITY_SECTIONS} />
 
 			{/* KPI summary cards for transaction history */}
-			<div id="section-stats" className="scroll-mt-20 mt-6">
+			<div id="section-stats" className="scroll-mt-20 section-padding">
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 					{/* Card 1: Total Operations Volume */}
 					<div
@@ -194,7 +202,7 @@ export default async function ActivityPage({
 							</span>
 						</span>
 						<span className="text-[10px] text-t-text-secondary mt-1 block">
-							Suma obrotów ({meaningfulTransactions.length} operacji)
+							Suma obrotów ({meaningfulCount} operacji)
 						</span>
 					</div>
 

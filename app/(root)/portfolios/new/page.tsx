@@ -17,17 +17,27 @@ export default async function NewPortfolioPage() {
 		redirect("/sign-in");
 	}
 
-	// 2. Pobranie TYLKO portfeli przypisanych do tego użytkownika
+	// 2. Pobranie TYLKO portfeli przypisanych do tego użytkownika (bez zbędnej historii transakcji)
 	const allPortfolios = await db.portfolio.findMany({
 		where: {
 			userId: session.user.id,
 		},
-		include: { assets: true, transactionHistories: true },
+		include: {
+			assets: {
+				select: {
+					id: true,
+					category: true,
+					currentValue: true,
+					investedCapital: true,
+				},
+			},
+		},
 	});
 
-	// Funkcja getGlobalStats dostaje teraz bezpieczne dane!
-	const { totalValue, portfoliosCount, assetsCount } =
-		getGlobalStats(allPortfolios);
+	// Funkcja getGlobalStats dostaje teraz lekkie dane!
+	const { totalValue, portfoliosCount, assetsCount } = getGlobalStats(
+		allPortfolios as any,
+	);
 
 	return (
 		<div className="space-y-8 animate-in fade-in duration-500 pb-20">

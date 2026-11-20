@@ -19,6 +19,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { getGuardedPortfolio } from "@/components/shared/portfolio-guard";
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 
 // Sections mapped to the Alpha view blocks
 const ALPHA_SECTIONS: SectionTab[] = [
@@ -31,6 +32,46 @@ const ALPHA_SECTIONS: SectionTab[] = [
 	},
 	{ id: "section-alpha-ledger", label: "Pozycje", iconName: "ListOrdered" },
 ];
+
+// Cached snapshot query selecting only required numeric fields to minimize database egress
+const getCachedAlphaSnapshots = unstable_cache(
+	async (portfolioId: string) => {
+		const rawSnapshots = await db.portfolioSnapshot.findMany({
+			where: { portfolioId },
+			orderBy: { date: "asc" },
+			select: {
+				date: true,
+				totalValue: true,
+				investedValue: true,
+			},
+		});
+
+		let prevTotal = 0;
+		let prevInvested = 0;
+
+		return rawSnapshots.map((snap, index) => {
+			const currentTotal = Number(snap.totalValue);
+			const currentInvested = Number(snap.investedValue);
+			const netCashFlow = currentInvested - prevInvested;
+			const exactChangePLN = currentTotal - prevTotal - netCashFlow;
+
+			prevTotal = currentTotal;
+			prevInvested = currentInvested;
+
+			return {
+				date: snap.date.toISOString(),
+				globalChangePLN: index === 0 ? 0 : exactChangePLN, // Volatility curve derived from the entire portfolio
+				globalTotalValue: currentTotal,
+			};
+		});
+	},
+	["alpha-portfolio-snapshots"],
+	{
+		revalidate: 300, // Cache for 5 minutes
+		tags: ["snapshots"],
+	},
+);
+
 export default async function AlphaSelectionPage({
 	searchParams,
 }: {
@@ -40,7 +81,7 @@ export default async function AlphaSelectionPage({
 	if (!session?.user?.id) redirect("/sign-in");
 
 	// =====================================================================
-	// 1. WYWOŁANIE STRAŻNIKA (Pobiera portfel, aktywa i historię)
+	// 1. PORTFOLIO GUARD (Fetches portfolio, assets, and history)
 	// =====================================================================
 	const { portfolio, portfolioId, errorComponent } = await getGuardedPortfolio({
 		searchParams,
@@ -50,31 +91,12 @@ export default async function AlphaSelectionPage({
 	if (errorComponent) return errorComponent;
 
 	// =====================================================================
-	// 2. POBRANIE HISTORII Z BAZY (Dla kształtu wykresu Nominalnego PnL)
+	// 2. FETCH CACHED SNAPSHOT HISTORY (For Nominal PnL chart curve)
 	// =====================================================================
-	const rawSnapshots = await db.portfolioSnapshot.findMany({
-		where: { portfolioId: portfolioId },
-		orderBy: { date: "asc" },
-	});
-
-	let prevTotal = 0;
-	let prevInvested = 0;
-	const absoluteChartData = rawSnapshots.map((snap, index) => {
-		const netCashFlow = Number(snap.investedValue) - prevInvested;
-		const exactChangePLN = Number(snap.totalValue) - prevTotal - netCashFlow;
-
-		prevTotal = Number(snap.totalValue);
-		prevInvested = Number(snap.investedValue);
-
-		return {
-			date: snap.date.toISOString(),
-			globalChangePLN: index === 0 ? 0 : exactChangePLN, // Kształt zmienności z całego portfela
-			globalTotalValue: Number(snap.totalValue),
-		};
-	});
+	const absoluteChartData = await getCachedAlphaSnapshots(portfolioId);
 
 	// =====================================================================
-	// 3. PRZYGOTOWANIE DANYCH (Filtrowanie Akcji Booster i Krypto)
+	// 3. DATA PREPARATION (Filtering Booster and Crypto assets)
 	// =====================================================================
 	const formattedAssets = portfolio.assets.map((asset) => ({
 		...asset,
@@ -93,7 +115,7 @@ export default async function AlphaSelectionPage({
 	const globalTotalValue =
 		formattedAssets.reduce((sum, a) => sum + a.currentValue, 0) || 1;
 
-	// Wyciągamy tylko interesujące nas kategorie dla sekcji Alpha
+	// Extract only categories relevant to the Alpha section
 	const alphaCategories = ["BOOSTER", "CRYPTO"];
 	const alphaAssets = formattedAssets.filter((a) =>
 		alphaCategories.includes(a.category),
@@ -105,7 +127,7 @@ export default async function AlphaSelectionPage({
 	const targetUrl = `/dashboard/${portfolioId}/add-asset?cat=BOOSTER&source=alpha`;
 
 	// =====================================================================
-	// 4. RENDEROWANIE WIDOKU
+	// 4. VIEW RENDERING
 	// =====================================================================
 	return (
 		<div>
@@ -113,7 +135,7 @@ export default async function AlphaSelectionPage({
 
 			<SectionNavTabs sections={ALPHA_SECTIONS} />
 
-			{/* GŁÓWNA SEKCJA: Analityka i Wykres Interaktywny */}
+			{/* MAIN SECTION: Analytics and Interactive Chart */}
 			<div id="section-alpha-analytics" className="scroll-mt-20">
 				<SectionLayout
 					title="Analityka Wyników Alpha"
@@ -141,7 +163,7 @@ export default async function AlphaSelectionPage({
 				</SectionLayout>
 			</div>
 
-			{/* NOWA SEKCJA: Nominalny Wynik Dzienny z wyliczaniem hybrydowym */}
+			{/* SECTION: Nominal Daily PnL with hybrid calculation */}
 			<div id="section-alpha-daily-pnl" className="scroll-mt-20">
 				<SectionLayout
 					title="Nominalny Wynik Dzienny"
@@ -157,7 +179,7 @@ export default async function AlphaSelectionPage({
 				</SectionLayout>
 			</div>
 
-			{/* NOWA SEKCJA: Symulator Szoków (Stress Test) */}
+			{/* SECTION: Market Shock Simulator (Stress Test) */}
 			<div id="section-alpha-stress-test" className="scroll-mt-20">
 				<SectionLayout
 					title="Symulacja Szoków Rynkowych"
@@ -169,7 +191,7 @@ export default async function AlphaSelectionPage({
 				</SectionLayout>
 			</div>
 
-			{/* SEKCJA: Tabela Ledger */}
+			{/* SECTION: Ledger Table */}
 			<div id="section-alpha-ledger" className="scroll-mt-20">
 				<SectionLayout
 					title="Szczegółowe Pozycje Alpha"

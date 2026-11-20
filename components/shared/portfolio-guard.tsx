@@ -1,72 +1,88 @@
+import { Category } from "@prisma/client";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import React from "react";
 import { db } from "@/lib/db";
 import { getActivePortfolioId } from "@/lib/session";
 
-// Definiujemy warianty, jeśli chcemy by strażnik sprawdził też, czy portfel jest pusty
+// Define variants if the guard should also check whether the portfolio is empty
 type EmptyAssetVariant = "PLANNER" | "ACTIVITY" | "BONDS" | "PORTFOLIOS";
 
 interface GuardOptions {
 	searchParams: Promise<{ portfolioId?: string }>;
 	userId: string;
 	emptyAssetVariant?: EmptyAssetVariant;
+	transactionCategories?: Category[];
 }
 
 export async function getGuardedPortfolio({
 	searchParams,
 	userId,
 	emptyAssetVariant,
+	transactionCategories,
 }: GuardOptions) {
-	// 1. ZMIANA: Zmieniamy na 'let', aby móc nadpisać portfolioId automatycznie
+	// Resolve active portfolioId from searchParams or session cookie
 	let portfolioId = await getActivePortfolioId(searchParams);
 
 	// =================================================================
-	// Inteligentne wykrywanie pustego konta i auto-wybór
+	// Smart detection of empty account and auto-selection
 	// =================================================================
 	if (!portfolioId) {
-		// Pobieramy ID portfeli przypisanych do użytkownika
 		const userPortfolios = await db.portfolio.findMany({
-			where: { userId: userId },
+			where: { userId },
 			select: { id: true },
 		});
 
-		// Jeśli ma 0 portfeli -> Wyświetlamy ekran zachęcający do stworzenia pierwszego
+		// If user has 0 portfolios -> prompt to create the first one
 		if (userPortfolios.length === 0) {
 			return { errorComponent: <PortfolioEmptyState variant="PORTFOLIOS" /> };
 		}
 
-		// 🚀 NOWY WARUNEK: Jeśli ma dokładnie JEDEN portfel, wymuszamy jego wybór automatycznie!
+		// If user has exactly ONE portfolio, auto-select it
 		if (userPortfolios.length === 1) {
 			portfolioId = userPortfolios[0].id;
-		}
-		// Jeśli ma więcej portfeli, ale żadnego nie wybrał -> Ekran wyboru
-		else {
+		} else {
 			return { errorComponent: <PortfolioEmptyState variant="NOT_SELECTED" /> };
 		}
 	}
 
-	// 2. Pobieramy portfel wraz z aktywami i historią
+	// =================================================================
+	// Fetch portfolio with assets and lightweight transaction projection
+	// =================================================================
 	const portfolio = await db.portfolio.findUnique({
 		where: {
 			id: portfolioId,
-			userId: userId, // Zabezpieczenie: portfel musi należeć do zalogowanego usera
+			userId, // Security: portfolio must belong to the logged-in user
 		},
 		include: {
 			assets: true,
 			transactionHistories: {
+				...(transactionCategories?.length
+					? { where: { category: { in: transactionCategories } } }
+					: {}),
 				orderBy: {
 					executedAt: "asc",
+				},
+				select: {
+					id: true,
+					type: true,
+					assetName: true,
+					ticker: true,
+					executedValue: true,
+					category: true,
+					executedAt: true,
+					quantity: true,
+					portfolioId: true,
 				},
 			},
 		},
 	});
 
-	// 3. Wariant NOT_FOUND: Mamy ID, ale nie ma go w bazie (ktoś usunął portfel lub wpisał zły link)
+	// Handle NOT_FOUND: ID provided, but missing in DB (deleted or unauthorized)
 	if (!portfolio) {
 		return { errorComponent: <PortfolioEmptyState variant="NOT_FOUND" /> };
 	}
 
-	// 4. (Opcjonalnie) Wariant PUSTY PORTFEL: Jeśli strona wymaga, by portfel miał już jakieś aktywa
+	// Optional EMPTY PORTFOLIO check if the page requires existing assets
 	if (emptyAssetVariant && portfolio.assets.length === 0) {
 		return {
 			errorComponent: (
@@ -78,6 +94,5 @@ export async function getGuardedPortfolio({
 		};
 	}
 
-	// 5. Pełen sukces: zwracamy gotowy portfel i ID!
-	return { portfolio, portfolioId };
+	return { portfolio: portfolio as any, portfolioId };
 }

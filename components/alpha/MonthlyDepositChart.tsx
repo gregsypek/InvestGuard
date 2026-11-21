@@ -52,7 +52,7 @@ export function MonthlyDepositsChart({
 				<BarChart
 					data={data}
 					margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
-					barCategoryGap="10%" // 🚀 FIX: Wymusza elastyczny odstęp między słupkami
+					barCategoryGap="5%" // 🚀 FIX: Wymusza elastyczny odstęp między słupkami
 				>
 					<CartesianGrid
 						strokeDasharray="3 3"

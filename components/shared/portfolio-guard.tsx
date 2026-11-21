@@ -1,4 +1,5 @@
-import { Category } from "@prisma/client";
+import { Category, TransactionHistory } from "@prisma/client";
+
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import React from "react";
 import { db } from "@/lib/db";
@@ -94,5 +95,12 @@ export async function getGuardedPortfolio({
 		};
 	}
 
-	return { portfolio: portfolio as any, portfolioId };
+	return {
+		portfolio: {
+			...portfolio,
+			transactionHistories:
+				portfolio.transactionHistories as unknown as TransactionHistory[],
+		},
+		portfolioId,
+	};
 }

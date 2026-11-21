@@ -14,6 +14,7 @@ import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { saveXtbTransaction } from "./transactions";
 import { syncPortfolioAssets } from "./asset-actions";
+import { unstable_cache } from "next/cache";
 
 export async function getBonds(portfolioId?: string) {
 	const session = await auth();
@@ -775,13 +776,46 @@ export async function updateImportedBondSpecs(
 	}
 }
 
+// Cache bond dictionaries (GUS inflation + config) for 24 hours
+const getCachedBondDictionaries = unstable_cache(
+	async () => {
+		return getBondDictionaries();
+	},
+	["bond-dictionaries"],
+	{
+		revalidate: 86400, // 24 hours
+		tags: ["inflation"],
+	},
+);
+
 export async function syncBondsWithMarket(portfolioId: string) {
 	try {
-		const { inflationMap, configMap } = await getBondDictionaries();
+		// Fetch only minimal fields required for daily bond accrual check
+		const bonds = await db.asset.findMany({
+			where: { portfolioId, category: "BONDS" },
+			select: {
+				id: true,
+				ticker: true,
+				investedCapital: true,
+				interestRate: true,
+				purchaseDate: true,
+				currentValue: true,
+				updatedAt: true,
+			},
+		});
 
-		// 🚀 ZAMEK BEZPIECZEŃSTWA (RAPORT JEST KRÓLEM)
-		// Jeśli baza słowników jest pusta, nasza matematyka będzie zgadywanką.
-		// Przerywamy synchronizację, aby NIE NADPISAĆ dokładnych danych z importu!
+		if (bonds.length === 0) return;
+
+		// Daily guard: bonds accrue interest once per day, skip if already synced today
+		const startOfToday = new Date();
+		startOfToday.setHours(0, 0, 0, 0);
+
+		const allSyncedToday = bonds.every((b) => b.updatedAt >= startOfToday);
+		if (allSyncedToday) return;
+
+		const { inflationMap, configMap } = await getCachedBondDictionaries();
+
+		// Safety lock: abort if dictionaries are empty to avoid overwriting exact import data
 		if (Object.keys(inflationMap).length === 0) {
 			console.warn(
 				"Brak słowników inflacji GUS. Pomijam sztuczne przeliczanie wycen.",
@@ -789,9 +823,8 @@ export async function syncBondsWithMarket(portfolioId: string) {
 			return;
 		}
 
-		const bonds = await db.asset.findMany({
-			where: { portfolioId, category: "BONDS" },
-		});
+		// Batch updates in parallel instead of sequential awaits
+		const updates: Promise<unknown>[] = [];
 
 		for (const bond of bonds) {
 			const cleanTicker = bond.ticker ? bond.ticker.split("_")[0] : "UNKNOWN";
@@ -808,11 +841,17 @@ export async function syncBondsWithMarket(portfolioId: string) {
 			const valueDelta = calculated.value - Number(bond.currentValue);
 
 			if (valueDelta > 0.01 || valueDelta < -0.01) {
-				await db.asset.update({
-					where: { id: bond.id },
-					data: { currentValue: calculated.value },
-				});
+				updates.push(
+					db.asset.update({
+						where: { id: bond.id },
+						data: { currentValue: calculated.value },
+					}),
+				);
 			}
+		}
+
+		if (updates.length > 0) {
+			await Promise.all(updates);
 		}
 	} catch (error) {
 		console.error("Error syncing bonds:", error);

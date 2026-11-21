@@ -1,30 +1,29 @@
 "use server";
 
+import { revalidatePath, revalidateTag } from "next/cache";
+
 import { db } from "../db";
-import { revalidatePath } from "next/cache";
 
 export async function getTransactionHistory(
 	page: number = 1,
 	take: number = 10,
 	userId: string,
-	search: string = "", // <-- Nowy parametr
-	category: string = "ALL", // <-- Nowy parametr
-	sort: string = "date_desc", // <-- Nowy parametr
-	portfolioIdFilter: string = "ALL", //  Nowy parametr
+	search: string = "",
+	category: string = "ALL",
+	sort: string = "date_desc",
+	portfolioIdFilter: string = "ALL",
 ) {
 	try {
 		const skip = (page - 1) * take;
 
-		// 1. Budujemy dynamiczne warunki wyszukiwania (WHERE)
-		// Używamy typu 'any' lub Record<string, any> dla uproszczenia,
-		// ale Prisma to bez problemu przetrawi.
+		// 1. Build dynamic search filters (WHERE) scoped strictly to the logged-in user
 		const whereClause: any = {
 			portfolio: {
-				userId: userId, // <-- Podstawa: tylko transakcje tego usera
+				userId,
 			},
 		};
 
-		// Jeśli wpisano coś w wyszukiwarkę (szukamy po nazwie lub tickerze bez względu na wielkość liter)
+		// Case-insensitive search across assetName and ticker
 		if (search) {
 			whereClause.OR = [
 				{ assetName: { contains: search, mode: "insensitive" } },
@@ -32,17 +31,17 @@ export async function getTransactionHistory(
 			];
 		}
 
-		// Jeśli wybrano konkretną kategorię inną niż "Wszystkie"
+		// Filter by specific asset category
 		if (category && category !== "ALL") {
 			whereClause.category = category;
 		}
 
-		// ZMIANA 2: Filtr konkretnego portfela
+		// Filter by specific portfolio ID
 		if (portfolioIdFilter && portfolioIdFilter !== "ALL") {
 			whereClause.portfolioId = portfolioIdFilter;
 		}
 
-		// 2. Budujemy dynamiczne sortowanie (ORDER BY)
+		// 2. Build dynamic sorting (ORDER BY)
 		let orderByClause: any = { executedAt: "desc" };
 		switch (sort) {
 			case "date_desc":
@@ -59,22 +58,32 @@ export async function getTransactionHistory(
 				break;
 		}
 
-		// 3. Uruchamiamy zapytania równolegle (z nowymi warunkami)
+		// 3. Execute paginated query and total count in parallel with minimal field projection
 		const [transactions, totalCount] = await Promise.all([
-			// A. Pobieranie konkretnych 10 rekordów
 			db.transactionHistory.findMany({
-				where: whereClause, // <-- Wrzucamy nasze filtry
+				where: whereClause,
 				take,
 				skip,
-				orderBy: orderByClause, // <-- Wrzucamy sortowanie
-				include: {
-					portfolio: { select: { name: true } },
+				orderBy: orderByClause,
+				select: {
+					id: true,
+					type: true,
+					assetName: true,
+					ticker: true,
+					quantity: true,
+					executedAt: true,
+					executedValue: true,
+					category: true,
+					comment: true,
+					portfolioId: true,
+					portfolio: {
+						select: { name: true },
+					},
 				},
 			}),
 
-			// B. Zliczanie WSZYSTKICH rekordów pasujących do filtra (niezbędne do paginacji)
 			db.transactionHistory.count({
-				where: whereClause, // <-- Wrzucamy DOKŁADNIE TE SAME filtry!
+				where: whereClause,
 			}),
 		]);
 
@@ -98,6 +107,7 @@ export async function getTransactionHistory(
 export async function deleteHistoryItem(id: string) {
 	try {
 		await db.transactionHistory.delete({ where: { id } });
+		revalidateTag("snapshots", "max");
 		revalidatePath("/activity");
 		return { success: true };
 	} catch {

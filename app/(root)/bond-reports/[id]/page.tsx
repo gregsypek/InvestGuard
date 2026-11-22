@@ -104,6 +104,7 @@ export default async function BondReportsPage({ params, searchParams }: Props) {
 	const { portfolio, errorComponent } = await getGuardedPortfolio({
 		searchParams: Promise.resolve({ portfolioId: id }),
 		userId: session.user.id,
+		transactionCategories: ["BONDS"],
 	});
 
 	// Return error component if user attempts to access another user's portfolio ID

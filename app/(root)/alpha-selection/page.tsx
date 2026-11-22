@@ -86,6 +86,7 @@ export default async function AlphaSelectionPage({
 	const { portfolio, portfolioId, errorComponent } = await getGuardedPortfolio({
 		searchParams,
 		userId: session.user.id,
+		transactionCategories: ["BOOSTER", "CRYPTO"],
 	});
 
 	if (errorComponent) return errorComponent;

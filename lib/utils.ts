@@ -13,6 +13,12 @@ export function getStockLogo(ticker: string | null): string | null {
 
 	const cleanTicker = ticker.split(".")[0].toUpperCase();
 
+	// Reliable inline SVG badge for WIG20 (Google Favicon API fails on gpw.pl)
+	if (cleanTicker === "WIG20") {
+		const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#dc2626"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-weight="800" font-size="18">W20</text></svg>`;
+		return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+	}
+
 	const domainMap: Record<string, string> = {
 		// --- GPW (Polska) ---
 		DNP: "dino.pl",

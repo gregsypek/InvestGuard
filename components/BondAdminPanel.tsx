@@ -1,5 +1,6 @@
 "use client";
 
+import { BondSeriesConfig, InflationRate } from "@prisma/client";
 import {
 	ChevronDown,
 	ChevronRight,
@@ -7,9 +8,11 @@ import {
 	ListPlus,
 	Loader2,
 	Plus,
+	RefreshCw,
 	Search,
 	Trash2,
 	TrendingUp,
+	Wand2,
 } from "lucide-react";
 import {
 	addMultipleBondConfigs,
@@ -21,27 +24,26 @@ import {
 } from "@/lib/actions/admin-bonds";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
-import { InflationRate } from "@prisma/client";
 import { cn } from "@/lib/utils";
+import { syncGusInflation } from "@/lib/actions/sync-gus-inflation";
 import { toast } from "sonner";
 
 export function BondsAdminPanel() {
-	// ZAMIAST: const [isPending, startTransition] = useTransition();
 	const [isPendingInf, startTransitionInf] = useTransition();
 	const [isPendingBond, startTransitionBond] = useTransition();
-	const [inflationRates, setInflationRates] = useState<any[]>([]);
-	const [bondConfigs, setBondConfigs] = useState<any[]>([]);
+	const [isSyncingGus, setIsSyncingGus] = useState(false);
 
-	// --- SEARCH AND VIEW STATES ---
+	const [inflationRates, setInflationRates] = useState<InflationRate[]>([]);
+	const [bondConfigs, setBondConfigs] = useState<BondSeriesConfig[]>([]);
+
+	// Search and accordion states
 	const [infSearch, setInfSearch] = useState("");
 	const [bondSearch, setBondSearch] = useState("");
 	const [openInfYears, setOpenInfYears] = useState<string[]>([]);
 	const [openBondGroups, setOpenBondGroups] = useState<string[]>([]);
-
-	// NEW: Toggle state for Bond grouping mode
 	const [bondGroupMode, setBondGroupMode] = useState<"YEAR" | "TYPE">("YEAR");
 
-	// --- MASS ENTRY STATES ---
+	// Mass entry form states
 	const [newInflations, setNewInflations] = useState([
 		{ id: Date.now(), yearMonth: "", value: "" },
 	]);
@@ -63,9 +65,86 @@ export function BondsAdminPanel() {
 		loadData();
 	}, [loadData]);
 
-	// ==========================================
-	// MASS ENTRY SAVE LOGIC
-	// ==========================================
+	// Fetch last 24 months of YoY CPI from GUS BDL / Stooq
+	const handleSyncGus = async () => {
+		setIsSyncingGus(true);
+		try {
+			const res = await syncGusInflation(24);
+			if (res.success) {
+				toast.success(
+					`Pobrano ${res.count} odczytów (${res.source}). Najnowszy: ${res.latest?.yearMonth} (${res.latest?.value}%).`,
+				);
+				loadData();
+			} else {
+				toast.error(res.error || "Nie udało się pobrać danych z GUS.");
+			}
+		} finally {
+			setIsSyncingGus(false);
+		}
+	};
+
+	// Pre-fill all 8 standard Polish treasury bond series for a given issue month
+	const handleGenerateMonthSeries = () => {
+		const now = new Date();
+		const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+		const inputMonth = window.prompt(
+			"Podaj miesiąc emisji (format RRRR-MM):",
+			defaultMonth,
+		);
+
+		if (!inputMonth || !/^\d{4}-\d{2}$/.test(inputMonth.trim())) {
+			if (inputMonth !== null) {
+				toast.error("Nieprawidłowy format. Użyj RRRR-MM (np. 2026-11).");
+			}
+			return;
+		}
+
+		const [yearStr, monthStr] = inputMonth.trim().split("-");
+		const issueYear = Number(yearStr);
+		const issueMonthIndex = Number(monthStr) - 1;
+
+		const seriesSpecs = [
+			{ prefix: "OTS", months: 3, defaultMargin: "" },
+			{ prefix: "ROR", months: 12, defaultMargin: "0.00" },
+			{ prefix: "DOR", months: 24, defaultMargin: "0.15" },
+			{ prefix: "TOS", months: 36, defaultMargin: "" },
+			{ prefix: "COI", months: 48, defaultMargin: "1.50" },
+			{ prefix: "ROS", months: 72, defaultMargin: "2.00" },
+			{ prefix: "EDO", months: 120, defaultMargin: "2.00" },
+			{ prefix: "ROD", months: 144, defaultMargin: "2.50" },
+		];
+
+		const generatedRows = seriesSpecs.map((spec, idx) => {
+			const matDate = new Date(issueYear, issueMonthIndex + spec.months, 1);
+			const matMonth = String(matDate.getMonth() + 1).padStart(2, "0");
+			const matYear = String(matDate.getFullYear()).slice(-2);
+			const seriesCode = `${spec.prefix}${matMonth}${matYear}`;
+
+			// Reuse margin from the latest existing series of the same type
+			const latestExisting = bondConfigs
+				.filter((c) => c.seriesCode.startsWith(spec.prefix))
+				.sort((a, b) => b.seriesCode.localeCompare(a.seriesCode))[0];
+
+			const margin = latestExisting
+				? latestExisting.margin !== null
+					? String(latestExisting.margin)
+					: ""
+				: spec.defaultMargin;
+
+			return {
+				id: Date.now() + idx,
+				seriesCode,
+				firstYearRate: "",
+				margin,
+			};
+		});
+
+		setNewConfigs(generatedRows);
+		toast.info(
+			`Wygenerowano ${generatedRows.length} serii dla ${inputMonth}. Uzupełnij oprocentowanie 1. roku.`,
+		);
+	};
+
 	const handleSaveBulkInflation = () => {
 		const validData = newInflations
 			.filter((item) => item.yearMonth.length >= 7 && item.value !== "")
@@ -96,7 +175,7 @@ export function BondsAdminPanel() {
 			)
 			.map((item) => ({
 				seriesCode: item.seriesCode.toUpperCase(),
-				firstYearRate: Number(item.firstYearRate),
+				firstYearRate: Number(String(item.firstYearRate).replace(",", ".")),
 				margin: item.margin ? Number(item.margin) : null,
 			}));
 
@@ -117,9 +196,7 @@ export function BondsAdminPanel() {
 		});
 	};
 
-	// ==========================================
-	// INFLATION: GROUPING & SEARCH
-	// ==========================================
+	// Inflation grouping and search
 	const filteredInflation = inflationRates.filter((inf) =>
 		inf.yearMonth.includes(infSearch),
 	);
@@ -130,7 +207,7 @@ export function BondsAdminPanel() {
 			acc[year].push(inf);
 			return acc;
 		},
-		{} as Record<string, any[]>,
+		{} as Record<string, InflationRate[]>,
 	);
 	const sortedInfYears = Object.keys(groupedInflation).sort((a, b) =>
 		b.localeCompare(a),
@@ -141,14 +218,11 @@ export function BondsAdminPanel() {
 			p.includes(year) ? p.filter((y) => y !== year) : [...p, year],
 		);
 
-	// ==========================================
-	// BONDS: DYNAMIC GROUPING & SEARCH
-	// ==========================================
+	// Bond configs grouping and search
 	const filteredBonds = bondConfigs.filter((conf) =>
 		conf.seriesCode.toLowerCase().includes(bondSearch.toLowerCase()),
 	);
 
-	// Grouping logic depends on the selected mode
 	const groupedBonds = filteredBonds.reduce(
 		(acc, conf) => {
 			let groupKey = "INNE";
@@ -164,10 +238,9 @@ export function BondsAdminPanel() {
 			acc[groupKey].push(conf);
 			return acc;
 		},
-		{} as Record<string, any[]>,
+		{} as Record<string, BondSeriesConfig[]>,
 	);
 
-	// Sort keys differently based on mode (Years descending, Types ascending)
 	const sortedBondGroups = Object.keys(groupedBonds).sort((a, b) => {
 		if (bondGroupMode === "YEAR") return b.localeCompare(a);
 		return a.localeCompare(b);
@@ -184,20 +257,34 @@ export function BondsAdminPanel() {
 	return (
 		<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 			{/* ======================= */}
-			{/* PANEL 1: INFLACJA GUS */}
+			{/* PANEL 1: GUS INFLATION */}
 			{/* ======================= */}
 			<div className="flex flex-col bg-t-bg-panel border border-t-border rounded-2xl shadow-sm overflow-hidden h-[700px]">
 				<div className="p-5 border-b border-t-border-subtle bg-black/5 dark:bg-white/5">
-					<div className="flex items-center gap-3 mb-4">
-						<TrendingUp className="w-5 h-5 text-rose-500" />
-						<div>
-							<h3 className="text-sm font-black uppercase tracking-widest text-t-text-primary">
-								Miesięcznik Inflacji GUS
-							</h3>
-							<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest mt-0.5">
-								Dodawaj odczyty zbiorczo (YYYY-MM)
-							</p>
+					<div className="flex items-center justify-between gap-2 mb-4">
+						<div className="flex items-center gap-3">
+							<TrendingUp className="w-5 h-5 text-rose-500" />
+							<div>
+								<h3 className="text-sm font-black uppercase tracking-widest text-t-text-primary">
+									Miesięcznik Inflacji GUS
+								</h3>
+								<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest mt-0.5">
+									Dodawaj odczyty zbiorczo (YYYY-MM)
+								</p>
+							</div>
 						</div>
+
+						<button
+							onClick={handleSyncGus}
+							disabled={isSyncingGus}
+							className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50 shrink-0"
+						>
+							<RefreshCw
+								size={12}
+								className={cn(isSyncingGus && "animate-spin")}
+							/>
+							{isSyncingGus ? "Pobieranie..." : "Pobierz z GUS"}
+						</button>
 					</div>
 
 					<div className="space-y-2 mb-3">
@@ -335,20 +422,30 @@ export function BondsAdminPanel() {
 			</div>
 
 			{/* ======================= */}
-			{/* PANEL 2: LISTY EMISYJNE */}
+			{/* PANEL 2: BOND SERIES */}
 			{/* ======================= */}
 			<div className="flex flex-col bg-t-bg-panel border border-t-border rounded-2xl shadow-sm overflow-hidden h-[700px]">
 				<div className="p-5 border-b border-t-border-subtle bg-black/5 dark:bg-white/5">
-					<div className="flex items-center gap-3 mb-4">
-						<FileText className="w-5 h-5 text-emerald-500" />
-						<div>
-							<h3 className="text-sm font-black uppercase tracking-widest text-t-text-primary">
-								Katalog Listów Emisyjnych
-							</h3>
-							<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest mt-0.5">
-								Szybkie wprowadzanie konfiguracji serii
-							</p>
+					<div className="flex items-center justify-between gap-2 mb-4">
+						<div className="flex items-center gap-3">
+							<FileText className="w-5 h-5 text-emerald-500" />
+							<div>
+								<h3 className="text-sm font-black uppercase tracking-widest text-t-text-primary">
+									Katalog Listów Emisyjnych
+								</h3>
+								<p className="text-[10px] text-t-text-tertiary uppercase tracking-widest mt-0.5">
+									Szybkie wprowadzanie konfiguracji serii
+								</p>
+							</div>
 						</div>
+
+						<button
+							onClick={handleGenerateMonthSeries}
+							className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0"
+						>
+							<Wand2 size={12} />
+							Generuj miesiąc
+						</button>
 					</div>
 
 					<div className="space-y-2 mb-3">
@@ -382,7 +479,7 @@ export function BondsAdminPanel() {
 									step="0.01"
 									placeholder="Marża %"
 									title="Marża (dla DOS/TOS pozostaw puste)"
-									value={item.margin}
+									value={Number(String(item.margin).replace(",", "."))}
 									onChange={(e) => {
 										const newArr = [...newConfigs];
 										newArr[index].margin = e.target.value;
@@ -445,7 +542,7 @@ export function BondsAdminPanel() {
 						/>
 					</div>
 
-					{/* TOGGLE GROUPING MODE */}
+					{/* Toggle grouping mode */}
 					<div className="flex items-center bg-black/10 dark:bg-white/5 p-1 rounded-lg shrink-0">
 						<button
 							onClick={() => setBondGroupMode("YEAR")}
@@ -499,10 +596,8 @@ export function BondsAdminPanel() {
 							{openBondGroups.includes(groupKey) && (
 								<div className="flex flex-col">
 									{groupedBonds[groupKey]
-										.sort((a: any, b: any) =>
-											b.seriesCode.localeCompare(a.seriesCode),
-										)
-										.map((conf: any) => (
+										.sort((a, b) => b.seriesCode.localeCompare(a.seriesCode))
+										.map((conf) => (
 											<div
 												key={conf.id}
 												className="flex justify-between items-center p-3 border-t border-t-border-subtle hover:bg-t-hover transition-colors"

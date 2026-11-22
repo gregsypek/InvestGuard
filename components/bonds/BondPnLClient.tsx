@@ -174,31 +174,34 @@ export function BondPnLClient({ transactions, assets }: BondPnLClientProps) {
 					</div>
 				</div>
 			)}
-			<div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-4">
-				<div className="flex items-center flex-wrap gap-2">
-					<span className="hidden sm:flex text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1 items-center gap-1.5">
-						<Calendar className="w-3.5 h-3.5" /> Zakres:
-					</span>
-					{(["1M", "3M", "6M", "YTD", "MAX"] as const).map((range) => (
-						<div
-							key={range}
-							className={cn(
-								!availableRanges[range] &&
-									"opacity-40 grayscale pointer-events-none",
-							)}
-						>
-							<FilterBadge
-								id={range}
-								label={range}
-								isSelected={timeRange === range}
-								onToggle={() => handleTimeRangeChange(range)}
-							/>
-						</div>
-					))}
+
+			<div className="flex flex-col flex-1 min-h-0 gap-4">
+				{/* Chart takes only the remaining height above the filter bar */}
+				<div className="relative flex-1 min-h-0">
+					<AbsoluteDailyPnLChart data={chartData} />
 				</div>
-			</div>
-			<div className="relative flex-1 min-h-0">
-				<AbsoluteDailyPnLChart data={chartData} />
+
+				{/* Filter bar stays pinned at the bottom without being clipped */}
+				<div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 shrink-0 pt-2 border-t border-t-border-subtle">
+					<div className="flex items-center flex-wrap gap-2">
+						{(["1M", "3M", "6M", "YTD", "MAX"] as const).map((range) => (
+							<div
+								key={range}
+								className={cn(
+									!availableRanges[range] &&
+										"opacity-40 grayscale pointer-events-none",
+								)}
+							>
+								<FilterBadge
+									id={range}
+									label={range}
+									isSelected={timeRange === range}
+									onToggle={() => handleTimeRangeChange(range)}
+								/>
+							</div>
+						))}
+					</div>
+				</div>
 			</div>
 		</div>
 	);

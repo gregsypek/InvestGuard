@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export const GLOBAL_INDICES = [
 	{ id: "SP500", name: "S&P 500", ticker: "^GSPC", currency: "USD" },
 	{ id: "NASDAQ", name: "NASDAQ 100", ticker: "^IXIC", currency: "USD" },
-	{ id: "WIG20", name: "WIG20", ticker: "WIG20.WA", currency: "PLN" },
+	{ id: "WIG20", name: "WIG20", ticker: "EPOL", currency: "USD" },
 	{ id: "DAX", name: "DAX 40", ticker: "^GDAXI", currency: "EUR" },
 	{ id: "GOLD", name: "Złoto (XAU/USD)", ticker: "GC=F", currency: "USD" },
 	{ id: "BTC", name: "Bitcoin", ticker: "BTC-USD", currency: "USD" },

@@ -1,24 +1,23 @@
-// app / api / cron / hourly - prices / route.ts;
-
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { formatYahooTicker } from "@/lib/market-api";
 import { getLiveExchangeRate } from "@/lib/exchange-rates";
+import { revalidateTag } from "next/cache";
 import yahooFinance from "yahoo-finance2";
 
 const yf = new yahooFinance({ suppressNotices: ["yahooSurvey"] });
 
+// Use EPOL for WIG20 and GC=F for GOLD to match historical chart scales
 const YAHOO_SYMBOLS: Record<string, string> = {
 	SP500: "^GSPC",
 	NASDAQ: "^IXIC",
-	WIG20: "WIG20.WA",
+	WIG20: "EPOL",
 	DAX: "^GDAXI",
-	// GOLD: "GC=F",
-	GOLD: "GLD",
+	GOLD: "GC=F",
 	BTC: "BTC-USD",
 };
 
-// EN: Live Forex pairs directly from Yahoo Finance to catch morning currency swings
+// Live Forex pairs directly from Yahoo Finance
 const FX_SYMBOLS: Record<string, string> = {
 	USD: "USDPLN=X",
 	EUR: "EURPLN=X",
@@ -40,19 +39,27 @@ export async function GET(req: Request) {
 			return new Response("Unauthorized", { status: 401 });
 		}
 
+		// Fetch only minimal asset fields required for price updates
 		const premiumPortfolios = await db.portfolio.findMany({
 			where: { user: { role: { in: ["ADMIN", "SUBSCRIBER"] } } },
-			include: {
+			select: {
+				id: true,
 				assets: {
 					where: {
 						ticker: { not: null },
 						category: { notIn: ["BONDS", "CASH"] },
 					},
+					select: {
+						id: true,
+						name: true,
+						ticker: true,
+						quantity: true,
+						isObserved: true,
+					},
 				},
 			},
 		});
 
-		// EN: Include indices AND live forex pairs in the batch request
 		const symbolsToFetch = new Set<string>([
 			...Object.values(YAHOO_SYMBOLS),
 			...Object.values(FX_SYMBOLS),
@@ -72,44 +79,48 @@ export async function GET(req: Request) {
 			{},
 			{ validateResult: false },
 		);
+
 		const quotesArray = Array.isArray(results) ? results : [results];
 		let updatedCount = 0;
 
-		// A. Update Market Indices
 		const today = new Date();
 		today.setUTCHours(0, 0, 0, 0);
 
+		const dbOperations: Promise<unknown>[] = [];
+
+		// A. Update Yahoo Market Indices
 		for (const [appSymbol, yahooSymbol] of Object.entries(YAHOO_SYMBOLS)) {
 			const quote = quotesArray.find((q) => q && q.symbol === yahooSymbol);
 			if (!quote || !quote.regularMarketPrice) continue;
 
-			await db.marketIndex.upsert({
-				where: { symbol: appSymbol },
-				update: {
-					price: quote.regularMarketPrice,
-					dailyChange: quote.regularMarketChangePercent || 0,
-					updatedAt: new Date(),
-				},
-				create: {
-					symbol: appSymbol,
-					name: quote.shortName || appSymbol,
-					price: quote.regularMarketPrice,
-					dailyChange: quote.regularMarketChangePercent || 0,
-				},
-			});
-
-			await db.indexHistory.upsert({
-				where: { symbol_date: { symbol: appSymbol, date: today } },
-				update: { closePrice: quote.regularMarketPrice },
-				create: {
-					symbol: appSymbol,
-					closePrice: quote.regularMarketPrice,
-					date: today,
-				},
-			});
+			dbOperations.push(
+				db.marketIndex.upsert({
+					where: { symbol: appSymbol },
+					update: {
+						price: quote.regularMarketPrice,
+						dailyChange: quote.regularMarketChangePercent || 0,
+						updatedAt: new Date(),
+					},
+					create: {
+						symbol: appSymbol,
+						name: quote.shortName || appSymbol,
+						price: quote.regularMarketPrice,
+						dailyChange: quote.regularMarketChangePercent || 0,
+					},
+				}),
+				db.indexHistory.upsert({
+					where: { symbol_date: { symbol: appSymbol, date: today } },
+					update: { closePrice: quote.regularMarketPrice },
+					create: {
+						symbol: appSymbol,
+						closePrice: quote.regularMarketPrice,
+						date: today,
+					},
+				}),
+			);
 		}
 
-		// EN: B. Extract real-time Forex rates from Yahoo Finance results (Fallback to database if API fails)
+		// B. Extract real-time Forex rates
 		const getFxRate = (symbol: string, fallback: number) => {
 			const q = quotesArray.find((item) => item && item.symbol === symbol);
 			return q?.regularMarketPrice || fallback;
@@ -127,7 +138,7 @@ export async function GET(req: Request) {
 			FX_SYMBOLS.EUR,
 			(await getLiveExchangeRate("EUR"))?.value || 4.3,
 		);
-		// 🚀 ZAPISZ KURSY DO BAZY DANYCH DLA FRONTENDU (Wymagane dla wielowalutowości)
+
 		const ratesToUpdate = [
 			{ code: "USDPLN", value: usdRate },
 			{ code: "EURPLN", value: eurRate },
@@ -135,11 +146,13 @@ export async function GET(req: Request) {
 		];
 
 		for (const rate of ratesToUpdate) {
-			await db.exchangeRate.upsert({
-				where: { code: rate.code },
-				update: { value: rate.value, updatedAt: new Date() },
-				create: { code: rate.code, value: rate.value, change: 0 },
-			});
+			dbOperations.push(
+				db.exchangeRate.upsert({
+					where: { code: rate.code },
+					update: { value: rate.value, updatedAt: new Date() },
+					create: { code: rate.code, value: rate.value, change: 0 },
+				}),
+			);
 		}
 
 		// C. Update Premium Portfolios
@@ -164,53 +177,65 @@ export async function GET(req: Request) {
 					else if (currency === "EUR") priceInPLN = rawPrice * eurRate;
 				}
 
-				// Aktualizacja portfela
-				await db.asset.update({
-					where: { id: asset.id },
-					data: {
-						currentValue: priceInPLN * asset.quantity,
-						dailyChange: quote.regularMarketChangePercent || 0,
-						updatedAt: new Date(),
-					},
-				});
-
-				// 🚀 DODANE: Jeśli aktywo jest na radarze, rzeźbimy mu historię rynkową!
-				if (asset.isObserved && asset.ticker) {
-					// 1. Najpierw upsert do MarketIndex, żeby spełnić klucz obcy dla IndexHistory
-					await db.marketIndex.upsert({
-						where: { symbol: asset.ticker },
-						update: {
-							price: rawPrice,
+				dbOperations.push(
+					db.asset.update({
+						where: { id: asset.id },
+						data: {
+							currentValue: priceInPLN * asset.quantity,
 							dailyChange: quote.regularMarketChangePercent || 0,
 							updatedAt: new Date(),
 						},
-						create: {
-							symbol: asset.ticker,
-							name: asset.name,
-							price: rawPrice,
-							dailyChange: quote.regularMarketChangePercent || 0,
-						},
-					});
+					}),
+				);
 
-					// 2. Następnie zapis historii cenowej
-					await db.indexHistory.upsert({
-						where: { symbol_date: { symbol: asset.ticker, date: today } },
-						update: { closePrice: rawPrice },
-						create: {
-							symbol: asset.ticker,
-							closePrice: rawPrice,
-							date: today,
-						},
-					});
+				// Guard against portfolio assets (e.g., ticker="GOLD") overwriting macro indices
+				const isMacroSymbol = Object.prototype.hasOwnProperty.call(
+					YAHOO_SYMBOLS,
+					asset.ticker!,
+				);
+
+				if (asset.isObserved && asset.ticker && !isMacroSymbol) {
+					dbOperations.push(
+						db.marketIndex.upsert({
+							where: { symbol: asset.ticker },
+							update: {
+								price: rawPrice,
+								dailyChange: quote.regularMarketChangePercent || 0,
+								updatedAt: new Date(),
+							},
+							create: {
+								symbol: asset.ticker,
+								name: asset.name,
+								price: rawPrice,
+								dailyChange: quote.regularMarketChangePercent || 0,
+							},
+						}),
+						db.indexHistory.upsert({
+							where: { symbol_date: { symbol: asset.ticker, date: today } },
+							update: { closePrice: rawPrice },
+							create: {
+								symbol: asset.ticker,
+								closePrice: rawPrice,
+								date: today,
+							},
+						}),
+					);
 				}
 
 				updatedCount++;
 			}
-			await db.portfolio.update({
-				where: { id: portfolio.id },
-				data: { lastRefreshedAt: new Date() },
-			});
+
+			dbOperations.push(
+				db.portfolio.update({
+					where: { id: portfolio.id },
+					data: { lastRefreshedAt: new Date() },
+				}),
+			);
 		}
+
+		// Execute all DB writes in parallel
+		await Promise.all(dbOperations);
+		revalidateTag("indices", "max");
 
 		return NextResponse.json({
 			success: true,

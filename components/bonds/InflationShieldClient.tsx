@@ -3,19 +3,34 @@
 import {
 	Area,
 	AreaChart,
+	Brush,
 	CartesianGrid,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
 	YAxis,
 } from "recharts";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { ChartContainer } from "../shared/ChartContainer";
+import { cn } from "@/lib/utils";
+
+type RangeOption = "1Y" | "2Y" | "3Y" | "MAX";
+
+const RANGE_OPTIONS: {
+	id: RangeOption;
+	label: string;
+	months: number | null;
+}[] = [
+	{ id: "1Y", label: "1Y", months: 12 },
+	{ id: "2Y", label: "2Y", months: 24 },
+	{ id: "3Y", label: "3Y", months: 36 },
+	{ id: "MAX", label: "MAX", months: null },
+];
 
 // ----------------------------------------------------------------------
-// TYPY DLA TOOLTIPA
+// TOOLTIP TYPES & COMPONENT
 // ----------------------------------------------------------------------
 interface TooltipPayloadItem {
 	name: string;
@@ -73,35 +88,48 @@ interface Props {
 }
 
 export function InflationShieldClient({ inflationData, bonds }: Props) {
-	// 1. Obliczanie średniej ważonej oprocentowania obecnego portfela
-	const { weightedYield, totalValue } = useMemo(() => {
+	const [selectedRange, setSelectedRange] = useState<RangeOption>("MAX");
+
+	// 1. Calculate weighted average yield of the current bond portfolio
+	const weightedYield = useMemo(() => {
 		const totalVal = bonds.reduce((sum, b) => sum + (b.currentValue || 0), 0);
-		if (totalVal === 0) return { weightedYield: 0, totalValue: 0 };
+		if (totalVal === 0) return 0;
 
 		const yieldSum = bonds.reduce(
 			(sum, b) => sum + (b.currentValue || 0) * (b.interestRate || 0),
 			0,
 		);
-		return { weightedYield: yieldSum / totalVal, totalValue: totalVal };
+		return yieldSum / totalVal;
 	}, [bonds]);
 
-	// 2. Przygotowanie danych do wykresu (łączymy inflację z naszym oprocentowaniem)
-	const chartData = useMemo(() => {
-		// Bierzemy maksymalnie ostatnie 24 miesiące, żeby wykres był czytelny
-		const recentInflation = [...inflationData].slice(-24);
+	// 2. Sort inflation chronologically so newly backfilled historical records appear in order
+	const sortedInflation = useMemo(() => {
+		return [...inflationData].sort((a, b) =>
+			a.yearMonth.localeCompare(b.yearMonth),
+		);
+	}, [inflationData]);
 
-		return recentInflation.map((record) => ({
+	// 3. Slice data according to selected range filter
+	const chartData = useMemo(() => {
+		const activeOption = RANGE_OPTIONS.find((opt) => opt.id === selectedRange);
+		const filtered =
+			activeOption && activeOption.months !== null
+				? sortedInflation.slice(-activeOption.months)
+				: sortedInflation;
+
+		return filtered.map((record) => ({
 			date: record.yearMonth,
 			inflation: record.value,
 			portfolioYield: weightedYield,
 		}));
-	}, [inflationData, weightedYield]);
+	}, [sortedInflation, selectedRange, weightedYield]);
 
-	const latestInflation = chartData[chartData.length - 1]?.inflation || 0;
+	const latestInflation =
+		sortedInflation[sortedInflation.length - 1]?.value || 0;
 	const realYield = weightedYield - latestInflation;
 	const isProtected = realYield > 0;
 
-	if (chartData.length === 0) {
+	if (sortedInflation.length === 0) {
 		return (
 			<div className="flex h-64 items-center justify-center bg-t-bg-panel border border-t-border-subtle rounded-2xl">
 				<span className="text-sm font-bold text-t-text-tertiary">
@@ -113,7 +141,7 @@ export function InflationShieldClient({ inflationData, bonds }: Props) {
 
 	return (
 		<div className="flex flex-col gap-6 p-4 md:p-6 bg-t-bg-panel border border-t-border rounded-2xl shadow-sm">
-			{/* Karta z Podsumowaniem Realnego Zysku */}
+			{/* Summary Card */}
 			<div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center p-4 bg-black/5 dark:bg-white/5 border border-t-border-subtle rounded-xl">
 				<div className="flex items-center gap-3">
 					<div
@@ -172,14 +200,14 @@ export function InflationShieldClient({ inflationData, bonds }: Props) {
 				</div>
 			</div>
 
-			{/* Wykres */}
-			<div className="h-75 w-full">
-				<div className=" flex flex-col h-full  min-h-[250px]">
+			{/* Chart with Brush */}
+			<div className="h-80 w-full">
+				<div className="flex flex-col h-full min-h-[280px]">
 					<ChartContainer className="flex-1 min-h-0 w-full">
 						<ResponsiveContainer width="100%" height="100%">
 							<AreaChart
 								data={chartData}
-								margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+								margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
 							>
 								<defs>
 									<linearGradient
@@ -240,10 +268,45 @@ export function InflationShieldClient({ inflationData, bonds }: Props) {
 									strokeDasharray="5 5"
 									fill="none"
 								/>
+								<Brush
+									dataKey="date"
+									height={22}
+									stroke="#475569"
+									fill="rgba(15, 23, 42, 0.45)"
+									travellerWidth={8}
+									tickFormatter={() => ""}
+								/>
 							</AreaChart>
 						</ResponsiveContainer>
 					</ChartContainer>
 				</div>
+			</div>
+
+			{/* Range Filter Controls */}
+			<div className="flex items-center justify-between pt-2 border-t border-t-border-subtle">
+				<div className="flex items-center gap-1.5">
+					{RANGE_OPTIONS.map((option) => {
+						const isActive = selectedRange === option.id;
+						return (
+							<button
+								key={option.id}
+								type="button"
+								onClick={() => setSelectedRange(option.id)}
+								className={cn(
+									"px-3 py-1.5 rounded-lg text-xs font-bold transition-all border hover:cursor-pointer",
+									isActive
+										? "bg-blue-500/15 text-blue-400 border-blue-500/40"
+										: "bg-black/5 dark:bg-white/5 text-t-text-tertiary border-t-border-subtle hover:text-t-text-primary",
+								)}
+							>
+								{option.label}
+							</button>
+						);
+					})}
+				</div>
+				<span className="text-[10px] font-bold uppercase tracking-widest text-t-text-tertiary">
+					{chartData.length} mies. na wykresie
+				</span>
 			</div>
 		</div>
 	);

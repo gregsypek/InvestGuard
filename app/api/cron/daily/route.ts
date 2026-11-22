@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { revalidateTag } from "next/cache";
 import { runSmartAlerts } from "@/lib/actions/alerts.actions";
 
-function getBondAccruedValue(asset: any) {
+function getBondAccruedValue(asset: {
+	investedCapital: unknown;
+	interestRate: number | null;
+	currentValue: unknown;
+	purchaseDate: Date | null;
+	createdAt: Date;
+}) {
 	const invested = Number(asset.investedCapital) || 0;
 	const interestRate = Number(asset.interestRate) || 0;
 	if (interestRate <= 0 || invested <= 0)
@@ -23,11 +30,26 @@ export async function GET(req: Request) {
 			return new Response("Unauthorized", { status: 401 });
 		}
 
-		// 1. Tworzenie migawek (Snapshots)
+		// 1. Fetch minimal fields needed to compute daily snapshots
 		const portfolios = await db.portfolio.findMany({
-			include: { assets: true },
+			select: {
+				id: true,
+				assets: {
+					select: {
+						id: true,
+						category: true,
+						investedCapital: true,
+						currentValue: true,
+						interestRate: true,
+						purchaseDate: true,
+						createdAt: true,
+					},
+				},
+			},
 		});
+
 		const snapshotsToCreate = [];
+		const bondUpdates: Promise<unknown>[] = [];
 
 		for (const portfolio of portfolios) {
 			let totalValue = 0;
@@ -43,16 +65,17 @@ export async function GET(req: Request) {
 
 				totalValue += calculatedValue;
 
-				// 🚀 NAPRAWA: Aktualizujemy currentValue w bazie, jeśli to obligacje,
-				// żeby tabela Asset była zawsze zsynchronizowana z odsetkami!
+				// Sync accrued bond value back to Asset table if changed
 				if (
 					asset.category === "BONDS" &&
-					calculatedValue !== Number(asset.currentValue)
+					Math.abs(calculatedValue - Number(asset.currentValue)) > 0.01
 				) {
-					await db.asset.update({
-						where: { id: asset.id },
-						data: { currentValue: Number(calculatedValue.toFixed(2)) },
-					});
+					bondUpdates.push(
+						db.asset.update({
+							where: { id: asset.id },
+							data: { currentValue: Number(calculatedValue.toFixed(2)) },
+						}),
+					);
 				}
 			}
 
@@ -64,12 +87,17 @@ export async function GET(req: Request) {
 			});
 		}
 
-		if (snapshotsToCreate.length > 0) {
-			await db.portfolioSnapshot.createMany({ data: snapshotsToCreate });
-		}
+		await Promise.all([
+			...bondUpdates,
+			snapshotsToCreate.length > 0
+				? db.portfolioSnapshot.createMany({ data: snapshotsToCreate })
+				: Promise.resolve(),
+		]);
 
-		// 2. Uruchomienie inteligentnych alertów (Strażnik)
-		// Parametr false oznacza tryb automatyczny (bez wymuszania)
+		// Invalidate snapshot cache so charts display today's snapshot immediately
+		revalidateTag("snapshots", "max");
+
+		// 2. Run automated smart alerts
 		const alertsResult = await runSmartAlerts(false);
 
 		return NextResponse.json({

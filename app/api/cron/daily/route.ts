@@ -1,26 +1,13 @@
+import {
+	calculateLiveBondValue,
+	getBondDictionaries,
+} from "@/lib/bond-calculations";
+
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { revalidateTag } from "next/cache";
 import { runSmartAlerts } from "@/lib/actions/alerts.actions";
-
-function getBondAccruedValue(asset: {
-	investedCapital: unknown;
-	interestRate: number | null;
-	currentValue: unknown;
-	purchaseDate: Date | null;
-	createdAt: Date;
-}) {
-	const invested = Number(asset.investedCapital) || 0;
-	const interestRate = Number(asset.interestRate) || 0;
-	if (interestRate <= 0 || invested <= 0)
-		return Number(asset.currentValue) || 0;
-	const purchaseDate = new Date(asset.purchaseDate || asset.createdAt);
-	const diffDays = Math.floor(
-		(new Date().getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24),
-	);
-	if (diffDays <= 0) return invested;
-	return invested + invested * (interestRate / 100 / 365) * diffDays;
-}
+import { syncInflationIfNeeded } from "@/lib/actions/sync-gus-inflation";
 
 export async function GET(req: Request) {
 	try {
@@ -30,23 +17,29 @@ export async function GET(req: Request) {
 			return new Response("Unauthorized", { status: 401 });
 		}
 
-		// 1. Fetch minimal fields needed to compute daily snapshots
-		const portfolios = await db.portfolio.findMany({
-			select: {
-				id: true,
-				assets: {
-					select: {
-						id: true,
-						category: true,
-						investedCapital: true,
-						currentValue: true,
-						interestRate: true,
-						purchaseDate: true,
-						createdAt: true,
+		// 1. Check and sync latest GUS inflation reading if previous month is missing
+		await syncInflationIfNeeded();
+
+		// 2. Fetch bond dictionaries and portfolios in parallel
+		const [{ inflationMap, configMap }, portfolios] = await Promise.all([
+			getBondDictionaries(),
+			db.portfolio.findMany({
+				select: {
+					id: true,
+					assets: {
+						select: {
+							id: true,
+							ticker: true,
+							category: true,
+							investedCapital: true,
+							currentValue: true,
+							interestRate: true,
+							purchaseDate: true,
+						},
 					},
 				},
-			},
-		});
+			}),
+		]);
 
 		const snapshotsToCreate = [];
 		const bondUpdates: Promise<unknown>[] = [];
@@ -58,25 +51,34 @@ export async function GET(req: Request) {
 			for (const asset of portfolio.assets) {
 				investedValue += Number(asset.investedCapital) || 0;
 
-				const calculatedValue =
-					asset.category === "BONDS"
-						? getBondAccruedValue(asset)
-						: Number(asset.currentValue) || 0;
+				let calculatedValue = Number(asset.currentValue) || 0;
+
+				if (asset.category === "BONDS") {
+					const cleanTicker = asset.ticker
+						? asset.ticker.split("_")[0]
+						: "UNKNOWN";
+					const liveBond = calculateLiveBondValue(
+						Number(asset.investedCapital),
+						asset.interestRate ?? 0,
+						asset.purchaseDate,
+						cleanTicker,
+						inflationMap,
+						configMap,
+					);
+					calculatedValue = liveBond.value;
+
+					// Keep Asset table synced with accrued compound interest
+					if (Math.abs(calculatedValue - Number(asset.currentValue)) > 0.01) {
+						bondUpdates.push(
+							db.asset.update({
+								where: { id: asset.id },
+								data: { currentValue: calculatedValue },
+							}),
+						);
+					}
+				}
 
 				totalValue += calculatedValue;
-
-				// Sync accrued bond value back to Asset table if changed
-				if (
-					asset.category === "BONDS" &&
-					Math.abs(calculatedValue - Number(asset.currentValue)) > 0.01
-				) {
-					bondUpdates.push(
-						db.asset.update({
-							where: { id: asset.id },
-							data: { currentValue: Number(calculatedValue.toFixed(2)) },
-						}),
-					);
-				}
 			}
 
 			snapshotsToCreate.push({
@@ -94,10 +96,9 @@ export async function GET(req: Request) {
 				: Promise.resolve(),
 		]);
 
-		// Invalidate snapshot cache so charts display today's snapshot immediately
 		revalidateTag("snapshots", "max");
 
-		// 2. Run automated smart alerts
+		// 3. Run automated smart alerts
 		const alertsResult = await runSmartAlerts(false);
 
 		return NextResponse.json({

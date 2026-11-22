@@ -2,7 +2,12 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 
+import { TransactionHistory } from "@prisma/client";
 import { db } from "../db";
+
+export type TransactionWithPortfolio = TransactionHistory & {
+	portfolio: { name: string };
+};
 
 export async function getTransactionHistory(
 	page: number = 1,
@@ -58,7 +63,7 @@ export async function getTransactionHistory(
 				break;
 		}
 
-		// 3. Execute paginated query and total count in parallel with minimal field projection
+		// 3. Execute paginated query and total count in parallel with lightweight projection
 		const [transactions, totalCount] = await Promise.all([
 			db.transactionHistory.findMany({
 				where: whereClause,
@@ -75,6 +80,9 @@ export async function getTransactionHistory(
 					executedValue: true,
 					category: true,
 					comment: true,
+					exchangeRate: true,
+					originalPrice: true,
+					originalCurrency: true,
 					portfolioId: true,
 					portfolio: {
 						select: { name: true },
@@ -91,7 +99,7 @@ export async function getTransactionHistory(
 
 		return {
 			success: true,
-			data: transactions,
+			data: transactions as unknown as TransactionWithPortfolio[],
 			meta: {
 				totalCount,
 				totalPages,

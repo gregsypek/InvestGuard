@@ -7,8 +7,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /* =========================================
-   SPARKLINE (linia + wypełnienie gradientem)
-   Skaluje się do szerokości karty.
+   SPARKLINE (line + gradient area fill)
    ========================================= */
 function Sparkline({
 	data,
@@ -19,14 +18,13 @@ function Sparkline({
 	isPositive: boolean;
 	className?: string;
 }) {
-	// useId musi być przed early-return (zasady hooków)
 	const gradientId = `spark-${useId().replace(/:/g, "")}`;
 
 	if (!data || data.length < 2) return null;
 
 	const W = 100;
 	const H = 40;
-	const PAD = 4; // zapas, żeby obrys linii nie był ucinany
+	const PAD = 4;
 
 	const min = Math.min(...data);
 	const max = Math.max(...data);
@@ -75,20 +73,31 @@ function Sparkline({
 }
 
 /* =========================================
-   NAZWY AKTYWÓW: czyszczenie i kategoryzacja
+   PRICE & ASSET NAME FORMATTING
    ========================================= */
-function formatAssetName(rawName: string) {
-	// 🚀 Zabezpieczenie przed undefined/null i wymuszenie typu String
-	let cleanName = String(rawName || "");
+function formatMarketPrice(price: number, currency?: string | null) {
+	const formatted = new Intl.NumberFormat("pl-PL", {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: price < 10 ? 4 : 2,
+	}).format(price);
+
+	return currency ? `${formatted} ${currency}` : formatted;
+}
+
+function formatAssetName(rawName: string, isIndex: boolean) {
+	const baseName = String(rawName || "");
+	if (isIndex) {
+		return { cleanName: baseName, isETF: false, provider: null };
+	}
+
+	let cleanName = baseName;
 	let isETF = false;
 	let provider = null;
 
-	// 1. Sprawdzamy czy to ETF
 	if (cleanName.includes("ETF") || cleanName.includes("UCITS")) {
 		isETF = true;
 	}
 
-	// 2. Szukamy dostawców (Providers)
 	const providers = [
 		"iShares",
 		"Vanguard",
@@ -105,7 +114,6 @@ function formatAssetName(rawName: string) {
 		}
 	}
 
-	// 3. Usuwamy śmieci typowe dla ETF-ów
 	cleanName = cleanName
 		.replace(/UCITS/g, "")
 		.replace(/ETF/g, "")
@@ -119,7 +127,7 @@ function formatAssetName(rawName: string) {
 		.trim();
 
 	if (cleanName.length === 0) {
-		cleanName = rawName;
+		cleanName = baseName;
 	}
 
 	return { cleanName, isETF, provider };
@@ -162,15 +170,14 @@ function AssetLogo({
 }
 
 /* =========================================
-   KARTA RYNKOWA
-   variant="index" → duża karta z wykresem (indeksy)
-   variant="asset" → kompaktowa karta (walory)
-   Domyślnie: jeśli są dane historyczne → "index".
+   MARKET CARD
    ========================================= */
 export function PremiumMarketCard({
 	name,
 	ticker,
 	change,
+	price,
+	currency,
 	logo,
 	historyData,
 	variant,
@@ -178,14 +185,19 @@ export function PremiumMarketCard({
 	name: string;
 	ticker?: string | null;
 	change: number;
+	price?: number | null;
+	currency?: string | null;
 	logo?: string | null;
 	historyData?: number[];
 	variant?: "index" | "asset";
 }) {
 	const isPositive = change >= 0;
-	const { cleanName, isETF } = formatAssetName(name);
 	const resolvedVariant =
 		variant ?? (historyData && historyData.length > 1 ? "index" : "asset");
+	const { cleanName, isETF } = formatAssetName(
+		name,
+		resolvedVariant === "index",
+	);
 
 	const TrendIcon = isPositive ? TrendingUp : TrendingDown;
 	const formattedChange = `${isPositive ? "+" : ""}${change.toFixed(2)}%`;
@@ -193,7 +205,7 @@ export function PremiumMarketCard({
 	const cardBase =
 		"group-hover:border-theme-border group-hover:shadow-lg group-hover:-translate-y-0.5 transition-all duration-300";
 
-	/* ---------- WARIANT: INDEKS ---------- */
+	/* ---------- VARIANT: INDEX ---------- */
 	if (resolvedVariant === "index") {
 		return (
 			<div
@@ -202,7 +214,6 @@ export function PremiumMarketCard({
 					cardBase,
 				)}
 			>
-				{/* Poświata zależna od kierunku zmiany */}
 				<div
 					className={cn(
 						"pointer-events-none absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl transition-colors duration-500",
@@ -212,7 +223,7 @@ export function PremiumMarketCard({
 					)}
 				/>
 
-				{/* Nagłówek: logo, nazwa, strzałka "otwórz" */}
+				{/* Header */}
 				<div className="relative flex items-center gap-2.5 min-w-0">
 					<AssetLogo logo={logo} name={name} />
 					<div className="flex flex-col min-w-0 flex-1">
@@ -231,27 +242,35 @@ export function PremiumMarketCard({
 					<ArrowUpRight className="w-4 h-4 shrink-0 text-t-text-tertiary opacity-0 -translate-x-1 translate-y-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-300" />
 				</div>
 
-				{/* Wynik */}
-				<div className="relative flex items-center gap-2">
-					<p
-						className={cn(
-							"font-mono num text-xl sm:text-2xl font-semibold tracking-tight",
-							isPositive ? "text-gain" : "text-loss",
-						)}
-					>
-						{formattedChange}
-					</p>
-					<span
-						className={cn(
-							"flex items-center justify-center w-5 h-5 rounded-md",
-							isPositive ? "bg-gain/10 text-gain" : "bg-loss/10 text-loss",
-						)}
-					>
-						<TrendIcon className="w-3 h-3" />
-					</span>
+				{/* Change % + Current Quote */}
+				<div className="relative flex items-baseline justify-between gap-2">
+					<div className="flex items-center gap-2">
+						<p
+							className={cn(
+								"font-mono num text-xl sm:text-2xl font-semibold tracking-tight",
+								isPositive ? "text-gain" : "text-loss",
+							)}
+						>
+							{formattedChange}
+						</p>
+						<span
+							className={cn(
+								"flex items-center justify-center w-5 h-5 rounded-md",
+								isPositive ? "bg-gain/10 text-gain" : "bg-loss/10 text-loss",
+							)}
+						>
+							<TrendIcon className="w-3 h-3" />
+						</span>
+					</div>
+
+					{price != null && price > 0 && (
+						<span className="font-mono num text-xs sm:text-sm font-semibold text-t-text-secondary truncate">
+							{formatMarketPrice(price, currency)}
+						</span>
+					)}
 				</div>
 
-				{/* Wykres */}
+				{/* Sparkline */}
 				{historyData && historyData.length > 1 && (
 					<div className="relative -mx-1 mt-auto opacity-60">
 						<Sparkline data={historyData} isPositive={isPositive} />
@@ -261,8 +280,8 @@ export function PremiumMarketCard({
 		);
 	}
 
-	/* ---------- WARIANT: WALOR ---------- */
-	const meterWidth = Math.min(Math.abs(change) / 5, 1) * 100; // 5% = pełny pasek
+	/* ---------- VARIANT: ASSET ---------- */
+	const meterWidth = Math.min(Math.abs(change) / 5, 1) * 100;
 
 	return (
 		<div
@@ -295,26 +314,35 @@ export function PremiumMarketCard({
 				</div>
 			</div>
 
+			{/* Change % + Current Valuation / Unit Price */}
 			<div className="flex items-center justify-between gap-2">
-				<p
-					className={cn(
-						"font-mono num text-sm font-semibold tracking-tight",
-						isPositive ? "text-gain" : "text-loss",
-					)}
-				>
-					{formattedChange}
-				</p>
-				<span
-					className={cn(
-						"flex items-center justify-center w-5 h-5 rounded-md",
-						isPositive ? "bg-gain/10 text-gain" : "bg-loss/10 text-loss",
-					)}
-				>
-					<TrendIcon className="w-3 h-3" />
-				</span>
+				<div className="flex items-center gap-1.5">
+					<p
+						className={cn(
+							"font-mono num text-sm font-semibold tracking-tight",
+							isPositive ? "text-gain" : "text-loss",
+						)}
+					>
+						{formattedChange}
+					</p>
+					<span
+						className={cn(
+							"flex items-center justify-center w-5 h-5 rounded-md",
+							isPositive ? "bg-gain/10 text-gain" : "bg-loss/10 text-loss",
+						)}
+					>
+						<TrendIcon className="w-3 h-3" />
+					</span>
+				</div>
+
+				{price != null && price > 0 && (
+					<span className="font-mono num text-xs font-medium text-t-text-secondary truncate">
+						{formatMarketPrice(price, currency)}
+					</span>
+				)}
 			</div>
 
-			{/* Miernik siły ruchu (skala do ±5%) */}
+			{/* Momentum bar (up to ±5%) */}
 			<div className="h-0.5 w-full rounded-full bg-t-border overflow-hidden">
 				<div
 					className={cn(

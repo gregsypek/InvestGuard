@@ -386,6 +386,10 @@ export function UserDashboard(props: UserDashboardProps) {
 									const historyArray = Object.keys(historyObject)
 										.sort()
 										.map((dateKey) => historyObject[dateKey]);
+									const latestPrice =
+										historyArray.length > 0
+											? historyArray[historyArray.length - 1]
+											: null;
 									const isSelected = selectedMarketId === indexId;
 
 									return (
@@ -404,9 +408,12 @@ export function UserDashboard(props: UserDashboardProps) {
 										>
 											<PremiumMarketCard
 												variant="index"
-												// 🚀 Zmiana tutaj: wyciągamy pole .name z obiektu
 												name={GLOBAL_INDICES_MAP[indexId]?.name || indexId}
 												change={changeValue}
+												price={latestPrice}
+												currency={
+													GLOBAL_INDICES_MAP[indexId]?.currency || "USD"
+												}
 												historyData={historyArray}
 												logo={getStockLogo(indexId)}
 											/>

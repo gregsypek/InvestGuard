@@ -47,10 +47,10 @@ const getCachedMarketHistory = unstable_cache(
 
 		return indexQuotesHistory;
 	},
-	["dashboard-market-history-5y"],
+	["dashboard-market-history-5y-v2"],
 	{
 		revalidate: 3600, // 1 hour
-		tags: ["market-history"],
+		tags: ["market-history", "indices"],
 	},
 );
 

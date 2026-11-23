@@ -3,11 +3,11 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import YahooFinance from "yahoo-finance2";
+import { formatYahooTicker } from "./lib/market-api";
 
 const yahooFinance = new YahooFinance({
 	suppressNotices: ["ripHistorical"],
 });
-
 const GLOBAL_INDICES = [
 	{ id: "SP500", name: "S&P 500", tickers: ["^GSPC"] },
 	{ id: "NASDAQ", name: "NASDAQ 100", tickers: ["^IXIC"] },
@@ -291,6 +291,95 @@ async function main() {
 		}
 
 		await sleep(500);
+	}
+
+	// Backfill 2-year history only for real ADMIN/SUBSCRIBER users' observed market assets
+	const observedAssets = await prisma.asset.findMany({
+		where: {
+			isObserved: true,
+			ticker: { not: null },
+			category: { notIn: ["BONDS", "CASH"] },
+			portfolio: {
+				user: {
+					email: { not: "demo@example.com" },
+					role: { in: ["ADMIN", "SUBSCRIBER"] },
+				},
+			},
+		},
+		select: { ticker: true, name: true },
+		distinct: ["ticker"],
+	});
+
+	for (const asset of observedAssets) {
+		const rawTicker = asset.ticker!;
+		const count = await prisma.indexHistory.count({
+			where: { symbol: rawTicker },
+		});
+		if (count > 10) {
+			console.log(
+				`⏭️ Walor ${rawTicker} ma już historię (${count} dni). Pomijam.`,
+			);
+			continue;
+		}
+
+		const tickerMap: Record<string, string> = {
+			"SP20.NL": "IS20.DE",
+			"EIMI.UK": "EIMI.L",
+			"ALAG.UK": "ALAG.L",
+			BTC: "BTC-USD",
+			"OWL.US": "OWL",
+		};
+		const baseTicker = rawTicker.split("_")[0];
+		const yahooSymbol = formatYahooTicker(tickerMap[baseTicker] || baseTicker);
+
+		try {
+			const res = await yahooFinance.chart(yahooSymbol, {
+				period1: "2024-01-01",
+				period2: endDate,
+				interval: "1d",
+			});
+			const quotes = (res?.quotes || []).filter(
+				(q) => q.close != null && q.close > 0,
+			);
+			if (quotes.length > 0) {
+				const latest = quotes[quotes.length - 1];
+				const prev = quotes[quotes.length - 2];
+				const dailyChange =
+					prev && prev.close
+						? Number(
+								(((latest.close! - prev.close) / prev.close) * 100).toFixed(2),
+							)
+						: 0;
+
+				await prisma.marketIndex.upsert({
+					where: { symbol: rawTicker },
+					update: { price: latest.close!, dailyChange, updatedAt: new Date() },
+					create: {
+						symbol: rawTicker,
+						name: asset.name,
+						price: latest.close!,
+						dailyChange,
+					},
+				});
+
+				await prisma.indexHistory.createMany({
+					data: quotes.map((q) => {
+						const d = new Date(q.date);
+						d.setUTCHours(0, 0, 0, 0);
+						return { symbol: rawTicker, date: d, closePrice: q.close! };
+					}),
+					skipDuplicates: true,
+				});
+				console.log(
+					`✅ Dociągnięto ${quotes.length} dni dla ${rawTicker} (${yahooSymbol}).`,
+				);
+			}
+		} catch {
+			console.warn(
+				`⚠️ Nie udało się pobrać historii dla ${rawTicker} (${yahooSymbol}).`,
+			);
+		}
+		await sleep(400);
 	}
 
 	console.log("🎉 Sukces! Synchronizacja zakończona.");

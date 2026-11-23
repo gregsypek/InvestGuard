@@ -342,16 +342,25 @@ export function PremiumMarketCard({
 				)}
 			</div>
 
-			{/* Momentum bar (up to ±5%) */}
-			<div className="h-0.5 w-full rounded-full bg-t-border overflow-hidden">
-				<div
-					className={cn(
-						"h-full rounded-full transition-all duration-700 opacity-60",
-						isPositive ? "bg-gain" : "bg-loss",
-					)}
-					style={{ width: `${Math.max(meterWidth, 4)}%` }}
-				/>
-			</div>
+			{historyData && historyData.length > 1 ? (
+				<div className="relative -mx-1 opacity-70">
+					<Sparkline
+						data={historyData}
+						isPositive={isPositive}
+						className="h-5"
+					/>
+				</div>
+			) : (
+				<div className="h-0.5 w-full rounded-full bg-t-border overflow-hidden">
+					<div
+						className={cn(
+							"h-full rounded-full transition-all duration-700 opacity-60",
+							isPositive ? "bg-gain" : "bg-loss",
+						)}
+						style={{ width: `${Math.max(meterWidth, 4)}%` }}
+					/>
+				</div>
+			)}
 		</div>
 	);
 }

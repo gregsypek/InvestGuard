@@ -227,6 +227,24 @@ export function UserDashboard(props: UserDashboardProps) {
 	else if (isRateLimited) tooltipText += " (Dostępne za kilka godzin)";
 	else tooltipText += " (Limit: 1x na 6h)";
 
+	// Determine whether the latest quote is from today's session or an earlier trading day (e.g., Friday)
+	const todayWarsaw = new Date().toLocaleDateString("sv-SE", {
+		timeZone: "Europe/Warsaw",
+	});
+
+	const getSessionHorizonLabel = (
+		latestDateStr?: string,
+		isCrypto247?: boolean,
+	) => {
+		if (isCrypto247) return "24h";
+		if (!latestDateStr) return null;
+		if (latestDateStr >= todayWarsaw) return "Dziś";
+
+		const parsed = new Date(`${latestDateStr}T12:00:00`);
+		if (isNaN(parsed.getTime())) return latestDateStr;
+		return format(parsed, "EEEEEE, d MMM", { locale: pl });
+	};
+
 	return (
 		<div className="space-y-8 pb-12">
 			<GlobalDashboardHeader
@@ -383,9 +401,14 @@ export function UserDashboard(props: UserDashboardProps) {
 									const changeValue = props.indexQuotes?.[indexId] || 0;
 									const historyObject =
 										props.indexQuotesHistory?.[indexId] || {};
-									const historyArray = Object.keys(historyObject)
-										.sort()
-										.map((dateKey) => historyObject[dateKey]);
+									const sortedDates = Object.keys(historyObject).sort();
+									const historyArray = sortedDates.map(
+										(dateKey) => historyObject[dateKey],
+									);
+									const latestDateStr =
+										sortedDates.length > 0
+											? sortedDates[sortedDates.length - 1]
+											: undefined;
 									const latestPrice =
 										historyArray.length > 0
 											? historyArray[historyArray.length - 1]
@@ -414,6 +437,13 @@ export function UserDashboard(props: UserDashboardProps) {
 												currency={
 													GLOBAL_INDICES_MAP[indexId]?.currency || "USD"
 												}
+												sessionLabel={getSessionHorizonLabel(
+													latestDateStr,
+													indexId === "BTC",
+												)}
+												sparklineRangeLabel={
+													historyArray.length > 1 ? "5L" : undefined
+												}
 												historyData={historyArray}
 												logo={getStockLogo(indexId)}
 											/>
@@ -421,8 +451,7 @@ export function UserDashboard(props: UserDashboardProps) {
 									);
 								})}
 							</div>
-
-							{/* ROZWIJANY WYKRES DLA INDEKSÓW */}
+							{/* Expanded chart for selected global index */}
 							{selectedMarketId &&
 								props.userIndices.includes(selectedMarketId) && (
 									<MarketDetailChart
@@ -434,7 +463,7 @@ export function UserDashboard(props: UserDashboardProps) {
 										color={INDEX_COLORS[selectedMarketId] || "#3b82f6"}
 										srcCurrency={
 											GLOBAL_INDICES_MAP[selectedMarketId]?.currency || "USD"
-										} // 🚀 Przekazujemy walutę!
+										}
 										data={Object.entries(
 											props.indexQuotesHistory?.[selectedMarketId] || {},
 										)
@@ -448,7 +477,6 @@ export function UserDashboard(props: UserDashboardProps) {
 								)}
 						</div>
 					)}
-
 					{/* ---------- WALORY ---------- */}
 					<div className="flex flex-col gap-2.5">
 						<div className="flex items-center gap-2">
@@ -492,41 +520,66 @@ export function UserDashboard(props: UserDashboardProps) {
 											</button>
 										);
 									})} */}
-								{processedAssets.slice(0, visibleAssetsCount).map((asset) => {
-	const isSelected = selectedMarketId === asset.id;
+									{processedAssets.slice(0, visibleAssetsCount).map((asset) => {
+										const isSelected = selectedMarketId === asset.id;
 
-	// Convert date-keyed price map into a chronologically sorted array of numbers
-	const historyObject =
-		props.indexQuotesHistory?.[asset.ticker || ""] || {};
-	const assetHistory = Object.keys(historyObject)
-		.sort()
-		.map((dateKey) => historyObject[dateKey]);
+										const historyObject =
+											props.indexQuotesHistory?.[asset.ticker || ""] || {};
+										const sortedDates = Object.keys(historyObject).sort();
+										const assetHistory = sortedDates.map(
+											(dateKey) => historyObject[dateKey],
+										);
+										const latestDateStr =
+											sortedDates.length > 0
+												? sortedDates[sortedDates.length - 1]
+												: asset.updatedAt
+													? new Date(asset.updatedAt).toLocaleDateString(
+															"sv-SE",
+															{ timeZone: "Europe/Warsaw" },
+														)
+													: undefined;
+										const latestUnitPrice =
+											assetHistory.length > 0
+												? assetHistory[assetHistory.length - 1]
+												: null;
+										const slicedHistory = assetHistory.slice(-30);
 
-	return (
-		<button
-			key={asset.id}
-			type="button"
-			onClick={() =>
-				setSelectedMarketId(isSelected ? null : asset.id)
-			}
-			className={cn(
-				"group block w-full text-left rounded-xl cursor-pointer transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60",
-				isSelected
-					? "ring-2 ring-blue-500 scale-[1.02] shadow-md"
-					: "active:scale-[0.98]",
-			)}
-		>
-			<PremiumMarketCard
-				variant="asset"
-				name={asset.name}
-				ticker={asset.ticker}
-				change={asset.dailyChange}
-				logo={getStockLogo(asset.ticker ?? "")}
-				historyData={assetHistory.slice(-30)}
-			/>
-		</button>
-	);
-})}
+										return (
+											<button
+												key={asset.id}
+												type="button"
+												onClick={() =>
+													setSelectedMarketId(isSelected ? null : asset.id)
+												}
+												className={cn(
+													"group block w-full text-left rounded-xl cursor-pointer transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60",
+													isSelected
+														? "ring-2 ring-blue-500 scale-[1.02] shadow-md"
+														: "active:scale-[0.98]",
+												)}
+											>
+												<PremiumMarketCard
+													variant="asset"
+													name={asset.name}
+													ticker={asset.ticker}
+													change={asset.dailyChange}
+													price={latestUnitPrice}
+													currency={inferCurrencyFromTicker(asset.ticker)}
+													sessionLabel={getSessionHorizonLabel(
+														latestDateStr,
+														asset.ticker === "BTC",
+													)}
+													sparklineRangeLabel={
+														slicedHistory.length > 1
+															? `${slicedHistory.length}D`
+															: undefined
+													}
+													logo={getStockLogo(asset.ticker ?? "")}
+													historyData={slicedHistory}
+												/>
+											</button>
+										);
+									})}
 
 									{/* 🚀 KARTA DODAWANIA (PLUS) */}
 									<Link

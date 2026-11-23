@@ -191,7 +191,8 @@ export async function refreshPortfolioPrices(portfolioId: string) {
 
 		await Promise.all(dbUpdates);
 
-		revalidateTag("indices", "max");
+		revalidateTag("indices", { expire: 0 });
+		revalidatePath("/");
 		revalidatePath("/dashboard");
 
 		if (updatedCount > 0) {

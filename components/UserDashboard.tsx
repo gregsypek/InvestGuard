@@ -492,32 +492,41 @@ export function UserDashboard(props: UserDashboardProps) {
 											</button>
 										);
 									})} */}
-									{processedAssets.slice(0, visibleAssetsCount).map((asset) => {
-										const isSelected = selectedMarketId === asset.id;
-										return (
-											<button
-												key={asset.id}
-												type="button"
-												onClick={() =>
-													setSelectedMarketId(isSelected ? null : asset.id)
-												}
-												className={cn(
-													"group block w-full text-left rounded-xl cursor-pointer transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60",
-													isSelected
-														? "ring-2 ring-blue-500 scale-[1.02] shadow-md"
-														: "active:scale-[0.98]",
-												)}
-											>
-												<PremiumMarketCard
-													variant="asset"
-													name={asset.name}
-													ticker={asset.ticker}
-													change={asset.dailyChange}
-													logo={getStockLogo(asset.ticker ?? "")}
-												/>
-											</button>
-										);
-									})}
+								{processedAssets.slice(0, visibleAssetsCount).map((asset) => {
+	const isSelected = selectedMarketId === asset.id;
+
+	// Convert date-keyed price map into a chronologically sorted array of numbers
+	const historyObject =
+		props.indexQuotesHistory?.[asset.ticker || ""] || {};
+	const assetHistory = Object.keys(historyObject)
+		.sort()
+		.map((dateKey) => historyObject[dateKey]);
+
+	return (
+		<button
+			key={asset.id}
+			type="button"
+			onClick={() =>
+				setSelectedMarketId(isSelected ? null : asset.id)
+			}
+			className={cn(
+				"group block w-full text-left rounded-xl cursor-pointer transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary/60",
+				isSelected
+					? "ring-2 ring-blue-500 scale-[1.02] shadow-md"
+					: "active:scale-[0.98]",
+			)}
+		>
+			<PremiumMarketCard
+				variant="asset"
+				name={asset.name}
+				ticker={asset.ticker}
+				change={asset.dailyChange}
+				logo={getStockLogo(asset.ticker ?? "")}
+				historyData={assetHistory.slice(-30)}
+			/>
+		</button>
+	);
+})}
 
 									{/* 🚀 KARTA DODAWANIA (PLUS) */}
 									<Link

@@ -178,6 +178,8 @@ export function PremiumMarketCard({
 	change,
 	price,
 	currency,
+	sessionLabel,
+	sparklineRangeLabel,
 	logo,
 	historyData,
 	variant,
@@ -187,6 +189,8 @@ export function PremiumMarketCard({
 	change: number;
 	price?: number | null;
 	currency?: string | null;
+	sessionLabel?: string | null;
+	sparklineRangeLabel?: string | null;
 	logo?: string | null;
 	historyData?: number[];
 	variant?: "index" | "asset";
@@ -204,6 +208,8 @@ export function PremiumMarketCard({
 
 	const cardBase =
 		"group-hover:border-theme-border group-hover:shadow-lg group-hover:-translate-y-0.5 transition-all duration-300";
+
+	const subtitleText = [ticker, sessionLabel].filter(Boolean).join(" • ");
 
 	/* ---------- VARIANT: INDEX ---------- */
 	if (resolvedVariant === "index") {
@@ -233,9 +239,9 @@ export function PremiumMarketCard({
 						>
 							{cleanName}
 						</p>
-						{ticker && (
-							<p className="text-[9px] font-medium uppercase tracking-widest text-t-text-tertiary truncate">
-								{ticker}
+						{subtitleText && (
+							<p className="text-[9px] font-medium uppercase tracking-wider text-t-text-tertiary truncate">
+								{subtitleText}
 							</p>
 						)}
 					</div>
@@ -270,10 +276,17 @@ export function PremiumMarketCard({
 					)}
 				</div>
 
-				{/* Sparkline */}
+				{/* Sparkline with Range Tag */}
 				{historyData && historyData.length > 1 && (
-					<div className="relative -mx-1 mt-auto opacity-60">
-						<Sparkline data={historyData} isPositive={isPositive} />
+					<div className="relative -mx-1 mt-auto">
+						{sparklineRangeLabel && (
+							<span className="pointer-events-none absolute top-0 right-1 z-10 px-1.5 py-0.5 rounded bg-t-bg-panel/85 backdrop-blur-xs border border-t-border-subtle text-[8px] font-bold uppercase tracking-wider text-t-text-tertiary">
+								{sparklineRangeLabel}
+							</span>
+						)}
+						<div className="opacity-65">
+							<Sparkline data={historyData} isPositive={isPositive} />
+						</div>
 					</div>
 				)}
 			</div>
@@ -281,7 +294,7 @@ export function PremiumMarketCard({
 	}
 
 	/* ---------- VARIANT: ASSET ---------- */
-	const meterWidth = Math.min(Math.abs(change) / 5, 1) * 100;
+	const meterWidth = Math.min(Math.abs(change) / 10, 1) * 100;
 
 	return (
 		<div
@@ -306,15 +319,15 @@ export function PremiumMarketCard({
 							</span>
 						)}
 					</div>
-					{ticker && (
-						<p className="text-[9px] font-medium uppercase tracking-widest text-t-text-tertiary truncate">
-							{ticker}
+					{subtitleText && (
+						<p className="text-[9px] font-medium uppercase tracking-wider text-t-text-tertiary truncate">
+							{subtitleText}
 						</p>
 					)}
 				</div>
 			</div>
 
-			{/* Change % + Current Valuation / Unit Price */}
+			{/* Change % + Unit Price */}
 			<div className="flex items-center justify-between gap-2">
 				<div className="flex items-center gap-1.5">
 					<p
@@ -342,13 +355,21 @@ export function PremiumMarketCard({
 				)}
 			</div>
 
+			{/* Mini-sparkline with Range Tag (or fallback bar when no history yet) */}
 			{historyData && historyData.length > 1 ? (
-				<div className="relative -mx-1 opacity-70">
-					<Sparkline
-						data={historyData}
-						isPositive={isPositive}
-						className="h-5"
-					/>
+				<div className="relative -mx-1 mt-auto">
+					{sparklineRangeLabel && (
+						<span className="pointer-events-none absolute -top-0.5 right-1 z-10 px-1 py-0.2 rounded bg-t-bg-panel/85 backdrop-blur-xs border border-t-border-subtle text-[8px] font-bold uppercase tracking-wider text-t-text-tertiary">
+							{sparklineRangeLabel}
+						</span>
+					)}
+					<div className="opacity-70">
+						<Sparkline
+							data={historyData}
+							isPositive={isPositive}
+							className="h-5"
+						/>
+					</div>
 				</div>
 			) : (
 				<div className="h-0.5 w-full rounded-full bg-t-border overflow-hidden">

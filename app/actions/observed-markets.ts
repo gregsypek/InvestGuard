@@ -1,8 +1,10 @@
 "use server";
 
+import { revalidatePath, revalidateTag } from "next/cache";
+
 import { auth } from "@/auth";
+import { backfillObservedAssetHistory } from "@/lib/actions/backfill-asset-history";
 import { db } from "@/lib/db";
-import { revalidatePath } from "next/cache";
 
 const ROLE_LIMITS = {
 	REGULAR: 3,
@@ -12,7 +14,7 @@ const ROLE_LIMITS = {
 
 export async function saveObservedMarkets(
 	selectedAssetNames: string[],
-	selectedIndices: string[], // EN: New parameter for global indices
+	selectedIndices: string[],
 ) {
 	const session = await auth();
 	if (!session?.user?.id) {
@@ -30,7 +32,7 @@ export async function saveObservedMarkets(
 	}
 
 	try {
-		// 1. Zapisz aktywa z portfela (reset i update)
+		// 1. Reset and update observed portfolio assets
 		await db.asset.updateMany({
 			where: { portfolio: { userId: session.user.id } },
 			data: { isObserved: false },
@@ -44,15 +46,37 @@ export async function saveObservedMarkets(
 				},
 				data: { isObserved: true },
 			});
+
+			// 2. Backfill 2-year history in IndexHistory for paid tiers (SUBSCRIBER / ADMIN)
+			if (userRole === "ADMIN" || userRole === "SUBSCRIBER") {
+				const observedAssets = await db.asset.findMany({
+					where: {
+						portfolio: { userId: session.user.id },
+						name: { in: selectedAssetNames },
+						ticker: { not: null },
+						category: { notIn: ["BONDS", "CASH"] },
+					},
+					select: { ticker: true, name: true },
+				});
+
+				await Promise.all(
+					observedAssets.map((asset) =>
+						backfillObservedAssetHistory(asset.ticker!, asset.name),
+					),
+				);
+			}
 		}
 
-		// 2. Zapisz globalne indeksy w profilu użytkownika
+		// 3. Save global indices in user profile
 		await db.user.update({
 			where: { id: session.user.id },
 			data: { observedIndices: selectedIndices },
 		});
 
+		revalidateTag("indices", { expire: 0 });
+
 		revalidatePath("/dashboard");
+		revalidatePath("/");
 		revalidatePath("/settings");
 
 		return { success: true };

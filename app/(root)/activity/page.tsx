@@ -8,10 +8,16 @@ import {
 	PaginationPrevious,
 } from "@/components/ui/pagination";
 import { SectionNavTabs, SectionTab } from "@/components/shared/SectionNavTabs";
+import {
+	calculateLiveBondValue,
+	getBondDictionaries,
+} from "@/lib/bond-calculations";
 
 import { ActivityHeader } from "@/components/ActivityHeader";
 import ActivityTable from "@/components/shared/ActivityTable";
 import { HistoryChartSection } from "@/components/history/HistoryChartSection";
+import { MonthlyPurchasesSection } from "@/components/history/MonthlyPurchaseSection";
+// import { MonthlyPurchasesSection } from "@/components/history/MonthlyPurchasesSection";
 import PortfolioEmptyState from "@/components/PortfolioEmptyState";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { auth } from "@/auth";
@@ -26,6 +32,7 @@ import { redirect } from "next/navigation";
 const ACTIVITY_SECTIONS: SectionTab[] = [
 	{ id: "section-stats", label: "Statystyki", iconName: "BarChart3" },
 	{ id: "section-history-chart", label: "Wykres", iconName: "ChartArea" },
+	{ id: "section-monthly-cards", label: "Zakupy", iconName: "History" },
 	{ id: "section-activity-table", label: "Rejestr", iconName: "ListOrdered" },
 ];
 
@@ -47,8 +54,7 @@ export default async function ActivityPage({
 	const cookieStore = await cookies();
 	const defaultPortfolioId = cookieStore.get("selectedPortfolioId")?.value;
 
-	// Fetch portfolios with assets and an empty transactionHistories array (0 rows transferred, satisfies PortfolioWithAssets type)
-	const userPortfolios = await db.portfolio.findMany({
+	const rawUserPortfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
 		include: {
 			assets: true,
@@ -59,8 +65,38 @@ export default async function ActivityPage({
 		orderBy: { createdAt: "desc" },
 	});
 
-	if (userPortfolios.length === 0) {
+	if (rawUserPortfolios.length === 0) {
 		return <PortfolioEmptyState variant="PORTFOLIOS" />;
+	}
+
+	// Enrich bond assets with live accrued interest so monthly bond purchases show accurate profit
+	const hasBonds = rawUserPortfolios.some((p) =>
+		p.assets.some((a) => a.category === "BONDS"),
+	);
+	let userPortfolios = rawUserPortfolios;
+
+	if (hasBonds) {
+		const { inflationMap, configMap } = await getBondDictionaries();
+		userPortfolios = rawUserPortfolios.map((portfolio) => ({
+			...portfolio,
+			assets: portfolio.assets.map((asset) => {
+				if (asset.category === "BONDS") {
+					const cleanTicker = asset.ticker
+						? asset.ticker.split("_")[0]
+						: "UNKNOWN";
+					const calculated = calculateLiveBondValue(
+						Number(asset.investedCapital),
+						asset.interestRate ?? 0,
+						asset.purchaseDate,
+						cleanTicker,
+						inflationMap,
+						configMap,
+					);
+					return { ...asset, currentValue: calculated.value };
+				}
+				return asset;
+			}),
+		}));
 	}
 
 	const resolvedParams = await searchParams;
@@ -74,7 +110,6 @@ export default async function ActivityPage({
 	const hasActiveFilters =
 		search !== "" || category !== "ALL" || portfolioFilter !== "ALL";
 
-	// Build strongly typed Prisma WhereInput for KPI aggregation
 	const kpiWhereClause: Prisma.TransactionHistoryWhereInput = {
 		portfolio: { userId: session.user.id },
 		...(portfolioFilter !== "ALL" ? { portfolioId: portfolioFilter } : {}),
@@ -89,28 +124,51 @@ export default async function ActivityPage({
 			: {}),
 	};
 
-	const [snapshotsResult, result, kpiGrouped] = await Promise.all([
-		getPortfolioSnapshotsHistory(
-			userPortfolios,
-			{ range: resolvedParams.range || "1Y" },
-			session.user.id,
-		),
-		getTransactionHistory(
-			currentPage,
-			10,
-			session.user.id,
-			search,
-			category,
-			sort,
-			portfolioFilter,
-		),
-		db.transactionHistory.groupBy({
-			by: ["type"],
-			where: kpiWhereClause,
-			_count: { _all: true },
-			_sum: { executedValue: true },
-		}),
-	]);
+	const buyWhereClause: Prisma.TransactionHistoryWhereInput = {
+		portfolio: { userId: session.user.id },
+		type: "BUY",
+		category: { not: "CASH" },
+		...(portfolioFilter !== "ALL" ? { portfolioId: portfolioFilter } : {}),
+		...(category !== "ALL" ? { category: category as Category } : {}),
+	};
+
+	const [snapshotsResult, result, kpiGrouped, buyTransactions] =
+		await Promise.all([
+			getPortfolioSnapshotsHistory(
+				userPortfolios,
+				{ range: resolvedParams.range || "1Y" },
+				session.user.id,
+			),
+			getTransactionHistory(
+				currentPage,
+				10,
+				session.user.id,
+				search,
+				category,
+				sort,
+				portfolioFilter,
+			),
+			db.transactionHistory.groupBy({
+				by: ["type"],
+				where: kpiWhereClause,
+				_count: { _all: true },
+				_sum: { executedValue: true },
+			}),
+			db.transactionHistory.findMany({
+				where: buyWhereClause,
+				orderBy: { executedAt: "desc" },
+				select: {
+					id: true,
+					portfolioId: true,
+					assetName: true,
+					ticker: true,
+					category: true,
+					quantity: true,
+					executedValue: true,
+					executedAt: true,
+				},
+			}),
+		]);
 
 	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
 		snapshotsResult;
@@ -132,7 +190,6 @@ export default async function ActivityPage({
 
 	const { data: transactions, meta } = result;
 
-	// Compute KPI metrics from the grouped DB result
 	let meaningfulCount = 0;
 	let totalVolumeValue = 0;
 	let buyCount = 0;
@@ -187,7 +244,6 @@ export default async function ActivityPage({
 			{/* KPI summary cards for transaction history */}
 			<div id="section-stats" className="scroll-mt-20 section-padding">
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-					{/* Card 1: Total Operations Volume */}
 					<div
 						className="bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm cursor-help"
 						title={volumeTooltipText}
@@ -206,7 +262,6 @@ export default async function ActivityPage({
 						</span>
 					</div>
 
-					{/* Card 2: Average Single Transaction Value */}
 					<div className="bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm">
 						<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest block mb-1">
 							Średnia Transakcja
@@ -222,7 +277,6 @@ export default async function ActivityPage({
 						</span>
 					</div>
 
-					{/* Card 3: Buy vs Sell Ratio */}
 					<div className="bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm">
 						<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest block mb-1">
 							Zakupy / Sprzedaże
@@ -241,7 +295,6 @@ export default async function ActivityPage({
 						</span>
 					</div>
 
-					{/* Card 4: Realized Dividends & Interest */}
 					<div className="bg-t-bg-panel border border-t-border rounded-2xl p-4 shadow-sm">
 						<span className="text-[10px] font-bold text-t-text-tertiary uppercase tracking-widest block mb-1">
 							Dywidendy i Odsetki
@@ -259,7 +312,7 @@ export default async function ActivityPage({
 				</div>
 			</div>
 
-			{/* SEKCJA 2: ANALIZA WYKRESOWA */}
+			{/* SECTION 2: CHART ANALYSIS */}
 			<div id="section-history-chart" className="scroll-mt-20">
 				<SectionLayout
 					title="Analiza Wykresowa"
@@ -277,7 +330,17 @@ export default async function ActivityPage({
 				</SectionLayout>
 			</div>
 
-			{/* SEKCJA 3: REJESTR TRANSAKCJI */}
+			{/* SECTION 3: MONTHLY PURCHASES CARDS */}
+			<MonthlyPurchasesSection
+				buyTransactions={buyTransactions.map((tx) => ({
+					...tx,
+					executedValue: Number(tx.executedValue),
+					quantity: tx.quantity != null ? Number(tx.quantity) : null,
+				}))}
+				portfolios={userPortfolios}
+			/>
+
+			{/* SECTION 4: TRANSACTION LEDGER */}
 			<div id="section-activity-table" className="scroll-mt-20">
 				<SectionLayout
 					title="Rejestr Transakcji"
@@ -292,7 +355,7 @@ export default async function ActivityPage({
 				</SectionLayout>
 			</div>
 
-			{/* PAGINACJA */}
+			{/* PAGINATION */}
 			{meta.totalPages > 1 && (
 				<div className="pt-2 pb-12 flex justify-center">
 					<Pagination>

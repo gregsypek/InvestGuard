@@ -421,19 +421,18 @@
 	--t-text-secondary: oklch(0.4 0.02 250);
 	--t-text-tertiary: oklch(0.55 0.02 250);
 }
-
 /* =========================================
    DARK MODE 🌙 (Premium Trading)
    ========================================= */
 .dark {
-	--background: oklch(0.15 0.01 255);
+	--background: oklch(0.155 0.012 255);
 	--foreground: oklch(0.98 0 0);
 
 	--card: oklch(0.17 0.01 255);
 	--card-foreground: oklch(0.98 0 0);
 
-	--border: oklch(0.22 0.01 255);
-	--input: oklch(0.22 0.01 255);
+	--border: oklch(0.28 0.015 255);
+	--input: oklch(0.27 0.015 255);
 
 	--muted: oklch(0.2 0.01 255);
 	--muted-foreground: oklch(0.65 0.02 255);
@@ -441,7 +440,7 @@
 	--primary: oklch(0.55 0.15 255);
 	--primary-foreground: oklch(0.98 0 0);
 
-	--popover: oklch(0.15 0.01 255);
+	--popover: oklch(0.16 0.01 255);
 	--popover-foreground: oklch(0.98 0 0);
 
 	--switch-off: oklch(0.25 0.01 255);
@@ -449,7 +448,7 @@
 	/* Sidebar: głębszy od tła + jasna poświata w rogu, żeby dodać głębi */
 	--sidebar: oklch(0.13 0.01 255);
 	--sidebar-foreground: oklch(0.78 0.02 255);
-	--sidebar-border: oklch(1 0 0 / 0.06);
+	--sidebar-border: oklch(1 0 0 / 0.09);
 	--sidebar-accent: oklch(1 0 0 / 0.05);
 	--sidebar-gradient:
 		radial-gradient(
@@ -481,20 +480,19 @@
 	--portfolio-custom: oklch(0.72 0.15 330);
 
 	/* Trading UI (ciemny) */
-	--t-bg-base: #05070a;
+	--t-bg-base: #080b10;
 	--t-bg-panel: #0a0e17;
 	--t-bg-sticky: #0d1526;
 	--t-bg-sticky-hover: #121d33;
 
-	--t-border: rgba(255, 255, 255, 0.05);
-	--t-border-subtle: rgba(255, 255, 255, 0.03);
-	--t-hover: rgba(255, 255, 255, 0.02);
+	--t-border: rgba(255, 255, 255, 0.1);
+	--t-border-subtle: rgba(255, 255, 255, 0.06);
+	--t-hover: rgba(255, 255, 255, 0.04);
 
 	--t-text-primary: #e2e8f0;
 	--t-text-secondary: #94a3b8;
 	--t-text-tertiary: #64748b;
 }
-
 /* =========================================
    TICKER
    ========================================= */

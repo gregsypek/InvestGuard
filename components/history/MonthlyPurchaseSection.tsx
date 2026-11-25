@@ -8,7 +8,11 @@ import {
 	History,
 	ListOrdered,
 } from "lucide-react";
-import { Asset, Category, PortfolioWithAssets } from "@/lib/types";
+import {
+	Asset,
+	AssetCategory as Category,
+	PortfolioWithAssets,
+} from "@/lib/types";
 import React, { useMemo, useState } from "react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
@@ -230,7 +234,7 @@ export function MonthlyPurchasesSection({
 				!isSold && item.totalInvested > 0
 					? (profitAmount / item.totalInvested) * 100
 					: 0;
-
+			// Match all required properties of Prisma Asset model
 			const syntheticAsset: Asset = {
 				id: `monthly-${selectedMonth}-${item.key}`,
 				portfolioId: item.portfolioId,
@@ -238,15 +242,23 @@ export function MonthlyPurchasesSection({
 				ticker: item.ticker,
 				category: item.category,
 				quantity: item.totalQuantity,
+				nominalValue: null,
 				investedCapital: item.totalInvested,
 				currentValue: estimatedCurrentValue,
+				targetPercentage: 0,
+				rationale: null,
+				timeHorizon: null,
+				expectedRoi: null,
+				conviction: null,
+				riskLevel: null,
 				purchaseDate: item.latestDate,
+				maturityDate: null,
+				interestRate: null,
+				rateType: null,
 				createdAt: item.latestDate,
 				updatedAt: item.latestDate,
-				dailyChange: 0,
 				isObserved: false,
-				interestRate: null,
-				notes: null,
+				dailyChange: 0,
 			};
 
 			results.push({

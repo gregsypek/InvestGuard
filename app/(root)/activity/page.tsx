@@ -45,6 +45,7 @@ export default async function ActivityPage({
 		category?: string;
 		sort?: string;
 		portfolio?: string;
+		portfolioId?: string;
 		range?: string;
 	}>;
 }) {
@@ -59,7 +60,7 @@ export default async function ActivityPage({
 		include: {
 			assets: true,
 			transactionHistories: {
-				take: 0,
+				orderBy: { executedAt: "desc" },
 			},
 		},
 		orderBy: { createdAt: "desc" },
@@ -105,7 +106,10 @@ export default async function ActivityPage({
 	const category = resolvedParams.category || "ALL";
 	const sort = resolvedParams.sort || "date_desc";
 	const portfolioFilter =
-		resolvedParams.portfolio || defaultPortfolioId || "ALL";
+		resolvedParams.portfolio ||
+		resolvedParams.portfolioId ||
+		defaultPortfolioId ||
+		"ALL";
 
 	const hasActiveFilters =
 		search !== "" || category !== "ALL" || portfolioFilter !== "ALL";

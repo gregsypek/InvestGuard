@@ -48,7 +48,8 @@ const ActivityTable = ({ transactions, portfolios }: ActivityTableProps) => {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
-	const filterPortfolio = searchParams.get("portfolio") || "ALL";
+	const filterPortfolio =
+		searchParams.get("portfolio") || searchParams.get("portfolioId") || "ALL";
 	const sortValue = searchParams.get("sort") || "date_desc";
 	const filterCategory = searchParams.get("category") || "ALL";
 

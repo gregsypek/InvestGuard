@@ -1,10 +1,11 @@
 "use client";
 
-import { Container, Wallet2 } from "lucide-react";
+import { Briefcase, Container, Plus, Wallet2 } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { AppHeaderLayout } from "../shared/AppHeaderLayout";
 import { FilterBadge } from "../shared/FilterBadge";
+import Link from "next/link";
 import { ValueCard } from "../shared/ValueCard";
 import { cn } from "@/lib/utils";
 import { useChartContext } from "../providers/ChartProvider";
@@ -37,10 +38,41 @@ export function GlobalDashboardHeader({
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
+	// Resolve active scope label for breadcrumbs
+	const activeScopeLabel = selectedIds.includes("ALL")
+		? "wszystkie portfele"
+		: selectedIds.length === 1
+			? portfolios.find((p) => p.id === selectedIds[0])?.name ||
+				"wybrany portfel"
+			: `wybrane (${selectedIds.length})`;
+
+	// Target the selected portfolio if a single one is active, otherwise fall back to the primary portfolio
+	const targetPortfolioId =
+		selectedIds.find((id) => id !== "ALL") || portfolios[0]?.id;
+
 	return (
 		<AppHeaderLayout
+			breadcrumbs={
+				<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-1.5">
+					Przegląd /{" "}
+					<span className="text-theme-primary font-medium lowercase">
+						{activeScopeLabel}
+					</span>
+				</nav>
+			}
 			title="Przegląd Inwestycji"
 			description="Holistyczne spojrzenie na wszystkie Twoje strategie."
+			// actions={
+			// 	<Link
+			// 		href="/portfolios"
+			// 		className="group flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl transition-all duration-300 shadow-sm border bg-white/5 hover:bg-white/10 border-white/15 text-slate-300 hover:text-white"
+			// 	>
+			// 		<Briefcase className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+			// 		<span className="hidden sm:inline text-[10px] sm:text-xs font-bold uppercase tracking-widest">
+			// 			Portfele
+			// 		</span>
+			// 	</Link>
+			// }
 			filters={
 				portfolios.length > 0 && (
 					<>
@@ -48,7 +80,7 @@ export function GlobalDashboardHeader({
 							<Wallet2 className="w-3 h-3 text-blue-400" /> Analiza dla:
 						</span>
 
-						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
+						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:flex-1 min-w-0">
 							<FilterBadge
 								id="ALL"
 								label="Wszystkie Portfele"
@@ -81,6 +113,17 @@ export function GlobalDashboardHeader({
 								);
 							})}
 						</div>
+
+						{/* Primary creation CTA aligned to the right edge of the filter bar */}
+						{targetPortfolioId && (
+							<Link
+								href={`/dashboard/${targetPortfolioId}/add-asset`}
+								className="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-theme-border bg-theme-soft/70 hover:bg-theme-primary hover:text-white hover:border-transparent text-theme-primary text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 sm:ml-auto cursor-pointer shadow-xs"
+							>
+								<Plus className="w-3.5 h-3.5" />
+								<span>Nowe aktywo</span>
+							</Link>
+						)}
 					</>
 				)
 			}
@@ -98,7 +141,7 @@ export function GlobalDashboardHeader({
 			mainStatSuffix={currencySymbol}
 			secondaryStats={
 				<>
-					{/* Karta 1: Zainwestowany kapitał */}
+					{/* Card 1: Invested capital */}
 					<ValueCard
 						label="Zainwestowany kapitał"
 						icon={Container}
@@ -107,7 +150,7 @@ export function GlobalDashboardHeader({
 						suffix={currencySymbol}
 					/>
 
-					{/* Karta 2: P&L */}
+					{/* Card 2: Total P&L */}
 					<ValueCard label="Całkowity Wynik (P&L)">
 						<div className="flex items-center gap-2 font-mono">
 							<span

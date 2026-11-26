@@ -7,6 +7,7 @@ import {
 	ChevronRight,
 	History,
 	ListOrdered,
+	Plus,
 } from "lucide-react";
 import {
 	Asset,
@@ -19,6 +20,7 @@ import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import AccordionInfo from "@/components/shared/AccordionInfo";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import RecentActivityCard from "../ui/assets/RecentActivityCard";
+import { SafeActionButton } from "../ui/SafeActionButton";
 import { SectionLayout } from "@/components/shared/SectionLayout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -78,8 +80,12 @@ export function MonthlyPurchasesSection({
 	buyTransactions,
 	portfolios,
 }: Props) {
-	const { currency, convertPLN } = useChartContext();
+	const { currency, convertPLN, selectedIds } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
+
+	// Use the currently selected portfolio ID, or fall back to the primary portfolio when "ALL" is active
+	const activePortfolioId = selectedIds.find((id) => id !== "ALL");
+	const targetPortfolioId = activePortfolioId || portfolios[0]?.id;
 
 	const currentMonthKey = useMemo(() => getMonthKey(new Date()), []);
 
@@ -366,6 +372,17 @@ export function MonthlyPurchasesSection({
 				subtitle="Podsumowanie miesięcznych inwestycji"
 				description="Zbiorcze zestawienie walorów kupionych w wybranym miesiącu. Wielokrotne zakupy tej samej pozycji są sumowane, wraz z wyceną ich bieżącego zysku lub straty."
 				subtitleIcon={ListOrdered}
+				action={
+					targetPortfolioId && (
+						<SafeActionButton
+							label="Dodaj Aktywo"
+							icon={Plus}
+							variant="outline"
+							href={`/dashboard/${targetPortfolioId}/add-asset?source=activity`}
+							className="border-slate-800 bg-slate-800 hover:text-slate-300 text-theme-primary"
+						/>
+					)
+				}
 			>
 				<div className="flex flex-col gap-4 md:gap-6">
 					{/* Month Selector & Monthly PnL Summary Bar */}

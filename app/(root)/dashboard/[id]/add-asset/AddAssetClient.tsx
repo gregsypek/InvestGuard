@@ -70,7 +70,7 @@ export default function AddAssetClient({
 		return [
 			{ id: "manual", label: "Formularz Ręczny", show: true },
 
-			{ id: "planner", label: "Nowy Plan", show: true }, // Dodane!
+			{ id: "planner", label: "Nowy Plan", show: true },
 			{
 				id: "import-market",
 				label: "Import Giełdowy",
@@ -81,12 +81,23 @@ export default function AddAssetClient({
 				label: "Import Obligacji",
 				show: source !== "alpha",
 			},
-			{ id: "cash", label: "Szybka Gotówka", show: !source },
+			{
+				id: "cash",
+				label: "Szybka Gotówka",
+				show: !source || source === "activity",
+			},
 		].filter((t) => t.show);
 	}, [source]);
 
 	// 🚀 INTELIGENTNY ROUTING POWROTU
 	const { backUrl, backLabel, moduleName } = useMemo(() => {
+		if (source === "activity") {
+			return {
+				backUrl: "/activity",
+				backLabel: "Historia Operacji",
+				moduleName: "Kreator Aktywów",
+			};
+		}
 		if (source === "alpha") {
 			return {
 				backUrl: `/alpha-selection?portfolioId=${id}`,

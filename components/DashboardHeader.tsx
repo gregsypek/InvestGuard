@@ -5,10 +5,10 @@ import {
 	ChevronLeft,
 	Container,
 	Filter,
+	Plus,
 	Wallet2,
 	Wrench,
 } from "lucide-react";
-// 🚀 1. Dodajemy importy typów prosto z Prisma!
 import { Asset, Category } from "@prisma/client";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useCallback, useMemo, useState } from "react";
@@ -45,7 +45,6 @@ export const DashboardHeader = ({
 	const isAddAssetPage = pathname.endsWith("/add-asset");
 	const isSettingsPage = pathname.endsWith("/settings");
 
-	// Wymuszamy, by assets zawsze były tablicą typu Asset[]
 	const assets = useMemo<Asset[]>(() => {
 		return portfolio && Array.isArray(portfolio.assets) ? portfolio.assets : [];
 	}, [portfolio]);
@@ -66,15 +65,12 @@ export const DashboardHeader = ({
 		});
 	}, []);
 
-	// 🚀 2. Usuwamy "any" - opieramy się tylko na a.category z modelu Asset
 	const availableCategories = useMemo(() => {
 		if (assets.length === 0) return [];
 		const types = new Set(assets.map((a) => a.category));
-		// Wymuszamy typ Category z Prisma dla bezpieczeństwa
 		return Array.from(types).filter(Boolean) as Category[];
 	}, [assets]);
 
-	// 🚀 3. Usuwamy "any" przy filtrowaniu
 	const filteredAssets = useMemo(() => {
 		if (assets.length === 0) return [];
 		if (selectedCategories.includes("ALL")) return assets;
@@ -85,7 +81,6 @@ export const DashboardHeader = ({
 
 	const assetsWithPL = useMemo(() => {
 		return filteredAssets.map((asset) => {
-			// calculateAssetPL oczekuje obiektu, który ma investedCapital i currentValue
 			const { profitAmount, profitPercent } = calculateAssetPL({
 				investedCapital: asset.investedCapital || 0,
 				currentValue: asset.currentValue || 0,
@@ -163,13 +158,13 @@ export const DashboardHeader = ({
 							"group flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl transition-all duration-300 shadow-sm border",
 							isSettingsPage
 								? "bg-t-bg-base border-t-border text-t-text-secondary hover:text-t-text-primary"
-								: "bg-theme-soft hover:opacity-80 border-theme-border text-theme-primary",
+								: "bg-white/5 hover:bg-white/10 border-white/15 text-slate-300 hover:text-white",
 						)}
 					>
 						{isSettingsPage ? (
 							<ArrowLeft className="w-4 h-4" />
 						) : (
-							<Wrench className="w-4 h-4" />
+							<Wrench className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
 						)}
 						<span className="hidden sm:inline text-[10px] sm:text-xs font-bold uppercase tracking-widest">
 							{isSettingsPage ? "Powrót" : "Zarządzanie"}
@@ -181,47 +176,64 @@ export const DashboardHeader = ({
 				!hideStats &&
 				!isAddAssetPage &&
 				!isSettingsPage &&
-				availableCategories.length > 0 && (
+				portfolio.id && (
 					<>
-						<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-theme-primary uppercase tracking-widest shrink-0">
-							<Filter className="w-3 h-3  " /> Wycena dla:
-						</span>
-						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
-							<FilterBadge
-								id="ALL"
-								label="Cały Portfel"
-								isSelected={selectedCategories.includes("ALL")}
-								onToggle={toggleCategory}
-								className={cn(
-									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
-									selectedCategories.includes("ALL")
-										? "bg-theme-primary text-white border-transparent shadow-sm"
-										: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
-								)}
-							/>
-							{availableCategories.map((type) => {
-								const isSelected = selectedCategories.includes(type);
-								return (
+						{availableCategories.length > 0 ? (
+							<>
+								<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-theme-primary uppercase tracking-widest shrink-0">
+									<Filter className="w-3 h-3" /> Wycena dla:
+								</span>
+								<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:flex-1 min-w-0">
 									<FilterBadge
-										key={type}
-										id={type}
-										// 🚀 4. Kluczowy fix: Mówimy TS-owi, że type na 100% należy do kluczy z CATEGORY_LABELS
-										label={
-											CATEGORY_LABELS[type as keyof typeof CATEGORY_LABELS] ||
-											type
-										}
-										isSelected={isSelected}
+										id="ALL"
+										label="Cały Portfel"
+										isSelected={selectedCategories.includes("ALL")}
 										onToggle={toggleCategory}
 										className={cn(
 											"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
-											isSelected
-												? "bg-theme-soft text-theme-primary border-theme-border shadow-sm"
+											selectedCategories.includes("ALL")
+												? "bg-theme-primary text-white border-transparent shadow-sm"
 												: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
 										)}
 									/>
-								);
-							})}{" "}
-						</div>
+									{availableCategories.map((type) => {
+										const isSelected = selectedCategories.includes(type);
+										return (
+											<FilterBadge
+												key={type}
+												id={type}
+												label={
+													CATEGORY_LABELS[
+														type as keyof typeof CATEGORY_LABELS
+													] || type
+												}
+												isSelected={isSelected}
+												onToggle={toggleCategory}
+												className={cn(
+													"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
+													isSelected
+														? "bg-theme-soft text-theme-primary border-theme-border shadow-sm"
+														: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+												)}
+											/>
+										);
+									})}
+								</div>
+							</>
+						) : (
+							<span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+								Portfel jest pusty — dodaj pierwszą pozycję
+							</span>
+						)}
+
+						{/* Primary action CTA aligned to the right edge of the filter bar */}
+						<Link
+							href={`/dashboard/${portfolio.id}/add-asset`}
+							className="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-theme-border bg-theme-soft/70 hover:bg-theme-primary hover:text-white hover:border-transparent text-theme-primary text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 sm:ml-auto cursor-pointer shadow-xs"
+						>
+							<Plus className="w-3.5 h-3.5" />
+							<span>Nowe aktywo</span>
+						</Link>
 					</>
 				)
 			}
@@ -236,14 +248,13 @@ export const DashboardHeader = ({
 				</>
 			}
 			mainStatValue={formatCurrency(convertPLN(totalPortfolioValue))}
-			mainStatSuffix={currencySymbol} // 🚀 FIX: Przekazujemy tu znaczek ($ / € / PLN) z Kontekstu!
+			mainStatSuffix={currencySymbol}
 			secondaryStats={
 				!hideStats && (
 					<>
 						<ValueCard
 							label="Zainwestowany kapitał"
 							icon={Container}
-							// 🚀 5. FIX: Dodano convertPLN() dla zainwestowanego kapitału!
 							value={convertPLN(totalInvestedCapital)}
 							formatString
 							suffix={currencySymbol}
@@ -276,7 +287,7 @@ export const DashboardHeader = ({
 									{totalProfitPercent > 0 ? "+" : ""}
 									{totalProfitPercent.toFixed(2)}%
 								</span>
-							</div>{" "}
+							</div>
 						</ValueCard>
 					</>
 				)

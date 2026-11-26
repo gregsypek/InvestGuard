@@ -307,14 +307,14 @@ export function PlannerDashboardClient({
 					description="Śledź swój miesięczny postęp wpłat i weryfikuj najnowsze zaksięgowane transakcje."
 					action={
 						<div className="flex flex-col gap-3 md:gap-4 items-end ">
-							<SafeActionButton
+							{/* <SafeActionButton
 								label="Dodaj Nowy Plan"
 								icon={PlusSquare}
 								variant="outline"
 								isDemo={false}
 								className="w-min border-slate-800 bg-slate-800 hover:text-slate-300 text-theme-primary justify-center"
 								href={`/dashboard/${projPortfolioId}/add-asset?view=planner&source=planner`}
-							/>
+							/> */}
 
 							<div className="flex flex-row items-center gap-2 flex-wrap sm:w-auto justify-start sm:justify-end">
 								{renderInlinePortfolioSelector(

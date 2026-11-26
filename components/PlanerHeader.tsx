@@ -1,11 +1,12 @@
 "use client";
 
-import { CalendarClock, TrendingUp, Wallet2 } from "lucide-react";
+import { CalendarClock, Plus, TrendingUp, Wallet2 } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useCallback, useMemo, useState } from "react";
 
 import { AppHeaderLayout } from "./shared/AppHeaderLayout";
 import { FilterBadge } from "./shared/FilterBadge";
+import Link from "next/link";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
 import { useChartContext } from "./providers/ChartProvider";
@@ -28,7 +29,7 @@ export function PlannerHeader({
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
-	// --- LOKALNY STAN DO "SUWAKA PODGLĄDU" ---
+	// Local state for previewing planned totals per portfolio
 	const [selectedIds, setSelectedIds] = useState<string[]>(["ALL"]);
 
 	const togglePortfolio = useCallback((id: string) => {
@@ -43,7 +44,7 @@ export function PlannerHeader({
 		});
 	}, []);
 
-	// --- DYNAMICZNE PRZELICZANIE STATYSTYK ---
+	// Dynamically recalculate planned stats based on selected portfolio pills
 	const dynamicStats = useMemo(() => {
 		if (selectedIds.includes("ALL")) {
 			return {
@@ -52,7 +53,6 @@ export function PlannerHeader({
 			};
 		}
 
-		// Filtrujemy plany tylko dla zaznaczonych portfeli
 		const activePlans = plans.filter((p) =>
 			selectedIds.includes(p.portfolioId),
 		);
@@ -62,6 +62,10 @@ export function PlannerHeader({
 			count: activePlans.length,
 		};
 	}, [selectedIds, plans, initialTotalPlannedValue, initialPlannedCount]);
+
+	// Resolve target portfolio ID for the creation link (falls back to first portfolio when "ALL" is active)
+	const targetPortfolioId =
+		selectedIds.find((id) => id !== "ALL") || portfolios[0]?.id;
 
 	return (
 		<AppHeaderLayout
@@ -76,7 +80,7 @@ export function PlannerHeader({
 							portfel:
 						</span>
 
-						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
+						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:flex-1 min-w-0">
 							<FilterBadge
 								id="ALL"
 								label="Wszystkie Portfele"
@@ -109,6 +113,17 @@ export function PlannerHeader({
 								);
 							})}
 						</div>
+
+						{/* Primary creation CTA aligned to the right edge of the filter bar */}
+						{targetPortfolioId && (
+							<Link
+								href={`/dashboard/${targetPortfolioId}/add-asset?source=planner`}
+								className="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-theme-border bg-theme-soft/70 hover:bg-theme-primary hover:text-white hover:border-transparent text-theme-primary text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 sm:ml-auto cursor-pointer shadow-xs"
+							>
+								<Plus className="w-3.5 h-3.5" />
+								<span>Nowy plan</span>
+							</Link>
+						)}
 					</>
 				)
 			}

@@ -5,6 +5,7 @@ import {
 	ChevronLeft,
 	Filter,
 	History,
+	Plus,
 	ShieldCheck,
 	TrendingUp,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import Link from "next/link";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
 import { useChartContext } from "./providers/ChartProvider";
+import { useParams } from "next/navigation";
 
 export interface BondHeaderStats {
 	totalInvested: string;
@@ -28,6 +30,7 @@ export interface BondHeaderStats {
 interface BondHeaderProps {
 	title: string;
 	totalBonds: number;
+	portfolioId?: string;
 	portfolioName?: string;
 	stats: BondHeaderStats;
 	customBreadcrumbs?: React.ReactNode;
@@ -43,13 +46,15 @@ const getBaseTicker = (ticker?: string) => {
 
 export function BondHeader({
 	title,
+	portfolioId,
 	portfolioName,
 	customBreadcrumbs,
 	backHref,
 	bonds = [],
 }: BondHeaderProps) {
-	const { currency, convertPLN } = useChartContext();
+	const { currency, convertPLN, selectedIds } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
+	const params = useParams();
 
 	const [selectedTypes, setSelectedTypes] = useState<string[]>(["ALL"]);
 
@@ -100,6 +105,17 @@ export function BondHeader({
 		};
 	}, [selectedTypes, bonds]);
 
+	// Resolve target portfolio ID from props, dynamic route params, bond items, or chart context
+	const routePortfolioId =
+		typeof params?.id === "string"
+			? params.id
+			: typeof params?.portfolioId === "string"
+				? params.portfolioId
+				: undefined;
+	const activeContextId = selectedIds?.find((id) => id !== "ALL");
+	const targetPortfolioId =
+		portfolioId || routePortfolioId || bonds[0]?.portfolioId || activeContextId;
+
 	return (
 		<AppHeaderLayout
 			breadcrumbs={
@@ -130,44 +146,64 @@ export function BondHeader({
 				</span>
 			}
 			filters={
-				availableTypes.length > 0 && (
+				(availableTypes.length > 0 || targetPortfolioId) && (
 					<>
-						<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
-							<Filter className="w-3 h-3 text-theme-primary" /> Typ Obligacji:
-						</span>
+						{availableTypes.length > 0 ? (
+							<>
+								<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+									<Filter className="w-3 h-3 text-theme-primary" /> Typ
+									Obligacji:
+								</span>
 
-						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
-							<FilterBadge
-								id="ALL"
-								label="Wszystkie"
-								isSelected={selectedTypes.includes("ALL")}
-								onToggle={toggleType}
-								className={cn(
-									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
-									selectedTypes.includes("ALL")
-										? "bg-theme-primary text-white border-transparent shadow-sm"
-										: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
-								)}
-							/>
-							{availableTypes.map((ticker) => {
-								const isSelected = selectedTypes.includes(ticker);
-								return (
+								<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:flex-1 min-w-0">
 									<FilterBadge
-										key={ticker}
-										id={ticker}
-										label={ticker}
-										isSelected={isSelected}
+										id="ALL"
+										label="Wszystkie"
+										isSelected={selectedTypes.includes("ALL")}
 										onToggle={toggleType}
 										className={cn(
 											"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
-											isSelected
-												? "bg-theme-soft text-theme-primary border-theme-border shadow-sm"
+											selectedTypes.includes("ALL")
+												? "bg-theme-primary text-white border-transparent shadow-sm"
 												: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
 										)}
 									/>
-								);
-							})}
-						</div>
+									{availableTypes.map((ticker) => {
+										const isSelected = selectedTypes.includes(ticker);
+										return (
+											<FilterBadge
+												key={ticker}
+												id={ticker}
+												label={ticker}
+												isSelected={isSelected}
+												onToggle={toggleType}
+												className={cn(
+													"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
+													isSelected
+														? "bg-theme-soft text-theme-primary border-theme-border shadow-sm"
+														: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+												)}
+											/>
+										);
+									})}
+								</div>
+							</>
+						) : (
+							<span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+								Brak aktywnych serii — dodaj lub zaimportuj obligacje
+							</span>
+						)}
+
+						{/* Primary creation CTA aligned to the right edge of the filter bar */}
+						{targetPortfolioId && (
+							<Link
+								href={`/dashboard/${targetPortfolioId}/add-asset?source=bonds`}
+								className="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-theme-border bg-theme-soft/70 hover:bg-theme-primary hover:text-white hover:border-transparent text-theme-primary text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 sm:ml-auto cursor-pointer shadow-xs"
+							>
+								<Plus className="w-3.5 h-3.5" />
+								<span>Nowa seria</span>
+							</Link>
+						)}
 					</>
 				)
 			}

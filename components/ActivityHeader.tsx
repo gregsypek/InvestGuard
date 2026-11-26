@@ -1,15 +1,15 @@
 "use client";
 
-import { History, Wallet2 } from "lucide-react";
+import { History, Plus, Wallet2 } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
-import { usePathname, useRouter, useSearchParams } from "next/navigation"; // 🚀 FIX: Dodane importy rutingu
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AppHeaderLayout } from "./shared/AppHeaderLayout";
 import { FilterBadge } from "./shared/FilterBadge";
+import Link from "next/link";
 import { PortfolioWithAssets } from "@/lib/types";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
-import { convertFromPLN } from "@/lib/utils/convert-currency";
 import { useChartContext } from "./providers/ChartProvider";
 
 interface ActivityHeaderProps {
@@ -18,40 +18,32 @@ interface ActivityHeaderProps {
 	portfolios: PortfolioWithAssets[];
 }
 
-export function ActivityHeader({
-	hasActiveFilters,
-	portfolios,
-}: ActivityHeaderProps) {
-	// 🚀 FIX: Zamiast togglePortfolio bierzemy setSelectedIds
+export function ActivityHeader({ portfolios }: ActivityHeaderProps) {
 	const { selectedIds, setSelectedIds, currency, convertPLN } =
 		useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
-	// 🚀 FIX: Hooki do modyfikacji URL
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
-	// 🚀 FIX: Magiczna funkcja aktualizująca WYŁĄCZNIE lokalny kontekst
+	// Update local portfolio context and sync URL query param for server-side table filtering
 	const handleSelectPortfolio = (id: string) => {
-		// 1. NATYCHMIAST zmienia wykres w locie
 		setSelectedIds([id]);
 
-		// 2. Tabela potrzebuje parametru w URL, żeby serwer pobrał nowe transakcje
 		const params = new URLSearchParams(searchParams.toString());
 
 		if (id === "ALL") {
-			params.delete("portfolio"); // Czyścimy TYLKO nasz lokalny parametr
+			params.delete("portfolio");
 		} else {
-			params.set("portfolio", id); // Ustawiamy TYLKO nasz lokalny parametr
+			params.set("portfolio", id);
 		}
 
-		// Resetujemy stronę tabeli do 1
 		params.delete("page");
 
-		// Zmieniamy URL bez przeładowania strony
 		router.push(`${pathname}?${params.toString()}`, { scroll: false });
 	};
+
 	const dynamicName = selectedIds.includes("ALL")
 		? "Wszystkie Portfele"
 		: selectedIds.length === 1
@@ -75,6 +67,10 @@ export function ActivityHeader({
 		.filter((p) => selectedIds.includes("ALL") || selectedIds.includes(p.id))
 		.reduce((sum, p) => sum + (p.transactionHistories?.length || 0), 0);
 
+	// Resolve target portfolio ID for the creation CTA (falls back to first portfolio when "ALL" is active)
+	const targetPortfolioId =
+		selectedIds.find((id) => id !== "ALL") || portfolios[0]?.id;
+
 	return (
 		<AppHeaderLayout
 			breadcrumbs={
@@ -95,12 +91,12 @@ export function ActivityHeader({
 							portfel:
 						</span>
 
-						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
+						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:flex-1 min-w-0">
 							<FilterBadge
 								id="ALL"
 								label="Wszystkie Portfele"
 								isSelected={selectedIds.includes("ALL")}
-								onToggle={() => handleSelectPortfolio("ALL")} // 🚀 FIX: Użycie nowej funkcji
+								onToggle={() => handleSelectPortfolio("ALL")}
 								className={cn(
 									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
 									selectedIds.includes("ALL")
@@ -116,7 +112,7 @@ export function ActivityHeader({
 											id={p.id}
 											label={p.name}
 											isSelected={isSelected}
-											onToggle={() => handleSelectPortfolio(p.id)} // 🚀 FIX: Użycie nowej funkcji
+											onToggle={() => handleSelectPortfolio(p.id)}
 											className={cn(
 												"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
 												isSelected
@@ -128,6 +124,17 @@ export function ActivityHeader({
 								);
 							})}
 						</div>
+
+						{/* Primary creation CTA aligned to the right edge of the filter bar */}
+						{targetPortfolioId && (
+							<Link
+								href={`/dashboard/${targetPortfolioId}/add-asset?source=activity`}
+								className="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-theme-border bg-theme-soft/70 hover:bg-theme-primary hover:text-white hover:border-transparent text-theme-primary text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 sm:ml-auto cursor-pointer shadow-xs"
+							>
+								<Plus className="w-3.5 h-3.5" />
+								<span>Nowa operacja</span>
+							</Link>
+						)}
 					</>
 				)
 			}
@@ -137,7 +144,7 @@ export function ActivityHeader({
 					<span>Wszystkie Zarejestrowane</span>
 				</>
 			}
-			mainStatValue={convertFromPLN(dynamicTotalTransactions)}
+			mainStatValue={dynamicTotalTransactions}
 			mainStatSuffix="szt."
 			secondaryStats={
 				<ValueCard label="Bieżąca Wycena" icon={Wallet2} className="text-white">

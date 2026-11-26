@@ -312,7 +312,7 @@ export function PlannerDashboardClient({
 								icon={PlusSquare}
 								variant="outline"
 								isDemo={false}
-								className="w-min border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary justify-center"
+								className="w-min border-slate-800 bg-slate-800 hover:text-slate-300 text-theme-primary justify-center"
 								href={`/dashboard/${projPortfolioId}/add-asset?view=planner&source=planner`}
 							/>
 

@@ -186,7 +186,7 @@ const DashboardAnalytics = ({
 							icon={Pencil}
 							variant="outline"
 							isDemo={isDemo}
-							className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+							className="border-slate-800 bg-slate-800 hover:text-slate-300 text-theme-primary"
 							href={`/portfolios/edit/${portfolio.id}`}
 						/>
 					}
@@ -250,7 +250,7 @@ const DashboardAnalytics = ({
 							icon={Plus}
 							isDemo={isDemo}
 							variant="outline"
-							className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+							className="border-slate-800 bg-slate-800 hover:text-slate-300 text-theme-primary"
 							href={`/dashboard/${portfolio.id}/add-asset`}
 						/>
 					}

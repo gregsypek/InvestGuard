@@ -284,7 +284,7 @@ export default function PortfoliosClientView({
 								isDemo={isDemo}
 								variant="outline"
 								href="/portfolios/new"
-								className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+								className="border-slate-800 bg-slate-800 hover:text-slate-300 text-theme-primary"
 							/>
 						}
 					>
@@ -421,7 +421,7 @@ export default function PortfoliosClientView({
 										isDemo={isDemo}
 										variant="outline"
 										href={`/dashboard/${initialPortfolioId}/add-asset`}
-										className="border-slate-800 bg-slate-800 text-slate-300 hover:text-theme-primary"
+										className="border-slate-800 bg-slate-800 hover:text-slate-300 text-theme-primary"
 									/>
 								)}
 							</div>

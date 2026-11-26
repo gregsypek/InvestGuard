@@ -1,7 +1,7 @@
 "use client";
 
 import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
-import { Settings, Wrench } from "lucide-react";
+import { LayoutDashboard, Settings, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
@@ -50,16 +50,23 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 
 	const activePortfolioId = idFromParams || getPathId() || cookieId;
 
+	const overviewHref = isDemoMode
+		? strategy
+			? `/demo?s=${strategy}`
+			: "/demo"
+		: "/";
+	const isOverviewActive = pathname === "/";
+
 	return (
 		<aside className="hidden md:flex flex-col md:w-20 lg:w-64 backdrop-blur-xl border-r border-t-border-subtle transition-all duration-300 shadow-sm z-40 bg-t-bg-panel">
-			{/* Logo */}
+			{/* Brand Logo */}
 			<div className="p-3 lg:p-6 flex justify-center lg:justify-start">
 				<Link
-					href="/"
+					href={overviewHref}
 					onClick={onClose}
 					className="flex items-center gap-3 group hover:cursor-pointer"
 				>
-					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center ">
+					<div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center">
 						<Image
 							src="/logo.svg"
 							alt="Logo"
@@ -84,14 +91,48 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 				</Link>
 			</div>
 
-			{/* Nawigacja */}
+			{/* Main Navigation */}
 			<nav className="flex-1 flex flex-col items-center lg:items-stretch px-2 lg:px-4 py-4 space-y-1.5 overflow-y-auto no-scrollbar">
+				{/* Global Overview entry (only outside demo mode to avoid duplicate /demo link) */}
+				{!isDemoMode && (
+					<Link
+						href="/"
+						title="Przegląd"
+						onClick={onClose}
+						className={cn(
+							"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
+							isOverviewActive
+								? "bg-theme-soft text-theme-primary shadow-sm"
+								: "hover:bg-black/5 dark:hover:bg-white/5 text-t-text-secondary hover:text-t-text-primary",
+						)}
+					>
+						{isOverviewActive && (
+							<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1/2 rounded-r-full hidden lg:block bg-theme-primary" />
+						)}
+						<LayoutDashboard
+							className={cn(
+								"w-5 h-5 md:w-6 md:h-6 lg:w-5 lg:h-5 transition-transform duration-300 group-hover:scale-110",
+								isOverviewActive
+									? "text-theme-primary"
+									: "text-t-text-tertiary group-hover:text-t-text-primary",
+							)}
+						/>
+						<span className="hidden lg:inline-block">Przegląd</span>
+					</Link>
+				)}
+
 				{NAV_ITEMS.map((item) => {
+					const isDashboardItem = item.href === "/dashboard";
+
+					// Override label for /dashboard so it clearly distinguishes single portfolio from Global Overview
+					const itemLabel =
+						isDashboardItem && !isDemoMode ? "Aktywny Portfel" : item.name;
+
 					const isActive = isDemoMode
-						? item.href === "/dashboard"
+						? isDashboardItem
 							? pathname === "/demo"
 							: pathname.startsWith(`/demo${item.href}`)
-						: item.href === "/dashboard"
+						: isDashboardItem
 							? pathname.startsWith("/dashboard") &&
 								!pathname.includes("/settings")
 							: pathname.startsWith(item.href);
@@ -99,12 +140,12 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 					let finalHref = item.href;
 
 					if (isDemoMode) {
-						if (item.href === "/dashboard") finalHref = "/demo";
+						if (isDashboardItem) finalHref = "/demo";
 						if (item.href === "/portfolios") finalHref = "/demo/portfolios";
 						if (item.href === "/planner") finalHref = "/demo/planner";
 						if (strategy) finalHref += `?s=${strategy}`;
-					} else if (activePortfolioId && !isDemoMode) {
-						if (item.href === "/dashboard") {
+					} else if (activePortfolioId) {
+						if (isDashboardItem) {
 							finalHref = `/dashboard/${activePortfolioId}`;
 						} else {
 							finalHref += `?portfolioId=${activePortfolioId}`;
@@ -115,6 +156,7 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 						<Link
 							key={item.href}
 							href={finalHref}
+							title={itemLabel}
 							onClick={onClose}
 							className={cn(
 								"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
@@ -139,13 +181,13 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 										: "text-t-text-tertiary group-hover:text-t-text-primary",
 								)}
 							/>
-							<span className="hidden lg:inline-block">{item.name}</span>
+							<span className="hidden lg:inline-block">{itemLabel}</span>
 						</Link>
 					);
 				})}
 			</nav>
 
-			{/* 🚀 ZMIANA 4: Poprawiona Stopka (Narzędzia i Ustawienia) - Flex na małych ekranach */}
+			{/* Footer (Tools & Settings) */}
 			<div className="p-2 md:p-4 border-t border-t-border-subtle flex flex-col gap-2">
 				{activePortfolioId &&
 					!isDemoMode &&
@@ -155,6 +197,7 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 						return (
 							<Link
 								href={toolsHref}
+								title="Narzędzia"
 								onClick={onClose}
 								className={cn(
 									"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
@@ -187,6 +230,7 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 					return (
 						<Link
 							href={settingsHref}
+							title="Ustawienia"
 							onClick={onClose}
 							className={cn(
 								"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",

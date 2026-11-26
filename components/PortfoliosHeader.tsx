@@ -1,10 +1,11 @@
 "use client";
 
-import { Briefcase, LayoutGrid, Wallet2 } from "lucide-react";
+import { Briefcase, LayoutGrid, Plus, Wallet2 } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 
 import { AppHeaderLayout } from "./shared/AppHeaderLayout";
 import { FilterBadge } from "./shared/FilterBadge";
+import Link from "next/link";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
 import { useChartContext } from "./providers/ChartProvider";
@@ -18,6 +19,8 @@ interface PortfoliosHeaderProps {
 	portfolios?: { id: string; name: string; colorTheme?: string }[];
 	selectedIds?: string[];
 	togglePortfolio?: (id: string) => void;
+	createHref?: string;
+	onCreateClick?: () => void;
 }
 
 export const PortfoliosHeader = ({
@@ -29,9 +32,15 @@ export const PortfoliosHeader = ({
 	portfolios,
 	selectedIds,
 	togglePortfolio,
+	createHref = "/portfolios/new",
+	onCreateClick,
 }: PortfoliosHeaderProps) => {
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
+
+	const createButtonClasses =
+		"inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-theme-border bg-theme-soft/70 hover:bg-theme-primary hover:text-white hover:border-transparent text-theme-primary text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 sm:ml-auto cursor-pointer shadow-xs";
+
 	return (
 		<AppHeaderLayout
 			title={title}
@@ -50,7 +59,7 @@ export const PortfoliosHeader = ({
 							portfel:
 						</span>
 
-						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
+						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:flex-1 min-w-0">
 							<FilterBadge
 								id="ALL"
 								label="Wszystkie Portfele"
@@ -83,6 +92,23 @@ export const PortfoliosHeader = ({
 								);
 							})}
 						</div>
+
+						{/* Primary creation CTA separated visually and aligned to the right edge */}
+						{onCreateClick ? (
+							<button
+								type="button"
+								onClick={onCreateClick}
+								className={createButtonClasses}
+							>
+								<Plus className="w-3.5 h-3.5" />
+								<span>Nowy portfel</span>
+							</button>
+						) : (
+							<Link href={createHref} className={createButtonClasses}>
+								<Plus className="w-3.5 h-3.5" />
+								<span>Nowy portfel</span>
+							</Link>
+						)}
 					</>
 				)
 			}
@@ -96,7 +122,7 @@ export const PortfoliosHeader = ({
 			mainStatSuffix={currencySymbol}
 			secondaryStats={
 				<>
-					{/* Liczba portfeli */}
+					{/* Portfolio count */}
 					<ValueCard
 						label="Liczba portfeli"
 						icon={Briefcase}
@@ -112,7 +138,7 @@ export const PortfoliosHeader = ({
 						</div>
 					</ValueCard>
 
-					{/* Liczba aktywów */}
+					{/* Asset count */}
 					<ValueCard
 						label="Liczba aktywów"
 						icon={LayoutGrid}

@@ -143,17 +143,17 @@ export default async function AlphaSelectionPage({
 					titleIcon={ChartArea}
 					subtitle="Wydajność strategii"
 					description="Wizualizacja trendu wartości oraz historia wpłat dla kapitału podwyższonego ryzyka (Booster i Krypto)."
-					action={
-						<Button
-							asChild
-							className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
-						>
-							<Link href={targetUrl} className="flex items-center gap-2">
-								<Rocket className="w-4 h-4" />
-								Nowa Teza
-							</Link>
-						</Button>
-					}
+					// action={
+					// 	<Button
+					// 		asChild
+					// 		className="bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] text-white hover:bg-[color-mix(in_srgb,var(--theme-primary),black_10%)] hover:opacity-90 hover:shadow-[0_4px_20px_var(--theme-soft)] cursor-pointer font-bold rounded-xl shadow-sm transition-all h-10 px-5"
+					// 	>
+					// 		<Link href={targetUrl} className="flex items-center gap-2">
+					// 			<Rocket className="w-4 h-4" />
+					// 			Nowa Teza
+					// 		</Link>
+					// 	</Button>
+					// }
 				>
 					<div className="w-full bg-t-bg-panel border border-t-border rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm">
 						<InteractiveChartSection

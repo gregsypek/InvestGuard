@@ -4,6 +4,7 @@ import {
 	Briefcase,
 	Filter,
 	PieChart,
+	Plus,
 	Rocket,
 	Target,
 	TrendingUp,
@@ -14,6 +15,7 @@ import { useMemo, useState } from "react";
 
 import { AppHeaderLayout } from "./shared/AppHeaderLayout";
 import { FilterBadge } from "./shared/FilterBadge";
+import Link from "next/link";
 import { ValueCard } from "./shared/ValueCard";
 import { cn } from "@/lib/utils";
 import { useChartContext } from "./providers/ChartProvider";
@@ -21,13 +23,15 @@ import { useChartContext } from "./providers/ChartProvider";
 interface AlphaHeaderProps {
 	assets: any[];
 	globalTotalValue: number;
+	portfolioId?: string;
 }
 
 export function AlphaHeader({
 	assets = [],
 	globalTotalValue = 0,
+	portfolioId,
 }: AlphaHeaderProps) {
-	const { currency, convertPLN } = useChartContext();
+	const { currency, convertPLN, selectedIds } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
 	const [filterMode, setFilterMode] = useState<"ALL" | "STOCKS" | "CRYPTO">(
@@ -89,6 +93,10 @@ export function AlphaHeader({
 				100
 			: 0;
 
+	const activePortfolioId = selectedIds?.find((id) => id !== "ALL");
+	const targetPortfolioId =
+		portfolioId || activePortfolioId || assets[0]?.portfolioId;
+
 	return (
 		<AppHeaderLayout
 			breadcrumbs={
@@ -102,51 +110,69 @@ export function AlphaHeader({
 			title="Selekcja Alpha"
 			description="Skoncentrowane analizy dla kapitału o podwyższonym profilu ryzyka."
 			filters={
-				showPills && (
+				(showPills || targetPortfolioId) && (
 					<>
-						<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
-							<Filter className="w-3 h-3 text-theme-primary" /> Podgląd
-							wskaźników:
-						</span>
+						{showPills ? (
+							<>
+								<span className="sticky left-0 w-max flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+									<Filter className="w-3 h-3 text-theme-primary" /> Podgląd
+									wskaźników:
+								</span>
 
-						<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:w-full">
-							<FilterBadge
-								id="ALL"
-								label="Cały Booster"
-								isSelected={filterMode === "ALL"}
-								onToggle={() => setFilterMode("ALL")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
-									filterMode === "ALL"
-										? "bg-theme-primary text-white border-transparent shadow-sm"
-										: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
-								)}
-							/>
-							<FilterBadge
-								id="STOCKS"
-								label="Tylko Akcje"
-								isSelected={filterMode === "STOCKS"}
-								onToggle={() => setFilterMode("STOCKS")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
-									filterMode === "STOCKS"
-										? "bg-theme-primary text-white border-transparent shadow-sm"
-										: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
-								)}
-							/>
-							<FilterBadge
-								id="CRYPTO"
-								label="Kryptowaluty"
-								isSelected={filterMode === "CRYPTO"}
-								onToggle={() => setFilterMode("CRYPTO")}
-								className={cn(
-									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
-									filterMode === "CRYPTO"
-										? "bg-theme-primary text-white border-transparent shadow-sm"
-										: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
-								)}
-							/>
-						</div>
+								<div className="flex gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap pb-1 sm:pb-0 w-max sm:flex-1 min-w-0">
+									<FilterBadge
+										id="ALL"
+										label="Cały Booster"
+										isSelected={filterMode === "ALL"}
+										onToggle={() => setFilterMode("ALL")}
+										className={cn(
+											"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
+											filterMode === "ALL"
+												? "bg-theme-primary text-white border-transparent shadow-sm"
+												: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+										)}
+									/>
+									<FilterBadge
+										id="STOCKS"
+										label="Tylko Akcje"
+										isSelected={filterMode === "STOCKS"}
+										onToggle={() => setFilterMode("STOCKS")}
+										className={cn(
+											"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
+											filterMode === "STOCKS"
+												? "bg-theme-primary text-white border-transparent shadow-sm"
+												: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+										)}
+									/>
+									<FilterBadge
+										id="CRYPTO"
+										label="Kryptowaluty"
+										isSelected={filterMode === "CRYPTO"}
+										onToggle={() => setFilterMode("CRYPTO")}
+										className={cn(
+											"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
+											filterMode === "CRYPTO"
+												? "bg-theme-primary text-white border-transparent shadow-sm"
+												: "bg-transparent text-slate-300 border-white/20 hover:bg-white/10",
+										)}
+									/>
+								</div>
+							</>
+						) : (
+							<span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+								Portfel podwyższonego ryzyka — dodaj nową pozycję Alpha
+							</span>
+						)}
+
+						{targetPortfolioId && (
+							<Link
+								href={`/dashboard/${targetPortfolioId}/add-asset?source=alpha`}
+								className="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-theme-border bg-theme-soft/70 hover:bg-theme-primary hover:text-white hover:border-transparent text-theme-primary text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 sm:ml-auto cursor-pointer shadow-xs"
+							>
+								<Plus className="w-3.5 h-3.5" />
+								<span>Nowa teza</span>
+							</Link>
+						)}
 					</>
 				)
 			}

@@ -17,6 +17,7 @@ import {
 import { SimulatedSnapshot, useDashboardData } from "./ui/useDashboardData";
 import { cn, getStockLogo } from "@/lib/utils";
 import { differenceInMinutes, format } from "date-fns";
+import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
 import { useEffect, useMemo, useState } from "react";
 
 import { AbsoluteDailyPnLChart } from "./dashboard/AbsoluteDailyPnLChart";
@@ -32,7 +33,6 @@ import { PortfoliosComparisonChart } from "./dashboard/PortfoliosComparisonChart
 import { PremiumMarketCard } from "./home/PremiumMarketCard";
 import { SafeActionButton } from "./ui/SafeActionButton";
 import { SectionLayout } from "./shared/SectionLayout";
-import { getCurrencySymbol } from "@/lib/utils/format-currency";
 import { pl } from "date-fns/locale";
 import { refreshPortfolioPrices } from "@/lib/actions/refresh-prices";
 import { toast } from "sonner";
@@ -69,7 +69,7 @@ interface UserDashboardProps {
 }
 
 export function UserDashboard(props: UserDashboardProps) {
-	const { currency } = useChartContext();
+	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
 	const {
@@ -256,6 +256,112 @@ export function UserDashboard(props: UserDashboardProps) {
 				totalPnL={totalPnL}
 				totalPnLPct={totalPnLPct}
 			/>
+
+			{/* =========================================
+				CONSOLIDATED PORTFOLIO BREAKDOWN & QUICK JUMP
+			========================================= */}
+			{props.portfolios.length > 0 && (
+				<SectionLayout
+					title="Alokacja Strategii"
+					titleIcon={WalletCards}
+					subtitle="Podział kapitału między portfelami"
+					description="Skonsolidowany przegląd wszystkich Twoich portfeli wraz z ich udziałem w całym majątku. Przejdź bezpośrednio do wybranej strategii lub dopisz nową pozycję."
+					action={
+						<SafeActionButton
+							label="Zarządzaj portfelami"
+							icon={WalletCards}
+							variant="outline"
+							href="/portfolios"
+							className="border-t-border bg-t-bg-base text-t-text-secondary hover:text-t-text-primary"
+						/>
+					}
+				>
+					<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+						{props.portfolios.map((portfolio) => {
+							const pCurrent = portfolio.assets.reduce(
+								(sum, a) => sum + Number(a.currentValue || 0),
+								0,
+							);
+							const pInvested = portfolio.assets.reduce(
+								(sum, a) => sum + Number(a.investedCapital || 0),
+								0,
+							);
+							const pPnL = pCurrent - pInvested;
+							const pPnLPct = pInvested > 0 ? (pPnL / pInvested) * 100 : 0;
+							const sharePct =
+								totalCurrent > 0 ? (pCurrent / totalCurrent) * 100 : 0;
+
+							return (
+								<div
+									key={portfolio.id}
+									data-theme={portfolio.colorTheme || "blue"}
+									className="group flex flex-col justify-between p-4 sm:p-5 rounded-2xl border border-t-border bg-t-bg-panel hover:border-theme-border transition-all duration-300 shadow-sm gap-4"
+								>
+									<div className="space-y-3">
+										{/* Top row: portfolio name & share badge */}
+										<div className="flex items-start justify-between gap-2">
+											<div className="flex items-center gap-2 min-w-0">
+												<span className="w-2.5 h-2.5 rounded-full bg-theme-primary shrink-0 shadow-[0_0_8px_var(--theme-primary)]" />
+												<h4 className="font-bold text-sm sm:text-base text-t-text-primary truncate">
+													{portfolio.name}
+												</h4>
+											</div>
+											<span className="px-2 py-0.5 rounded-md bg-theme-soft border border-theme-border text-theme-primary font-mono text-[10px] font-bold num shrink-0">
+												{sharePct.toFixed(1)}%
+											</span>
+										</div>
+
+										{/* Allocation progress bar */}
+										<div className="h-1.5 w-full rounded-full bg-t-border overflow-hidden">
+											<div
+												className="h-full bg-theme-primary rounded-full transition-all duration-500"
+												style={{ width: `${Math.min(100, sharePct)}%` }}
+											/>
+										</div>
+
+										{/* Valuation & PnL */}
+										<div className="flex items-baseline justify-between gap-2 pt-1">
+											<div className="font-mono num text-lg sm:text-xl font-black text-t-text-primary">
+												{formatCurrency(convertPLN(pCurrent))}{" "}
+												<span className="text-xs font-bold text-t-text-tertiary">
+													{currencySymbol}
+												</span>
+											</div>
+											<span
+												className={cn(
+													"font-mono num text-xs font-bold",
+													pPnL >= 0 ? "text-gain" : "text-loss",
+												)}
+											>
+												{pPnL >= 0 ? "+" : ""}
+												{pPnLPct.toFixed(2)}%
+											</span>
+										</div>
+									</div>
+
+									{/* Quick navigation actions */}
+									<div className="flex items-center gap-2 pt-3 border-t border-t-border-subtle">
+										<Link
+											href={`/dashboard/${portfolio.id}`}
+											className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl bg-theme-soft hover:bg-theme-primary text-theme-primary hover:text-white border border-theme-border hover:border-transparent text-[10px] font-bold uppercase tracking-widest transition-all"
+										>
+											<span>Otwórz portfel</span>
+										</Link>
+										<Link
+											href={`/dashboard/${portfolio.id}/add-asset`}
+											title="Dodaj aktywo do tego portfela"
+											className="inline-flex items-center justify-center gap-1 h-9 px-3 rounded-xl border border-t-border bg-t-bg-base hover:bg-t-hover text-t-text-secondary hover:text-t-text-primary text-[10px] font-bold uppercase tracking-widest transition-all"
+										>
+											<Plus className="w-3.5 h-3.5" />
+											<span>Dodaj</span>
+										</Link>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				</SectionLayout>
+			)}
 
 			{/* =========================================
                  RADAR RYNKOWY (Z KARTAMI KLIKALNYMI)       

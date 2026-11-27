@@ -69,7 +69,6 @@ export default function AddAssetClient({
 	const AVAILABLE_TABS = useMemo(() => {
 		return [
 			{ id: "manual", label: "Formularz Ręczny", show: true },
-
 			{ id: "planner", label: "Nowy Plan", show: true },
 			{
 				id: "import-market",
@@ -84,48 +83,54 @@ export default function AddAssetClient({
 			{
 				id: "cash",
 				label: "Szybka Gotówka",
-				show: !source || source === "activity",
+				show: !source || source === "activity" || source === "overview",
 			},
 		].filter((t) => t.show);
 	}, [source]);
 
-	// 🚀 INTELIGENTNY ROUTING POWROTU
+	// Intelligent back-navigation routing
 	const { backUrl, backLabel, moduleName } = useMemo(() => {
+		if (source === "overview") {
+			return {
+				backUrl: "/",
+				backLabel: "Przegląd Inwestycji",
+				moduleName: "Kreator Aktywów",
+			};
+		}
 		if (source === "activity") {
 			return {
 				backUrl: "/activity",
-				backLabel: "Historia Operacji",
+				backLabel: "Historia Aktywności",
 				moduleName: "Kreator Aktywów",
 			};
 		}
 		if (source === "alpha") {
 			return {
 				backUrl: `/alpha-selection?portfolioId=${id}`,
-				backLabel: "Alpha",
+				backLabel: "Strategia Aktywna",
 				moduleName: "Nowa Teza Alpha",
 			};
 		}
 		if (source === "bonds") {
 			return {
 				backUrl: `/bond-reports/${id}`,
-				backLabel: "Obligacje",
+				backLabel: "Analiza Obligacji",
 				moduleName: "Nowa Seria Obligacji",
 			};
 		}
 		if (source === "planner" || initialView === "planner") {
 			return {
 				backUrl: `/planner?portfolioId=${id}`,
-				backLabel: "Planer",
+				backLabel: "Planowanie",
 				moduleName: "Nowy Plan",
 			};
 		}
 		return {
 			backUrl: `/dashboard/${id}`,
-			backLabel: "Panel Główny",
+			backLabel: "Aktywny Portfel",
 			moduleName: "Kreator Aktywów",
 		};
 	}, [source, initialView, id]);
-
 	return (
 		<div className="max-w-7xl mx-auto w-full space-y-8 animate-in fade-in duration-500 pb-24">
 			{/* NAGŁÓWEK */}

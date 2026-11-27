@@ -24,6 +24,10 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 	}
 
 	const resolvedSearchParams = await searchParams;
+	const isFromOverview = resolvedSearchParams?.from === "overview";
+	const historySearchParams = isFromOverview
+		? { ...resolvedSearchParams, from: undefined }
+		: resolvedSearchParams;
 
 	// Fetch portfolios (with lightweight transactionHistories projection), user settings, and active portfolio ID in parallel
 	const [portfolios, user, rawPortfolioId] = await Promise.all([
@@ -87,6 +91,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
 					assetsCount,
 				}}
 				defaultPortfolioId={user?.defaultPortfolioId}
+				fromOverview={isFromOverview}
 			/>
 		</div>
 	);

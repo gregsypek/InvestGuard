@@ -28,6 +28,11 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 	const resolvedSearchParams = await searchParams;
 	const { id } = await params;
 
+	const isFromOverview = resolvedSearchParams?.from === "overview";
+	const historySearchParams = isFromOverview
+		? { ...resolvedSearchParams, from: undefined }
+		: resolvedSearchParams;
+
 	const guardedResult = await getGuardedPortfolio({
 		searchParams: Promise.resolve({ portfolioId: id }),
 		userId: session.user.id,
@@ -74,23 +79,26 @@ export default async function DashboardPage({ params, searchParams }: Props) {
 	const { simulatedSnapshots, realSnapshots, oldestRealSnapshotDate } =
 		await getPortfolioSnapshotsHistory(
 			[portfolio],
-			resolvedSearchParams,
+			historySearchParams,
 			session.user.id,
 		);
 
-	// 🚀 OBLICZAMY STATYSTYKI DLA NAGŁÓWKA
 	const { name, totalValue, progress, remaining, goal } =
 		getPortfolioStats(portfolio);
 
 	return (
 		<div className="space-y-10">
-			{/* Nagłówek jest teraz częścią głównej strony! */}
 			<DashboardHeader
 				portfolio={portfolio}
 				name={name}
 				totalValue={totalValue}
 				customBreadcrumbs={
-					<DashboardBreadcrumbs name={name} key={id} id={id} />
+					<DashboardBreadcrumbs
+						name={name}
+						key={id}
+						id={id}
+						fromOverview={isFromOverview}
+					/>
 				}
 			/>
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { Briefcase, Container, Plus, Wallet2 } from "lucide-react";
+import { Container, Plus, Wallet2 } from "lucide-react";
 import { formatCurrency, getCurrencySymbol } from "@/lib/utils/format-currency";
+import { useState, useSyncExternalStore } from "react";
 
 import { AppHeaderLayout } from "../shared/AppHeaderLayout";
+import Cookies from "js-cookie";
 import { FilterBadge } from "../shared/FilterBadge";
 import Link from "next/link";
 import { ValueCard } from "../shared/ValueCard";
@@ -26,6 +28,8 @@ interface GlobalDashboardHeaderProps {
 	totalPnLPct: number;
 }
 
+const emptySubscribe = () => () => {};
+
 export function GlobalDashboardHeader({
 	portfolios,
 	selectedIds,
@@ -38,6 +42,26 @@ export function GlobalDashboardHeader({
 	const { currency, convertPLN } = useChartContext();
 	const currencySymbol = getCurrencySymbol(currency);
 
+	const [selectedCookieId, setSelectedCookieId] = useState<string | null>(null);
+
+	// Read persisted portfolio cookie safely across SSR and client hydration without useEffect
+	const persistedCookieId = useSyncExternalStore(
+		emptySubscribe,
+		() => Cookies.get("selectedPortfolioId") || null,
+		() => null,
+	);
+
+	const activeCookieId = selectedCookieId ?? persistedCookieId;
+
+	// Sync cookie whenever user selects a specific portfolio pill in the overview header
+	const handleToggleWithCookie = (id: string) => {
+		if (id !== "ALL") {
+			Cookies.set("selectedPortfolioId", id, { expires: 30, path: "/" });
+			setSelectedCookieId(id);
+		}
+		togglePortfolio(id);
+	};
+
 	// Resolve active scope label for breadcrumbs
 	const activeScopeLabel = selectedIds.includes("ALL")
 		? "wszystkie portfele"
@@ -46,9 +70,16 @@ export function GlobalDashboardHeader({
 				"wybrany portfel"
 			: `wybrane (${selectedIds.length})`;
 
-	// Target the selected portfolio if a single one is active, otherwise fall back to the primary portfolio
+	// Prioritize the most recently clicked pill, then the persisted cookie portfolio, then fallback
+	const nonAllSelected = selectedIds.filter((id) => id !== "ALL");
+	const validCookieId = portfolios.some((p) => p.id === activeCookieId)
+		? activeCookieId
+		: null;
+
 	const targetPortfolioId =
-		selectedIds.find((id) => id !== "ALL") || portfolios[0]?.id;
+		nonAllSelected[nonAllSelected.length - 1] ||
+		validCookieId ||
+		portfolios[0]?.id;
 
 	return (
 		<AppHeaderLayout
@@ -62,17 +93,6 @@ export function GlobalDashboardHeader({
 			}
 			title="Przegląd Inwestycji"
 			description="Holistyczne spojrzenie na wszystkie Twoje strategie."
-			// actions={
-			// 	<Link
-			// 		href="/portfolios"
-			// 		className="group flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl transition-all duration-300 shadow-sm border bg-white/5 hover:bg-white/10 border-white/15 text-slate-300 hover:text-white"
-			// 	>
-			// 		<Briefcase className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-			// 		<span className="hidden sm:inline text-[10px] sm:text-xs font-bold uppercase tracking-widest">
-			// 			Portfele
-			// 		</span>
-			// 	</Link>
-			// }
 			filters={
 				portfolios.length > 0 && (
 					<>
@@ -85,7 +105,7 @@ export function GlobalDashboardHeader({
 								id="ALL"
 								label="Wszystkie Portfele"
 								isSelected={selectedIds.includes("ALL")}
-								onToggle={togglePortfolio}
+								onToggle={handleToggleWithCookie}
 								className={cn(
 									"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
 									selectedIds.includes("ALL")
@@ -101,7 +121,7 @@ export function GlobalDashboardHeader({
 											id={p.id}
 											label={p.name}
 											isSelected={isSelected}
-											onToggle={togglePortfolio}
+											onToggle={handleToggleWithCookie}
 											className={cn(
 												"py-1 px-2.5 text-[9px] sm:text-[10px] font-bold tracking-widest rounded-lg transition-all shrink-0 border",
 												isSelected

@@ -54,7 +54,7 @@ export function GlobalDashboardHeader({
 		<AppHeaderLayout
 			breadcrumbs={
 				<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-1.5">
-					Przegląd /{" "}
+					Przegląd Inwestycji /{" "}
 					<span className="text-theme-primary font-medium lowercase">
 						{activeScopeLabel}
 					</span>
@@ -117,7 +117,7 @@ export function GlobalDashboardHeader({
 						{/* Primary creation CTA aligned to the right edge of the filter bar */}
 						{targetPortfolioId && (
 							<Link
-								href={`/dashboard/${targetPortfolioId}/add-asset`}
+								href={`/dashboard/${targetPortfolioId}/add-asset?source=overview`}
 								className="inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed border-theme-border bg-theme-soft/70 hover:bg-theme-primary hover:text-white hover:border-transparent text-theme-primary text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all shrink-0 sm:ml-auto cursor-pointer shadow-xs"
 							>
 								<Plus className="w-3.5 h-3.5" />

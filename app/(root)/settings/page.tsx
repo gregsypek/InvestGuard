@@ -11,7 +11,7 @@ const ROLE_LIMITS = {
 };
 
 interface Props {
-	searchParams: Promise<{ from?: string }>;
+	searchParams: Promise<{ from?: string; portfolioId?: string }>;
 }
 
 export default async function SettingsPage({ searchParams }: Props) {
@@ -22,9 +22,26 @@ export default async function SettingsPage({ searchParams }: Props) {
 	}
 
 	const resolvedSearchParams = await searchParams;
-	const fromDashboard = resolvedSearchParams?.from === "dashboard";
-
 	const cookieStore = await cookies();
+
+	const fromParam = resolvedSearchParams?.from;
+	const activePortfolioId =
+		resolvedSearchParams?.portfolioId ||
+		cookieStore.get("selectedPortfolioId")?.value;
+
+	// Resolve contextual back navigation based on entry point
+	let backLink: { href: string; label: string } | null = null;
+	if (fromParam === "overview") {
+		backLink = { href: "/", label: "Przegląd inwestycji" };
+	} else if (fromParam === "dashboard") {
+		backLink = {
+			href: activePortfolioId
+				? `/dashboard/${activePortfolioId}`
+				: "/dashboard",
+			label: "Aktywny Portfel",
+		};
+	}
+
 	const hideBulbTip = cookieStore.get("hide_bulbtip")?.value === "true";
 	const hideMarketTicker =
 		cookieStore.get("hide_market_ticker")?.value === "true";
@@ -47,7 +64,6 @@ export default async function SettingsPage({ searchParams }: Props) {
 	const userIndices = dbUser?.observedIndices || [];
 	const maxLimit = ROLE_LIMITS[userRole as keyof typeof ROLE_LIMITS] || 5;
 
-	// Pobieramy portfele (tylko aktywa, bo nie potrzebujemy już statystyk)
 	const portfolios = await db.portfolio.findMany({
 		where: { userId: session.user.id },
 		include: { assets: true },
@@ -85,7 +101,7 @@ export default async function SettingsPage({ searchParams }: Props) {
 			hasPassword={hasPassword}
 			isTwoFactorEnabled={isTwoFactorEnabled}
 			userRole={userRole}
-			fromDashboard={fromDashboard}
+			backLink={backLink}
 			email={session.user.email}
 		/>
 	);

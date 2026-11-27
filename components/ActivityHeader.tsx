@@ -75,13 +75,13 @@ export function ActivityHeader({ portfolios }: ActivityHeaderProps) {
 		<AppHeaderLayout
 			breadcrumbs={
 				<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-1.5">
-					Historia /{" "}
+					Historia Aktywności /{" "}
 					<span className="text-theme-primary font-medium lowercase">
 						{dynamicName}
 					</span>
 				</nav>
 			}
-			title="Historia Operacji"
+			title="Historia Aktywności"
 			description="Pełny rejestr zrealizowanych transakcji oraz historii kapitału."
 			filters={
 				portfolios.length > 0 && (

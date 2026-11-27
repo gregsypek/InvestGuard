@@ -4,6 +4,7 @@ import {
 	BarChart2,
 	Briefcase,
 	ChartArea,
+	ChevronLeft,
 	Globe,
 	PieChart,
 	Plus,
@@ -19,6 +20,7 @@ import { CategoryTable } from "@/components/CategoryTable";
 import GlobalAnalyticsCharts from "./GlobalAnalyticsCharts";
 import { InlineChartFilters } from "./InlineChartFilters";
 import { InteractiveChartSection } from "../InteractiveChartSection";
+import Link from "next/link";
 import PortfolioCard from "@/components/PortfolioCard";
 import { PortfolioWithAssets } from "@/lib/types";
 import { PortfoliosComparisonChart } from "../dashboard/PortfoliosComparisonChart";
@@ -44,6 +46,7 @@ interface Props {
 		portfoliosCount: number;
 		assetsCount: number;
 	};
+	fromOverview?: boolean;
 }
 
 const PORTFOLIOS_SECTIONS: SectionTab[] = [
@@ -63,6 +66,7 @@ export default function PortfoliosClientView({
 	realSnapshots = [],
 	oldestRealSnapshotDate,
 	globalStats,
+	fromOverview = false,
 }: Props) {
 	// 1. Zaciągamy z kontekstu tylko to, czego potrzebujemy na tej stronie
 	const { chartMode, selectedIds } = useChartContext();
@@ -252,8 +256,20 @@ export default function PortfoliosClientView({
 					selectedIds={headerSelectedIds}
 					togglePortfolio={handleToggleHeaderPortfolio}
 					customBreadcrumbs={
-						<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-2">
-							Portfele
+						<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-1.5 flex-wrap">
+							{fromOverview && (
+								<>
+									<Link
+										href="/"
+										className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-0.5"
+									>
+										<ChevronLeft className="h-4 w-4" />
+										<span>Przegląd inwestycji</span>
+									</Link>
+									<span className="text-slate-500">/</span>
+								</>
+							)}
+							<span>Twoje Portfele</span>
 							<span className="text-slate-500">/</span>
 							<span className="text-theme-primary font-medium lowercase italic">
 								{headerSelectedIds.includes("ALL")

@@ -101,7 +101,7 @@ export function AlphaHeader({
 		<AppHeaderLayout
 			breadcrumbs={
 				<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic flex items-center gap-1.5">
-					Narzędzia /{" "}
+					Strategia Aktywna /{" "}
 					<span className="text-theme-primary font-medium lowercase">
 						Alpha
 					</span>

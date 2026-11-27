@@ -6,12 +6,12 @@ import React, {
 	useState,
 	useTransition,
 } from "react";
+import { format, isValid } from "date-fns";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import Cookies from "js-cookie";
 import { DateRange } from "react-day-picker";
 import { convertFromPLN } from "@/lib/utils/convert-currency";
-import { format } from "date-fns";
 
 // Define the shape of our global chart context
 interface ChartContextType {
@@ -20,7 +20,7 @@ interface ChartContextType {
 	dataMode: "REAL" | "SIMULATED";
 	setDataMode: (mode: "REAL" | "SIMULATED") => void;
 	selectedIds: string[];
-	setSelectedIds: (ids: string[]) => void; // 🚀 FIX: Udostępniamy metodę bezpośrednio dla filtrów!
+	setSelectedIds: (ids: string[]) => void;
 	togglePortfolio: (id: string) => void;
 	activeRange: string;
 	fromDate: Date | undefined;
@@ -46,9 +46,6 @@ export function ChartProvider({
 	exchangeRates?: Record<string, number>;
 }) {
 	const searchParams = useSearchParams();
-	// Zamiast tylko searchParams.get("portfolio"), sprawdzamy oba warianty:
-	const portfolioParam =
-		searchParams.get("portfolio") || searchParams.get("portfolioId");
 	const [isPending, startTransition] = useTransition();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -57,21 +54,18 @@ export function ChartProvider({
 	const [dataMode, setDataMode] = useState<"REAL" | "SIMULATED">("SIMULATED");
 	const [currency, setCurrency] = useState(initialCurrency);
 
-	// Pobieramy OBA parametry niezależnie
-	const localPortfolioParam = searchParams.get("portfolio"); // Z filtra Activity
-	const globalPortfolioParam = searchParams.get("portfolioId"); // Z Głównego Headera
+	const localPortfolioParam = searchParams.get("portfolio");
+	const globalPortfolioParam = searchParams.get("portfolioId");
 
-	// 1. Inicjalizacja z zachowaniem hierarchii ważności
+	// 1. Initialize selected portfolios with priority hierarchy
 	const [selectedIds, setSelectedIds] = useState<string[]>(() => {
-		if (localPortfolioParam) return [localPortfolioParam]; // Najwyższy priorytet ma to, co klikniesz lokalnie
-		if (globalPortfolioParam) return [globalPortfolioParam]; // Potem to, co weszło z głównego headera
-		const cookiePortfolioId = Cookies.get("selectedPortfolioId"); // Na końcu ciasteczko
+		if (localPortfolioParam) return [localPortfolioParam];
+		if (globalPortfolioParam) return [globalPortfolioParam];
+		const cookiePortfolioId = Cookies.get("selectedPortfolioId");
 		return cookiePortfolioId ? [cookiePortfolioId] : ["ALL"];
 	});
 
-	// 🚀 FIX: Derived State z hierarchią.
-	// Pozwala wykresowi natychmiast zareagować na zmianę z OBU headerów,
-	// bez konfliktów i bez pętli renderowania.
+	// Derived state reacting immediately to changes in URL portfolio params
 	const [prevLocalParam, setPrevLocalParam] = useState<string | null>(
 		localPortfolioParam,
 	);
@@ -96,7 +90,7 @@ export function ChartProvider({
 		}
 	}
 
-	// 2. Multi-select dla pigułek na samym wykresie
+	// 2. Multi-select toggle for chart portfolio pills
 	const togglePortfolio = (id: string) => {
 		setSelectedIds((prev) => {
 			if (id === "ALL") return ["ALL"];
@@ -107,11 +101,19 @@ export function ChartProvider({
 		});
 	};
 
+	// Safely parse date range query params while ignoring navigation source flags like "overview"
 	const activeRange = searchParams.get("range") || "1M";
 	const currentFrom = searchParams.get("from") || "";
 	const currentTo = searchParams.get("to") || "";
-	const fromDate = currentFrom ? new Date(currentFrom) : undefined;
-	const toDate = currentTo ? new Date(currentTo) : undefined;
+
+	const parsedFrom =
+		currentFrom && currentFrom !== "overview"
+			? new Date(currentFrom)
+			: undefined;
+	const parsedTo = currentTo ? new Date(currentTo) : undefined;
+
+	const fromDate = parsedFrom && isValid(parsedFrom) ? parsedFrom : undefined;
+	const toDate = parsedTo && isValid(parsedTo) ? parsedTo : undefined;
 
 	const convertPLN = (amount: number) => {
 		return convertFromPLN(amount, currency, exchangeRates);
@@ -122,7 +124,10 @@ export function ChartProvider({
 			const params = new URLSearchParams(searchParams.toString());
 			params.set("range", range);
 			if (range !== "CUSTOM") {
-				params.delete("from");
+				// Preserve navigation origin parameter when resetting chart date bounds
+				if (params.get("from") !== "overview") {
+					params.delete("from");
+				}
 				params.delete("to");
 			}
 			router.push(`${pathname}?${params.toString()}`, { scroll: false });
@@ -134,7 +139,7 @@ export function ChartProvider({
 		if (range?.from) {
 			params.set("range", "CUSTOM");
 			params.set("from", format(range.from, "yyyy-MM-dd"));
-		} else {
+		} else if (params.get("from") !== "overview") {
 			params.delete("from");
 		}
 		if (range?.to) {
@@ -153,7 +158,7 @@ export function ChartProvider({
 				dataMode,
 				setDataMode,
 				selectedIds,
-				setSelectedIds, // 🚀 FIX: Udostępniamy!
+				setSelectedIds,
 				togglePortfolio,
 				activeRange,
 				fromDate,

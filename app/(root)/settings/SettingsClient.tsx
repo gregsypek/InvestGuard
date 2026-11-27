@@ -50,6 +50,7 @@ interface SettingsClientProps {
 	hasPassword: boolean;
 	isTwoFactorEnabled: boolean;
 	userRole: string;
+	backLink?: { href: string; label: string } | null;
 	fromDashboard?: boolean;
 	email?: string | null;
 }
@@ -68,6 +69,7 @@ export default function SettingsClient({
 	userRole,
 	fromDashboard,
 	email,
+	backLink,
 }: SettingsClientProps) {
 	const { setCurrency } = useChartContext();
 	const router = useRouter();
@@ -78,6 +80,10 @@ export default function SettingsClient({
 		showMarketTicker: initialShowMarketTicker,
 		showPortfolioAssetsInRadar: true,
 	});
+
+	const resolvedBackLink =
+		backLink ??
+		(fromDashboard ? { href: "/", label: "Przegląd inwestycji" } : null);
 
 	// Pobieramy początkowe wartości z bazy danych
 	const [preferences, setPreferences] = useState({
@@ -162,14 +168,14 @@ export default function SettingsClient({
 				/>
 
 				<div className="relative z-10 flex flex-col gap-2">
-					{fromDashboard && (
+					{resolvedBackLink && (
 						<nav className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic">
 							<Link
-								href="/"
+								href={resolvedBackLink.href}
 								className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
 							>
 								<ChevronLeft className="h-4 w-4" />
-								<span>Przegląd inwestycji</span>
+								<span>{resolvedBackLink.label}</span>
 							</Link>
 							<span className="text-slate-500">/</span>
 							<span className="text-slate-200 font-medium lowercase">

@@ -7,13 +7,13 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { format, isValid } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { pl } from "date-fns/locale";
 
 interface DatePickerWithRangeProps {
@@ -44,6 +44,10 @@ export function DatePickerWithRange({
 		onSelect(newDate);
 	};
 
+	// Validate Date instances before calling date-fns format()
+	const hasValidFrom = Boolean(date?.from && isValid(date.from));
+	const hasValidTo = Boolean(date?.to && isValid(date.to));
+
 	return (
 		<div className={cn("grid gap-2", className)}>
 			<Popover>
@@ -58,8 +62,8 @@ export function DatePickerWithRange({
 						)}
 					>
 						<CalendarIcon className="md:mr-2  h-4 w-4" />
-						{date?.from ? (
-							date.to ? (
+						{hasValidFrom && date?.from ? (
+							hasValidTo && date?.to ? (
 								<>
 									{format(date.from, "dd MMM y", { locale: pl })} -{" "}
 									{format(date.to, "dd MMM y", { locale: pl })}
@@ -68,9 +72,7 @@ export function DatePickerWithRange({
 								format(date.from, "dd MMM y", { locale: pl })
 							)
 						) : (
-							<span className="hidden md:block">
-								Wybierz zakres dat OD - DO
-							</span>
+							<span className="hidden md:block">Wybierz zakres</span>
 						)}
 					</Button>
 				</PopoverTrigger>

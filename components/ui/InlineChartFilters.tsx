@@ -1,6 +1,6 @@
 "use client";
 
-import { differenceInDays, startOfYear } from "date-fns";
+import { differenceInDays, isValid, startOfYear } from "date-fns";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { DatePickerWithRange } from "../shared/DatePickerWithRange";
@@ -234,8 +234,8 @@ export function InlineChartFilters({
 				</div>
 				<div className="shrink-0">
 					<DatePickerWithRange
-						from={fromDate}
-						to={toDate}
+						from={fromDate && isValid(fromDate) ? fromDate : undefined}
+						to={toDate && isValid(toDate) ? toDate : undefined}
 						onSelect={handleDateRangeSelect}
 					/>
 				</div>

@@ -53,7 +53,7 @@ export default async function NewPortfolioPage() {
 							className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
 						>
 							<ChevronLeft className="h-4 w-4" />
-							<span>Portfele</span>
+							<span>Twoje Portfele</span>
 						</Link>
 						<span className="text-slate-500">/</span>
 						<span className="text-slate-200 font-medium lowercase">Nowy</span>

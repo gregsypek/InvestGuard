@@ -128,7 +128,7 @@ export default async function PlannerPage({ searchParams }: Props) {
 						key="planner-nav"
 						className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-sm text-slate-400 italic mb-2"
 					>
-						<span>Narzędzia</span>
+						<span>Planowanie</span>
 						<span className="text-slate-500">/</span>
 						<span className="text-theme-primary font-medium lowercase">
 							Planer

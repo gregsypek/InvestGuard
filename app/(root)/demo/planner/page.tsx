@@ -72,7 +72,7 @@ export default async function DemoPlannerPage({
 						customBreadcrumbs={
 							<div className="flex items-center gap-2 mb-2">
 								<nav className="text-sm text-slate-400 italic">
-									Narzędzia /{" "}
+									Planowanie /{" "}
 									<span className="text-theme-primary font-medium lowercase">
 										Planer
 									</span>

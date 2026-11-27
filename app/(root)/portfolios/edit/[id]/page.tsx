@@ -63,7 +63,7 @@ export default async function EditPortfolioPage({ params }: Props) {
 							className="inline-flex items-center transition-opacity text-theme-primary hover:opacity-80 cursor-pointer font-medium mr-1"
 						>
 							<ChevronLeft className="h-4 w-4" />
-							<span>Panel Główny</span>
+							<span>Aktywny Portfel</span>
 						</Link>
 						<span className="text-slate-500">/</span>
 						<span className="text-slate-300 lowercase">edycja</span>

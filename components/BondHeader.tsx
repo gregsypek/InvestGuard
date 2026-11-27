@@ -130,7 +130,7 @@ export function BondHeader({
 								<span>Wróć</span>
 							</Link>
 						)}
-						{!backHref && <span>Obligacje</span>}
+						{!backHref && <span>Analiza Obligacji</span>}
 						<span className="text-slate-500">/</span>
 						<span className="text-theme-primary font-medium lowercase">
 							{portfolioName}

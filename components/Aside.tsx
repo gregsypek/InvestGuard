@@ -97,7 +97,7 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 				{!isDemoMode && (
 					<Link
 						href="/"
-						title="Przegląd"
+						title="Przegląd Inwestycji"
 						onClick={onClose}
 						className={cn(
 							"flex items-center justify-center lg:justify-start gap-3 p-3 lg:px-4 lg:py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 group relative overflow-hidden",
@@ -117,7 +117,7 @@ export default function Aside({ onClose }: { onClose?: () => void }) {
 									: "text-t-text-tertiary group-hover:text-t-text-primary",
 							)}
 						/>
-						<span className="hidden lg:inline-block">Przegląd</span>
+						<span className="hidden lg:inline-block">Przegląd Inwestycji</span>
 					</Link>
 				)}
 

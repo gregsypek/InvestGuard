@@ -6,6 +6,7 @@ import {
 	History,
 	LayoutDashboard,
 	Notebook,
+	PieChart,
 	Rocket,
 	Scale,
 	Wallet,
@@ -28,7 +29,7 @@ export const SERVER_URL =
 export const PAGE_ITEMS = 10;
 
 export const NAV_ITEMS = [
-	{ name: "Panel Główny", href: "/dashboard", icon: LayoutDashboard },
+	{ name: "Aktywny Portfel", href: "/dashboard", icon: PieChart },
 	{ name: "Twoje Portfele", href: "/portfolios", icon: Wallet },
 	{ name: "Planowanie", href: "/planner", icon: Notebook },
 	{ name: "Historia Aktywności", href: "/activity", icon: History },

@@ -126,8 +126,8 @@ export const DashboardHeader = ({
 				</Link>
 			)}
 			<nav className="text-[10px] sm:text-xs md:text-sm text-slate-400 italic">
-				Panel Główny / {portfolio?.name.toLocaleLowerCase() || "Ładowanie..."} /
-				Dodaj aktywo
+				Aktywny Portfel /{" "}
+				{portfolio?.name.toLocaleLowerCase() || "Ładowanie..."} / Dodaj aktywo
 			</nav>
 		</div>
 	) : null;
